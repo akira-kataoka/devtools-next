@@ -53,7 +53,8 @@
           <button id="btnLoadSoql">読込</button>
           <label><input type="checkbox" id="useTooling" /> Tooling API</label>
           <span class="grow"></span>
-          <button id="btnExportCsv">CSV</button>
+          <button id="btnCopyCsv" title="CSV をクリップボードにコピー (ダウンロードせず)">📋 CSV</button>
+          <button id="btnExportCsv">📥 CSV</button>
           <button id="btnRunSoql" class="primary">▶ 実行 (Ctrl+Enter)</button>
         </div>
         <textarea id="soqlText" rows="8" spellcheck="false" placeholder="例: SELECT Id, Name FROM Account WHERE CreatedDate = LAST_N_DAYS:30 ORDER BY CreatedDate DESC LIMIT 50">SELECT Id, Name, CreatedDate FROM Account ORDER BY CreatedDate DESC LIMIT 50</textarea>

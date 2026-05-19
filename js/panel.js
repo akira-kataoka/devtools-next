@@ -1,7 +1,7 @@
 // DevTools パネル本体。inspectedWindow から URL を取って sid を引く。
 import {
   isSalesforceHost, toApiHost, getSessionId, parseOrgIdFromSid,
-  runSoql, sfFetch, recordsToCsv,
+  runSoql, sfFetch, recordsToCsv, to18CharId,
 } from "./sf-api.js";
 import { generateDesign, markdownToHtml } from "./design-docs.js";
 import { showPicker, invalidatePickerCache } from "./picker.js";
@@ -315,6 +315,8 @@ function bindEvents() {
   // SOQL
   document.getElementById("btnRunSoql").addEventListener("click", doSoql);
   document.getElementById("btnExportCsv").addEventListener("click", exportCsv);
+  const btnCopyCsv = document.getElementById("btnCopyCsv");
+  if (btnCopyCsv) btnCopyCsv.addEventListener("click", copyCsvToClipboard);
   document.getElementById("btnSaveSoql").addEventListener("click", saveCurrentQuery);
   document.getElementById("btnLoadSoql").addEventListener("click", loadSelectedQuery);
   document.getElementById("soqlText").addEventListener("keydown", (e) => {
@@ -378,8 +380,11 @@ function bindEvents() {
       // ID 部分のみ抽出 (URL からの貼付けにも対応: 末尾の 15/18 桁を拾う)
       const m = txt.match(/([a-zA-Z0-9]{15,18})(?:[^a-zA-Z0-9].*)?$/);
       if (!m) { panelToast("⚠ クリップボードに有効な ID が見つかりません", { kind: "warn" }); return; }
-      document.getElementById("inspectRef").value = m[1];
-      panelToast(`📋 貼付: ${m[1]}`, { kind: "ok" });
+      // 15桁 ID は 18桁に展開 (REST API は両方受け入れるが 18桁の方が安全)
+      const id = m[1].length === 15 ? to18CharId(m[1]) : m[1];
+      document.getElementById("inspectRef").value = id;
+      const expanded = m[1].length === 15 ? ` (15→18 展開)` : "";
+      panelToast(`📋 貼付: ${id}${expanded}`, { kind: "ok" });
       doInspect();
     } catch (e) {
       panelToast("❌ クリップボード読取失敗: " + (e.message || e), { kind: "err" });
@@ -1876,7 +1881,7 @@ async function doSoql() {
 }
 
 function exportCsv() {
-  if (!state.lastRecords || !state.lastRecords.length) return;
+  if (!state.lastRecords || !state.lastRecords.length) { panelToast("📭 エクスポート対象がありません", { kind: "warn" }); return; }
   const csv = recordsToCsv(state.lastRecords);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -1885,6 +1890,17 @@ function exportCsv() {
   a.download = `soql-${tsForFilename()}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function copyCsvToClipboard() {
+  if (!state.lastRecords || !state.lastRecords.length) { panelToast("📭 コピー対象がありません", { kind: "warn" }); return; }
+  try {
+    const csv = recordsToCsv(state.lastRecords);
+    await navigator.clipboard.writeText(csv);
+    panelToast(`📋 CSV ${state.lastRecords.length} 行をクリップボードへ`, { kind: "ok" });
+  } catch (e) {
+    panelToast("❌ コピー失敗: " + (e.message || e), { kind: "err" });
+  }
 }
 
 async function doDescribe() {

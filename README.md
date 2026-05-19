@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.50.0 (2026-05-20 08:30)** — 🎉 累計50リリース節目 - 15→18桁展開 + CSV to clipboard + 検証完了:
+  - **✨ Inspector 「📋 貼付」で 15桁 ID を 18桁に自動展開**: `to18CharId()` で checksum 計算、`📋 貼付: 001xxx (15→18 展開)` toast で可視化。**REST API は両方受け入れるが 18桁の方がオブジェクト判定で安全**
+  - **✨ SOQL ツールバーに「📋 CSV」ボタン追加 (Inspector Reloaded 参考)**: ダウンロードせず直接クリップボード経由。Excel / Slack / メールに即ペースト可能。既存 `📥 CSV` (ダウンロード) と並列配置で用途別選択
+  - **🧪 バグ検証完了 (3 件すべて修正不要)**: ①SOQL pinned toggle は `togglePinAt:399-401` で「pinned 先 + ts 降順」再ソート実装済 ②Apex Debug Log エラーは displayApiError() で HTTP 別ヒント表示済 ③Export CSV は同期処理だが state.lastRecords は API 上限内 (LIMIT 2000) で freeze 懸念低い
 - **v1.49.0 (2026-05-20 08:25)** — Inspector 📋 貼付ボタン + グローバル KBSC + バグ検証完了:
   - **✨ Inspector に「📋 貼付」ボタン追加**: クリップボードから ID をワンクリック貼付 → 自動 doInspect 実行。URL からの貼付けにも対応 (regex で末尾 15/18 桁 ID を抽出)。**Salesforce Inspector Reloaded のクイックアクセス UX 相当**
   - **✨ グローバルキーボードショートカット (Inspector Reloaded 風)**: 入力欄でない場所で押下時、`Ctrl+Alt+I` → Inspector / `Ctrl+Alt+Q` → SOQL / `Ctrl+Alt+A` → Apex / `Ctrl+Alt+L` → Limits / `Ctrl+Alt+R` → REST / `Ctrl+Alt+D` → 設計書。**マウスを使わず瞬時にビュー切替** + panelToast でフィードバック
