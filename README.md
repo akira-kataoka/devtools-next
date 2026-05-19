@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.41.0 (2026-05-20 04:15)** — 設計書プレビューに空状態ヒント + Picker/Org 切替の既存実装確認:
+  - **✨ .design-preview 初期空状態にプレースホルダ**: `📋 まだ設計書未生成` + `↑ 設計書タイプを選択 → オブジェクト指定 → 「生成」をクリック` という 2 段階の手順ヒント。`.empty-hint` クラスでアクセント色 + パディング 40px の中央配置 → **初心者ユーザーが何をすればよいか即座に理解**
+  - **🧪 Picker close 後 focus 復元を再確認**: `picker.js:259-261` で `focusReturnTarget.focus()` 呼出済 → **キーボード遷移後に呼び元 input/button にフォーカス戻る既存実装で OK**
+  - **🧪 Org 切替時 cache invalidate 再確認**: `panel.js reconnect():1796-1801` で `invalidatePickerCache()` + `inspectHistory.length = 0` 同時実行済 → **別組織キャッシュ漏れない既存実装で OK**
 - **v1.40.0 (2026-05-20 04:10)** — 🎉 サイクル50 達成 - Limits 4段階配色 + REST copy + Inspector scroll 復元:
   - **✨ Limits バー 4段階配色 (low/mid/warn/critical)**: `<50%` 純緑、`50-70%` 緑→accent、`70-90%` accent→warn、`90+%` warn→err。`.limit-bar-wrap` に 70%/90% の薄い縦ライン (`::before` / `::after`) を追加してしきい値視認
   - **✨ REST Result に 📋 結果コピーボタン**: Apex 同様 `navigator.clipboard.writeText` + panelToast。**巨大 JSON レスポンスを全選択不要で一発コピー**

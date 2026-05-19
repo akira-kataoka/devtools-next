@@ -175,6 +175,13 @@ td.cell-copyable:hover { color: var(--accent); }
   background: #0f1830; border: 1px solid var(--line); border-radius: 6px;
   padding: 12px; color: var(--fg); font-size: 12px; line-height: 1.6;
 }
+.design-preview .empty-hint {
+  text-align: center; padding: 40px 20px; color: var(--accent);
+  font-size: 14px; line-height: 2;
+}
+.design-preview .empty-hint-sub {
+  font-size: 11px; color: var(--fg-dim);
+}
 .design-preview h1, .design-preview h2, .design-preview h3 {
   color: var(--accent); margin: 12px 0 6px;
   border-bottom: 1px solid var(--line); padding-bottom: 3px;
