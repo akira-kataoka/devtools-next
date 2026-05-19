@@ -330,8 +330,10 @@ function bindEvents() {
   document.getElementById("btnDesignDownload").addEventListener("click", downloadDesignSource);
 
   // Inspector
-  document.getElementById("btnInspect").addEventListener("click", doInspect);
+  document.getElementById("btnInspect").addEventListener("click", () => doInspect());
   document.getElementById("btnInspectFromTab").addEventListener("click", inspectFromTab);
+  const btnBack = document.getElementById("btnInspectBack");
+  if (btnBack) btnBack.addEventListener("click", inspectGoBack);
   document.getElementById("btnInspectOpenInOrg").addEventListener("click", openInspectedInOrg);
   document.getElementById("btnInspectExportJson").addEventListener("click", () => exportInspect("json"));
   document.getElementById("btnInspectExportCsv").addEventListener("click", () => exportInspect("csv"));
@@ -1212,6 +1214,20 @@ function apiOpenInBrowser() {
 
 // ====== レコード Inspector ======
 const inspectState = { obj: null, id: null, describe: null, record: null };
+const inspectHistory = []; // 過去訪問した {obj, id} を最大 20 件保持
+function updateInspectBackButton() {
+  const btn = document.getElementById("btnInspectBack");
+  if (btn) btn.disabled = inspectHistory.length === 0;
+}
+function inspectGoBack() {
+  if (!inspectHistory.length) return;
+  const prev = inspectHistory.pop();
+  if (prev) {
+    document.getElementById("inspectRef").value = `${prev.obj}:${prev.id}`;
+    doInspect({ skipHistory: true });
+  }
+  updateInspectBackButton();
+}
 const SYSTEM_FIELDS = new Set([
   "Id", "IsDeleted", "CreatedById", "CreatedDate", "LastModifiedById", "LastModifiedDate",
   "SystemModstamp", "LastActivityDate", "LastViewedDate", "LastReferencedDate",
@@ -1245,10 +1261,16 @@ async function inspectFromTab() {
 }
 
 let inspectRunId = 0;
-async function doInspect() {
+async function doInspect(opts = {}) {
   if (!state.sid) { document.getElementById("inspectMeta").innerHTML = `<span class="pill err">未接続</span>`; return; }
   const raw = document.getElementById("inspectRef").value.trim();
   if (!raw) return;
+  // 現在のレコードを履歴に push してから新規取得 (戻るボタン用)
+  if (!opts.skipHistory && inspectState.obj && inspectState.id) {
+    inspectHistory.push({ obj: inspectState.obj, id: inspectState.id });
+    if (inspectHistory.length > 20) inspectHistory.shift();
+    updateInspectBackButton();
+  }
   const myId = ++inspectRunId;
   const meta = document.getElementById("inspectMeta");
   meta.textContent = `取得中… #${myId}`;
