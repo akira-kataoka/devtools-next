@@ -255,7 +255,12 @@ function switchToView(v) {
   });
   // ラベルを記録 (recent ボタンからの遷移時は元のメインボタンを基準に)
   const btn = document.querySelector('.nav-btn[data-view="' + v + '"]:not(.recent)');
-  if (btn) pushRecentView(v, btn.textContent.trim());
+  if (btn) {
+    const label = btn.textContent.trim();
+    pushRecentView(v, label);
+    // document.title を動的更新 (ブラウザタブで現在のビュー名が見える)
+    document.title = `${label} - DevToolsNext`;
+  }
 }
 
 function bindNav() {

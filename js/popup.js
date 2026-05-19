@@ -558,40 +558,55 @@ async function doApiCall() {
 }
 
 function renderLinks() {
-  const links = [
-    ["Setup ホーム", "/lightning/setup/SetupOneHome/home", "lightning"],
-    ["Object Manager", "/lightning/setup/ObjectManager/home", "lightning"],
-    ["Profiles", "/lightning/setup/EnhancedProfiles/home", "lightning"],
-    ["Permission Sets", "/lightning/setup/PermSets/home", "lightning"],
-    ["Users", "/lightning/setup/ManageUsers/home", "lightning"],
-    ["Flows", "/lightning/setup/Flows/home", "lightning"],
-    ["Apex Classes", "/lightning/setup/ApexClasses/home", "lightning"],
-    ["Apex Triggers", "/lightning/setup/ApexTriggers/home", "lightning"],
-    ["Custom Settings", "/lightning/setup/CustomSettings/home", "lightning"],
-    ["Custom Metadata", "/lightning/setup/CustomMetadata/home", "lightning"],
-    ["Login History", "/lightning/setup/SetupAuditTrail/home", "lightning"],
-    ["Connected Apps", "/lightning/setup/ConnectedApplication/home", "lightning"],
-    ["Debug Logs", "/lightning/setup/ApexDebugLogs/home", "lightning"],
-    ["Scheduled Jobs", "/lightning/setup/ScheduledJobs/home", "lightning"],
-    ["Apex Jobs", "/lightning/setup/AsyncApexJobs/home", "lightning"],
-    ["Network Access", "/lightning/setup/NetworkAccess/home", "lightning"],
-    ["Session Settings", "/lightning/setup/SecuritySession/home", "lightning"],
-    ["OAuth Settings", "/lightning/setup/OAuthAndOpenIDConnectSettings/home", "lightning"],
+  // カテゴリ別グルーピング: Setup / 開発 / 監視 / セキュリティ
+  const groups = [
+    { title: "⚙️ Setup", links: [
+      ["Setup ホーム", "/lightning/setup/SetupOneHome/home"],
+      ["Object Manager", "/lightning/setup/ObjectManager/home"],
+      ["Custom Settings", "/lightning/setup/CustomSettings/home"],
+      ["Custom Metadata", "/lightning/setup/CustomMetadata/home"],
+    ]},
+    { title: "💻 開発", links: [
+      ["Apex Classes", "/lightning/setup/ApexClasses/home"],
+      ["Apex Triggers", "/lightning/setup/ApexTriggers/home"],
+      ["Flows", "/lightning/setup/Flows/home"],
+      ["Connected Apps", "/lightning/setup/ConnectedApplication/home"],
+    ]},
+    { title: "📊 監視", links: [
+      ["Debug Logs", "/lightning/setup/ApexDebugLogs/home"],
+      ["Scheduled Jobs", "/lightning/setup/ScheduledJobs/home"],
+      ["Apex Jobs", "/lightning/setup/AsyncApexJobs/home"],
+      ["Login History", "/lightning/setup/SetupAuditTrail/home"],
+    ]},
+    { title: "🔐 セキュリティ", links: [
+      ["Profiles", "/lightning/setup/EnhancedProfiles/home"],
+      ["Permission Sets", "/lightning/setup/PermSets/home"],
+      ["Users", "/lightning/setup/ManageUsers/home"],
+      ["Network Access", "/lightning/setup/NetworkAccess/home"],
+      ["Session Settings", "/lightning/setup/SecuritySession/home"],
+      ["OAuth Settings", "/lightning/setup/OAuthAndOpenIDConnectSettings/home"],
+    ]},
   ];
   const root = document.getElementById("linkList");
   root.innerHTML = "";
-  links.forEach(([label, path]) => {
-    const a = document.createElement("a");
-    a.textContent = label;
-    a.href = "#";
-    a.addEventListener("click", (e) => {
-      e.preventDefault();
-      if (!state.host) { toast("SF タブが必要です"); return; }
-      const lhost = state.host.endsWith(".lightning.force.com")
-        ? state.host
-        : state.host.replace(/\.my\.salesforce\.com$/, ".lightning.force.com");
-      chrome.tabs.create({ url: `https://${lhost}${path}` });
+  const openLink = (path) => {
+    if (!state.host) { toast("SF タブが必要です"); return; }
+    const lhost = state.host.endsWith(".lightning.force.com")
+      ? state.host
+      : state.host.replace(/\.my\.salesforce\.com$/, ".lightning.force.com");
+    chrome.tabs.create({ url: `https://${lhost}${path}` });
+  };
+  groups.forEach((g) => {
+    const heading = document.createElement("div");
+    heading.className = "links-group-title";
+    heading.textContent = g.title;
+    root.appendChild(heading);
+    g.links.forEach(([label, path]) => {
+      const a = document.createElement("a");
+      a.textContent = label;
+      a.href = "#";
+      a.addEventListener("click", (e) => { e.preventDefault(); openLink(path); });
+      root.appendChild(a);
     });
-    root.appendChild(a);
   });
 }

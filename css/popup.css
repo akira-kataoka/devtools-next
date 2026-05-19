@@ -132,6 +132,17 @@ select { font-family: inherit; }
   font-weight: 600;
 }
 .links a:hover { border-color: var(--accent); color: var(--accent); }
+.links-group-title {
+  grid-column: 1 / -1;
+  font-size: 10px;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 8px 2px 2px;
+  border-bottom: 1px solid var(--line);
+  margin-top: 2px;
+}
+.links-group-title:first-child { margin-top: 0; padding-top: 0; }
 
 .ftr {
   position: sticky; bottom: 0; background: var(--bg2);

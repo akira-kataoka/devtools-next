@@ -4,6 +4,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.22.0 (2026-05-20 02:40)** — 便利リンクカテゴリ化 + title 動的化:
+  - **✨ popup の便利リンクをカテゴリ別グルーピング**: 「⚙️ Setup / 💻 開発 / 📊 監視 / 🔐 セキュリティ」の 4 カテゴリに 18 リンクを再編成。`.links-group-title` で各カテゴリヘッダをアクセント色で明示
+  - **✨ tool.html の document.title を動的更新**: view 切替時に `<ビュー名> - DevToolsNext` 形式に。**ブラウザタブで現在のビューが一目で分かる**、複数 tool タブを開いていても識別可能
 - **v1.21.0 (2026-05-20 02:35)** — 🎉 サイクル30 達成記念 + 入力ガード + ガイド充実:
   - **🐛 Export 0 件選択時のダウンロードガード**: SOQL 空 or `exState.selected` が空なら panelToast で警告して中断。**空 CSV が生成されない**
   - **✨ textarea プレースホルダ例文充実**: SOQL は `SELECT ... LAST_N_DAYS:30 ...`、Apex は `System.debug` / `DELETE [SELECT...]` 等の実用例を placeholder に
