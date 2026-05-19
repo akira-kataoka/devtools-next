@@ -28,9 +28,11 @@
   </nav>
 
   <main class="panel" id="panel-home">
-    <section class="card whats-new">
-      <h2>🚀 DevToolsNext を全画面で開く (F12 不要)</h2>
-      <div class="whats-new-body">
+    <section class="card whats-new" id="cardWhatsNew">
+      <h2 style="cursor:pointer;user-select:none" id="whatsNewToggle" title="クリックで折りたたみ/展開">
+        <span id="whatsNewArrow">▼</span> 🚀 DevToolsNext を全画面で開く (F12 不要)
+      </h2>
+      <div class="whats-new-body" id="whatsNewBody">
         <div style="margin-bottom:6px">下のボタンで、すべての機能を 1 つのフルスクリーンタブで使えます (F12 を押さなくても OK)</div>
         <button id="btnOpenTool" class="primary" style="width:100%;font-size:13px;padding:10px">🛠️ DevToolsNext を開く</button>
         <ul class="whats-new-list" style="margin-top:8px">

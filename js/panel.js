@@ -590,8 +590,10 @@ function csRenderCandidates() {
     el.addEventListener("click", () => {
       if (selectedNames.has(key)) {
         csState.selected = csState.selected.filter((s) => !(s.type === c.type && s.name === c.name));
+        panelToast(`➖ 除外: ${c.type}:${c.name}`);
       } else {
         csState.selected.push({ ...c });
+        panelToast(`➕ 追加: ${c.type}:${c.name}`);
       }
       csRenderCandidates();
       csRenderSelected();

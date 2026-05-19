@@ -206,6 +206,9 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }
     const cacheKey = `${kind}|${host}|${parentObject || ""}`;
     let items = cache.get(cacheKey);
 
+    // フォーカス復元用に元の active 要素を記憶
+    const focusReturnTarget = document.activeElement;
+
     // モーダル DOM 構築
     const overlay = document.createElement("div");
     overlay.className = "picker-overlay";
@@ -243,6 +246,10 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }
     const close = (val) => {
       overlay.remove();
       document.body.classList.remove("picker-open");
+      // 元のトリガにフォーカスを戻す (キーボードユーザー向け)
+      if (focusReturnTarget && typeof focusReturnTarget.focus === "function") {
+        try { focusReturnTarget.focus(); } catch {}
+      }
       resolve(val);
     };
     overlay.querySelector(".picker-close").addEventListener("click", () => close(null));

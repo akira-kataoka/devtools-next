@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.18.0 (2026-05-20 02:20)** — ChangeSet toast + Picker focus + whats-new 折りたたみ:
+  - **✨ ChangeSet builder で追加/除外時に toast 通知**: 「➕ 追加: ApexClass:MyClass」「➖ 除外: …」を表示。複数選択時の進行状況が分かりやすく
+  - **✨ Picker 閉じる時のフォーカス復元**: トリガボタンに元の focus を戻す。**キーボードユーザーがタブ移動を途中から再開できる** (a11y 向上)
+  - **✨ popup whats-new カードを折りたたみ可能化**: ヘッダクリックで body 表示切替、▼/▶ アイコン。状態を chrome.storage.local に保存し再表示時に維持
 - **v1.17.0 (2026-05-20 02:15)** — ETA 拡張 + 接続失敗トラブルシュート:
   - **✨ fieldPermMatrix 進捗に ETA pill 追加**: 取得済件数と経過時間から `ETA 約 XX秒` を併記 (1秒以上経過後のみ)。設計書 Export 共に ETA 表示で**長時間処理の体感不安を軽減**
   - **✨ popup 接続失敗時のトラブルシュート案内をステップ化**: SF タブ無し時は「1. 開く / 2. ログイン / 3. ⟳」、sid 無し時は「1. ログイン確認 / 2. ブラウザ再起動の可能性 / 3. my.salesforce.com で開き直し」と**手順番号付きで何をすればよいか明確化**
