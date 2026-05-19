@@ -40,12 +40,15 @@ async function init() {
   }
 }
 
-// 設計書タイプによって Picker の種類を切り替える
+// 設計書タイプによって Picker の種類を切り替える + 入力不要タイプでは Picker トリガを隠す
 function setupDesignPicker() {
   const sel = document.getElementById("designType");
   const input = document.getElementById("designObj");
   if (!sel || !input) return;
-  // 既存の picker-trigger を削除して付け直す
+  const NO_INPUT_TYPES = new Set([
+    "profileList", "permsetList", "apexClassList", "apexTriggerList",
+    "flowList", "customSettingList", "appList", "accessControl",
+  ]);
   const refresh = () => {
     const existing = input.nextElementSibling;
     if (existing && existing.classList && existing.classList.contains("picker-trigger")) existing.remove();
@@ -58,11 +61,20 @@ function setupDesignPicker() {
     else if (type === "flowDetail") { kind = "flow"; placeholder = "Flow DeveloperName"; }
     else if (type === "apexDetail") { kind = "apexClass"; placeholder = "Apex クラス名"; }
     else if (type === "lwcDetail") { kind = "lwc"; placeholder = "LWC バンドル DeveloperName"; }
-    else if (["profileList","permsetList","apexClassList","apexTriggerList","flowList","customSettingList","appList","accessControl"].includes(type)) {
-      placeholder = "(不要 — 全件取得)";
+    else if (NO_INPUT_TYPES.has(type)) {
+      placeholder = "(入力不要 — 全件取得します)";
     }
     input.placeholder = placeholder;
-    attachPicker("designObj", kind, { title: "候補から選択" });
+    if (NO_INPUT_TYPES.has(type)) {
+      // 入力不要なら disable + Picker トリガも追加しない
+      input.disabled = true;
+      input.value = "";
+      input.style.opacity = "0.5";
+    } else {
+      input.disabled = false;
+      input.style.opacity = "1";
+      attachPicker("designObj", kind, { title: "候補から選択" });
+    }
   };
   sel.addEventListener("change", refresh);
   refresh();
@@ -144,17 +156,57 @@ function initHeader() {
   }
 }
 
+const RECENT_VIEWS_KEY = "sfdtRecentViews";
+async function pushRecentView(viewName, label) {
+  try {
+    const { [RECENT_VIEWS_KEY]: list = [] } = await chrome.storage.local.get(RECENT_VIEWS_KEY);
+    const filtered = list.filter((v) => v.view !== viewName);
+    filtered.unshift({ view: viewName, label, ts: Date.now() });
+    await chrome.storage.local.set({ [RECENT_VIEWS_KEY]: filtered.slice(0, 5) });
+    renderRecentNav();
+  } catch {}
+}
+
+async function renderRecentNav() {
+  try {
+    const { [RECENT_VIEWS_KEY]: list = [] } = await chrome.storage.local.get(RECENT_VIEWS_KEY);
+    let area = document.getElementById("nav-recent-section");
+    const nav = document.querySelector(".side .nav");
+    if (!nav) return;
+    if (!area) {
+      area = document.createElement("div");
+      area.id = "nav-recent-section";
+      // ナビの一番上に挿入
+      nav.insertBefore(area, nav.firstChild);
+    }
+    if (!list.length) { area.innerHTML = ""; return; }
+    area.innerHTML = `<div class="nav-sep">⏱ 最近開いたビュー</div>` +
+      list.map((r) =>
+        `<button class="nav-btn recent" data-view="${escape(r.view)}" title="${escape(new Date(r.ts).toLocaleString())}">↻ ${escape(r.label)}</button>`
+      ).join("");
+    // 動的に追加したボタンにもクリックハンドラ
+    area.querySelectorAll(".nav-btn").forEach((btn) => {
+      btn.addEventListener("click", () => switchToView(btn.dataset.view));
+    });
+  } catch {}
+}
+
+function switchToView(v) {
+  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
+  document.querySelectorAll('.nav-btn[data-view="' + v + '"]').forEach((b) => b.classList.add("active"));
+  document.querySelectorAll(".view").forEach((p) => {
+    p.classList.toggle("hidden", p.dataset.view !== v);
+  });
+  // ラベルを記録
+  const btn = document.querySelector('.nav-btn[data-view="' + v + '"]:not(.recent)');
+  if (btn) pushRecentView(v, btn.textContent.trim());
+}
+
 function bindNav() {
   document.querySelectorAll(".nav-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const v = btn.dataset.view;
-      document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      document.querySelectorAll(".view").forEach((p) => {
-        p.classList.toggle("hidden", p.dataset.view !== v);
-      });
-    });
+    btn.addEventListener("click", () => switchToView(btn.dataset.view));
   });
+  renderRecentNav();
 }
 
 function bindEvents() {
@@ -745,7 +797,7 @@ async function exRunPreview() {
   const r = await runSoql({ host: state.host, sid: state.sid, soql: previewSoql, apiVersion: state.apiVersion, tooling });
   const dt = Math.round(performance.now() - t0);
   if (!r.ok) {
-    meta.innerHTML = `<span class="pill err">HTTP ${r.status}</span> ${escape(formatError(r.data))}`;
+    displayApiError(meta, r.status, r.data, "データエクスポート プレビュー");
     preview.innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;
     return;
   }
@@ -1470,7 +1522,7 @@ async function doSoql() {
   const r = await runSoql({ host: state.host, sid: state.sid, soql, apiVersion: state.apiVersion, tooling });
   const dt = Math.round(performance.now() - t0);
   if (!r.ok) {
-    meta.innerHTML = `<span class="pill err">HTTP ${r.status}</span> ${formatError(r.data)}`;
+    displayApiError(meta, r.status, r.data, "SOQL 実行");
     document.getElementById("soqlResult").innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;
     state.lastRecords = null;
     return;
@@ -1502,7 +1554,11 @@ async function doDescribe() {
     path: `/services/data/v${state.apiVersion}/sobjects/${encodeURIComponent(obj)}/describe`,
   });
   if (!r.ok) {
-    document.getElementById("describeResult").innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;
+    let errArea = document.getElementById("describeResult");
+    const errMeta = document.createElement("div");
+    displayApiError(errMeta, r.status, r.data, `describe(${obj})`);
+    errArea.innerHTML = "";
+    errArea.appendChild(errMeta);
     return;
   }
   const fields = (r.data && r.data.fields) || [];
@@ -1527,7 +1583,11 @@ async function doRest() {
   const t0 = performance.now();
   const r = await sfFetch({ host: state.host, sid: state.sid, path, method, body: body || null });
   const dt = Math.round(performance.now() - t0);
-  meta.innerHTML = `<span class="pill ${r.ok ? "ok" : "err"}">HTTP ${r.status}</span> ${dt}ms`;
+  if (!r.ok) {
+    displayApiError(meta, r.status, r.data, `REST ${method}`);
+  } else {
+    meta.innerHTML = `<span class="pill ok">HTTP ${r.status}</span> ${dt}ms`;
+  }
   document.getElementById("restResult").textContent = JSON.stringify(r.data, null, 2);
 }
 
@@ -1538,7 +1598,10 @@ async function doMetadataList() {
     encodeURIComponent(`SELECT Id, Name, NamespacePrefix, ManageableState, CreatedDate, LastModifiedDate FROM ${type} ORDER BY LastModifiedDate DESC LIMIT 200`);
   const r = await sfFetch({ host: state.host, sid: state.sid, path });
   if (!r.ok) {
-    document.getElementById("metadataResult").innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;
+    const elem = document.getElementById("metadataResult");
+    const m = document.createElement("div");
+    displayApiError(m, r.status, r.data, `Metadata ${type}`);
+    elem.innerHTML = ""; elem.appendChild(m);
     return;
   }
   document.getElementById("metadataResult").innerHTML = recordsTable(r.data.records || []);
@@ -1549,7 +1612,10 @@ async function doFetchLogs() {
   const q = `SELECT Id, LogUser.Name, Status, Application, Operation, LogLength, DurationMilliseconds, StartTime FROM ApexLog ORDER BY StartTime DESC LIMIT 20`;
   const r = await runSoql({ host: state.host, sid: state.sid, soql: q, apiVersion: state.apiVersion, tooling: true });
   if (!r.ok) {
-    document.getElementById("logsResult").innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;
+    const elem = document.getElementById("logsResult");
+    const m = document.createElement("div");
+    displayApiError(m, r.status, r.data, "ApexLog 取得");
+    elem.innerHTML = ""; elem.appendChild(m);
     return;
   }
   document.getElementById("logsResult").innerHTML = recordsTable(r.data.records || []);
@@ -1641,7 +1707,7 @@ async function doRunApex() {
   const dt = Math.round(performance.now() - t0);
 
   if (!r.ok) {
-    meta.innerHTML = `<span class="pill err">HTTP ${r.status}</span> ${formatError(r.data)} / ${dt}ms`;
+    displayApiError(meta, r.status, r.data, "Apex 実行");
     out.textContent = JSON.stringify(r.data, null, 2);
     return;
   }
@@ -1728,7 +1794,7 @@ async function doFetchLoginHistory() {
   const dt = Math.round(performance.now() - t0);
 
   if (!r.ok) {
-    meta.innerHTML = `<span class="pill err">HTTP ${r.status}</span> ${formatError(r.data)}`;
+    displayApiError(meta, r.status, r.data, "Login History 取得");
     document.getElementById("loginResult").innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;
     state.lastLoginRecords = null;
     return;

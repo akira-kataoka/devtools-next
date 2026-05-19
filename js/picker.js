@@ -7,6 +7,28 @@ import { sfFetch, runSoql } from "./sf-api.js";
 
 const cache = new Map(); // key=kind|host|extraKey, value=items[]
 
+// お気に入り (kind 別の固定上部表示候補)
+const FAVORITES = {
+  sobject: ["Account", "Contact", "Opportunity", "Lead", "Case", "User", "Task", "Event", "Campaign", "Product2"],
+};
+
+const RECENT_KEY = "sfdtPickerRecent"; // chrome.storage.local — { [kind]: [value, ...最大10件] }
+async function getRecent(kind) {
+  try {
+    const { [RECENT_KEY]: data = {} } = await chrome.storage.local.get(RECENT_KEY);
+    return data[kind] || [];
+  } catch { return []; }
+}
+async function pushRecent(kind, value) {
+  try {
+    const { [RECENT_KEY]: data = {} } = await chrome.storage.local.get(RECENT_KEY);
+    const list = (data[kind] || []).filter((v) => v !== value);
+    list.unshift(value);
+    data[kind] = list.slice(0, 10);
+    await chrome.storage.local.set({ [RECENT_KEY]: data });
+  } catch {}
+}
+
 const PICKER_DEFS = {
   sobject: {
     title: "オブジェクトを選択",
@@ -207,9 +229,29 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }
     });
 
     let selectedIdx = 0;
+    let recentList = await getRecent(kind);
+    const favSet = new Set((FAVORITES[kind] || []));
+    const recentSet = new Set(recentList);
+
+    const sortItems = (arr, q) => {
+      // 検索クエリありの場合は通常順、なしの場合は最近選択 → お気に入り → その他
+      if (q) return arr;
+      const recent = []; const fav = []; const other = [];
+      for (const it of arr) {
+        if (recentSet.has(it.value)) recent.push(it);
+        else if (favSet.has(it.value)) fav.push(it);
+        else other.push(it);
+      }
+      // recent は recentList 順を維持
+      const recentByValue = new Map(recent.map((it) => [it.value, it]));
+      const recentOrdered = recentList.map((v) => recentByValue.get(v)).filter(Boolean);
+      return [...recentOrdered, ...fav, ...other];
+    };
+
     const render = () => {
       const q = ($input.value || "").toLowerCase();
-      const filtered = items.filter((it) => !q || it.hay.includes(q)).slice(0, 200);
+      const sorted = sortItems(items.slice(), q);
+      const filtered = sorted.filter((it) => !q || it.hay.includes(q)).slice(0, 300);
       if (selectedIdx >= filtered.length) selectedIdx = 0;
       $count.textContent = `${filtered.length} / ${items.length} 件`;
       $list.innerHTML = "";
@@ -220,9 +262,17 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }
       $list.appendChild(hdr);
       filtered.forEach((it, idx) => {
         const row = document.createElement("div");
-        row.className = "picker-row" + (idx === selectedIdx ? " selected" : "");
-        row.innerHTML = it.row.map((c) => `<div>${escape(String(c == null ? "" : c))}</div>`).join("");
-        row.addEventListener("click", () => {
+        const isRecent = recentSet.has(it.value);
+        const isFav = favSet.has(it.value);
+        row.className = "picker-row" + (idx === selectedIdx ? " selected" : "") +
+          (isRecent ? " is-recent" : "") + (isFav ? " is-fav" : "");
+        const badge = isRecent ? '<span class="picker-badge recent" title="最近選択">⏱</span>' :
+                      isFav ? '<span class="picker-badge fav" title="お気に入り">★</span>' : "";
+        row.innerHTML = it.row.map((c, i) =>
+          `<div>${i === 0 ? badge : ""}${escape(String(c == null ? "" : c))}</div>`
+        ).join("");
+        row.addEventListener("click", async () => {
+          await pushRecent(kind, it.value);
           if (onPick) onPick(it.value, it);
           close(it.value);
         });

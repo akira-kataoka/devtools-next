@@ -88,6 +88,13 @@ textarea {
   border-top: none;
   margin-top: 0;
 }
+.nav-btn.recent {
+  font-size: 11px;
+  color: var(--fg-dim);
+  font-style: italic;
+}
+.nav-btn.recent:hover { color: var(--accent); }
+#nav-recent-section { border-bottom: 1px dashed var(--line); padding-bottom: 8px; margin-bottom: 4px; }
 
 .design-split { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; min-height: 0; }
 .design-pane { display: flex; flex-direction: column; min-height: 200px; }
@@ -269,6 +276,19 @@ textarea {
 .picker-row {
   grid-template-columns: 1.5fr 2fr 1fr 1fr;
 }
+.picker-row.is-recent { background: rgba(27,150,255,0.06); }
+.picker-row.is-fav { background: rgba(243,156,18,0.06); }
+.picker-row.is-recent.is-fav { background: rgba(46,204,113,0.06); }
+.picker-badge {
+  display: inline-block;
+  margin-right: 4px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  vertical-align: middle;
+}
+.picker-badge.recent { background: rgba(27,150,255,0.2); color: var(--accent); }
+.picker-badge.fav { background: rgba(243,156,18,0.2); color: var(--warn); }
 
 /* Picker トリガボタン (テキスト入力の隣に置く) */
 .picker-trigger {

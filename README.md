@@ -4,6 +4,13 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.0.0 (2026-05-20 00:45)** — 1.0 メジャー (洗練成熟):
+  - **🐛 エラー表示統一**: panel.js の 8 関数 (doSoql/doDescribe/doRest/doMetadataList/doFetchLogs/doRunApex/doFetchLoginHistory/exRunPreview) を `displayApiError` 共通ヘルパーに統一。HTTP 401/403/404/400 に対し「⚠ HTTP XXX + 詳細 + 💡 対処方法」フォーマットで表示
+  - **✨ Picker お気に入り**: sobject 選択時に Account/Contact/Opportunity/Lead/Case/User/Task/Event/Campaign/Product2 を上部固定 (★ バッジ)
+  - **✨ Picker 最近選択した履歴**: chrome.storage.local に kind 別最大 10 件保存、検索クエリ無し時は最近選択 → お気に入り → その他の順で表示 (⏱ バッジ)
+  - **✨ ナビ「最近開いたビュー」**: chrome.storage.local に最大 5 件保存、サイドバー最上部に表示
+  - **🐛 設計書「入力不要」タイプは入力欄を disable + 🔍 ボタン非表示**: profileList/permsetList/apexClassList 等で UI の混乱を解消
+  - GitHub 公開: https://github.com/akira-kataoka/devtools-next
 - **v0.9.0 (2026-05-20 00:35)** — 改名 + GitHub 連携:
   - **🏷️ 拡張名を「DevToolsNext」に改名** — manifest.name / _locales (ja+en) / 全 HTML タイトル + brand 表示 / popup の whats-new 文言を統一
   - **README ヘッダ更新**: 旧 Salesforce DevTool 表記を残しつつ DevToolsNext を主表記に
