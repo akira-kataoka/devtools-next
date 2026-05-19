@@ -281,6 +281,21 @@ body.picker-open { overflow: hidden; }
 }
 @keyframes panelToastIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
+/* Export 進捗バー */
+.dl-bar {
+  display: inline-block;
+  width: 160px; height: 6px;
+  background: var(--bg3);
+  border-radius: 3px; vertical-align: middle;
+  margin: 0 6px;
+  overflow: hidden;
+}
+.dl-bar-fill {
+  display: block; height: 100%;
+  background: linear-gradient(90deg, var(--ok), var(--accent));
+  transition: width 0.3s ease-out;
+}
+
 /* disabled ボタン統一スタイル */
 button:disabled, button[disabled] {
   opacity: 0.45;

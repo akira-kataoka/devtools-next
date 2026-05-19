@@ -211,7 +211,7 @@ async function pushRecentView(viewName, label) {
     const { [RECENT_VIEWS_KEY]: list = [] } = await chrome.storage.local.get(RECENT_VIEWS_KEY);
     const filtered = list.filter((v) => v.view !== viewName);
     filtered.unshift({ view: viewName, label, ts: Date.now() });
-    await chrome.storage.local.set({ [RECENT_VIEWS_KEY]: filtered.slice(0, 5) });
+    await chrome.storage.local.set({ [RECENT_VIEWS_KEY]: filtered.slice(0, 7) });
     renderRecentNav();
   } catch {}
 }
@@ -674,7 +674,7 @@ async function csCopyXml() {
   const t = document.getElementById("csXml").textContent;
   if (!t) return;
   await navigator.clipboard.writeText(t);
-  document.getElementById("csMeta").innerHTML += ` <span class="pill ok">XMLコピー</span>`;
+  panelToast("📋 package.xml をコピーしました");
 }
 
 function csDownloadXml() {
@@ -932,7 +932,10 @@ async function exDownloadAll(fmt) {
       return;
     }
     all = all.concat((r.data && r.data.records) || []);
-    progress.innerHTML = `<span class="pill">${all.length} 件取得…</span> <span class="meta">もう一度 ダウンロード を押すとキャンセル</span>`;
+    const pct = Math.min(100, Math.round((all.length / cap) * 100));
+    progress.innerHTML = `<span class="pill">${all.length} / ${cap} 件 (${pct}%)</span>` +
+      `<span class="dl-bar"><span class="dl-bar-fill" style="width:${pct}%"></span></span>` +
+      `<span class="meta">もう一度 ダウンロード を押すとキャンセル</span>`;
     nextPath = r.data && r.data.nextRecordsUrl ? r.data.nextRecordsUrl : null;
   }
   if (all.length > cap) all = all.slice(0, cap);
@@ -1151,11 +1154,11 @@ function apiBuildUrl() {
 
 async function apiCopyUrl() {
   const t = document.getElementById("apiBuildUrl").textContent;
-  if (t) { await navigator.clipboard.writeText(t); document.getElementById("apiBuildMeta").innerHTML += ` <span class="pill ok">URLコピー</span>`; }
+  if (t) { await navigator.clipboard.writeText(t); panelToast("📋 URL をコピーしました"); }
 }
 async function apiCopyCurl() {
   const t = document.getElementById("apiBuildCurl").textContent;
-  if (t) { await navigator.clipboard.writeText(t); document.getElementById("apiBuildMeta").innerHTML += ` <span class="pill ok">curlコピー</span>`; }
+  if (t) { await navigator.clipboard.writeText(t); panelToast("📋 curl コマンドをコピーしました"); }
 }
 function apiOpenInBrowser() {
   const url = document.getElementById("apiBuildUrl").textContent;
@@ -1563,9 +1566,9 @@ async function copyDesignSource() {
   if (!lastDesign) return;
   try {
     await navigator.clipboard.writeText(lastDesign.source || "");
-    document.getElementById("designMeta").innerHTML += ` <span class="pill ok">コピー完了</span>`;
+    panelToast("📋 設計書ソースをコピーしました");
   } catch (e) {
-    document.getElementById("designMeta").innerHTML += ` <span class="pill err">コピー失敗: ${escape(String(e))}</span>`;
+    panelToast("⚠ コピー失敗: " + String(e));
   }
 }
 
