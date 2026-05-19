@@ -33,6 +33,8 @@ async function init() {
     initHeader();
     attachAllPickers();
     setupDesignPicker();
+    // 検索系入力欄に ✕ クリア共通化
+    ["inspectFilter", "exFieldFilter", "csFilter", "exObj", "descObj", "apiObj", "inspectRef"].forEach(attachClearButton);
   } catch (e) {
     console.error("[DevToolsNext] init error:", e);
     const orgInfo = document.getElementById("orgInfo");
@@ -78,6 +80,39 @@ function setupDesignPicker() {
   };
   sel.addEventListener("change", refresh);
   refresh();
+}
+
+// 入力欄に ✕ クリアボタンを後付けで追加する共通ヘルパー
+function attachClearButton(inputId) {
+  const input = document.getElementById(inputId);
+  if (!input || input.dataset.clearAttached === "true") return;
+  input.dataset.clearAttached = "true";
+  // input を wrap で囲んで relative にする
+  const wrap = document.createElement("span");
+  wrap.className = "input-clear-wrap";
+  input.parentNode.insertBefore(wrap, input);
+  wrap.appendChild(input);
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "input-clear-btn";
+  btn.textContent = "✕";
+  btn.title = "クリア";
+  btn.setAttribute("aria-label", "入力をクリア");
+  btn.addEventListener("click", () => {
+    input.value = "";
+    input.focus();
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  wrap.appendChild(btn);
+}
+
+// 共通 toast (panel/tool 環境用、popup の toast と同じスタイル)
+function panelToast(msg, opts = {}) {
+  const el = document.createElement("div");
+  el.className = "panel-toast";
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), opts.duration || 1800);
 }
 
 // textarea で Tab キーを 2 spaces に変換 (focus 移動を防ぐ)
@@ -832,8 +867,23 @@ async function exRunPreview() {
   preview.innerHTML = recordsTable(recs);
 }
 
+let exDownloadCancelFlag = false;
+let exDownloadActive = false;
+function cancelExDownload() {
+  if (exDownloadActive) {
+    exDownloadCancelFlag = true;
+    const progress = document.getElementById("exProgress");
+    if (progress) progress.innerHTML = `<span class="pill warn">⏸ キャンセル中...</span>`;
+  }
+}
+
 async function exDownloadAll(fmt) {
   if (!state.sid) return;
+  if (exDownloadActive) {
+    // 走行中なら 2 度目の押下でキャンセル
+    cancelExDownload();
+    return;
+  }
   exBuildSoql();
   const soql = document.getElementById("exSoql").value;
   if (!soql) return;
@@ -844,21 +894,30 @@ async function exDownloadAll(fmt) {
   const progress = document.getElementById("exProgress");
   let all = [];
   const t0 = performance.now();
-  progress.textContent = "0 件取得…";
+  exDownloadCancelFlag = false;
+  exDownloadActive = true;
+  progress.innerHTML = `<span class="pill">0 件取得…</span> <span class="meta">もう一度 ダウンロード を押すとキャンセル</span>`;
 
   const base = tooling ? `/services/data/v${state.apiVersion}/tooling/query/` : `/services/data/v${state.apiVersion}/query/`;
   let nextPath = `${base}?q=${encodeURIComponent(soql)}`;
   while (nextPath && all.length < cap) {
+    if (exDownloadCancelFlag) {
+      exDownloadActive = false;
+      progress.innerHTML = `<span class="pill warn">⏸ キャンセル済</span> ${all.length} 件取得した時点で停止`;
+      return;
+    }
     const r = await sfFetch({ host: state.host, sid: state.sid, path: nextPath });
     if (!r.ok) {
-      progress.innerHTML = `<span class="pill err">エラー HTTP ${r.status}</span>`;
+      exDownloadActive = false;
+      displayApiError(progress, r.status, r.data, "Export");
       return;
     }
     all = all.concat((r.data && r.data.records) || []);
-    progress.textContent = `${all.length} 件取得…`;
+    progress.innerHTML = `<span class="pill">${all.length} 件取得…</span> <span class="meta">もう一度 ダウンロード を押すとキャンセル</span>`;
     nextPath = r.data && r.data.nextRecordsUrl ? r.data.nextRecordsUrl : null;
   }
   if (all.length > cap) all = all.slice(0, cap);
+  exDownloadActive = false;
   const dt = Math.round(performance.now() - t0);
   progress.innerHTML = `<span class="pill ok">${all.length} 件取得完了</span> ${dt}ms / 出力中…`;
 

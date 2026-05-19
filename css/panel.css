@@ -245,6 +245,33 @@ textarea {
 /* ==== 共通 Picker モーダル ==== */
 body.picker-open { overflow: hidden; }
 
+/* ✕ クリアボタン共通化 */
+.input-clear-wrap {
+  position: relative; display: inline-flex; align-items: center;
+  flex: 1; min-width: 0;
+}
+.input-clear-wrap > input {
+  width: 100%; padding-right: 26px;
+}
+.input-clear-btn {
+  position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+  background: transparent; color: var(--fg-dim); border: none;
+  width: 18px; height: 18px; border-radius: 50%;
+  cursor: pointer; font-size: 11px; line-height: 1; padding: 0;
+}
+.input-clear-btn:hover { color: var(--err); background: rgba(255,107,107,0.1); }
+
+/* 共通 toast (panel/tool 環境) */
+.panel-toast {
+  position: fixed; right: 16px; bottom: 24px;
+  background: var(--accent); color: #fff;
+  padding: 8px 14px; border-radius: 6px; font-size: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  z-index: 99999;
+  animation: panelToastIn 0.15s ease-out;
+}
+@keyframes panelToastIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
 /* disabled ボタン統一スタイル */
 button:disabled, button[disabled] {
   opacity: 0.45;

@@ -4,6 +4,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.12.0 (2026-05-20 01:50)** — Export キャンセル + ✕ 共通化 + toast:
+  - **🐛 データエクスポート途中キャンセル**: `exDownloadAll` 走行中に再度「ダウンロード」ボタンを押すとフラグで中断 → 取得済み件数で出力中止。`<span class="pill warn">⏸ キャンセル済</span>` 表示
+  - **✨ ✕ クリアボタンを共通化**: `attachClearButton(inputId)` ヘルパーで Inspector フィルタ / エクスポート フィールド絞込 / 変更セット絞込 / オブジェクト入力 など主要入力欄に統一適用
+  - **✨ panel/tool 共通 toast**: `panelToast(msg)` ヘルパー + `.panel-toast` CSS で popup と同じ右下スタイル
+  - **✨ Excel format ヒント**: 設計書 format select に「⚠ 大量行は遅い」を併記
 - **v1.11.0 (2026-05-20 01:45)** — Picker UX + popup ヘルプ:
   - **🐛 exRunPreview にもレースガード追加** (`exPreviewRunId`)。データエクスポートのプレビューを連続クリックしても古い結果が混じらない
   - **✨ Picker 検索ボックスに ✕ クリアボタン**: テキスト入力の右側に絶対配置、クリックで即クリア+フォーカス戻し
