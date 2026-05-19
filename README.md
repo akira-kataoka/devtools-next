@@ -4,6 +4,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.25.0 (2026-05-20 02:55)** — th sticky + recordsToCsv 全列クォート統一:
+  - **✨ 全結果テーブルの th を完全 sticky 化**: `.grid th` / `.design-preview th` / `.result th` に `z-index: 2` 追加。**長スクロール時もヘッダ行が常時可視**、行を見失わない
+  - **🐛 recordsToCsv 全列クォート統一**: sf-api.js の SOQL/Login History 用 CSV エクスポートも全フィールド `"..."` 統一形式に変更。**4 種類すべての CSV エクスポート (Limits/Export/Inspector/SOQL+Login) でフォーマット整合**
 - **v1.24.0 (2026-05-20 02:50)** — ユーザー アバター + Picker ヘッダ tooltip:
   - **✨ popup loginAs ユーザー一覧にイニシャル円アバター**: 名前の頭 1〜2 文字、Id 末尾 6 文字を hash した HSL 色で**ユーザーごとに一意の色**。検索結果リストの視認性向上
   - **✨ Picker 列ヘッダに tooltip**: ヘッダ全体に「⏱ 最近選択 / ★ お気に入り / その他 順」、各列名にも個別 tooltip。**ソート規則がホバーで確認可能**

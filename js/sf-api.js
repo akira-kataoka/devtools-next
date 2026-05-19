@@ -250,22 +250,22 @@ export function lookupPrefix(idStr) {
   return KEY_PREFIX_MAP[prefix] || "Custom or Unknown";
 }
 
-/** CSV エクスポート（SOQL 結果 records 配列を想定） */
+/** CSV エクスポート（SOQL 結果 records 配列を想定）
+ *  全列をダブルクォートで囲む統一フォーマット (Limits/Export/Design 各 CSV と整合) */
 export function recordsToCsv(records) {
   if (!records || !records.length) return "";
   const cols = new Set();
   records.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
   const headers = Array.from(cols);
-  const esc = (v) => {
-    if (v == null) return "";
-    if (typeof v === "object") return `"${JSON.stringify(v).replace(/"/g, '""')}"`;
-    const s = String(v);
-    if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-    return s;
+  // 全列クォート: null/数値/オブジェクト も全部 "..." で囲む
+  const escAll = (v) => {
+    if (v == null) return `""`;
+    const s = typeof v === "object" ? JSON.stringify(v) : String(v);
+    return `"${s.replace(/"/g, '""')}"`;
   };
-  const lines = [headers.join(",")];
+  const lines = [headers.map(escAll).join(",")];
   for (const r of records) {
-    lines.push(headers.map((h) => esc(r[h])).join(","));
+    lines.push(headers.map((h) => escAll(r[h])).join(","));
   }
   return lines.join("\n");
 }

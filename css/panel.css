@@ -76,7 +76,7 @@ textarea {
 }
 .grid table { width: 100%; border-collapse: collapse; font-size: 11px; }
 .grid th, .grid td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
-.grid th { background: #112042; color: var(--accent); position: sticky; top: 0; }
+.grid th { background: #112042; color: var(--accent); position: sticky; top: 0; z-index: 2; }
 .grid tr:hover td { background: #112042; }
 .hint-actions { display: inline-flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
 .hint-link {
@@ -167,7 +167,7 @@ textarea {
 .design-preview h3 { font-size: 12px; }
 .design-preview table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 11px; }
 .design-preview th, .design-preview td { padding: 4px 6px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
-.design-preview th { background: #112042; color: var(--accent); }
+.design-preview th { background: #112042; color: var(--accent); position: sticky; top: 0; z-index: 2; }
 .design-preview code { background: #0a1224; padding: 1px 4px; border-radius: 3px; font: 11px ui-monospace, Consolas, monospace; color: #d6e0f5; }
 .design-preview pre { background: #0a1224; padding: 8px; border-radius: 5px; overflow: auto; font: 11px ui-monospace, Consolas, monospace; }
 .design-preview ul, .design-preview ol { padding-left: 20px; }
