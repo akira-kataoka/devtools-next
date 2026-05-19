@@ -289,7 +289,12 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }
       const sorted = sortItems(items.slice(), q);
       const filtered = sorted.filter((it) => !q || it.hay.includes(q)).slice(0, 300);
       if (selectedIdx >= filtered.length) selectedIdx = 0;
-      $count.textContent = `${filtered.length} / ${items.length} 件`;
+      // 内訳: 最近選択 + お気に入りの数を併記
+      const recentCount = items.filter((it) => recentSet.has(it.value)).length;
+      const favCount = items.filter((it) => favSet.has(it.value) && !recentSet.has(it.value)).length;
+      const breakdown = (recentCount || favCount)
+        ? ` <span style="color:var(--accent)">(⏱${recentCount} ★${favCount})</span>` : "";
+      $count.innerHTML = `${filtered.length} / ${items.length} 件${breakdown}`;
       $list.innerHTML = "";
       // ヘッダ
       const hdr = document.createElement("div");

@@ -1460,13 +1460,15 @@ function renderLimitsList() {
 
 function exportLimitsCsv() {
   if (!lastLimitsData) return;
-  const lines = ["項目,使用,残量,上限,使用率"];
+  // すべての列をダブルクォートで包む (Excel/Numbers/Google Sheets でロケール差や %/カンマ含む値を安全に)
+  const lines = [`"項目","使用","残量","上限","使用率"`];
   Object.entries(lastLimitsData).forEach(([k, v]) => {
     const max = (v && v.Max != null) ? v.Max : 0;
     const rem = (v && v.Remaining != null) ? v.Remaining : 0;
     const used = max - rem;
     const pct = max > 0 ? Math.round((used / max) * 100) : 0;
-    lines.push(`"${k}",${used},${rem},${max},${pct}%`);
+    const esc = (s) => `"${String(s).replace(/"/g, '""')}"`;
+    lines.push([k, used, rem, max, `${pct}%`].map(esc).join(","));
   });
   const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);

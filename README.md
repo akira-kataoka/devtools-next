@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.19.0 (2026-05-20 02:25)** — CSV 互換性 + Picker 内訳 + 再接続強調:
+  - **🐛 Limits CSV 出力で全列をダブルクォートで囲む**: ヘッダ含めて統一、内部の `"` は `""` エスケープ。**ロケール差 (カンマ区切り言語/タブ) や %/カンマ含む値でも Excel/Numbers/Google Sheets で安全に読込可能**
+  - **✨ Picker ヘッダに「⏱X ★Y」内訳表示**: 最近選択した件数 (⏱) と お気に入り件数 (★) を `count` メタに併記。アクセント色で視認性向上
+  - **✨ 再接続ボタンに ⟳ 絵文字**: tool.html / panel.html 両方の「再接続」ボタンを `⟳ 再接続` に。**何ができるボタンか視覚で即理解**できる
 - **v1.18.0 (2026-05-20 02:20)** — ChangeSet toast + Picker focus + whats-new 折りたたみ:
   - **✨ ChangeSet builder で追加/除外時に toast 通知**: 「➕ 追加: ApexClass:MyClass」「➖ 除外: …」を表示。複数選択時の進行状況が分かりやすく
   - **✨ Picker 閉じる時のフォーカス復元**: トリガボタンに元の focus を戻す。**キーボードユーザーがタブ移動を途中から再開できる** (a11y 向上)
