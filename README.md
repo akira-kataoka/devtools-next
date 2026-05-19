@@ -4,6 +4,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.35.0 (2026-05-20 03:45)** — 数値フォーマット + セルコピー:
+  - **✨ Inspector で数値型のロケール 3桁区切り**: `int/double/currency/percent` で `v.toLocaleString("ja-JP")` 適用 (例: `1234567` → `1,234,567`)、currency に `¥`、percent に `%` 単位、title 属性に raw 値併記
+  - **✨ 結果テーブルのセルをダブルクリックでコピー**: `td.cell-copyable` クラス + dblclick リスナー → `📋 コピー: <値先頭40字>...` toast、`cursor:copy` でカーソル明示
 - **v1.34.0 (2026-05-20 03:40)** — Inspector JSON コピー + Excel 列幅 + transition 短縮:
   - **✨ Inspector に「📋 JSON」コピーボタン追加**: 全項目を JSON 形式でクリップボードへ。`navigator.clipboard.writeText` + panelToast 通知。**ダウンロードせずに即ペースト可能**
   - **✨ design-docs Excel 列幅を可変化**: 1列目 (No 等) 60、長い見出し (>20 文字) 220、それ以外 180 px。**従来一律 120 から見出し長さに応じた自動調整に変更**

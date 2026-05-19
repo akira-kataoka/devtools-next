@@ -1378,7 +1378,11 @@ function renderInspectorFields() {
       valHtml = `<div class="fval null">(null)</div>`;
     } else if (typeof v === "boolean") {
       valHtml = `<div class="fval bool-${v ? "true" : "false"}">${v ? "✓ true" : "✗ false"}</div>`;
-    } else if (f.type === "reference" && typeof v === "string") {
+    } else if ((f.type === "int" || f.type === "double" || f.type === "currency" || f.type === "percent") && typeof v === "number") {
+      // 3桁区切り + 通貨/パーセントなどのヒント
+      const formatted = v.toLocaleString("ja-JP");
+      const unit = f.type === "currency" ? " ¥" : (f.type === "percent" ? " %" : "");
+      valHtml = `<div class="fval" title="raw: ${escape(String(v))}">${escape(formatted)}${escape(unit)}</div>`;
       // 参照先オブジェクト名を describe から取得 (KeyPrefix 逆引きに頼らない確実な方法)
       const refObj = (f.referenceTo || [])[0] || "";
       const refLabel = refObj ? `<span style="color:var(--fg-dim);font-size:9px;margin-left:6px">→ ${escape(refObj)}</span>` : "";
@@ -1900,8 +1904,21 @@ function recordsTable(records) {
   const headers = Array.from(cols);
   const head = `<tr>${headers.map((h) => `<th>${escape(h)}</th>`).join("")}</tr>`;
   const rows = records.map((r) =>
-    `<tr>${headers.map((h) => `<td>${escape(stringify(r[h]))}</td>`).join("")}</tr>`
+    `<tr>${headers.map((h) => {
+      const val = stringify(r[h]);
+      return `<td title="ダブルクリックでコピー" class="cell-copyable">${escape(val)}</td>`;
+    }).join("")}</tr>`
   ).join("");
+  // 結果を遅延でセル dblclick リスナーをバインド (innerHTML 挿入後の処理用 hint を data 属性で残す)
+  setTimeout(() => {
+    document.querySelectorAll("td.cell-copyable:not([data-copy-bound])").forEach((td) => {
+      td.dataset.copyBound = "true";
+      td.addEventListener("dblclick", () => {
+        const txt = td.textContent;
+        navigator.clipboard.writeText(txt).then(() => panelToast(`📋 コピー: ${txt.substring(0, 40)}${txt.length > 40 ? "…" : ""}`));
+      });
+    });
+  }, 0);
   return `<table>${head}${rows}</table>`;
 }
 function stringify(v) {

@@ -79,6 +79,8 @@ textarea {
   background: #0a1224; border: 1px solid var(--line); border-radius: 6px;
 }
 .grid table { width: 100%; border-collapse: collapse; font-size: 11px; }
+td.cell-copyable { cursor: copy; }
+td.cell-copyable:hover { color: var(--accent); }
 .grid th, .grid td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .grid th { background: #112042; color: var(--accent); position: sticky; top: 0; z-index: 2; }
 .grid tr:hover td { background: #112042; }
