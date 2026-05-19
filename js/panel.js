@@ -458,7 +458,7 @@ async function csListCandidates() {
   if (!state.sid) { document.getElementById("csCandidates").innerHTML = `<div class="meta">未接続</div>`; return; }
   const type = document.getElementById("csType").value;
   const root = document.getElementById("csCandidates");
-  root.innerHTML = `<div class="meta">取得中…</div>`;
+  root.innerHTML = `<div class="meta">⏳ 取得中…</div>`;
 
   // メタデータ型 → SOQL/エンドポイント のマッピング
   let soql = null, tooling = true, mapFn = (r) => ({ name: r.Name, label: r.Name });
@@ -794,7 +794,7 @@ async function exLoadFields() {
   if (!state.sid) { document.getElementById("exMeta").innerHTML = `<span class="pill err">未接続</span>`; return; }
   const obj = document.getElementById("exObj").value.trim();
   if (!obj) return;
-  document.getElementById("exMeta").textContent = "describe 取得中…";
+  document.getElementById("exMeta").textContent = "⏳ describe 取得中…";
 
   const r = await sfFetch({ host: state.host, sid: state.sid, path: `/services/data/v${state.apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
   if (!r.ok) {
@@ -1282,7 +1282,7 @@ async function doInspect(opts = {}) {
   }
   const myId = ++inspectRunId;
   const meta = document.getElementById("inspectMeta");
-  meta.textContent = `取得中… #${myId}`;
+  meta.textContent = `⏳ 取得中… #${myId}`;
 
   let objName = null, id = null;
   if (raw.includes(":")) {
@@ -1784,7 +1784,7 @@ async function doSoql() {
   const soql = document.getElementById("soqlText").value.trim();
   const tooling = document.getElementById("useTooling").checked;
   const meta = document.getElementById("soqlMeta");
-  meta.textContent = `実行中… #${myId}`;
+  meta.textContent = `⏳ 実行中… #${myId}`;
   const t0 = performance.now();
   const r = await runSoql({ host: state.host, sid: state.sid, soql, apiVersion: state.apiVersion, tooling });
   const dt = Math.round(performance.now() - t0);
@@ -1853,7 +1853,7 @@ async function doRest() {
   const meta = document.getElementById("restMeta");
   if (!path) return;
   const myId = ++restRunId;
-  meta.textContent = `送信中… #${myId}`;
+  meta.textContent = `📡 送信中… #${myId}`;
   const t0 = performance.now();
   const r = await sfFetch({ host: state.host, sid: state.sid, path, method, body: body || null });
   const dt = Math.round(performance.now() - t0);
@@ -2048,7 +2048,7 @@ async function doRunApex() {
   const out = document.getElementById("apexResult");
   if (!code.trim()) return;
   const myId = ++apexRunId;
-  meta.textContent = `実行中… #${myId}`;
+  meta.textContent = `⚡ 実行中… #${myId}`;
   out.textContent = "";
 
   const t0 = performance.now();
@@ -2137,7 +2137,7 @@ async function doFetchLoginHistory() {
   const limit = parseInt(document.getElementById("loginLimit").value, 10) || 50;
   const statusFilter = document.getElementById("loginStatus").value;
   const meta = document.getElementById("loginMeta");
-  meta.textContent = "取得中…";
+  meta.textContent = "⏳ 取得中…";
 
   let where = "";
   if (statusFilter === "Success") where = "WHERE Status = 'Success' ";

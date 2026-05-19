@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.37.0 (2026-05-20 03:55)** — 実行中表示の絵文字化 + Limits カード hover:
+  - **✨ 主要ハンドラの進行中メッセージに絵文字付与**: SOQL/Inspector/CS候補/describe/LoginHistory `⏳ 取得中…`、Apex `⚡ 実行中…`、REST `📡 送信中…` で **どの操作が走っているか一目で識別可能**
+  - **✨ Limits カードに hover エフェクト**: `transform: translateY(-1px) scale(1.02)` + `border-color: var(--accent)` + 軽い `box-shadow` で **上限値を眺めながらどのカードを見ているか視覚的に明確**
+  - **🧪 .design-preview code/pre の等幅フォント確認**: 既に `font: 11px ui-monospace, Consolas, monospace` で適用済 (panel.css:187-188) → コード/JSON サンプルが Markdown プレビューで正しく等幅表示される
 - **v1.36.0 (2026-05-20 03:50)** — 日付フォーマット + ローディング + Picker ホバー:
   - **✨ Inspector で date/datetime 型を整形表示**: ISO 文字列 (`2026-05-20T03:45:00.000+0000`) → date: `2026-05-20`、datetime: `2026-05-20 03:45` に整形。title 属性に raw 値併記
   - **✨ popup ローディング表示**: `setStatus("⏳ セッション取得中…")` で **⏳ 絵文字** 付き、待機中であることを明示
