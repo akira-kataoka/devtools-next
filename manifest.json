@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Salesforce DevTool",
-  "version": "0.8.0",
-  "description": "Salesforce 開発者向けユーティリティ拡張。SOQL/Apex 実行、レコードInspector、データエクスポート、API URLビルダー、変更セット/package.xml、Login as User、Login History、設計書20種、Limitsダッシュボード、自動アップデート。",
+  "name": "DevToolsNext",
+  "version": "0.9.0",
+  "description": "Salesforce 開発者向け次世代ユーティリティ拡張 (DevToolsNext)。SOQL/Apex 実行、レコードInspector、データエクスポート、API URLビルダー、変更セット/package.xml、Login as User、Login History、設計書20種、Limitsダッシュボード、自動アップデート。",
   "default_locale": "ja",
   "permissions": [
     "cookies",
@@ -31,7 +31,7 @@
     "type": "module"
   },
   "action": {
-    "default_title": "Salesforce DevTool",
+    "default_title": "DevToolsNext",
     "default_popup": "html/popup.html",
     "default_icon": {
       "16": "icons/icon16.png",

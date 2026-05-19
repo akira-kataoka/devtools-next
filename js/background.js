@@ -37,7 +37,7 @@ async function checkForReload() {
       await chrome.notifications.create("sfdt-update-" + Date.now(), {
         type: "basic",
         iconUrl: chrome.runtime.getURL("icons/icon128.png"),
-        title: "SF DevTool を自動更新",
+        title: "DevToolsNext を自動更新",
         message: `${knownVersion} → ${cur} に更新しました。Chrome に新バージョンが適用されました。`,
         priority: 1,
       });

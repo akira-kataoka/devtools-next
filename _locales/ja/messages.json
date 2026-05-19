@@ -1,10 +1,10 @@
 {
   "extensionName": {
-    "message": "Salesforce DevTool",
+    "message": "DevToolsNext",
     "description": "拡張機能名"
   },
   "extensionDescription": {
-    "message": "Salesforce 開発者向けユーティリティ拡張。SOQL 実行、レコードID解析、Setup ショートカット、API 探索、Session 取得、Apex 実行、Login History 閲覧など。",
+    "message": "Salesforce 開発者向け次世代ユーティリティ拡張 (DevToolsNext)。SOQL 実行、レコードID解析、Setup ショートカット、API 探索、Session 取得、Apex 実行、Login History 閲覧、設計書ジェネレータ、変更セット/package.xml、Inspector など。",
     "description": "拡張機能の説明"
   }
 }

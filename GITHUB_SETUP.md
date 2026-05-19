@@ -20,19 +20,19 @@ gh auth login
 
 ### 2. リモートリポジトリ作成 + 初回 push
 
-このディレクトリ (`sf-devtool-extension/`) で:
+このディレクトリ (`devtools-next/`) で:
 ```bash
-gh repo create sf-devtool-extension --public --source=. --remote=origin --push --description "Salesforce 開発者向け Chrome 拡張 (MV3): SOQL/Apex/Inspector/設計書20種/データエクスポート/API URLビルダー/変更セット/Limits ダッシュボード"
+gh repo create devtools-next --public --source=. --remote=origin --push --description "Salesforce 開発者向け Chrome 拡張 (MV3): SOQL/Apex/Inspector/設計書20種/データエクスポート/API URLビルダー/変更セット/Limits ダッシュボード"
 ```
 
 - **--public**: 公開 / **--private**: 非公開 にする場合は変更
-- 既存の同名リポジトリがある場合は `gh repo create akira/sf-devtool-extension --public ...` のように `<user>/<repo>` 形式で
+- 既存の同名リポジトリがある場合は `gh repo create akira/devtools-next --public ...` のように `<user>/<repo>` 形式で
 
 ### 3. 以降の自動 push
 
 サイクル完了時に Claude が以下を実行します（認証済の場合）:
 ```bash
-cd sf-devtool-extension
+cd devtools-next
 git add -A
 git commit -m "v0.X.Y: <変更内容>"
 git push origin main
@@ -41,7 +41,7 @@ git push origin main
 ## ローカル状態確認
 
 ```bash
-cd sf-devtool-extension
+cd devtools-next
 git log --oneline      # コミット履歴
 git remote -v          # リモート設定 (空なら未連携)
 git status             # ワーキングツリー

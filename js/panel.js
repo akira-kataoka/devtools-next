@@ -20,7 +20,7 @@ const state = {
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", init);
 } else {
-  init().catch((e) => console.error("[SF DevTool] panel init failed:", e));
+  init().catch((e) => console.error("[DevToolsNext] panel init failed:", e));
 }
 
 async function init() {
@@ -34,7 +34,7 @@ async function init() {
     attachAllPickers();
     setupDesignPicker();
   } catch (e) {
-    console.error("[SF DevTool] init error:", e);
+    console.error("[DevToolsNext] init error:", e);
     const orgInfo = document.getElementById("orgInfo");
     if (orgInfo) orgInfo.textContent = "初期化失敗: " + (e && e.message || e);
   }
@@ -595,7 +595,7 @@ async function csDownloadSfdxBundle() {
     sourceApiVersion: apiVer,
   }, null, 2);
 
-  const bundle = `# Salesforce DevTool が生成した SFDX バンドル
+  const bundle = `# DevToolsNext が生成した SFDX バンドル
 
 このバンドルには 3 ファイルが含まれます。コピペで手元の作業ディレクトリに作成してください。
 
