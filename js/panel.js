@@ -1373,7 +1373,8 @@ function renderInspectorFields() {
     } else if (f.type === "reference" && typeof v === "string") {
       // 参照先オブジェクト名を describe から取得 (KeyPrefix 逆引きに頼らない確実な方法)
       const refObj = (f.referenceTo || [])[0] || "";
-      valHtml = `<div class="fval ref" data-id="${escape(v)}" data-ref-obj="${escape(refObj)}" title="クリックで ${escape(refObj || "参照先")} レコードを開く">${escape(v)}</div>`;
+      const refLabel = refObj ? `<span style="color:var(--fg-dim);font-size:9px;margin-left:6px">→ ${escape(refObj)}</span>` : "";
+      valHtml = `<div class="fval ref" data-id="${escape(v)}" data-ref-obj="${escape(refObj)}" title="クリックで ${escape(refObj || "参照先")} レコードを開く">${escape(v)}${refLabel}</div>`;
     } else if (typeof v === "object") {
       valHtml = `<div class="fval">${escape(JSON.stringify(v))}</div>`;
     } else {

@@ -119,6 +119,8 @@ select { font-family: inherit; }
 .result th, .result td { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .result th { background: #112042; color: var(--accent); position: sticky; top: 0; z-index: 2; }
 .result tr:hover td { background: #112042; }
+.result table tr:nth-child(even) td { background: rgba(27,150,255,0.025); }
+.result table tr:nth-child(even):hover td { background: #112042; }
 
 .code {
   margin: 8px 0 0; max-height: 320px; overflow: auto;
