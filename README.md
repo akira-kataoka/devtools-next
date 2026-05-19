@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.6.0 (2026-05-20 01:20)** — UI 整理 + アクセシビリティ:
+  - **✨ popup タブ 5→4 削減**: 「ID 解析」を単独タブから「ホーム」内のカード (🔢 Salesforce ID 解析) に統合。ID 入力 → 解析・レコードを開く はホームから直接利用可能
+  - **♿ aria-label 追加 (主要要素)**: tabs にロール / 各タブ・主要ボタン (Login as 検索、ID 解析、再接続、API バージョン選択) に aria-label / orgInfo に role="status" aria-live="polite" / 結果領域に role="region"
+  - **⌨️ tool.html ヘッダにキーボードショートカットヒント**: `Ctrl+Enter` 実行 / `Esc` 閉じる / `↑↓` Picker 移動 を kbd 要素で常時表示 (700px 以下では非表示)
 - **v1.5.0 (2026-05-20 01:15)** — エラー対処リンク化 + ER 図エスケープ:
   - **✨ エラー hint をリンク化**: 401 → 「セッション管理を開く」「Login History (内部)」/ 403 → 「プロファイル一覧」「権限セット一覧」「OWD 設定」/ 404 → 「オブジェクトマネージャ」/ 400 → 「Describe ビュー (内部)」/ 429 → 「Limits (内部)」/ 500 → 「Status Trust ページ」。クリックで Setup の該当ページに直接遷移 (内部リンクは tool/panel 内のビュー切替)
   - **🐛 Mermaid ER 図エスケープ強化**: `mid()` で識別子を `[^A-Za-z0-9_]` で sanitize、`mlabel()` で backslash/改行/制御文字を除去。label 内のダブルクォートは ' に置換 (既存だが整理)

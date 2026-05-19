@@ -20,12 +20,11 @@
     </div>
   </header>
 
-  <nav class="tabs">
-    <button class="tab active" data-tab="home">ホーム</button>
-    <button class="tab" data-tab="soql">SOQL</button>
-    <button class="tab" data-tab="id">ID解析</button>
-    <button class="tab" data-tab="api">API</button>
-    <button class="tab" data-tab="links">便利リンク</button>
+  <nav class="tabs" aria-label="メイン タブ">
+    <button class="tab active" data-tab="home" aria-label="ホーム + ID 解析">ホーム</button>
+    <button class="tab" data-tab="soql" aria-label="SOQL クエリ">SOQL</button>
+    <button class="tab" data-tab="api" aria-label="REST API 探索">API</button>
+    <button class="tab" data-tab="links" aria-label="便利リンク">便利リンク</button>
   </nav>
 
   <main class="panel" id="panel-home">
@@ -76,10 +75,20 @@
     <section class="card">
       <h2>🔐 他ユーザーとしてログイン (Login as User)</h2>
       <div class="row">
-        <input id="loginAsSearch" placeholder="名前 / Username / Email で検索 (Active のみ)" />
-        <button id="btnLoginAsSearch" class="primary">検索</button>
+        <input id="loginAsSearch" placeholder="名前 / Username / Email で検索 (Active のみ)" aria-label="ユーザー検索キーワード" />
+        <button id="btnLoginAsSearch" class="primary" aria-label="ユーザーを検索">検索</button>
       </div>
-      <div id="loginAsResult" class="login-as-result"></div>
+      <div id="loginAsResult" class="login-as-result" role="list"></div>
+    </section>
+
+    <section class="card">
+      <h2>🔢 Salesforce ID 解析</h2>
+      <input type="text" id="idInput" placeholder="15桁 / 18桁 の Salesforce ID" aria-label="Salesforce ID 入力" />
+      <div class="row">
+        <button id="btnParseId" class="primary" aria-label="ID を解析">解析</button>
+        <button id="btnOpenId" aria-label="ID のレコードを開く">レコードを開く</button>
+      </div>
+      <div id="idResult" class="result" role="region" aria-label="ID 解析結果"></div>
     </section>
   </main>
 
@@ -99,18 +108,6 @@
     <section class="card">
       <h2>履歴 (最新10件)</h2>
       <div id="soqlHistory" class="history"></div>
-    </section>
-  </main>
-
-  <main class="panel hidden" id="panel-id">
-    <section class="card">
-      <h2>Salesforce ID 解析</h2>
-      <input type="text" id="idInput" placeholder="15桁 / 18桁 の Salesforce ID" />
-      <div class="row">
-        <button id="btnParseId" class="primary">解析</button>
-        <button id="btnOpenId">レコードを開く</button>
-      </div>
-      <div id="idResult" class="result"></div>
     </section>
   </main>
 

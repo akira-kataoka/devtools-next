@@ -43,18 +43,31 @@
       .hdr .brand { font-size: 12px; }
       .main { padding: 8px; }
       .toolbar { flex-wrap: wrap; }
+      .kbd-hint { display: none; }
+    }
+    .kbd-hint {
+      font-size: 10px; color: var(--fg-dim);
+      padding: 3px 8px; border: 1px solid var(--line); border-radius: 4px;
+      background: rgba(27,150,255,0.05);
+    }
+    .kbd-hint kbd {
+      background: var(--bg3); color: var(--fg); border: 1px solid var(--line);
+      padding: 0 4px; border-radius: 3px; font-family: ui-monospace, Consolas, monospace; font-size: 9px;
     }
   </style>
 </head>
 <body>
   <header class="hdr">
     <span class="brand">🛠️ DevToolsNext</span>
-    <span id="orgInfo" class="org">未接続</span>
+    <span id="orgInfo" class="org" role="status" aria-live="polite">未接続</span>
     <span class="grow"></span>
-    <select id="apiVer">
+    <span class="kbd-hint" title="主要なキーボードショートカット">
+      <kbd>Ctrl+Enter</kbd> 実行 / <kbd>Esc</kbd> 閉じる / <kbd>↑↓</kbd> Picker 移動
+    </span>
+    <select id="apiVer" aria-label="Salesforce API バージョン">
       <option>62.0</option><option>61.0</option><option>60.0</option>
     </select>
-    <button id="btnReconnect">再接続</button>
+    <button id="btnReconnect" aria-label="Salesforce に再接続">再接続</button>
   </header>
 
   <div class="cols">
