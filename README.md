@@ -4,6 +4,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.5.0 (2026-05-20 01:15)** — エラー対処リンク化 + ER 図エスケープ:
+  - **✨ エラー hint をリンク化**: 401 → 「セッション管理を開く」「Login History (内部)」/ 403 → 「プロファイル一覧」「権限セット一覧」「OWD 設定」/ 404 → 「オブジェクトマネージャ」/ 400 → 「Describe ビュー (内部)」/ 429 → 「Limits (内部)」/ 500 → 「Status Trust ページ」。クリックで Setup の該当ページに直接遷移 (内部リンクは tool/panel 内のビュー切替)
+  - **🐛 Mermaid ER 図エスケープ強化**: `mid()` で識別子を `[^A-Za-z0-9_]` で sanitize、`mlabel()` で backslash/改行/制御文字を除去。label 内のダブルクォートは ' に置換 (既存だが整理)
 - **v1.4.0 (2026-05-20 01:10)** — Inspector 信頼性 + ナビ視覚:
   - **🐛 Inspector reference クリック修正**: 参照先オブジェクト名を `describe.fields[].referenceTo[0]` から取得して `<Object>:<Id>` 形式で渡すように変更。KeyPrefix 逆引きに頼らず、**カスタムオブジェクトでも確実に動作**
   - **✨ ナビ フラッシュアニメーション**: `@keyframes navFlash` 追加。ビュー切替時に対象ボタンが 0.45 秒で青色フラッシュ → 「最近開いたビュー」リスト経由でも視覚フィードバック明確

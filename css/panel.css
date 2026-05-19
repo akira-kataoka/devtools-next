@@ -69,6 +69,18 @@ textarea {
 .grid th, .grid td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .grid th { background: #112042; color: var(--accent); position: sticky; top: 0; }
 .grid tr:hover td { background: #112042; }
+.hint-actions { display: inline-flex; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
+.hint-link {
+  background: rgba(27,150,255,0.15);
+  color: var(--accent);
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  text-decoration: none;
+  border: 1px solid var(--line);
+}
+.hint-link:hover { background: rgba(27,150,255,0.3); border-color: var(--accent); }
+
 .pill { display: inline-block; padding: 1px 8px; border-radius: 10px; background: var(--bg3); color: var(--fg-dim); font-size: 10px; }
 .pill.ok { color: var(--ok); }
 .pill.err { color: var(--err); }

@@ -390,27 +390,35 @@ async function buildErDiagram({ host, sid, apiVersion, obj }) {
   const lines = ["erDiagram"];
   const seen = new Set([d.name]);
 
+  // Mermaid ER 図用エスケープヘルパー
+  const mid = (s) => String(s || "").replace(/[^A-Za-z0-9_]/g, "_"); // 識別子: 英数字+_
+  const mlabel = (s) => String(s || "")
+    .replace(/\\/g, "")          // backslash 除去
+    .replace(/"/g, "'")          // " → ' (mermaid label は " で囲むため)
+    .replace(/\r?\n/g, " ")      // 改行 → 空白
+    .replace(/[\x00-\x1F]/g, ""); // 制御文字除去
+
   // 親方向 (reference 項目)
   const refs = (d.fields || []).filter((f) => f.type === "reference" && (f.referenceTo || []).length);
   refs.forEach((f) => {
     (f.referenceTo || []).forEach((to) => {
-      lines.push(`    ${d.name} }o--|| ${to} : "${f.name}"`);
+      lines.push(`    ${mid(d.name)} }o--|| ${mid(to)} : "${mlabel(f.name)}"`);
       seen.add(to);
     });
   });
   // 子方向 (childRelationships)
   (d.childRelationships || []).slice(0, 30).forEach((c) => {
     if (!c.childSObject) return;
-    lines.push(`    ${d.name} ||--o{ ${c.childSObject} : "${c.field}"`);
+    lines.push(`    ${mid(d.name)} ||--o{ ${mid(c.childSObject)} : "${mlabel(c.field)}"`);
     seen.add(c.childSObject);
   });
 
   // 各エンティティに API 名表示用の空ブロック
   Array.from(seen).forEach((name) => {
-    lines.push(`    ${name} {`);
+    lines.push(`    ${mid(name)} {`);
     if (name === d.name) {
       (d.fields || []).slice(0, 8).forEach((f) => {
-        lines.push(`        ${sanitizeType(f.type)} ${f.name} "${f.label.replace(/"/g, "'")}"`);
+        lines.push(`        ${sanitizeType(f.type)} ${mid(f.name)} "${mlabel(f.label)}"`);
       });
     }
     lines.push(`    }`);

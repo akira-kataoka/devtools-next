@@ -1690,24 +1690,89 @@ function formatError(d) {
 function displayApiError(elem, status, data, ctx = "") {
   if (!elem) return;
   const detail = formatError(data);
-  let hint = "";
+  // hint: { text, links: [{label, path}] } 形式で「対処方法 + Setup へのショートカット」
+  let hint = null;
   if (status === 401) {
-    hint = "Salesforce にログインし直してから popup の ⟳ で再接続してください。Lightning ドメインの sid は REST に使えないことがあります。";
+    hint = {
+      text: "Salesforce にログインし直してから popup の ⟳ で再接続してください。Lightning ドメインの sid は REST に使えないことがあります。",
+      links: [
+        { label: "セッション管理を開く", path: "/lightning/setup/SecuritySession/home" },
+        { label: "Login History", action: "navView", view: "login" },
+      ],
+    };
   } else if (status === 403) {
-    hint = "現在のユーザーに権限がありません。プロファイルか権限セットで対象オブジェクトのアクセスを確認してください。";
+    hint = {
+      text: "現在のユーザーに権限がありません。プロファイル/権限セット または OWD で対象オブジェクトのアクセスを確認してください。",
+      links: [
+        { label: "プロファイル一覧", path: "/lightning/setup/EnhancedProfiles/home" },
+        { label: "権限セット一覧", path: "/lightning/setup/PermSets/home" },
+        { label: "OWD 設定", path: "/lightning/setup/SecuritySharing/home" },
+      ],
+    };
   } else if (status === 404) {
-    hint = "指定した名前 / Id が存在しません。タイプミスがないか確認してください。";
+    hint = {
+      text: "指定した名前 / Id が存在しません。タイプミスがないか、🔍 候補リストから選択してください。",
+      links: [
+        { label: "オブジェクトマネージャ", path: "/lightning/setup/ObjectManager/home" },
+      ],
+    };
   } else if (status === 400) {
-    hint = "リクエストが不正です。SOQL の構文、フィールド名、参照可能性を確認してください。";
+    hint = {
+      text: "リクエストが不正です。SOQL の構文、フィールド名、参照可能性を確認してください。Describe ビューで対象オブジェクトの項目を確認可能。",
+      links: [
+        { label: "Describe ビューを開く", action: "navView", view: "describe" },
+      ],
+    };
   } else if (status === 429) {
-    hint = "API 上限に達しました。Limits ビューで現状を確認してください。";
+    hint = {
+      text: "API 上限に達しました。Limits ビューで現状を確認してください。",
+      links: [
+        { label: "Limits ダッシュボード", action: "navView", view: "limits" },
+      ],
+    };
   } else if (status === 500 || status === 503) {
-    hint = "Salesforce サーバ側の問題です。少し待って再試行してください。";
+    hint = {
+      text: "Salesforce サーバ側の問題です。少し待って再試行してください。",
+      links: [
+        { label: "Status Trust ページ (外部)", url: "https://status.salesforce.com/" },
+      ],
+    };
+  }
+
+  // hint をクリック可能な HTML に変換
+  let hintHtml = "";
+  if (hint) {
+    const linkButtons = (hint.links || []).map((l, i) => {
+      return `<a class="hint-link" data-i="${i}" href="#">${escape(l.label)} →</a>`;
+    }).join(" ");
+    hintHtml = `<br/><span class="meta" style="color:var(--accent)">💡 ${escape(hint.text)}</span>` +
+      (linkButtons ? `<br/><span class="hint-actions">${linkButtons}</span>` : "");
   }
   elem.innerHTML =
     `<span class="pill err">⚠ HTTP ${status}${ctx ? " (" + escape(ctx) + ")" : ""}</span> ` +
     `<span class="meta">${escape(detail).substring(0, 300)}</span>` +
-    (hint ? `<br/><span class="meta" style="color:var(--accent)">💡 ${escape(hint)}</span>` : "");
+    hintHtml;
+
+  // hint links のクリックハンドラを後付け
+  if (hint && hint.links) {
+    elem.querySelectorAll(".hint-link").forEach((a) => {
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        const idx = parseInt(a.dataset.i, 10);
+        const link = hint.links[idx];
+        if (!link) return;
+        if (link.action === "navView" && link.view) {
+          // 内部ビュー切替
+          if (typeof switchToView === "function") switchToView(link.view);
+        } else if (link.url) {
+          chrome.tabs.create({ url: link.url });
+        } else if (link.path && state.host) {
+          const lhost = state.host.endsWith(".lightning.force.com") ? state.host : state.host.replace(/\.my\.salesforce\.com$/, ".lightning.force.com");
+          chrome.tabs.create({ url: `https://${lhost}${link.path}` });
+        }
+      });
+    });
+  }
 }
 
 // ====== Apex 実行 (Tooling executeAnonymous) ======

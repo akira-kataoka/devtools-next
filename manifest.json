@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DevToolsNext",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Salesforce 開発者向け次世代ユーティリティ拡張 (DevToolsNext)。SOQL/Apex 実行、レコードInspector、データエクスポート、API URLビルダー、変更セット/package.xml、Login as User、Login History、設計書20種、Limitsダッシュボード、自動アップデート。",
   "default_locale": "ja",
   "permissions": [
