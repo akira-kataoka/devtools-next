@@ -89,6 +89,7 @@ textarea {
 td.cell-copyable { cursor: copy; }
 td.cell-copyable:hover { color: var(--accent); }
 .grid th, .grid td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.grid td { max-width: 400px; max-height: 80px; overflow: auto; word-break: break-word; }
 .grid th { background: #112042; color: var(--accent); position: sticky; top: 0; z-index: 2; }
 .grid tr:hover td { background: #112042; }
 .grid tbody tr:nth-child(even) td,
@@ -368,7 +369,11 @@ body.picker-open { overflow: hidden; }
   box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   z-index: 99999;
   animation: panelToastIn 0.15s ease-out;
+  border-left: 4px solid rgba(255,255,255,0.4);
 }
+.panel-toast.ok { background: #14532d; border-left-color: var(--ok); }
+.panel-toast.err { background: #4a1414; border-left-color: var(--err); }
+.panel-toast.warn { background: #4d3308; border-left-color: var(--warn); }
 @keyframes panelToastIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Export 進捗バー */

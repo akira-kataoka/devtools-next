@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.44.0 (2026-05-20 04:30)** — .grid td 列幅制限 + Toast 色分け:
+  - **✨ `.grid td` に `max-width: 400px / max-height: 80px / overflow: auto`**: 巨大 description フィールドや長い JSON で 1 セルだけが幅 1000px+ に膨らみ他列が見えない問題を解消。**セル内スクロールで内容は完全保持**
+  - **✨ panelToast({kind:"ok"|"err"|"warn"}) 色分け**: 既定 accent 青 + `.ok` 深緑/`.err` 深赤/`.warn` 深橙 background + アクセント border-left。**コピー成功 / エラー / 警告が一目で識別**
+  - **🧪 popup `#statusMsg` の `white-space: pre-line` 確認**: 既存 popup.css:164 で適用済 → 非SFタブの複数行警告メッセージが正常表示される (修正不要)
 - **v1.43.0 (2026-05-20 04:25)** — popup/describe/login ヒント + panelToast replace:
   - **✨ popup .result:empty::before**: `📊 SOQL 未実行 / 上にクエリを入力して「実行」をクリック` で popup 起動直後の空白解消
   - **✨ #describeResult:empty::before** (`🔍 describe 未取得`) + **#loginResult:empty::before** (`👤 Login History 未取得`) でガイド追加

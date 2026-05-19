@@ -108,10 +108,11 @@ function attachClearButton(inputId) {
 
 // 共通 toast (panel/tool 環境用、popup の toast と同じスタイル)
 // 連続クリックで stack されないよう既存 toast を replace
+// opts.kind = "ok" | "err" | "warn" でカラーリング (default: accent)
 function panelToast(msg, opts = {}) {
   document.querySelectorAll(".panel-toast").forEach((t) => t.remove());
   const el = document.createElement("div");
-  el.className = "panel-toast";
+  el.className = "panel-toast" + (opts.kind ? " " + opts.kind : "");
   el.textContent = msg;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), opts.duration || 1800);
