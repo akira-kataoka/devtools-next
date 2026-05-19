@@ -10,9 +10,40 @@
     html, body { height: 100vh; }
     .hdr { padding: 8px 16px; }
     .hdr .brand { font-size: 14px; }
-    .side { width: 220px; }
+    .side { width: 220px; transition: width 0.2s; }
     .nav-btn { font-size: 12px; padding: 9px 12px; }
     .main { padding: 16px; }
+
+    /* レスポンシブ: 横幅 1000px 未満でサイドバーを 60px に折りたたみ (アイコンのみ表示) */
+    @media (max-width: 1000px) {
+      .side { width: 60px; overflow: hidden; }
+      .nav-btn { font-size: 0; padding: 12px 8px; text-align: center; }
+      .nav-btn::first-letter { font-size: 16px; }
+      /* 絵文字を最初に持つボタンはそれだけ見える */
+      .nav-btn[data-view="inspector"]::before { content: "🔍"; font-size: 16px; }
+      .nav-btn[data-view="dataexport"]::before { content: "📥"; font-size: 16px; }
+      .nav-btn[data-view="apex"]::before { content: "🟧"; font-size: 16px; }
+      .nav-btn[data-view="apiurl"]::before { content: "🔗"; font-size: 16px; }
+      .nav-btn[data-view="rest"]::before { content: "🌐"; font-size: 16px; }
+      .nav-btn[data-view="describe"]::before { content: "📖"; font-size: 16px; }
+      .nav-btn[data-view="limits"]::before { content: "📊"; font-size: 16px; }
+      .nav-btn[data-view="logs"]::before { content: "📜"; font-size: 16px; }
+      .nav-btn[data-view="login"]::before { content: "🔐"; font-size: 16px; }
+      .nav-btn[data-view="metadata"]::before { content: "📦"; font-size: 16px; }
+      .nav-btn[data-view="changeset"]::before { content: "🔧"; font-size: 16px; }
+      .nav-btn[data-view="design"]::before { content: "📋"; font-size: 16px; }
+      .nav-btn[data-view="soql"]::before { content: "Q"; font-size: 14px; font-weight: 700; }
+      .nav-sep { font-size: 9px; padding: 8px 4px 2px; text-align: center; }
+      .side:hover { width: 220px; }
+      .side:hover .nav-btn { font-size: 12px; text-align: left; padding: 9px 12px; }
+      .side:hover .nav-btn::before { content: ""; }
+      .side:hover .nav-sep { font-size: 11px; text-align: left; padding: 12px 10px 4px; }
+    }
+    @media (max-width: 700px) {
+      .hdr .brand { font-size: 12px; }
+      .main { padding: 8px; }
+      .toolbar { flex-wrap: wrap; }
+    }
   </style>
 </head>
 <body>

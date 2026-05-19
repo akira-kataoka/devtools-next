@@ -4,6 +4,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.1.0 (2026-05-20 00:55)** — 洗練継続:
+  - **🐛 Org 切替時の Picker キャッシュ invalidate**: `panel.js reconnect()` で前回 OrgId と比較し、変わっていれば `invalidatePickerCache()` を呼んでキャッシュ全消去
+  - **📱 tool.html レスポンシブ対応**: 横幅 < 1000px でサイドバーが 60px のアイコン専用バーに自動折りたたみ、ホバー or タップで展開。横幅 < 700px ではヘッダのブランド名も縮小、ツールバーが折り返し
 - **v1.0.0 (2026-05-20 00:45)** — 1.0 メジャー (洗練成熟):
   - **🐛 エラー表示統一**: panel.js の 8 関数 (doSoql/doDescribe/doRest/doMetadataList/doFetchLogs/doRunApex/doFetchLoginHistory/exRunPreview) を `displayApiError` 共通ヘルパーに統一。HTTP 401/403/404/400 に対し「⚠ HTTP XXX + 詳細 + 💡 対処方法」フォーマットで表示
   - **✨ Picker お気に入り**: sobject 選択時に Account/Contact/Opportunity/Lead/Case/User/Task/Event/Campaign/Product2 を上部固定 (★ バッジ)

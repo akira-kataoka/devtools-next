@@ -7,6 +7,13 @@ import { sfFetch, runSoql } from "./sf-api.js";
 
 const cache = new Map(); // key=kind|host|extraKey, value=items[]
 
+// Org 切り替え時にキャッシュ全消去 (panel.js の reconnect から呼ぶ)
+export function invalidatePickerCache(reason = "") {
+  if (cache.size === 0) return;
+  console.log(`[DevToolsNext] Picker cache cleared (${cache.size} entries)${reason ? ": " + reason : ""}`);
+  cache.clear();
+}
+
 // お気に入り (kind 別の固定上部表示候補)
 const FAVORITES = {
   sobject: ["Account", "Contact", "Opportunity", "Lead", "Case", "User", "Task", "Event", "Campaign", "Product2"],

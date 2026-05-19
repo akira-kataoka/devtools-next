@@ -4,7 +4,7 @@ import {
   runSoql, sfFetch, recordsToCsv,
 } from "./sf-api.js";
 import { generateDesign, markdownToHtml } from "./design-docs.js";
-import { showPicker } from "./picker.js";
+import { showPicker, invalidatePickerCache } from "./picker.js";
 
 const state = {
   host: null,
@@ -1507,8 +1507,13 @@ async function reconnect() {
     document.getElementById("orgInfo").textContent = "sid 取得失敗";
     return;
   }
+  const prevOrgId = state.orgId;
   state.sid = session.sid;
   state.orgId = parseOrgIdFromSid(state.sid);
+  // Org が変わった場合は Picker キャッシュを無効化
+  if (prevOrgId && prevOrgId !== state.orgId) {
+    invalidatePickerCache(`Org change ${prevOrgId} → ${state.orgId}`);
+  }
   document.getElementById("orgInfo").textContent = `Org: ${state.orgId} @ ${state.apiHost}`;
 }
 
