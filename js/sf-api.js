@@ -175,24 +175,34 @@ export async function getUserInfo({ host, sid, apiVersion = "62.0" }) {
   // 1st: Chatter REST (sid Cookie ベースでも認証通る)
   const r1 = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/chatter/users/me` });
   if (r1.ok && r1.data && r1.data.id) {
+    // displayName が null の場合に firstName/lastName から組み立てる時、undefined を含まないようガード
+    const fn = r1.data.firstName || "";
+    const ln = r1.data.lastName || "";
+    const fallbackName = (fn + " " + ln).trim();
     return {
       ok: true, status: 200,
       data: {
         user_id: r1.data.id,
         preferred_username: r1.data.username || "",
         email: r1.data.email || "",
-        name: r1.data.displayName || (r1.data.firstName + " " + r1.data.lastName).trim(),
+        name: r1.data.displayName || fallbackName || r1.data.username || r1.data.id,
         organization_id: r1.data.companyName || "",
         via: "chatter",
       },
     };
   }
-  // 2nd: SOQL fallback ─ 自分の Id を取れなくても name は引けない。代わりに OAuth try
+  // 2nd: OAuth userinfo (Connected App の access_token なら成功)
   const r2 = await sfFetch({ host, sid, path: `/services/oauth2/userinfo` });
-  if (r2.ok) {
+  if (r2.ok && r2.data) {
     return { ok: true, status: 200, data: { ...r2.data, via: "oauth2" } };
   }
-  return { ok: false, status: r1.status, data: r1.data, error: "userinfo unavailable" };
+  // 3rd: 完全失敗時は 2 つのエラー情報をマージして返す
+  return {
+    ok: false,
+    status: r1.status,
+    data: r1.data,
+    error: `userinfo unavailable: chatter=${r1.status}, oauth2=${r2.status}`,
+  };
 }
 
 /** /limits */
