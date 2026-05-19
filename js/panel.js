@@ -193,11 +193,18 @@ async function renderRecentNav() {
 
 function switchToView(v) {
   document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
-  document.querySelectorAll('.nav-btn[data-view="' + v + '"]').forEach((b) => b.classList.add("active"));
+  const matched = document.querySelectorAll('.nav-btn[data-view="' + v + '"]');
+  matched.forEach((b) => {
+    b.classList.add("active");
+    // フラッシュアニメ: 既存クラスをトグルしてリトリガ
+    b.classList.remove("flash");
+    void b.offsetWidth; // reflow で animation 再起動
+    b.classList.add("flash");
+  });
   document.querySelectorAll(".view").forEach((p) => {
     p.classList.toggle("hidden", p.dataset.view !== v);
   });
-  // ラベルを記録
+  // ラベルを記録 (recent ボタンからの遷移時は元のメインボタンを基準に)
   const btn = document.querySelector('.nav-btn[data-view="' + v + '"]:not(.recent)');
   if (btn) pushRecentView(v, btn.textContent.trim());
 }
@@ -1192,7 +1199,9 @@ function renderInspectorFields() {
     } else if (typeof v === "boolean") {
       valHtml = `<div class="fval bool-${v ? "true" : "false"}">${v ? "✓ true" : "✗ false"}</div>`;
     } else if (f.type === "reference" && typeof v === "string") {
-      valHtml = `<div class="fval ref" data-id="${escape(v)}" title="クリックでこの参照先を開く">${escape(v)}</div>`;
+      // 参照先オブジェクト名を describe から取得 (KeyPrefix 逆引きに頼らない確実な方法)
+      const refObj = (f.referenceTo || [])[0] || "";
+      valHtml = `<div class="fval ref" data-id="${escape(v)}" data-ref-obj="${escape(refObj)}" title="クリックで ${escape(refObj || "参照先")} レコードを開く">${escape(v)}</div>`;
     } else if (typeof v === "object") {
       valHtml = `<div class="fval">${escape(JSON.stringify(v))}</div>`;
     } else {
@@ -1219,11 +1228,13 @@ function renderInspectorFields() {
   if (!shown) html.push(`<div class="meta" style="padding:12px;text-align:center">該当フィールドなし (フィルタ条件を変更してください)</div>`);
   root.innerHTML = html.join("");
 
-  // reference クリックハンドラ
+  // reference クリックハンドラ — describe で取得した参照先オブジェクト名を確実に使う
   root.querySelectorAll(".fval.ref").forEach((el) => {
     el.addEventListener("click", () => {
       const id = el.dataset.id;
-      document.getElementById("inspectRef").value = id;
+      const refObj = el.dataset.refObj || "";
+      // refObj が分かっていれば <Object>:<Id> 形式で確実に渡す。空の場合は ID 単独 → doInspect が KeyPrefix 逆引き
+      document.getElementById("inspectRef").value = refObj ? `${refObj}:${id}` : id;
       doInspect();
     });
   });

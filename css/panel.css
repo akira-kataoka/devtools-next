@@ -92,9 +92,20 @@ textarea {
   font-size: 11px;
   color: var(--fg-dim);
   font-style: italic;
+  transition: background 0.15s, color 0.15s;
 }
 .nav-btn.recent:hover { color: var(--accent); }
 #nav-recent-section { border-bottom: 1px dashed var(--line); padding-bottom: 8px; margin-bottom: 4px; }
+
+/* クリック時のフラッシュフィードバック */
+@keyframes navFlash {
+  0%   { background: rgba(27, 150, 255, 0.4); transform: scale(1); }
+  40%  { background: rgba(27, 150, 255, 0.2); }
+  100% { background: rgba(27, 150, 255, 0);   transform: scale(1); }
+}
+.nav-btn.flash {
+  animation: navFlash 0.45s ease-out;
+}
 
 .design-split { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; min-height: 0; }
 .design-pane { display: flex; flex-direction: column; min-height: 200px; }

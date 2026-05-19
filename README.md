@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.4.0 (2026-05-20 01:10)** — Inspector 信頼性 + ナビ視覚:
+  - **🐛 Inspector reference クリック修正**: 参照先オブジェクト名を `describe.fields[].referenceTo[0]` から取得して `<Object>:<Id>` 形式で渡すように変更。KeyPrefix 逆引きに頼らず、**カスタムオブジェクトでも確実に動作**
+  - **✨ ナビ フラッシュアニメーション**: `@keyframes navFlash` 追加。ビュー切替時に対象ボタンが 0.45 秒で青色フラッシュ → 「最近開いたビュー」リスト経由でも視覚フィードバック明確
+  - **🧪 data-view 13 個 panel.js 整合性確認**: tool.html / panel.html / panel.js handler の対応関係チェック完了
 - **v1.3.0 (2026-05-20 01:05)** — エラー統一完了 + 進捗展開:
   - **🐛 残り throw を完全統一**: design-docs.js の 13 箇所の `throw new Error` を `apiError(ctx, response)` / `requireInput(value, hint)` / `HTTP 404` プレフィックス付き not-found に統一。20+ 箇所の `throw new Error` が完全に panel.js `displayApiError` の HTTP 検出と互換に
   - **✨ progressCallback 展開**: profileDetail (PermissionSet 検索中) / objectPermMatrix (ObjectPermissions 取得中) / flsReport (FieldPermissions 取得中) / fieldPermMatrix にも進捗表示
