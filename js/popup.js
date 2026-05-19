@@ -67,7 +67,7 @@ function bindEvents() {
   const btnUpd = document.getElementById("btnCheckUpdate");
   if (btnUpd) {
     btnUpd.addEventListener("click", async () => {
-      toast("⏳ アップデート確認中…");
+      toast("⏳ アップデート確認中…", { kind: "loading" });
       chrome.runtime.sendMessage({ type: "sfdt:checkUpdate" }, (res) => {
         if (res && res.ok) toast(`v${res.version} を確認しました (新版があれば自動更新)`, { kind: "ok" });
         else toast("❌ 確認に失敗しました", { kind: "err" });
