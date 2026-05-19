@@ -204,6 +204,16 @@ td.cell-copyable:hover { color: var(--accent); }
   display: block; text-align: center; padding: 32px 16px;
   color: var(--accent); font-size: 13px; line-height: 1.8;
 }
+#describeResult:empty::before {
+  content: "🔍 describe 未取得  /  オブジェクト API 名を入力して「取得」をクリック";
+  display: block; text-align: center; padding: 32px 16px;
+  color: var(--accent); font-size: 13px; line-height: 1.8;
+}
+#loginResult:empty::before {
+  content: "👤 Login History 未取得  /  上の「取得」ボタンで認証履歴を読込";
+  display: block; text-align: center; padding: 32px 16px;
+  color: var(--accent); font-size: 13px; line-height: 1.8;
+}
 .design-preview h1, .design-preview h2, .design-preview h3 {
   color: var(--accent); margin: 12px 0 6px;
   border-bottom: 1px solid var(--line); padding-bottom: 3px;

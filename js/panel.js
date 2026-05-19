@@ -107,7 +107,9 @@ function attachClearButton(inputId) {
 }
 
 // 共通 toast (panel/tool 環境用、popup の toast と同じスタイル)
+// 連続クリックで stack されないよう既存 toast を replace
 function panelToast(msg, opts = {}) {
+  document.querySelectorAll(".panel-toast").forEach((t) => t.remove());
   const el = document.createElement("div");
   el.className = "panel-toast";
   el.textContent = msg;

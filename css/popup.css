@@ -115,6 +115,11 @@ select { font-family: inherit; }
   margin-top: 8px; max-height: 280px; overflow: auto;
   background: #0a1224; border: 1px solid var(--line); border-radius: 6px; padding: 8px;
 }
+.result:empty::before {
+  content: "📊 SOQL 未実行  /  上にクエリを入力して「実行」をクリック";
+  display: block; text-align: center; padding: 20px 8px;
+  color: var(--accent); font-size: 11px; line-height: 1.7;
+}
 .result table { width: 100%; border-collapse: collapse; font-size: 11px; }
 .result th, .result td { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .result th { background: #112042; color: var(--accent); position: sticky; top: 0; z-index: 2; }
