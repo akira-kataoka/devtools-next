@@ -443,9 +443,18 @@ async function searchUsersForLogin() {
 
   result.innerHTML = "";
   users.forEach((u) => {
+    // イニシャル円アイコン: 名前の頭文字 (姓・名の先頭) + 一意のアクセント色 (Id から色決定)
+    const initials = ((u.Name || u.Username || "?").trim().match(/[A-Za-z一-鿿぀-ゟ゠-ヿ]{1,2}/g) || ["?"])
+      .slice(0, 2).map((s) => s.charAt(0)).join("");
+    // Id 末尾 6 文字を hex 色のシードに
+    const seed = (u.Id || "0").substring(u.Id ? u.Id.length - 6 : 0, u.Id ? u.Id.length : 6);
+    const hue = parseInt(seed, 36) % 360 || 200;
+    const color = `hsl(${hue}, 60%, 50%)`;
+
     const el = document.createElement("div");
     el.className = "user-item";
     el.innerHTML = `
+      <span class="user-avatar" style="background:${color}" aria-hidden="true">${escape(initials || "?")}</span>
       <div class="user-main">
         <div class="user-name">${escape(u.Name)} <span style="font-weight:400;color:var(--fg-dim)">(${escape(u.Alias || "")})</span></div>
         <div class="user-sub">${escape(u.Username)} / ${escape(u.Profile ? u.Profile.Name : "-")} / ${escape(u.UserType || "")}</div>

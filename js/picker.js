@@ -299,7 +299,8 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }
       // ヘッダ
       const hdr = document.createElement("div");
       hdr.className = "picker-row header";
-      hdr.innerHTML = def.columns.map((c) => `<div>${escape(c)}</div>`).join("");
+      hdr.title = "上から: ⏱ 最近選択 / ★ お気に入り / その他 順で並んでいます (検索時は除外)";
+      hdr.innerHTML = def.columns.map((c) => `<div title="${escape(c)}">${escape(c)}</div>`).join("");
       $list.appendChild(hdr);
       filtered.forEach((it, idx) => {
         const row = document.createElement("div");

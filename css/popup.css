@@ -180,6 +180,14 @@ select { font-family: inherit; }
   font-size: 11px;
 }
 .user-item:hover { border-color: var(--accent); }
+.user-item .user-avatar {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 11px;
+  flex-shrink: 0;
+  letter-spacing: -0.5px;
+}
 .user-item .user-main { flex: 1; min-width: 0; overflow: hidden; }
 .user-item .user-name { color: var(--fg); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .user-item .user-sub { color: var(--fg-dim); font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
