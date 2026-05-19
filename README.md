@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.11.0 (2026-05-20 01:45)** — Picker UX + popup ヘルプ:
+  - **🐛 exRunPreview にもレースガード追加** (`exPreviewRunId`)。データエクスポートのプレビューを連続クリックしても古い結果が混じらない
+  - **✨ Picker 検索ボックスに ✕ クリアボタン**: テキスト入力の右側に絶対配置、クリックで即クリア+フォーカス戻し
+  - **✨ popup ヘルプカードにキーボードショートカット表示**: tool.html ヘッダだけだったキーボード操作ヒント (Ctrl+Enter / Esc / ↑↓) を popup の whats-new カードにも記載
 - **v1.10.0 (2026-05-20 01:40)** — レースガード全面適用 + textarea Tab:
   - **🐛 残りハンドラにもレースガード追加**: doRunApex (`apexRunId`)、doRest (`restRunId`)、doGenerateDesign (`designRunId`) の 3 つにも `myId !== ...RunId` チェック導入。**設計書の onProgress コールバックも古い実行を無視** (DOM の意図しない上書きを完全防止)
   - **✨ エラー pill の自動 fade**: 30 秒経過で opacity 0.35 まで自然に薄くなる CSS animation。**ボタンは無効化せず、視認性のみ落とす**ことで操作可能性を維持

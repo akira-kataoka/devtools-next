@@ -298,13 +298,21 @@ button:disabled:hover, button[disabled]:hover {
   padding: 10px 14px;
   border-bottom: 1px solid var(--line);
 }
+.picker-search-wrap { flex: 1; position: relative; display: flex; align-items: center; }
 .picker-search {
   flex: 1;
   background: #0a1224; color: var(--fg);
   border: 1px solid var(--line); border-radius: 5px;
-  padding: 7px 10px; font-size: 12px;
+  padding: 7px 30px 7px 10px; font-size: 12px;
 }
 .picker-search:focus { border-color: var(--accent); outline: none; }
+.picker-clear {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  background: transparent; color: var(--fg-dim); border: none;
+  width: 20px; height: 20px; border-radius: 50%;
+  cursor: pointer; font-size: 12px; line-height: 1;
+}
+.picker-clear:hover { color: var(--err); background: rgba(255,107,107,0.1); }
 .picker-count { font-size: 11px; color: var(--fg-dim); white-space: nowrap; }
 .picker-list {
   flex: 1; overflow: auto;

@@ -207,6 +207,11 @@ select { font-family: inherit; }
 .whats-new-body kbd { background: var(--bg3); padding: 1px 5px; border-radius: 3px; border: 1px solid var(--line); color: var(--fg); font-family: ui-monospace, Consolas, monospace; font-size: 10px; }
 .whats-new-list { margin: 8px 0 6px; padding: 0 0 0 8px; list-style: none; }
 .whats-new-list li { padding: 2px 0; color: var(--fg); }
+.whats-new-body kbd {
+  background: var(--bg3); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 3px;
+  padding: 0 5px; font-family: ui-monospace, Consolas, monospace; font-size: 9px;
+}
 
 .toast {
   position: fixed; right: 12px; bottom: 36px;

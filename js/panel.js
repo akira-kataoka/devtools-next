@@ -806,6 +806,7 @@ function exBuildSoql() {
   document.getElementById("exSoql").value = soql;
 }
 
+let exPreviewRunId = 0;
 async function exRunPreview() {
   if (!state.sid) return;
   exBuildSoql();
@@ -814,11 +815,13 @@ async function exRunPreview() {
   const tooling = document.getElementById("exTooling").checked;
   const preview = document.getElementById("exPreview");
   const meta = document.getElementById("exMeta");
-  meta.textContent = "実行中 (プレビュー先頭 200 件)…";
+  const myId = ++exPreviewRunId;
+  meta.textContent = `実行中 (プレビュー先頭 200 件)… #${myId}`;
   const t0 = performance.now();
   const previewSoql = soql.replace(/LIMIT\s+\d+/i, "LIMIT 200");
   const r = await runSoql({ host: state.host, sid: state.sid, soql: previewSoql, apiVersion: state.apiVersion, tooling });
   const dt = Math.round(performance.now() - t0);
+  if (myId !== exPreviewRunId) { console.log(`[DevToolsNext] discard stale Export preview #${myId}`); return; }
   if (!r.ok) {
     displayApiError(meta, r.status, r.data, "データエクスポート プレビュー");
     preview.innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;

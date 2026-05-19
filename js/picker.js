@@ -209,7 +209,10 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }
           <button class="picker-close" title="閉じる">✕</button>
         </div>
         <div class="picker-toolbar">
-          <input class="picker-search" placeholder="${escape(def.placeholder)}" autofocus />
+          <div class="picker-search-wrap">
+            <input class="picker-search" placeholder="${escape(def.placeholder)}" autofocus aria-label="候補検索" />
+            <button class="picker-clear" type="button" title="クリア" aria-label="検索をクリア">✕</button>
+          </div>
           <span class="picker-count meta">読み込み中…</span>
           <button class="picker-reload mini-btn" title="再取得">⟳</button>
         </div>
@@ -223,6 +226,12 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }
     const $input = overlay.querySelector(".picker-search");
     const $list = overlay.querySelector(".picker-list");
     const $count = overlay.querySelector(".picker-count");
+    const $clear = overlay.querySelector(".picker-clear");
+    if ($clear) $clear.addEventListener("click", () => {
+      $input.value = "";
+      $input.focus();
+      $input.dispatchEvent(new Event("input"));
+    });
 
     const close = (val) => {
       overlay.remove();
