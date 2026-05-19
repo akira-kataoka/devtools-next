@@ -175,6 +175,10 @@ textarea {
 .design-preview code { background: #0a1224; padding: 1px 4px; border-radius: 3px; font: 11px ui-monospace, Consolas, monospace; color: #d6e0f5; }
 .design-preview pre { background: #0a1224; padding: 8px; border-radius: 5px; overflow: auto; font: 11px ui-monospace, Consolas, monospace; }
 .design-preview ul, .design-preview ol { padding-left: 20px; }
+.design-preview p { line-height: 1.7; }
+#apiBuildHelp { line-height: 1.7; }
+#apiBuildHelp p { margin: 6px 0; }
+#apiBuildHelp blockquote { margin: 8px 0; }
 .design-preview blockquote { border-left: 3px solid var(--accent); margin: 6px 0; padding: 4px 8px; color: var(--fg-dim); background: #0a1224; }
 .design-preview hr { border: none; border-top: 1px solid var(--line); margin: 10px 0; }
 .design-preview .badge-required { background: rgba(255,107,107,0.2); color: var(--err); padding: 1px 5px; border-radius: 8px; font-size: 9px; }

@@ -156,6 +156,7 @@ function attachPicker(inputId, kind, opts = {}) {
       kind,
       host: state.host, sid: state.sid, apiVersion: state.apiVersion,
       parentObject: opts.parentObjectFn ? opts.parentObjectFn() : undefined,
+      orgKey: state.orgId, // Org 別の recent items 管理
     });
     if (val != null) {
       input.value = val;

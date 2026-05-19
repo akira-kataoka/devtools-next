@@ -20,19 +20,22 @@ const FAVORITES = {
   sobject: ["Account", "Contact", "Opportunity", "Lead", "Case", "User", "Task", "Event", "Campaign", "Product2"],
 };
 
-const RECENT_KEY = "sfdtPickerRecent"; // chrome.storage.local — { [kind]: [value, ...最大10件] }
-async function getRecent(kind) {
+const RECENT_KEY = "sfdtPickerRecent"; // chrome.storage.local — { [orgId|kind]: [value, ...最大10件] }
+// Org 別管理: showPicker 呼出時に orgKey を渡し、orgKey|kind で分離保存
+function _recentMapKey(orgKey, kind) { return `${orgKey || "default"}|${kind}`; }
+async function getRecent(kind, orgKey) {
   try {
     const { [RECENT_KEY]: data = {} } = await chrome.storage.local.get(RECENT_KEY);
-    return data[kind] || [];
+    return data[_recentMapKey(orgKey, kind)] || [];
   } catch { return []; }
 }
-async function pushRecent(kind, value) {
+async function pushRecent(kind, value, orgKey) {
   try {
     const { [RECENT_KEY]: data = {} } = await chrome.storage.local.get(RECENT_KEY);
-    const list = (data[kind] || []).filter((v) => v !== value);
+    const k = _recentMapKey(orgKey, kind);
+    const list = (data[k] || []).filter((v) => v !== value);
     list.unshift(value);
-    data[kind] = list.slice(0, 10);
+    data[k] = list.slice(0, 10);
     await chrome.storage.local.set({ [RECENT_KEY]: data });
   } catch {}
 }
@@ -192,7 +195,7 @@ const PICKER_DEFS = {
  *
  * @returns Promise<string|null> 選択された value、キャンセル時 null
  */
-export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }) {
+export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, orgKey }) {
   return new Promise(async (resolve) => {
     const def = PICKER_DEFS[kind];
     if (!def) { resolve(null); return; }
@@ -270,7 +273,7 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }
     });
 
     let selectedIdx = 0;
-    let recentList = await getRecent(kind);
+    let recentList = await getRecent(kind, orgKey);
     const favSet = new Set((FAVORITES[kind] || []));
     const recentSet = new Set(recentList);
 
@@ -319,7 +322,7 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }
           `<div>${i === 0 ? badge : ""}${escape(String(c == null ? "" : c))}</div>`
         ).join("");
         row.addEventListener("click", async () => {
-          await pushRecent(kind, it.value);
+          await pushRecent(kind, it.value, orgKey);
           if (onPick) onPick(it.value, it);
           close(it.value);
         });
