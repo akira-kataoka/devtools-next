@@ -75,12 +75,18 @@ textarea {
 .pill.warn { color: var(--warn); }
 
 .nav-sep {
-  padding: 10px 10px 4px;
-  font-size: 10px;
-  color: var(--fg-dim);
-  letter-spacing: 0.4px;
+  padding: 12px 10px 4px;
+  font-size: 11px;
+  color: var(--accent);
+  font-weight: 700;
+  letter-spacing: 0.3px;
   border-top: 1px solid var(--line);
-  margin-top: 6px;
+  margin-top: 8px;
+  text-transform: uppercase;
+}
+.nav-sep:first-child {
+  border-top: none;
+  margin-top: 0;
 }
 
 .design-split { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; min-height: 0; }
@@ -195,6 +201,83 @@ textarea {
   word-break: break-all; white-space: pre-wrap;
 }
 .apiurl-grid .design-preview { flex: 1; min-height: 100px; max-height: 280px; }
+
+/* ==== 共通 Picker モーダル ==== */
+.picker-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 99999;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.picker-modal {
+  background: var(--bg);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  width: 720px; max-width: 95vw;
+  max-height: 85vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+.picker-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, #112042 0%, #0b1220 100%);
+  border-radius: 10px 10px 0 0;
+}
+.picker-header h3 {
+  margin: 0; font-size: 13px; color: var(--accent); letter-spacing: 0.3px;
+}
+.picker-close {
+  background: transparent; color: var(--fg-dim); border: 1px solid var(--line);
+  width: 26px; height: 26px; border-radius: 4px; cursor: pointer;
+}
+.picker-close:hover { color: var(--err); border-color: var(--err); }
+.picker-toolbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.picker-search {
+  flex: 1;
+  background: #0a1224; color: var(--fg);
+  border: 1px solid var(--line); border-radius: 5px;
+  padding: 7px 10px; font-size: 12px;
+}
+.picker-search:focus { border-color: var(--accent); outline: none; }
+.picker-count { font-size: 11px; color: var(--fg-dim); white-space: nowrap; }
+.picker-list {
+  flex: 1; overflow: auto;
+  background: #0a1224;
+  padding: 4px;
+}
+.picker-row {
+  display: grid; gap: 12px; align-items: center;
+  padding: 6px 10px; border-bottom: 1px solid var(--line);
+  cursor: pointer; font-size: 11px;
+}
+.picker-row:not(.header):hover { background: #112042; }
+.picker-row.selected { background: rgba(27, 150, 255, 0.15); border-left: 3px solid var(--accent); }
+.picker-row.header {
+  background: #112042; color: var(--accent); font-weight: 700; font-size: 10px;
+  position: sticky; top: 0;
+  cursor: default;
+}
+.picker-row.header:hover { background: #112042; }
+.picker-row > div { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.picker-row {
+  grid-template-columns: 1.5fr 2fr 1fr 1fr;
+}
+
+/* Picker トリガボタン (テキスト入力の隣に置く) */
+.picker-trigger {
+  background: var(--bg3); color: var(--accent);
+  border: 1px solid var(--line);
+  padding: 5px 8px; border-radius: 4px;
+  font-size: 11px; cursor: pointer; white-space: nowrap;
+}
+.picker-trigger:hover { border-color: var(--accent); background: rgba(27,150,255,0.1); }
 
 /* ==== 変更セット / package.xml ==== */
 .changeset-layout {

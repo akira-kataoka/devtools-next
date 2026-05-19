@@ -1,0 +1,280 @@
+// 共通 Picker モジュール — オブジェクト/フィールド/Profile/PermSet/Apex/Flow 等の選択を統一する
+// 使い方: showPicker({ kind, host, sid, apiVersion, onPick(value, item) })
+// kind: 'sobject' | 'field' | 'profile' | 'permset' | 'apexClass' | 'flow' | 'user'
+// 親要素には autocomplete の overlay を貼り付ける。
+
+import { sfFetch, runSoql } from "./sf-api.js";
+
+const cache = new Map(); // key=kind|host|extraKey, value=items[]
+
+const PICKER_DEFS = {
+  sobject: {
+    title: "オブジェクトを選択",
+    placeholder: "オブジェクト API 名で検索 (例: Account, Custom__c)",
+    columns: ["API 名", "ラベル", "Key Prefix", "種別"],
+    async load({ host, sid, apiVersion }) {
+      const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/` });
+      if (!r.ok) throw new Error(`sobjects 取得失敗: HTTP ${r.status}`);
+      return (r.data.sobjects || [])
+        .filter((s) => s.queryable)
+        .map((s) => ({
+          value: s.name,
+          row: [s.name, s.label, s.keyPrefix || "", s.custom ? "Custom" : "Standard"],
+          hay: (s.name + " " + s.label + " " + (s.keyPrefix || "")).toLowerCase(),
+        }));
+    },
+  },
+  field: {
+    title: "フィールドを選択",
+    placeholder: "フィールド API 名 / ラベルで検索",
+    columns: ["API 名", "ラベル", "型", "必須"],
+    async load({ host, sid, apiVersion, parentObject }) {
+      if (!parentObject) throw new Error("親オブジェクトが必要です");
+      const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(parentObject)}/describe` });
+      if (!r.ok) throw new Error(`describe 失敗: HTTP ${r.status}`);
+      return (r.data.fields || []).map((f) => ({
+        value: f.name,
+        row: [f.name, f.label, f.type, !f.nillable && !f.defaultedOnCreate && f.createable ? "○" : ""],
+        hay: (f.name + " " + f.label + " " + f.type).toLowerCase(),
+      }));
+    },
+  },
+  profile: {
+    title: "プロファイルを選択",
+    placeholder: "プロファイル名で検索",
+    columns: ["Name", "ライセンス", "UserType"],
+    async load({ host, sid, apiVersion }) {
+      const r = await runSoql({ host, sid, apiVersion,
+        soql: `SELECT Id, Name, UserLicense.Name, UserType FROM Profile ORDER BY Name LIMIT 500` });
+      if (!r.ok) throw new Error(`Profile 取得失敗`);
+      return (r.data.records || []).map((p) => ({
+        value: p.Name,
+        row: [p.Name, p.UserLicense ? p.UserLicense.Name : "", p.UserType || ""],
+        hay: (p.Name + " " + (p.UserLicense ? p.UserLicense.Name : "")).toLowerCase(),
+      }));
+    },
+  },
+  permset: {
+    title: "権限セットを選択",
+    placeholder: "API 名 / ラベルで検索",
+    columns: ["API 名", "ラベル", "ライセンス"],
+    async load({ host, sid, apiVersion }) {
+      const r = await runSoql({ host, sid, apiVersion,
+        soql: `SELECT Id, Name, Label, License.Name FROM PermissionSet WHERE IsOwnedByProfile=false ORDER BY Name LIMIT 500` });
+      if (!r.ok) throw new Error(`PermissionSet 取得失敗`);
+      return (r.data.records || []).map((p) => ({
+        // PermSet は profileDetail に '@<API名>' で渡すので最初から @ を付ける
+        value: "@" + p.Name,
+        row: [p.Name, p.Label || "", p.License ? p.License.Name : ""],
+        hay: (p.Name + " " + (p.Label || "")).toLowerCase(),
+      }));
+    },
+  },
+  profileOrPermset: {
+    // プロファイル詳細レポート用の統合 Picker (Profile or PermSet を選ぶ)
+    title: "プロファイル または 権限セットを選択",
+    placeholder: "Profile / PermissionSet 検索",
+    columns: ["種別", "名前", "ラベル/ライセンス"],
+    async load({ host, sid, apiVersion }) {
+      const [profR, psR] = await Promise.all([
+        runSoql({ host, sid, apiVersion, soql: `SELECT Name, UserLicense.Name FROM Profile ORDER BY Name LIMIT 500` }),
+        runSoql({ host, sid, apiVersion, soql: `SELECT Name, Label, License.Name FROM PermissionSet WHERE IsOwnedByProfile=false ORDER BY Name LIMIT 500` }),
+      ]);
+      const items = [];
+      if (profR.ok) (profR.data.records || []).forEach((p) => items.push({
+        value: p.Name,
+        row: ["👤 Profile", p.Name, p.UserLicense ? p.UserLicense.Name : ""],
+        hay: ("profile " + p.Name).toLowerCase(),
+      }));
+      if (psR.ok) (psR.data.records || []).forEach((p) => items.push({
+        value: "@" + p.Name,
+        row: ["🔑 PermSet", p.Name, p.Label || ""],
+        hay: ("permset " + p.Name + " " + (p.Label || "")).toLowerCase(),
+      }));
+      return items;
+    },
+  },
+  apexClass: {
+    title: "Apex クラスを選択",
+    placeholder: "クラス名で検索",
+    columns: ["クラス名", "Status", "API Ver"],
+    async load({ host, sid, apiVersion }) {
+      const r = await runSoql({ host, sid, apiVersion, tooling: true,
+        soql: `SELECT Name, ApiVersion, Status FROM ApexClass WHERE ManageableState='unmanaged' OR ManageableState='installedEditable' ORDER BY Name LIMIT 1000` });
+      if (!r.ok) throw new Error(`ApexClass 取得失敗`);
+      return (r.data.records || []).map((c) => ({
+        value: c.Name,
+        row: [c.Name, c.Status, c.ApiVersion],
+        hay: c.Name.toLowerCase(),
+      }));
+    },
+  },
+  flow: {
+    title: "Flow を選択",
+    placeholder: "Flow DeveloperName / ラベルで検索",
+    columns: ["DeveloperName", "ラベル", "Active"],
+    async load({ host, sid, apiVersion }) {
+      const r = await runSoql({ host, sid, apiVersion, tooling: true,
+        soql: `SELECT DeveloperName, MasterLabel, ActiveVersion.VersionNumber FROM FlowDefinition ORDER BY DeveloperName LIMIT 500` });
+      if (!r.ok) throw new Error(`Flow 取得失敗`);
+      return (r.data.records || []).map((f) => ({
+        value: f.DeveloperName,
+        row: [f.DeveloperName, f.MasterLabel || "", f.ActiveVersion ? "v" + f.ActiveVersion.VersionNumber : "(なし)"],
+        hay: (f.DeveloperName + " " + (f.MasterLabel || "")).toLowerCase(),
+      }));
+    },
+  },
+  lwc: {
+    title: "LWC バンドルを選択",
+    placeholder: "LWC DeveloperName / ラベルで検索",
+    columns: ["DeveloperName", "ラベル", "公開"],
+    async load({ host, sid, apiVersion }) {
+      const r = await runSoql({ host, sid, apiVersion, tooling: true,
+        soql: `SELECT DeveloperName, MasterLabel, IsExposed FROM LightningComponentBundle ORDER BY DeveloperName LIMIT 500` });
+      if (!r.ok) throw new Error(`LWC 取得失敗`);
+      return (r.data.records || []).map((b) => ({
+        value: b.DeveloperName,
+        row: [b.DeveloperName, b.MasterLabel || "", b.IsExposed ? "○" : ""],
+        hay: (b.DeveloperName + " " + (b.MasterLabel || "")).toLowerCase(),
+      }));
+    },
+  },
+  user: {
+    title: "ユーザーを選択",
+    placeholder: "Name / Username / Email で検索",
+    columns: ["Name", "Username", "Profile"],
+    async load({ host, sid, apiVersion }) {
+      const r = await runSoql({ host, sid, apiVersion,
+        soql: `SELECT Id, Name, Username, Email, Profile.Name FROM User WHERE IsActive=true ORDER BY LastLoginDate DESC NULLS LAST LIMIT 200` });
+      if (!r.ok) throw new Error(`User 取得失敗`);
+      return (r.data.records || []).map((u) => ({
+        value: u.Id,
+        row: [u.Name, u.Username, u.Profile ? u.Profile.Name : ""],
+        hay: (u.Name + " " + u.Username + " " + (u.Email || "")).toLowerCase(),
+      }));
+    },
+  },
+};
+
+/**
+ * Picker をモーダルで表示し、選択された value を返す。
+ * 既存のキャッシュがある場合は即座に表示、ない場合は load() を呼ぶ。
+ *
+ * @returns Promise<string|null> 選択された value、キャンセル時 null
+ */
+export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }) {
+  return new Promise(async (resolve) => {
+    const def = PICKER_DEFS[kind];
+    if (!def) { resolve(null); return; }
+
+    const cacheKey = `${kind}|${host}|${parentObject || ""}`;
+    let items = cache.get(cacheKey);
+
+    // モーダル DOM 構築
+    const overlay = document.createElement("div");
+    overlay.className = "picker-overlay";
+    overlay.innerHTML = `
+      <div class="picker-modal">
+        <div class="picker-header">
+          <h3>${escape(def.title)}</h3>
+          <button class="picker-close" title="閉じる">✕</button>
+        </div>
+        <div class="picker-toolbar">
+          <input class="picker-search" placeholder="${escape(def.placeholder)}" autofocus />
+          <span class="picker-count meta">読み込み中…</span>
+          <button class="picker-reload mini-btn" title="再取得">⟳</button>
+        </div>
+        <div class="picker-list"></div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const $input = overlay.querySelector(".picker-search");
+    const $list = overlay.querySelector(".picker-list");
+    const $count = overlay.querySelector(".picker-count");
+
+    const close = (val) => { overlay.remove(); resolve(val); };
+    overlay.querySelector(".picker-close").addEventListener("click", () => close(null));
+    overlay.addEventListener("click", (e) => { if (e.target === overlay) close(null); });
+    overlay.querySelector(".picker-reload").addEventListener("click", async () => {
+      cache.delete(cacheKey);
+      $count.textContent = "再取得中…";
+      try {
+        items = await def.load({ host, sid, apiVersion, parentObject });
+        cache.set(cacheKey, items);
+        render();
+      } catch (e) { $count.textContent = "失敗: " + (e.message || e); }
+    });
+
+    let selectedIdx = 0;
+    const render = () => {
+      const q = ($input.value || "").toLowerCase();
+      const filtered = items.filter((it) => !q || it.hay.includes(q)).slice(0, 200);
+      if (selectedIdx >= filtered.length) selectedIdx = 0;
+      $count.textContent = `${filtered.length} / ${items.length} 件`;
+      $list.innerHTML = "";
+      // ヘッダ
+      const hdr = document.createElement("div");
+      hdr.className = "picker-row header";
+      hdr.innerHTML = def.columns.map((c) => `<div>${escape(c)}</div>`).join("");
+      $list.appendChild(hdr);
+      filtered.forEach((it, idx) => {
+        const row = document.createElement("div");
+        row.className = "picker-row" + (idx === selectedIdx ? " selected" : "");
+        row.innerHTML = it.row.map((c) => `<div>${escape(String(c == null ? "" : c))}</div>`).join("");
+        row.addEventListener("click", () => {
+          if (onPick) onPick(it.value, it);
+          close(it.value);
+        });
+        $list.appendChild(row);
+      });
+      if (!filtered.length) {
+        const empty = document.createElement("div");
+        empty.className = "meta";
+        empty.style.padding = "12px";
+        empty.textContent = "該当なし";
+        $list.appendChild(empty);
+      }
+    };
+
+    $input.addEventListener("input", () => render());
+    $input.addEventListener("keydown", (e) => {
+      const rows = $list.querySelectorAll(".picker-row:not(.header)");
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        selectedIdx = Math.min(selectedIdx + 1, rows.length - 1);
+        render();
+        const sel = $list.querySelector(".picker-row.selected");
+        if (sel) sel.scrollIntoView({ block: "nearest" });
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        selectedIdx = Math.max(selectedIdx - 1, 0);
+        render();
+        const sel = $list.querySelector(".picker-row.selected");
+        if (sel) sel.scrollIntoView({ block: "nearest" });
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const sel = $list.querySelector(".picker-row.selected");
+        if (sel) sel.click();
+      } else if (e.key === "Escape") {
+        close(null);
+      }
+    });
+
+    // 初回ロード
+    if (!items) {
+      try {
+        items = await def.load({ host, sid, apiVersion, parentObject });
+        cache.set(cacheKey, items);
+      } catch (e) {
+        $count.textContent = "ロード失敗: " + (e.message || e);
+        return;
+      }
+    }
+    render();
+  });
+}
+
+function escape(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}

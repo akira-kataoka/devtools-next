@@ -4,6 +4,7 @@ import {
   runSoql, sfFetch, recordsToCsv,
 } from "./sf-api.js";
 import { generateDesign, markdownToHtml } from "./design-docs.js";
+import { showPicker } from "./picker.js";
 
 const state = {
   host: null,
@@ -15,14 +16,132 @@ const state = {
   lastLoginRecords: null,
 };
 
-document.addEventListener("DOMContentLoaded", init);
+// モジュールスクリプトの defer 性質に対応 (popup.js と同じ防御)
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init().catch((e) => console.error("[SF DevTool] panel init failed:", e));
+}
 
 async function init() {
-  bindNav();
-  bindEvents();
-  await reconnect();
-  loadSavedQueries();
-  loadSavedApex();
+  try {
+    bindNav();
+    bindEvents();
+    await reconnect();
+    loadSavedQueries();
+    loadSavedApex();
+    initHeader();
+    attachAllPickers();
+    setupDesignPicker();
+  } catch (e) {
+    console.error("[SF DevTool] init error:", e);
+    const orgInfo = document.getElementById("orgInfo");
+    if (orgInfo) orgInfo.textContent = "初期化失敗: " + (e && e.message || e);
+  }
+}
+
+// 設計書タイプによって Picker の種類を切り替える
+function setupDesignPicker() {
+  const sel = document.getElementById("designType");
+  const input = document.getElementById("designObj");
+  if (!sel || !input) return;
+  // 既存の picker-trigger を削除して付け直す
+  const refresh = () => {
+    const existing = input.nextElementSibling;
+    if (existing && existing.classList && existing.classList.contains("picker-trigger")) existing.remove();
+    input.dataset.pickerAttached = "false";
+
+    const type = sel.value;
+    let kind = "sobject";
+    let placeholder = "オブジェクト API 名 (例: Account)";
+    if (type === "profileDetail") { kind = "profileOrPermset"; placeholder = "プロファイル名 または @PermSet名"; }
+    else if (type === "flowDetail") { kind = "flow"; placeholder = "Flow DeveloperName"; }
+    else if (type === "apexDetail") { kind = "apexClass"; placeholder = "Apex クラス名"; }
+    else if (type === "lwcDetail") { kind = "lwc"; placeholder = "LWC バンドル DeveloperName"; }
+    else if (["profileList","permsetList","apexClassList","apexTriggerList","flowList","customSettingList","appList","accessControl"].includes(type)) {
+      placeholder = "(不要 — 全件取得)";
+    }
+    input.placeholder = placeholder;
+    attachPicker("designObj", kind, { title: "候補から選択" });
+  };
+  sel.addEventListener("change", refresh);
+  refresh();
+}
+
+// ====== 共通 Picker ヘルパー: 既存テキスト入力の隣に Picker ボタンを差し込む ======
+function attachPicker(inputId, kind, opts = {}) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  if (input.dataset.pickerAttached === "true") return; // 二重防止
+  input.dataset.pickerAttached = "true";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "picker-trigger";
+  btn.textContent = opts.label || "🔍";
+  btn.title = opts.title || "候補から選ぶ";
+  btn.addEventListener("click", async () => {
+    if (!state.sid) {
+      input.placeholder = "先に SF に接続してください";
+      return;
+    }
+    const val = await showPicker({
+      kind,
+      host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+      parentObject: opts.parentObjectFn ? opts.parentObjectFn() : undefined,
+    });
+    if (val != null) {
+      input.value = val;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+      if (opts.onPick) opts.onPick(val);
+    }
+  });
+  input.insertAdjacentElement("afterend", btn);
+}
+
+function attachAllPickers() {
+  attachPicker("descObj", "sobject", { title: "オブジェクトを選択" });
+  attachPicker("exObj", "sobject", { title: "オブジェクトを選択", onPick: () => exLoadFields() });
+  attachPicker("apiObj", "sobject", { title: "オブジェクトを選択" });
+  attachPicker("designObj", "sobject", { title: "オブジェクト/Profile/PermSet を選択 (種類に応じ切替)", onPick: (v) => {
+    // 設計書タイプによっては Profile/PermSet を選ばせる方が良い → 一旦 sobject 固定だが将来切替
+  }});
+}
+
+// ヘッダの version badge / アップデート確認 / 再接続を popup と同等にする
+function initHeader() {
+  const hdr = document.querySelector("header.hdr");
+  if (!hdr) return;
+  // 既存に version badge が無ければ追加
+  if (!document.getElementById("verBadge")) {
+    const v = chrome.runtime.getManifest().version;
+    const badge = document.createElement("span");
+    badge.id = "verBadge";
+    badge.className = "org";
+    badge.title = "現在のバージョン (VERSION.txt 監視で自動更新)";
+    badge.style.cssText = "background:rgba(27,150,255,0.15);color:#1b96ff;font-weight:700";
+    badge.textContent = "v" + v;
+    // brand の隣に挿入
+    const brand = hdr.querySelector(".brand");
+    if (brand && brand.nextSibling) hdr.insertBefore(badge, brand.nextSibling);
+    else hdr.appendChild(badge);
+  }
+  // アップデート確認ボタン
+  if (!document.getElementById("btnPanelCheckUpdate")) {
+    const btn = document.createElement("button");
+    btn.id = "btnPanelCheckUpdate";
+    btn.title = "VERSION.txt を即時チェック (自動アップデート)";
+    btn.textContent = "⬆";
+    btn.addEventListener("click", () => {
+      chrome.runtime.sendMessage({ type: "sfdt:checkUpdate" }, (res) => {
+        const oi = document.getElementById("orgInfo");
+        if (oi) oi.textContent = (res && res.ok) ? `アップデート確認 v${res.version} (新版があれば自動 reload)` : "アップデート確認失敗";
+      });
+    });
+    // 再接続ボタンの前に挿入
+    const recon = document.getElementById("btnReconnect");
+    if (recon) hdr.insertBefore(btn, recon);
+    else hdr.appendChild(btn);
+  }
 }
 
 function bindNav() {
@@ -1211,7 +1330,29 @@ async function doGenerateDesign() {
     }
   } catch (e) {
     const dt = Math.round(performance.now() - t0);
-    meta.innerHTML = `<span class="pill err">失敗</span> ${escape(String(e && e.message || e))} (${dt}ms)`;
+    const msg = String(e && e.message || e);
+    // セッション期限切れを検出して親切メッセージ
+    if (/HTTP 401|INVALID_SESSION_ID|sessionInvalid|Session expired/i.test(msg)) {
+      meta.innerHTML = `<span class="pill err">⚠ セッション期限切れ (HTTP 401)</span> ` +
+        `Salesforce に再ログインしてから popup の ⟳ ボタン (再接続) を押してください。<br/>` +
+        `<span class="meta">詳細: ${escape(msg.substring(0, 200))}</span>`;
+    } else if (/HTTP 403|FORBIDDEN/i.test(msg)) {
+      meta.innerHTML = `<span class="pill err">⚠ アクセス権限不足 (HTTP 403)</span> ` +
+        `現在のユーザーが対象オブジェクト/メタデータを読む権限を持っていません。<br/>` +
+        `<span class="meta">詳細: ${escape(msg.substring(0, 200))}</span>`;
+    } else if (/HTTP 404|NOT_FOUND/i.test(msg)) {
+      meta.innerHTML = `<span class="pill err">⚠ 見つかりません (HTTP 404)</span> ` +
+        `入力した名前 (${escape(obj || "(空)")}) が存在するか確認してください。<br/>` +
+        `<span class="meta">詳細: ${escape(msg.substring(0, 200))}</span>`;
+    } else if (/HTTP 400|MALFORMED_QUERY|INVALID_QUERY_LOCATOR|INVALID_TYPE/i.test(msg)) {
+      meta.innerHTML = `<span class="pill err">⚠ クエリ不正 (HTTP 400)</span> ` +
+        `この組織で対応していないオブジェクトの可能性。設計書タイプを確認してください。<br/>` +
+        `<span class="meta">詳細: ${escape(msg.substring(0, 200))}</span>`;
+    } else if (/が見つかりません|を入力してください/.test(msg)) {
+      meta.innerHTML = `<span class="pill warn">入力が必要</span> ${escape(msg)}`;
+    } else {
+      meta.innerHTML = `<span class="pill err">失敗</span> ${escape(msg)} (${dt}ms)`;
+    }
     preview.innerHTML = "";
     source.textContent = "";
   }
@@ -1446,6 +1587,36 @@ function formatError(d) {
   if (Array.isArray(d) && d[0]) return `${d[0].errorCode || ""} ${d[0].message || ""}`.trim();
   if (d && d.error) return d.error_description || d.error;
   return JSON.stringify(d);
+}
+
+/**
+ * 共通エラー表示ヘルパー: HTTP ステータスと SF エラーレスポンスを「何が起きた + どう直す」形式で表示
+ * @param {Element} elem - innerHTML を書き込む要素
+ * @param {number} status - HTTP status
+ * @param {*} data - SF レスポンスボディ
+ * @param {string} ctx - 任意の文脈 (例: "describe", "SOQL 実行")
+ */
+function displayApiError(elem, status, data, ctx = "") {
+  if (!elem) return;
+  const detail = formatError(data);
+  let hint = "";
+  if (status === 401) {
+    hint = "Salesforce にログインし直してから popup の ⟳ で再接続してください。Lightning ドメインの sid は REST に使えないことがあります。";
+  } else if (status === 403) {
+    hint = "現在のユーザーに権限がありません。プロファイルか権限セットで対象オブジェクトのアクセスを確認してください。";
+  } else if (status === 404) {
+    hint = "指定した名前 / Id が存在しません。タイプミスがないか確認してください。";
+  } else if (status === 400) {
+    hint = "リクエストが不正です。SOQL の構文、フィールド名、参照可能性を確認してください。";
+  } else if (status === 429) {
+    hint = "API 上限に達しました。Limits ビューで現状を確認してください。";
+  } else if (status === 500 || status === 503) {
+    hint = "Salesforce サーバ側の問題です。少し待って再試行してください。";
+  }
+  elem.innerHTML =
+    `<span class="pill err">⚠ HTTP ${status}${ctx ? " (" + escape(ctx) + ")" : ""}</span> ` +
+    `<span class="meta">${escape(detail).substring(0, 300)}</span>` +
+    (hint ? `<br/><span class="meta" style="color:var(--accent)">💡 ${escape(hint)}</span>` : "");
 }
 
 // ====== Apex 実行 (Tooling executeAnonymous) ======
