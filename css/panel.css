@@ -81,6 +81,16 @@ textarea {
 }
 .hint-link:hover { background: rgba(27,150,255,0.3); border-color: var(--accent); }
 
+/* エラー pill: 30秒後に自動 fade out (CSS animation で OK ボタンは disabled しない) */
+@keyframes pillFadeAge {
+  0%   { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { opacity: 0.35; }
+}
+.pill.err {
+  animation: pillFadeAge 30s ease-in-out forwards;
+}
+
 .pill { display: inline-block; padding: 1px 8px; border-radius: 10px; background: var(--bg3); color: var(--fg-dim); font-size: 10px; }
 .pill.ok { color: var(--ok); }
 .pill.err { color: var(--err); }

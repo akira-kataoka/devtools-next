@@ -80,6 +80,20 @@ function setupDesignPicker() {
   refresh();
 }
 
+// textarea で Tab キーを 2 spaces に変換 (focus 移動を防ぐ)
+function enableTabToSpaces(el) {
+  if (!el || el.dataset.tabHandled === "true") return;
+  el.dataset.tabHandled = "true";
+  el.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab" || e.altKey || e.ctrlKey || e.metaKey) return;
+    e.preventDefault();
+    const start = el.selectionStart, end = el.selectionEnd;
+    const indent = "  ";
+    el.value = el.value.substring(0, start) + indent + el.value.substring(end);
+    el.selectionStart = el.selectionEnd = start + indent.length;
+  });
+}
+
 // ====== 共通 Picker ヘルパー: 既存テキスト入力の隣に Picker ボタンを差し込む ======
 function attachPicker(inputId, kind, opts = {}) {
   const input = document.getElementById(inputId);
@@ -246,6 +260,8 @@ function bindEvents() {
   document.getElementById("btnRunApex").addEventListener("click", doRunApex);
   document.getElementById("btnSaveApex").addEventListener("click", saveCurrentApex);
   document.getElementById("btnLoadApex").addEventListener("click", loadSelectedApex);
+  enableTabToSpaces(document.getElementById("apexCode"));
+  enableTabToSpaces(document.getElementById("soqlText"));
   document.getElementById("apexCode").addEventListener("keydown", (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") doRunApex();
   });
@@ -1364,6 +1380,7 @@ function exportLimitsCsv() {
 
 // ====== 設計書ジェネレータ ======
 let lastDesign = null;
+let designRunId = 0;
 
 async function doGenerateDesign() {
   if (!state.sid) { document.getElementById("designMeta").innerHTML = `<span class="pill err">未接続</span> Salesforce タブで再接続してください`; return; }
@@ -1374,17 +1391,20 @@ async function doGenerateDesign() {
   const preview = document.getElementById("designPreview");
   const source = document.getElementById("designSource");
 
-  meta.textContent = "生成中…";
+  const myId = ++designRunId;
+  meta.textContent = `生成中… #${myId}`;
   preview.innerHTML = "";
   source.textContent = "";
 
   const t0 = performance.now();
   try {
-    // 進捗コールバック: design-docs.js から呼ばれる
+    // 進捗コールバック: design-docs.js から呼ばれる (古い実行の進捗は無視)
     const onProgress = (msg) => {
-      meta.innerHTML = `<span class="pill warn">⏳ 生成中…</span> <span class="meta">${escape(msg)}</span>`;
+      if (myId !== designRunId) return;
+      meta.innerHTML = `<span class="pill warn">⏳ 生成中… #${myId}</span> <span class="meta">${escape(msg)}</span>`;
     };
     const result = await generateDesign({ type, host: state.host, sid: state.sid, apiVersion: state.apiVersion, obj, format, onProgress });
+    if (myId !== designRunId) { console.log(`[DevToolsNext] discard stale Design result #${myId}`); return; }
     const dt = Math.round(performance.now() - t0);
     lastDesign = result;
     const totalRows = result.sections.reduce((n, s) => n + ((s.rows && s.rows.length) || (s.kvRows && s.kvRows.length) || 0), 0);
@@ -1611,6 +1631,7 @@ async function doDescribe() {
   );
 }
 
+let restRunId = 0;
 async function doRest() {
   if (!state.sid) return;
   const method = document.getElementById("restMethod").value;
@@ -1618,10 +1639,12 @@ async function doRest() {
   const body = document.getElementById("restBody").value.trim();
   const meta = document.getElementById("restMeta");
   if (!path) return;
-  meta.textContent = "送信中…";
+  const myId = ++restRunId;
+  meta.textContent = `送信中… #${myId}`;
   const t0 = performance.now();
   const r = await sfFetch({ host: state.host, sid: state.sid, path, method, body: body || null });
   const dt = Math.round(performance.now() - t0);
+  if (myId !== restRunId) { console.log(`[DevToolsNext] discard stale REST result #${myId}`); return; }
   if (!r.ok) {
     displayApiError(meta, r.status, r.data, `REST ${method}`);
   } else {
@@ -1790,6 +1813,7 @@ function displayApiError(elem, status, data, ctx = "") {
 }
 
 // ====== Apex 実行 (Tooling executeAnonymous) ======
+let apexRunId = 0;
 async function doRunApex() {
   if (!state.sid) return;
   const code = document.getElementById("apexCode").value;
@@ -1797,7 +1821,8 @@ async function doRunApex() {
   const meta = document.getElementById("apexMeta");
   const out = document.getElementById("apexResult");
   if (!code.trim()) return;
-  meta.textContent = "実行中…";
+  const myId = ++apexRunId;
+  meta.textContent = `実行中… #${myId}`;
   out.textContent = "";
 
   const t0 = performance.now();
@@ -1809,6 +1834,7 @@ async function doRunApex() {
     method: "GET",
   });
   const dt = Math.round(performance.now() - t0);
+  if (myId !== apexRunId) { console.log(`[DevToolsNext] discard stale Apex result #${myId}`); return; }
 
   if (!r.ok) {
     displayApiError(meta, r.status, r.data, "Apex 実行");
