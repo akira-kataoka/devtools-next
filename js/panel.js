@@ -1101,12 +1101,14 @@ async function inspectFromTab() {
   document.getElementById("inspectMeta").innerHTML = `<span class="pill warn">タブからレコードIDを抽出できません</span> URL: ${escape(href.substring(0, 100))}`;
 }
 
+let inspectRunId = 0;
 async function doInspect() {
   if (!state.sid) { document.getElementById("inspectMeta").innerHTML = `<span class="pill err">未接続</span>`; return; }
   const raw = document.getElementById("inspectRef").value.trim();
   if (!raw) return;
+  const myId = ++inspectRunId;
   const meta = document.getElementById("inspectMeta");
-  meta.textContent = "取得中…";
+  meta.textContent = `取得中… #${myId}`;
 
   let objName = null, id = null;
   if (raw.includes(":")) {
@@ -1142,8 +1144,12 @@ async function doInspect() {
     sfFetch({ host: state.host, sid: state.sid, path: `/services/data/v${state.apiVersion}/sobjects/${encodeURIComponent(objName)}/${encodeURIComponent(id)}` }),
   ]);
   const dt = Math.round(performance.now() - t0);
+  if (myId !== inspectRunId) {
+    console.log(`[DevToolsNext] discard stale Inspect result #${myId}`);
+    return;
+  }
 
-  if (!descR.ok) { meta.innerHTML = `<span class="pill err">describe 失敗 HTTP ${descR.status}</span>`; return; }
+  if (!descR.ok) { displayApiError(meta, descR.status, descR.data, `Inspector describe(${objName})`); return; }
   if (!recR.ok) {
     meta.innerHTML = `<span class="pill err">レコード取得失敗 HTTP ${recR.status}</span> ${escape(JSON.stringify(recR.data).substring(0, 200))}`;
     return;
@@ -1537,15 +1543,23 @@ async function reconnect() {
   document.getElementById("orgInfo").textContent = `Org: ${state.orgId} @ ${state.apiHost}`;
 }
 
+// レースガード: 連続実行された時、古いリクエストの結果を捨てる
+let soqlRunId = 0;
 async function doSoql() {
   if (!state.sid) return;
+  const myId = ++soqlRunId;
   const soql = document.getElementById("soqlText").value.trim();
   const tooling = document.getElementById("useTooling").checked;
   const meta = document.getElementById("soqlMeta");
-  meta.textContent = "実行中…";
+  meta.textContent = `実行中… #${myId}`;
   const t0 = performance.now();
   const r = await runSoql({ host: state.host, sid: state.sid, soql, apiVersion: state.apiVersion, tooling });
   const dt = Math.round(performance.now() - t0);
+  if (myId !== soqlRunId) {
+    // 古いリクエスト → UI 更新せず破棄
+    console.log(`[DevToolsNext] discard stale SOQL result #${myId} (latest=${soqlRunId})`);
+    return;
+  }
   if (!r.ok) {
     displayApiError(meta, r.status, r.data, "SOQL 実行");
     document.getElementById("soqlResult").innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;

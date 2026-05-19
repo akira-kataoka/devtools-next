@@ -234,6 +234,24 @@ textarea {
 
 /* ==== 共通 Picker モーダル ==== */
 body.picker-open { overflow: hidden; }
+
+/* disabled ボタン統一スタイル */
+button:disabled, button[disabled] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(0.4);
+}
+button:disabled:hover, button[disabled]:hover {
+  border-color: var(--line);
+  background: var(--bg3);
+}
+
+/* カスタムスクロールバー (Chromium 系) — 細めで控えめ */
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
+*::-webkit-scrollbar-thumb { background: rgba(27,150,255,0.3); border-radius: 4px; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(27,150,255,0.6); }
+*::-webkit-scrollbar-corner { background: transparent; }
 .picker-overlay {
   position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.55);

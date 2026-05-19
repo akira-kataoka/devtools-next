@@ -4,6 +4,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.9.0 (2026-05-20 01:35)** — レースガード + 統一スタイル:
+  - **🐛 連続実行レースガード**: `doSoql`/`doInspect` に `soqlRunId`/`inspectRunId` カウンタを導入。連続クリックで古いリクエストの結果が新しい結果を上書きする問題を解消。古いレスポンスはコンソールに `discard stale ... result` を出して破棄
+  - **🐛 Inspector describe エラー表示も displayApiError に統一**
+  - **✨ disabled ボタン統一スタイル**: opacity 0.45 + grayscale 0.4 + cursor:not-allowed、ホバー時もアクセント色にならない
+  - **✨ カスタムスクロールバー**: Chromium 系で 8px 細め、アクセント色 (`rgba(27,150,255,0.3)` → ホバーで 0.6) で控えめ統一
 - **v1.8.0 (2026-05-20 01:30)** — エラー可読性 + Picker UX:
   - **🐛 design-docs.js apiError() の body 切り詰めを JSON 安全化**: SF エラー配列 `[{errorCode, message}]` を最優先で人間可読化、`data.error_description` / `data.message` を次選、その他は 240 字で切って `…(切詰)` 印を付加。**JSON の途中で切れて読みにくい**問題を解消
   - **✨ Picker モーダル背景スクロール抑止**: `body.picker-open { overflow:hidden }` でモーダル展開中に背景がスクロールしないように
