@@ -1506,7 +1506,7 @@ function renderInspectorFields() {
       valHtml = `<div class="fval" title="raw: ${escape(v)}">${escape(display)}</div>`;
       // 参照先オブジェクト名を describe から取得 (KeyPrefix 逆引きに頼らない確実な方法)
       const refObj = (f.referenceTo || [])[0] || "";
-      const refLabel = refObj ? `<span style="color:var(--fg-dim);font-size:9px;margin-left:6px">→ ${escape(refObj)}</span>` : "";
+      const refLabel = refObj ? `<span class="ref-target-label">→ ${escape(refObj)}</span>` : "";
       valHtml = `<div class="fval ref" data-id="${escape(v)}" data-ref-obj="${escape(refObj)}" title="クリックで ${escape(refObj || "参照先")} レコードを開く">${escape(v)}${refLabel}</div>`;
     } else if (typeof v === "object") {
       valHtml = `<div class="fval">${escape(JSON.stringify(v))}</div>`;
@@ -2231,6 +2231,16 @@ async function doRunApex() {
       });
       if (logFetch.ok) {
         logBody = typeof logFetch.data === "string" ? logFetch.data : (logFetch.raw || JSON.stringify(logFetch.data));
+      } else {
+        // Debug Log 取得失敗時 (削除済 / 権限不足 / Trace flag 未設定) は分かりやすく
+        const hint = logFetch.status === 404
+          ? "削除済または期限切れの可能性があります"
+          : logFetch.status === 403
+          ? "ApexLog 参照権限が不足しています (Setup → ユーザー → 権限セットを確認)"
+          : `HTTP ${logFetch.status}`;
+        logBody = `⚠ Debug Log 取得に失敗: ${hint}\n` +
+          `Trace Flag が未設定の可能性: Setup → Debug Logs → ユーザー追加してください\n` +
+          `(実行結果は上記 OK でも、Log Body の取得は別 API です)`;
       }
     }
   }

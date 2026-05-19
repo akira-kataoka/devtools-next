@@ -26,6 +26,14 @@ html, body {
 .env-badge.env-prod { background: rgba(255,107,107,0.2); color: var(--err); border: 1px solid var(--err); }
 .env-badge.env-sbx { background: rgba(46,204,113,0.2); color: var(--ok); border: 1px solid var(--ok); }
 .env-badge.env-dev { background: rgba(243,156,18,0.2); color: var(--warn); border: 1px solid var(--warn); }
+.env-badge { transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
+
+/* Inspector reference 値の参照先オブジェクト名ラベル (コントラスト改善) */
+.ref-target-label {
+  color: #8aa3c8; font-size: 10px; margin-left: 6px;
+  font-weight: 500; opacity: 0.85;
+}
+.fval.ref:hover .ref-target-label { color: var(--accent); opacity: 1; }
 .grow { flex: 1; }
 button {
   background: var(--bg3); color: var(--fg); border: 1px solid var(--line);

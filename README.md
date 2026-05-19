@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.53.0 (2026-05-20 08:45)** — Apex Debug Log エラー UX + 参照ラベル + env transition:
+  - **🐛 Apex Debug Log 取得失敗時に分かりやすいエラー表示**: 404 → 「削除済または期限切れ」、403 → 「ApexLog 参照権限不足 (Setup → ユーザー → 権限セット確認)」、その他 → HTTP コード + 「Trace Flag 未設定の可能性」のヒント。**従来は silent fail で out.textContent が空だった → 原因が即座に分かる**
+  - **✨ Inspector reference 参照先ラベル `.ref-target-label` クラス化**: 従来インラインスタイル `color:var(--fg-dim); font-size:9px` → CSS クラス `color:#8aa3c8; font-size:10px; opacity:0.85` で **コントラスト向上 + 行ホバー時 accent 色に変化** で参照先が直感的
+  - **✨ `.env-badge` に transition 追加**: orgInfo 更新 (Org 切替/再接続) 時の PROD/SBX/DEV バッジ色変化が滑らかに (0.2s ease)
 - **v1.52.0 (2026-05-20 08:40)** — Inspector 履歴重複防止 + API op 入力制御 + 環境バッジ:
   - **🐛 Inspector 履歴重複防止**: 同一レコードを再 inspect しても `inspectHistory` に積まない。`sameAsLast` (履歴末尾と同一) と `movingToCurrent` (現在表示中と同一の raw 入力) の両方で判定 → **`back` ボタンで同じレコードを何度も巻き戻る現象を解消**
   - **✨ API URL Builder の op 切替時に不要 input を hide**: `API_OP_INPUTS` テーブルで 18 op それぞれに `{obj, id}` 表示要否を定義。`describe` は obj のみ / `query`/`limits`/`versions`/`userinfo` は両方非表示 / `get`/`update`/`delete` は両方表示。**画面ノイズ削減 + 何を入力すべきか即座に分かる**
