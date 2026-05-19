@@ -4,6 +4,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.49.0 (2026-05-20 08:25)** — Inspector 📋 貼付ボタン + グローバル KBSC + バグ検証完了:
+  - **✨ Inspector に「📋 貼付」ボタン追加**: クリップボードから ID をワンクリック貼付 → 自動 doInspect 実行。URL からの貼付けにも対応 (regex で末尾 15/18 桁 ID を抽出)。**Salesforce Inspector Reloaded のクイックアクセス UX 相当**
+  - **✨ グローバルキーボードショートカット (Inspector Reloaded 風)**: 入力欄でない場所で押下時、`Ctrl+Alt+I` → Inspector / `Ctrl+Alt+Q` → SOQL / `Ctrl+Alt+A` → Apex / `Ctrl+Alt+L` → Limits / `Ctrl+Alt+R` → REST / `Ctrl+Alt+D` → 設計書。**マウスを使わず瞬時にビュー切替** + panelToast でフィードバック
+  - **✨ Inspector の取得ボタンに `(Enter)` ラベル追加**: 既存 keydown ハンドラで Enter キー対応済を可視化
+  - **🧪 バグ検証 (3 件すべて修正不要と判定)**: ①apiBuildUrl は state.apiHost (toApiHost 経由) で Lightning→my.salesforce.com 正常変換 ②loadSelectedApex は apexCode のみ書換、soqlText 非干渉 ③Picker overlay は `display:flex; align-items:center; justify-content:center` で画面中央配置済
 - **v1.48.0 (2026-05-20 08:20)** — loading pulse アニメ + タブ切替時 toast クリア:
   - **✨ `.toast.loading` / `.panel-toast.loading` に opacity pulse**: `@keyframes sfdtPulse` (1.2s ease-in-out infinite) で 1.0 ↔ 0.55 を行き来。**進行中であることが視覚的に分かる** (静的 ⏳ よりも明示的)
   - **✨ Inspector / Export describe / SOQL / LoginHistory の meta に `.loading-pulse` クラス付与**: 取得中表示も pulse、結果出ると removeClass で停止。**toast と meta の loading UX 統一**

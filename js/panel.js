@@ -297,6 +297,21 @@ function bindEvents() {
     state.apiVersion = e.target.value;
   });
 
+  // グローバルキーボードショートカット (Inspector Reloaded 風)
+  // Ctrl+Alt+I → Inspector ビュー / Ctrl+Alt+Q → SOQL / Ctrl+Alt+A → Apex / Ctrl+Alt+L → Limits
+  document.addEventListener("keydown", (e) => {
+    if (!(e.ctrlKey && e.altKey)) return;
+    const tag = (e.target && e.target.tagName || "").toUpperCase();
+    if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    const map = { "i": "inspector", "q": "soql", "a": "apex", "l": "limits", "r": "rest", "d": "design" };
+    const view = map[e.key.toLowerCase()];
+    if (view) {
+      e.preventDefault();
+      switchToView(view);
+      panelToast(`⌨ ${view} ビュー`, { kind: "ok" });
+    }
+  });
+
   // SOQL
   document.getElementById("btnRunSoql").addEventListener("click", doSoql);
   document.getElementById("btnExportCsv").addEventListener("click", exportCsv);
@@ -357,6 +372,19 @@ function bindEvents() {
   // Inspector
   document.getElementById("btnInspect").addEventListener("click", () => doInspect());
   document.getElementById("btnInspectFromTab").addEventListener("click", inspectFromTab);
+  document.getElementById("btnInspectPasteId").addEventListener("click", async () => {
+    try {
+      const txt = (await navigator.clipboard.readText() || "").trim();
+      // ID 部分のみ抽出 (URL からの貼付けにも対応: 末尾の 15/18 桁を拾う)
+      const m = txt.match(/([a-zA-Z0-9]{15,18})(?:[^a-zA-Z0-9].*)?$/);
+      if (!m) { panelToast("⚠ クリップボードに有効な ID が見つかりません", { kind: "warn" }); return; }
+      document.getElementById("inspectRef").value = m[1];
+      panelToast(`📋 貼付: ${m[1]}`, { kind: "ok" });
+      doInspect();
+    } catch (e) {
+      panelToast("❌ クリップボード読取失敗: " + (e.message || e), { kind: "err" });
+    }
+  });
   const btnBack = document.getElementById("btnInspectBack");
   if (btnBack) btnBack.addEventListener("click", inspectGoBack);
   document.getElementById("btnInspectOpenInOrg").addEventListener("click", openInspectedInOrg);
