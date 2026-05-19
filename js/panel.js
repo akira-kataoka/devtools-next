@@ -1224,6 +1224,7 @@ function inspectGoBack() {
   const prev = inspectHistory.pop();
   if (prev) {
     document.getElementById("inspectRef").value = `${prev.obj}:${prev.id}`;
+    panelToast(`⏪ 戻る: ${prev.obj}:${prev.id}`);
     doInspect({ skipHistory: true });
   }
   updateInspectBackButton();
@@ -1744,9 +1745,12 @@ async function reconnect() {
   const prevOrgId = state.orgId;
   state.sid = session.sid;
   state.orgId = parseOrgIdFromSid(state.sid);
-  // Org が変わった場合は Picker キャッシュを無効化
+  // Org が変わった場合は Picker キャッシュを無効化 + Inspector 履歴クリア
   if (prevOrgId && prevOrgId !== state.orgId) {
     invalidatePickerCache(`Org change ${prevOrgId} → ${state.orgId}`);
+    inspectHistory.length = 0;
+    updateInspectBackButton();
+    console.log("[DevToolsNext] Inspector history cleared (Org change)");
   }
   document.getElementById("orgInfo").textContent = `Org: ${state.orgId} @ ${state.apiHost}`;
 }

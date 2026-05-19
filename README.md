@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.32.0 (2026-05-20 03:30)** — Inspector 戻る toast + Picker キーヒント + Org 切替リセット:
+  - **✨ Inspector 戻るボタンクリック時に panelToast**: `⏪ 戻る: Account:001xxx...` のように **どこに戻ったか即可視化**
+  - **✨ Picker ヘッダにキーボード操作ヒント**: `⌨ ↑↓ / Home/End / Enter / Esc` を半透明バッジで常時表示 (600px 以下では非表示)
+  - **🐛 Org 切替時に inspectHistory もリセット**: 別組織のレコード履歴が混入する潜在問題を予防 (Picker キャッシュ invalidate と同タイミング)
 - **v1.31.0 (2026-05-20 03:25)** — 🎉 サイクル40 達成 - Inspector 戻る + focus-visible 統一:
   - **✨ Inspector に「← 戻る」ボタン追加**: reference クリックで遷移後、`inspectHistory` stack (最大 20 件) からポップで戻る。**Web ブラウザの戻るボタンと同等の操作性**。`doInspect({skipHistory:true})` で履歴汚染なし
   - **♿ グローバル focus-visible スタイル統一**: `button:focus-visible, a/input/select/textarea:focus-visible { outline: 2px solid var(--accent); offset:1px }`。**キーボード Tab 移動時のフォーカス位置が常時明確** (マウスクリック時は非表示)。Picker `.picker-close` にも個別 focus アウトライン

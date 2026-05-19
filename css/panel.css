@@ -364,7 +364,18 @@ button:disabled:hover, button[disabled]:hover {
 }
 .picker-header h3 {
   margin: 0; font-size: 13px; color: var(--accent); letter-spacing: 0.3px;
+  flex: 1;
 }
+.picker-kbd-hint {
+  font-size: 10px;
+  color: var(--fg-dim);
+  background: rgba(27,150,255,0.08);
+  border: 1px solid var(--line);
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin: 0 8px;
+}
+@media (max-width: 600px) { .picker-kbd-hint { display: none; } }
 .picker-close {
   background: transparent; color: var(--fg-dim); border: 1px solid var(--line);
   width: 26px; height: 26px; border-radius: 4px; cursor: pointer;

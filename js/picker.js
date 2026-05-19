@@ -220,7 +220,8 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
       <div class="picker-modal">
         <div class="picker-header">
           <h3>${escape(def.title)}</h3>
-          <button class="picker-close" title="閉じる">✕</button>
+          <span class="picker-kbd-hint" title="キーボード操作">⌨ ↑↓ / Home/End / Enter / Esc</span>
+          <button class="picker-close" title="閉じる" aria-label="閉じる">✕</button>
         </div>
         <div class="picker-toolbar">
           <div class="picker-search-wrap">
