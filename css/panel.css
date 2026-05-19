@@ -182,6 +182,28 @@ td.cell-copyable:hover { color: var(--accent); }
 .design-preview .empty-hint-sub {
   font-size: 11px; color: var(--fg-dim);
 }
+
+/* 各結果ペインの空状態ヒント (空のとき自動表示、内容が入ると消える) */
+#soqlResult:empty::before {
+  content: "📊 SOQL 未実行  /  上のクエリエリアにクエリを入力して「実行」をクリック";
+  display: block; text-align: center; padding: 32px 16px;
+  color: var(--accent); font-size: 13px; line-height: 1.8;
+}
+#apexResult:empty::before {
+  content: "⚡ Apex 未実行  /  上のコードエリアに匿名 Apex を入力して「▶ 実行」をクリック";
+  display: block; text-align: center; padding: 32px 16px;
+  color: var(--accent); font-size: 13px; line-height: 1.8;
+}
+#restResult:empty::before {
+  content: "📡 REST 未送信  /  上の URL バーで Method/Path を指定して「送信」をクリック";
+  display: block; text-align: center; padding: 32px 16px;
+  color: var(--accent); font-size: 13px; line-height: 1.8;
+}
+#limitsResult:empty::before {
+  content: "📊 Limits 未取得  /  上の「取得」ボタンで現在の上限使用状況を読込";
+  display: block; text-align: center; padding: 32px 16px;
+  color: var(--accent); font-size: 13px; line-height: 1.8;
+}
 .design-preview h1, .design-preview h2, .design-preview h3 {
   color: var(--accent); margin: 12px 0 6px;
   border-bottom: 1px solid var(--line); padding-bottom: 3px;

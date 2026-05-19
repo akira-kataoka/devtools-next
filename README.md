@@ -4,6 +4,13 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.42.0 (2026-05-20 04:20)** — 結果ペイン空状態ヒント統一:
+  - **✨ #soqlResult / #apexResult / #restResult / #limitsResult が空のとき `:empty::before` で自動ヒント**: 
+    - SOQL: `📊 SOQL 未実行 / 上のクエリエリアにクエリを入力して「実行」をクリック`
+    - Apex: `⚡ Apex 未実行 / 上のコードエリアに匿名 Apex を入力して「▶ 実行」をクリック`
+    - REST: `📡 REST 未送信 / 上の URL バーで Method/Path を指定して「送信」をクリック`
+    - Limits: `📊 Limits 未取得 / 上の「取得」ボタンで現在の上限使用状況を読込`
+  - **設計思想**: 4 ペイン同一パターン (accent 色 + 中央配置 32px padding) で **初期画面に「何もない感」が消え、操作手順を即座に把握**
 - **v1.41.0 (2026-05-20 04:15)** — 設計書プレビューに空状態ヒント + Picker/Org 切替の既存実装確認:
   - **✨ .design-preview 初期空状態にプレースホルダ**: `📋 まだ設計書未生成` + `↑ 設計書タイプを選択 → オブジェクト指定 → 「生成」をクリック` という 2 段階の手順ヒント。`.empty-hint` クラスでアクセント色 + パディング 40px の中央配置 → **初心者ユーザーが何をすればよいか即座に理解**
   - **🧪 Picker close 後 focus 復元を再確認**: `picker.js:259-261` で `focusReturnTarget.focus()` 呼出済 → **キーボード遷移後に呼び元 input/button にフォーカス戻る既存実装で OK**
