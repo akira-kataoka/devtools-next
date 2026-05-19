@@ -52,7 +52,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 }
 .nav-btn { transition: background 0.1s, color 0.1s, border-color 0.1s; }
 .nav-btn:hover { background: var(--bg3); color: var(--fg); }
-.nav-btn.active { background: var(--bg3); color: var(--accent); border-color: var(--line); }
+.nav-btn.active {
+  background: var(--bg3); color: var(--accent); border-color: var(--line);
+  border-left: 3px solid var(--accent); padding-left: 7px;
+}
 
 .main { flex: 1; padding: 10px; overflow: auto; display: flex; flex-direction: column; }
 .view { display: flex; flex-direction: column; gap: 8px; height: 100%; }
@@ -227,6 +230,12 @@ td.cell-copyable:hover { color: var(--accent); }
   font: 11px ui-monospace, Consolas, monospace;
 }
 .field-row:hover { background: #112042; }
+.field-row-header {
+  background: #112042; font-weight: 700; color: var(--accent);
+  position: sticky; top: 0; z-index: 2;
+  border-bottom: 2px solid var(--accent);
+}
+.field-row-header:hover { background: #112042; }
 .field-row .fname { color: var(--accent); font-weight: 600; }
 .field-row .ftype { color: var(--fg-dim); font-size: 10px; }
 .field-row .fval {

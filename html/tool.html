@@ -257,6 +257,10 @@ Account a = [SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 1];
 System.debug('Latest Account: ' + a);
 System.debug('Now: ' + System.now());</textarea>
         <div id="apexMeta" class="meta"></div>
+        <div class="toolbar">
+          <button id="btnApexCopy" title="Apex 結果をクリップボードへコピー">📋 結果コピー</button>
+          <span class="grow"></span>
+        </div>
         <pre id="apexResult" class="code"></pre>
       </div>
 

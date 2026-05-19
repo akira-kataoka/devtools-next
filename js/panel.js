@@ -316,6 +316,16 @@ function bindEvents() {
   document.getElementById("btnRunApex").addEventListener("click", doRunApex);
   document.getElementById("btnSaveApex").addEventListener("click", saveCurrentApex);
   document.getElementById("btnLoadApex").addEventListener("click", loadSelectedApex);
+  document.getElementById("btnApexCopy").addEventListener("click", async () => {
+    const txt = document.getElementById("apexResult").textContent || "";
+    if (!txt) { panelToast("📭 コピーする結果がありません"); return; }
+    try {
+      await navigator.clipboard.writeText(txt);
+      panelToast(`📋 Apex 結果コピー (${txt.length} 文字)`);
+    } catch (e) {
+      panelToast("❌ コピー失敗: " + (e.message || e));
+    }
+  });
   enableTabToSpaces(document.getElementById("apexCode"));
   enableTabToSpaces(document.getElementById("soqlText"));
   document.getElementById("apexCode").addEventListener("keydown", (e) => {
@@ -1356,7 +1366,7 @@ function renderInspectorFields() {
 
   // header
   const html = [];
-  html.push(`<div class="field-row" style="background:#112042;font-weight:700;color:var(--accent)">
+  html.push(`<div class="field-row field-row-header">
     <div>API 名</div><div>型</div><div>値</div><div style="text-align:right">フラグ</div>
   </div>`);
 
