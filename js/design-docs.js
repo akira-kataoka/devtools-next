@@ -255,7 +255,7 @@ async function buildFlowList({ host, sid, apiVersion }) {
       host, sid, apiVersion, tooling: true,
       soql: `SELECT Id, MasterLabel, ProcessType, Status, VersionNumber, Definition.DeveloperName FROM Flow WHERE Status='Active' ORDER BY MasterLabel LIMIT 500`,
     });
-    if (!r2.ok) throw new Error(`Flow 取得失敗: ${JSON.stringify(r2.data)}`);
+    if (!r2.ok) throw apiError("Flow 取得 (fallback)", r2);
     const headers = ["No", "ラベル", "API名", "ProcessType", "Status", "Version"];
     const rows = (r2.data.records || []).map((f, i) => ({
       "No": i + 1, "ラベル": f.MasterLabel, "API名": f.Definition ? f.Definition.DeveloperName : "",
@@ -332,9 +332,9 @@ async function buildRecordTypeList({ host, sid, apiVersion, obj }) {
 
 // ============ FieldSet 一覧 ============
 async function buildFieldSetList({ host, sid, apiVersion, obj }) {
-  if (!obj) throw new Error("オブジェクト API 名を入力してください");
+  requireInput(obj, "オブジェクト API 名 (例: Account)");
   const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
-  if (!r.ok) throw new Error(`describe 失敗: HTTP ${r.status}`);
+  if (!r.ok) throw apiError(`describe(${obj})`, r);
   const sets = (r.data.namedLayoutInfos || r.data.fieldSets) ? (r.data.fieldSets || []) : [];
   // describe レスポンスに FieldSet は無いため、Tooling FieldSet を引く
   const tr = await runSoql({
@@ -382,10 +382,10 @@ async function buildCustomSettingList({ host, sid, apiVersion }) {
 
 // ============ ER 図 (Mermaid) ============
 async function buildErDiagram({ host, sid, apiVersion, obj }) {
-  if (!obj) throw new Error("基点オブジェクト API 名を入力してください (例: Account)");
+  requireInput(obj, "基点オブジェクト API 名 (例: Account)");
   // 起点 + 直接の参照先を 1 hop 取る
   const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
-  if (!r.ok) throw new Error(`describe 失敗: HTTP ${r.status}`);
+  if (!r.ok) throw apiError(`describe(${obj})`, r);
   const d = r.data;
   const lines = ["erDiagram"];
   const seen = new Set([d.name]);
@@ -435,8 +435,9 @@ function sanitizeType(t) {
 // =============================================================================
 // 引数 obj には Profile 名 or PermissionSet API 名 を入れる。
 // 「<プロファイル名>」または「@<PermissionSet API名>」(@ プレフィックスで権限セット)
-async function buildProfileDetail({ host, sid, apiVersion, obj }) {
-  if (!obj) throw new Error("プロファイル名 (Profile.Name) または '@<PermissionSet API名>' を入力してください");
+async function buildProfileDetail({ host, sid, apiVersion, obj, progress = () => {} }) {
+  requireInput(obj, "プロファイル名 (例: 営業ユーザー) または '@PermSet_API名'");
+  progress("対象 PermissionSet を検索中...");
 
   const isPermSet = obj.startsWith("@");
   const lookupName = isPermSet ? obj.substring(1) : obj;
@@ -449,9 +450,9 @@ async function buildProfileDetail({ host, sid, apiVersion, obj }) {
     psSoql = `SELECT Id, Name, Label, IsOwnedByProfile, Profile.Name, Profile.UserLicense.Name, Profile.UserType, Profile.Description FROM PermissionSet WHERE IsOwnedByProfile=true AND Profile.Name='${lookupName.replace(/'/g, "\\'")}' LIMIT 1`;
   }
   const psR = await runSoql({ host, sid, apiVersion, soql: psSoql });
-  if (!psR.ok) throw new Error(`PermissionSet 取得失敗: ${JSON.stringify(psR.data)}`);
+  if (!psR.ok) throw apiError("PermissionSet 取得", psR);
   const ps = (psR.data.records || [])[0];
-  if (!ps) throw new Error(isPermSet ? `権限セット '${lookupName}' が見つかりません` : `プロファイル '${lookupName}' が見つかりません`);
+  if (!ps) throw new Error(`HTTP 404 ${isPermSet ? "権限セット" : "プロファイル"} '${lookupName}' が見つかりません`);
   const psId = ps.Id;
   const targetType = ps.IsOwnedByProfile ? "プロファイル" : "権限セット";
   const targetName = ps.IsOwnedByProfile ? (ps.Profile ? ps.Profile.Name : ps.Name) : (ps.Label || ps.Name);
@@ -603,11 +604,12 @@ async function buildProfileDetail({ host, sid, apiVersion, obj }) {
 // FLS レポート (1オブジェクト × 全 Profile/PermSet)。fieldPermMatrix と似るが、
 // フィールド毎に「Read 可能なロール一覧」「Edit 可能なロール一覧」を縦持ちで出す書き方
 // =============================================================================
-async function buildFlsReport({ host, sid, apiVersion, obj }) {
-  if (!obj) throw new Error("オブジェクト API 名を入力してください (例: Account)");
-
+async function buildFlsReport({ host, sid, apiVersion, obj, progress = () => {} }) {
+  requireInput(obj, "オブジェクト API 名 (例: Account)");
+  progress("describe 取得中...");
   const dr = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
-  if (!dr.ok) throw new Error(`describe 失敗: HTTP ${dr.status}`);
+  if (!dr.ok) throw apiError(`describe(${obj})`, dr);
+  progress("FieldPermissions 取得中...");
   const allFields = (dr.data.fields || [])
     .filter((f) => !f.calculated && f.type !== "id")
     .map((f) => ({ name: f.name, label: f.label, type: f.type, required: !f.nillable && !f.defaultedOnCreate && f.createable }));
@@ -764,14 +766,14 @@ async function buildAccessControl({ host, sid, apiVersion }) {
 
 // ============ フロー設計図 (1 Flow 詳細) ============
 async function buildFlowDetail({ host, sid, apiVersion, obj }) {
-  if (!obj) throw new Error("Flow API 名 (FlowDefinition.DeveloperName) を入力してください");
+  requireInput(obj, "Flow DeveloperName (例: My_Flow)");
 
   // Active version を引く
   const r = await runSoql({
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, MasterLabel, ProcessType, Status, VersionNumber, Description, Metadata FROM Flow WHERE Definition.DeveloperName='${obj.replace(/'/g, "\\'")}' AND Status='Active' ORDER BY VersionNumber DESC LIMIT 1`,
   });
-  if (!r.ok) throw new Error(`Flow 取得失敗: ${JSON.stringify(r.data)}`);
+  if (!r.ok) throw apiError("Flow 取得 (Active)", r);
   let flow = (r.data.records || [])[0];
   if (!flow) {
     // Active が無ければ最新を引く
@@ -779,7 +781,8 @@ async function buildFlowDetail({ host, sid, apiVersion, obj }) {
       host, sid, apiVersion, tooling: true,
       soql: `SELECT Id, MasterLabel, ProcessType, Status, VersionNumber, Description, Metadata FROM Flow WHERE Definition.DeveloperName='${obj.replace(/'/g, "\\'")}' ORDER BY VersionNumber DESC LIMIT 1`,
     });
-    if (!r2.ok || !(r2.data.records || []).length) throw new Error(`Flow '${obj}' が見つかりません`);
+    if (!r2.ok) throw apiError("Flow 取得 (latest fallback)", r2);
+    if (!(r2.data.records || []).length) throw new Error(`HTTP 404 Flow '${obj}' が見つかりません`);
     flow = r2.data.records[0];
   }
 
@@ -867,12 +870,13 @@ async function buildFlowDetail({ host, sid, apiVersion, obj }) {
 
 // ============ Apex 設計図 (1 クラス詳細) ============
 async function buildApexDetail({ host, sid, apiVersion, obj }) {
-  if (!obj) throw new Error("Apex クラス名を入力してください");
+  requireInput(obj, "Apex クラス名 (例: AccountController)");
   const r = await runSoql({
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, Name, ApiVersion, Status, NamespacePrefix, LengthWithoutComments, IsValid, Body, SymbolTable FROM ApexClass WHERE Name='${obj.replace(/'/g, "\\'")}' LIMIT 1`,
   });
-  if (!r.ok || !r.data.records || !r.data.records[0]) throw new Error(`ApexClass '${obj}' が見つかりません`);
+  if (!r.ok) throw apiError(`ApexClass(${obj})`, r);
+  if (!r.data.records || !r.data.records[0]) throw new Error(`HTTP 404 ApexClass '${obj}' が見つかりません`);
   const c = r.data.records[0];
 
   const summary = [
@@ -974,13 +978,14 @@ async function buildApexDetail({ host, sid, apiVersion, obj }) {
 
 // ============ LWC 設計図 (1 LightningComponentBundle 詳細) ============
 async function buildLwcDetail({ host, sid, apiVersion, obj }) {
-  if (!obj) throw new Error("LWC バンドル名 (DeveloperName) を入力してください");
+  requireInput(obj, "LWC バンドル DeveloperName");
 
   const bR = await runSoql({
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, DeveloperName, MasterLabel, ApiVersion, Description, NamespacePrefix, IsExposed, TargetConfigs FROM LightningComponentBundle WHERE DeveloperName='${obj.replace(/'/g, "\\'")}' LIMIT 1`,
   });
-  if (!bR.ok || !bR.data.records || !bR.data.records[0]) throw new Error(`LightningComponentBundle '${obj}' が見つかりません`);
+  if (!bR.ok) throw apiError(`LightningComponentBundle(${obj})`, bR);
+  if (!bR.data.records || !bR.data.records[0]) throw new Error(`HTTP 404 LightningComponentBundle '${obj}' が見つかりません`);
   const b = bR.data.records[0];
 
   const summary = [
@@ -1153,7 +1158,7 @@ async function buildFieldPermMatrix({ host, sid, apiVersion, obj, progress = () 
 }
 
 // ============ オブジェクト権限マトリクス (Profile/PermissionSet × Object) ============
-async function buildObjectPermMatrix({ host, sid, apiVersion }) {
+async function buildObjectPermMatrix({ host, sid, apiVersion, progress = () => {} }) {
   // ObjectPermissions: PermissionsRead/Create/Edit/Delete/ViewAllRecords/ModifyAllRecords × Parent (PermissionSet)
   let allRecs = [];
   let nextPath = `/services/data/v${apiVersion}/query/?q=` + encodeURIComponent(
@@ -1163,12 +1168,14 @@ async function buildObjectPermMatrix({ host, sid, apiVersion }) {
     `FROM ObjectPermissions LIMIT 10000`
   );
   while (nextPath) {
+    progress(`ObjectPermissions 取得中... (${allRecs.length} 件)`);
     const r = await sfFetch({ host, sid, path: nextPath });
-    if (!r.ok) throw new Error(`ObjectPermissions 取得失敗: HTTP ${r.status}`);
+    if (!r.ok) throw apiError("ObjectPermissions 取得", r);
     allRecs = allRecs.concat(r.data.records || []);
     nextPath = r.data && r.data.nextRecordsUrl ? r.data.nextRecordsUrl : null;
     if (allRecs.length > 50000) break;
   }
+  progress(`集計中... ${allRecs.length} 件をピボット`);
 
   const parents = new Map();
   const objects = new Set();
