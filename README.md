@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.38.0 (2026-05-20 04:00)** — 入力域拡大 + h3 sticky + Picker 検索確認:
+  - **✨ `#restBody` / `#apexCode` / `#soqlText` の min-height を 140px、フォント 12px ui-monospace に**: 長い JSON ペーストや Apex スニペット編集時の縦スクロール頻度を削減
+  - **✨ .design-preview h3 を sticky top: 28px**: h2 (top:0) の下に貼り付き、長セクション内で h3 (`### 2-3 子オブジェクト関係` 等) が常時可視。z-index:1 で table th (z:2) より下層
+  - **🧪 Picker 検索確認**: `picker.js` の `hay` フィールドが既に name+label+keyPrefix/type/UserLicense等を連結済 → 「取引先」「営業時間」等 label 検索が機能していることを確認 (修正不要)
 - **v1.37.0 (2026-05-20 03:55)** — 実行中表示の絵文字化 + Limits カード hover:
   - **✨ 主要ハンドラの進行中メッセージに絵文字付与**: SOQL/Inspector/CS候補/describe/LoginHistory `⏳ 取得中…`、Apex `⚡ 実行中…`、REST `📡 送信中…` で **どの操作が走っているか一目で識別可能**
   - **✨ Limits カードに hover エフェクト**: `transform: translateY(-1px) scale(1.02)` + `border-color: var(--accent)` + 軽い `box-shadow` で **上限値を眺めながらどのカードを見ているか視覚的に明確**
