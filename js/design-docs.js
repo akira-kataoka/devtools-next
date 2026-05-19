@@ -14,7 +14,17 @@ import { sfFetch, runSoql } from "./sf-api.js";
 function apiError(ctx, response) {
   const status = response && response.status != null ? response.status : "?";
   const data = response && response.data ? response.data : null;
-  const body = data ? (JSON.stringify(data).substring(0, 200)) : "";
+  // SF エラー配列 [{errorCode, message}] を最優先 (人間可読)
+  let body = "";
+  if (Array.isArray(data) && data[0] && (data[0].errorCode || data[0].message)) {
+    body = `${data[0].errorCode || ""} ${data[0].message || ""}`.trim();
+  } else if (data && typeof data === "object" && (data.error || data.message)) {
+    body = data.error_description || data.error || data.message;
+  } else if (data) {
+    // フォールバック: JSON 全体を 240 文字で切る + 切れた目印
+    const full = typeof data === "string" ? data : JSON.stringify(data);
+    body = full.length > 240 ? full.substring(0, 240) + "…(切詰)" : full;
+  }
   return new Error(`HTTP ${status} ${ctx}: ${body}`);
 }
 

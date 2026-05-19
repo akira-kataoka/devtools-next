@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.8.0 (2026-05-20 01:30)** — エラー可読性 + Picker UX:
+  - **🐛 design-docs.js apiError() の body 切り詰めを JSON 安全化**: SF エラー配列 `[{errorCode, message}]` を最優先で人間可読化、`data.error_description` / `data.message` を次選、その他は 240 字で切って `…(切詰)` 印を付加。**JSON の途中で切れて読みにくい**問題を解消
+  - **✨ Picker モーダル背景スクロール抑止**: `body.picker-open { overflow:hidden }` でモーダル展開中に背景がスクロールしないように
+  - **🧪 大量データ memory 検証手順 README 追加**: Performance Monitor で JS heap 観察、50000 件キャップ動作確認の 7 ステップ
 - **v1.7.0 (2026-05-20 01:25)** — 細部洗練:
   - **🐛 sf-api.js getUserInfo の堅牢化**: Chatter `users/me` で `firstName`/`lastName` が null/undefined 時に `"undefined undefined"` 生成を防止。fallback 順 `displayName → fn+ln → username → id`。完全失敗時のエラーメッセージに 2 段 (chatter / oauth2) の HTTP コードを含む
   - **✨ tool.html サイドバー折りたたみ時のホバーツールチップ**: アイコンのみ表示時に右側にラベルを浮かせて表示 (`data-tooltip` 属性 + CSS `::after`)。ホバーで全機能名が確認できる
@@ -262,6 +266,19 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 ```
 
 ---
+
+### 🧪 大量データエクスポート memory 検証手順
+
+50000 件キャップで動かす際に、ブラウザがフリーズしたりメモリリークしないことを確認する手順。
+
+1. tool.html → 「📥 データエクスポート」を開く
+2. オブジェクト = Account など大量のレコードがあるものを選択 → フィールド読込
+3. WHERE 空、LIMIT = 50000 を設定
+4. Chrome DevTools (右クリック→検証) → **Performance Monitor** タブ
+   - JS heap size の上限を確認 (300 MB が目安)
+5. 「Excel ダウンロード」を実行
+6. 進捗表示で `XXX 件取得…` が増えていくのを確認
+7. 完了後、JS heap size が 100 MB 程度に戻ること (急増したまま戻らなければ leak の兆候)
 
 ### 🧪 401 INVALID_SESSION_ID テスト手順
 

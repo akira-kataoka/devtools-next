@@ -233,6 +233,7 @@ textarea {
 .apiurl-grid .design-preview { flex: 1; min-height: 100px; max-height: 280px; }
 
 /* ==== 共通 Picker モーダル ==== */
+body.picker-open { overflow: hidden; }
 .picker-overlay {
   position: fixed; inset: 0;
   background: rgba(0, 0, 0, 0.55);

@@ -217,12 +217,18 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }
       </div>
     `;
     document.body.appendChild(overlay);
+    // 背景スクロール抑止
+    document.body.classList.add("picker-open");
 
     const $input = overlay.querySelector(".picker-search");
     const $list = overlay.querySelector(".picker-list");
     const $count = overlay.querySelector(".picker-count");
 
-    const close = (val) => { overlay.remove(); resolve(val); };
+    const close = (val) => {
+      overlay.remove();
+      document.body.classList.remove("picker-open");
+      resolve(val);
+    };
     overlay.querySelector(".picker-close").addEventListener("click", () => close(null));
     overlay.addEventListener("click", (e) => { if (e.target === overlay) close(null); });
     overlay.querySelector(".picker-reload").addEventListener("click", async () => {
