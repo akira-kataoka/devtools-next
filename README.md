@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.28.0 (2026-05-20 03:10)** — pill 統一 + Picker scroll 復元 + Apex 結果折返し:
+  - **✨ panel .pill に薄い背景色追加**: `.pill.ok/.err/.warn` に `rgba(色, 0.15)` の半透明背景。**popup .badge と同等の見た目で統一感**
+  - **✨ Picker scrollTop 保持/復元**: モーダル閉じる時に位置記憶、同一 kind 再表示時に復元 (`scrollMemory` Map)。**同じ Picker を何度も開く時にスクロールしなおさなくて済む**
+  - **✨ Apex/REST 結果の長文折返し**: `#apexResult.code` / `#restResult.code` を `white-space: pre-wrap + word-break: break-word` に。**長い debug ログや巨大 JSON も横スクロールせず確認可能**
 - **v1.27.0 (2026-05-20 03:05)** — UI トランジション + 空メッセージ絵文字 + ボタンホバー:
   - **✨ popup tabs / panel nav-btn にトランジション**: `transition: color/border-color/background 0.15s` で **タブ切替が滑らかに**。tab ホバー時に薄いアクセント背景
   - **✨ recordsTable 空時メッセージを絵文字化**: `該当なし` → **`📭 該当データなし`** + 中央寄せ + padding 増やしてリッチに

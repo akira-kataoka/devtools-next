@@ -6,6 +6,7 @@
 import { sfFetch, runSoql } from "./sf-api.js";
 
 const cache = new Map(); // key=kind|host|extraKey, value=items[]
+const scrollMemory = new Map(); // key=cacheKey, value=scrollTop
 
 // Org 切り替え時にキャッシュ全消去 (panel.js の reconnect から呼ぶ)
 export function invalidatePickerCache(reason = "") {
@@ -244,6 +245,10 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }
     });
 
     const close = (val) => {
+      // 閉じる直前にスクロール位置を保存 (同一 kind 再表示時に復元)
+      try {
+        if ($list && $list.scrollTop > 0) scrollMemory.set(cacheKey, $list.scrollTop);
+      } catch {}
       overlay.remove();
       document.body.classList.remove("picker-open");
       // 元のトリガにフォーカスを戻す (キーボードユーザー向け)
@@ -381,6 +386,11 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }
       }
     }
     render();
+    // 前回のスクロール位置を復元 (同一 kind 連続オープン時の利便性)
+    const savedTop = scrollMemory.get(cacheKey);
+    if (savedTop && savedTop > 0) {
+      requestAnimationFrame(() => { try { $list.scrollTop = savedTop; } catch {} });
+    }
   });
 }
 

@@ -69,8 +69,11 @@ textarea {
 .code {
   flex: 1; overflow: auto; min-height: 100px;
   background: #0a1224; border: 1px solid var(--line); border-radius: 6px;
-  padding: 8px; font: 11px/1.4 ui-monospace, Consolas, monospace; white-space: pre;
+  padding: 8px; font: 11px/1.4 ui-monospace, Consolas, monospace;
+  white-space: pre; word-break: normal;
 }
+/* Apex 実行結果など長文の場合は折返し許容 */
+#apexResult.code, #restResult.code { white-space: pre-wrap; word-break: break-word; }
 .grid {
   flex: 1; overflow: auto; min-height: 100px;
   background: #0a1224; border: 1px solid var(--line); border-radius: 6px;
@@ -102,9 +105,9 @@ textarea {
 }
 
 .pill { display: inline-block; padding: 1px 8px; border-radius: 10px; background: var(--bg3); color: var(--fg-dim); font-size: 10px; }
-.pill.ok { color: var(--ok); }
-.pill.err { color: var(--err); }
-.pill.warn { color: var(--warn); }
+.pill.ok { color: var(--ok); background: rgba(46,204,113,0.15); }
+.pill.err { color: var(--err); background: rgba(255,107,107,0.15); }
+.pill.warn { color: var(--warn); background: rgba(243,156,18,0.15); }
 
 .nav-sep {
   padding: 12px 10px 4px;
