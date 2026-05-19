@@ -1728,6 +1728,15 @@ async function doGenerateDesign() {
     } else {
       preview.innerHTML = `<pre><code>${escape(result.source)}</code></pre>`;
     }
+    // 設計書プレビューにトップへ戻るボタン (スクロールが深いときの戻り易さ)
+    if (!preview.querySelector(".design-top-btn")) {
+      const topBtn = document.createElement("button");
+      topBtn.className = "design-top-btn";
+      topBtn.textContent = "▲ トップへ";
+      topBtn.title = "プレビューの先頭にスクロール";
+      topBtn.addEventListener("click", () => preview.scrollTo({ top: 0, behavior: "smooth" }));
+      preview.appendChild(topBtn);
+    }
     // ER 図 (Mermaid) の場合は Live Editor ボタンを追加
     if (result.type === "erDiagram" && result.sections && result.sections[0] && result.sections[0].mermaid) {
       const mermaidText = result.sections[0].mermaid;
@@ -2043,14 +2052,14 @@ function recordsTable(records) {
   const cols = new Set();
   records.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
   const headers = Array.from(cols);
-  const head = `<tr>${headers.map((h) => `<th>${escape(h)}</th>`).join("")}</tr>`;
+  const head = `<tr>${headers.map((h) => `<th class="sortable" data-col="${escape(h)}" title="クリックで ${escape(h)} 列をソート">${escape(h)}</th>`).join("")}</tr>`;
   const rows = records.map((r) =>
     `<tr>${headers.map((h) => {
       const val = stringify(r[h]);
       return `<td title="ダブルクリックでコピー" class="cell-copyable">${escape(val)}</td>`;
     }).join("")}</tr>`
   ).join("");
-  // 結果を遅延でセル dblclick リスナーをバインド (innerHTML 挿入後の処理用 hint を data 属性で残す)
+  // 結果を遅延でセル dblclick + th click ソートリスナーをバインド
   setTimeout(() => {
     document.querySelectorAll("td.cell-copyable:not([data-copy-bound])").forEach((td) => {
       td.dataset.copyBound = "true";
@@ -2059,8 +2068,48 @@ function recordsTable(records) {
         navigator.clipboard.writeText(txt).then(() => panelToast(`📋 コピー: ${txt.substring(0, 40)}${txt.length > 40 ? "…" : ""}`, { kind: "ok" }));
       });
     });
+    document.querySelectorAll("th.sortable:not([data-sort-bound])").forEach((th) => {
+      th.dataset.sortBound = "true";
+      th.addEventListener("click", () => sortTableByTh(th));
+    });
   }, 0);
   return `<table>${head}${rows}</table>`;
+}
+
+// th クリックで in-place ソート (asc → desc → unsort トグル)
+function sortTableByTh(th) {
+  const table = th.closest("table");
+  if (!table) return;
+  const idx = Array.prototype.indexOf.call(th.parentElement.children, th);
+  const tbody = table.tBodies[0] || table;
+  // 既存の同一 th sort 状態をトグル
+  const cur = th.dataset.sortDir || "";
+  const next = cur === "asc" ? "desc" : (cur === "desc" ? "" : "asc");
+  table.querySelectorAll("th.sortable").forEach((other) => { delete other.dataset.sortDir; });
+  if (next) th.dataset.sortDir = next;
+  // 元の順序を保存 (初回 sort 時のみ)
+  if (!tbody.dataset.originalOrder) {
+    tbody.dataset.originalOrder = "true";
+    Array.from(tbody.rows).forEach((tr, i) => { tr.dataset.origIdx = String(i); });
+  }
+  const rows = Array.from(tbody.querySelectorAll("tr")).filter((tr) => tr.cells.length > idx && !tr.querySelector("th"));
+  if (!next) {
+    // 元順に戻す
+    rows.sort((a, b) => (parseInt(a.dataset.origIdx, 10) || 0) - (parseInt(b.dataset.origIdx, 10) || 0));
+  } else {
+    const dir = next === "asc" ? 1 : -1;
+    rows.sort((a, b) => {
+      const av = a.cells[idx] ? a.cells[idx].textContent : "";
+      const bv = b.cells[idx] ? b.cells[idx].textContent : "";
+      // 数値判定
+      const an = parseFloat(av), bn = parseFloat(bv);
+      if (!isNaN(an) && !isNaN(bn) && /^-?\d+(\.\d+)?$/.test(av.trim()) && /^-?\d+(\.\d+)?$/.test(bv.trim())) {
+        return (an - bn) * dir;
+      }
+      return av.localeCompare(bv, "ja") * dir;
+    });
+  }
+  rows.forEach((r) => tbody.appendChild(r));
 }
 function stringify(v) {
   if (v == null) return "";

@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.54.0 (2026-05-20 08:50)** — SOQL/grid 列クリックソート + 設計書 ▲ トップへボタン:
+  - **✨ `.grid` 結果テーブル列ヘッダクリックでソート**: asc → desc → unsort の 3 段階トグル。文字列は `localeCompare('ja')`、数値判定 (`/^-?\d+(\.\d+)?$/`) されたら数値ソート。**SOQL/describe/metadata/logs/ChangeSet/export preview 全てで適用**。クリック先 th に `▲/▼` 矢印 + hover で背景濃色 (cursor: pointer)
+  - **✨ 設計書プレビューに `▲ トップへ` ボタン (sticky 右下)**: 長い設計書 (1000+ 項目) 閲覧時、最下部から先頭に戻れる。`scrollTo({behavior:"smooth"})` で滑らかに移動。**Profile Reader の長スクロール対策に類似**
+  - **🧪 検証完了**: chrome.contextMenus は background.js:51-54 で `onInstalled` 時に登録済 (修正不要)
 - **v1.53.0 (2026-05-20 08:45)** — Apex Debug Log エラー UX + 参照ラベル + env transition:
   - **🐛 Apex Debug Log 取得失敗時に分かりやすいエラー表示**: 404 → 「削除済または期限切れ」、403 → 「ApexLog 参照権限不足 (Setup → ユーザー → 権限セット確認)」、その他 → HTTP コード + 「Trace Flag 未設定の可能性」のヒント。**従来は silent fail で out.textContent が空だった → 原因が即座に分かる**
   - **✨ Inspector reference 参照先ラベル `.ref-target-label` クラス化**: 従来インラインスタイル `color:var(--fg-dim); font-size:9px` → CSS クラス `color:#8aa3c8; font-size:10px; opacity:0.85` で **コントラスト向上 + 行ホバー時 accent 色に変化** で参照先が直感的

@@ -106,6 +106,10 @@ td.cell-copyable:hover { color: var(--accent); }
 .grid th, .grid td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .grid td { max-width: 400px; max-height: 80px; overflow: auto; word-break: break-word; }
 .grid th { background: #112042; color: var(--accent); position: sticky; top: 0; z-index: 2; }
+.grid th.sortable { cursor: pointer; user-select: none; }
+.grid th.sortable:hover { background: #1a2d56; }
+.grid th.sortable[data-sort-dir="asc"]::after { content: " ▲"; font-size: 9px; opacity: 0.8; }
+.grid th.sortable[data-sort-dir="desc"]::after { content: " ▼"; font-size: 9px; opacity: 0.8; }
 .grid tr:hover td { background: #112042; }
 .grid tbody tr:nth-child(even) td,
 .grid table tr:nth-child(even) td { background: rgba(27,150,255,0.025); }
@@ -190,7 +194,16 @@ td.cell-copyable:hover { color: var(--accent); }
   flex: 1; overflow: auto;
   background: #0f1830; border: 1px solid var(--line); border-radius: 6px;
   padding: 12px; color: var(--fg); font-size: 12px; line-height: 1.6;
+  position: relative;
 }
+.design-preview .design-top-btn {
+  position: sticky; bottom: 8px; left: 100%; transform: translateX(-100%);
+  background: var(--accent); color: #fff; padding: 4px 10px;
+  border: none; border-radius: 14px; font-size: 11px; cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4); opacity: 0.85;
+  transition: opacity 0.2s;
+}
+.design-preview .design-top-btn:hover { opacity: 1; }
 .design-preview .empty-hint {
   text-align: center; padding: 40px 20px; color: var(--accent);
   font-size: 14px; line-height: 2;
