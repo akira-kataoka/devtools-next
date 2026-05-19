@@ -981,14 +981,15 @@ async function exDownloadAll(fmt) {
 }
 
 function exToCsv(fields, records) {
-  const lines = [fields.join(",")];
+  // 全列を必ずダブルクォートで囲む (Limits CSV と統一、ロケール差/区切り混在対応)
+  const escAll = (v) => {
+    if (v == null) return `""`;
+    const s = typeof v === "object" ? JSON.stringify(v) : String(v);
+    return `"${s.replace(/"/g, '""')}"`;
+  };
+  const lines = [fields.map(escAll).join(",")];
   for (const r of records) {
-    lines.push(fields.map((h) => {
-      const v = r[h];
-      if (v == null) return "";
-      const s = typeof v === "object" ? JSON.stringify(v) : String(v);
-      return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    }).join(","));
+    lines.push(fields.map((h) => escAll(r[h])).join(","));
   }
   return lines.join("\n");
 }
@@ -1344,7 +1345,17 @@ function renderInspectorFields() {
     </div>`);
   }
 
-  if (!shown) html.push(`<div class="meta" style="padding:12px;text-align:center">該当フィールドなし (フィルタ条件を変更してください)</div>`);
+  if (!shown) {
+    const hints = [];
+    if (!document.getElementById("inspectShowNull").checked) hints.push("「空値も表示」をチェックすると null フィールドも出ます");
+    if (!document.getElementById("inspectShowSystem").checked) hints.push("「System 項目を表示」で CreatedById/SystemModstamp も見られます");
+    const filter = document.getElementById("inspectFilter").value;
+    if (filter) hints.push(`絞込み "${escape(filter)}" を ✕ でクリアして全件表示`);
+    html.push(`<div class="meta" style="padding:16px;text-align:center;line-height:1.7">` +
+      `<div style="font-size:13px;color:var(--accent);margin-bottom:8px">📭 該当フィールドなし</div>` +
+      hints.map((h) => `<div>💡 ${h}</div>`).join("") +
+      `</div>`);
+  }
   root.innerHTML = html.join("");
 
   // reference クリックハンドラ — describe で取得した参照先オブジェクト名を確実に使う

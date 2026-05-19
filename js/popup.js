@@ -145,7 +145,8 @@ function bindEvents() {
 
   document.getElementById("openDevtools").addEventListener("click", (e) => {
     e.preventDefault();
-    toast("F12でDevTools→「Salesforce」タブを開いてください");
+    chrome.tabs.create({ url: chrome.runtime.getURL("html/tool.html") });
+    window.close();
   });
 }
 
