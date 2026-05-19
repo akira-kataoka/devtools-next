@@ -167,7 +167,13 @@ textarea {
   border-bottom: 1px solid var(--line); padding-bottom: 3px;
 }
 .design-preview h1 { font-size: 16px; }
-.design-preview h2 { font-size: 14px; }
+.design-preview h2 {
+  font-size: 14px;
+  position: sticky; top: 0;
+  background: #0f1830;
+  padding-top: 6px;
+  z-index: 1;
+}
 .design-preview h3 { font-size: 12px; }
 .design-preview table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 11px; }
 .design-preview th, .design-preview td { padding: 4px 6px; border: 1px solid var(--line); text-align: left; vertical-align: top; }

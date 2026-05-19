@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.30.0 (2026-05-20 03:20)** — 設計書 h2 sticky + ブランドクリック復帰:
+  - **✨ 設計書プレビューの h2 を sticky 化**: 長い設計書 (フィールド権限マトリクス等) を下スクロール中もセクション見出し (`## 2.項目定義` 等) が画面上部に貼り付く。**今どのセクションを見ているか常時把握可能**
+  - **✨ ヘッダの「DevToolsNext」ブランドをクリックで SOQL ビューに戻る**: cursor:pointer + title 説明。**ロゴクリック=ホーム回帰の Web 慣習に対応**
+  - **🧪 popup .card padding は既に 10px 12px で統一済を確認**
 - **v1.29.0 (2026-05-20 03:15)** — Picker recent Org 別 + API URL 解説行間:
   - **🐛 Picker recent items を Org 別管理**: `chrome.storage.local.sfdtPickerRecent` のキーを `${orgId}|${kind}` に変更。`showPicker({orgKey: state.orgId})` で渡す。**異なる Salesforce 組織を行き来しても "Account" が混在しない**
   - **✨ apiBuildHelp 解説の行間調整**: `line-height: 1.7`、`p { margin: 6px 0 }`、`blockquote { margin: 8px 0 }` で **長い説明文が読みやすく**

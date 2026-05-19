@@ -180,6 +180,14 @@ function attachAllPickers() {
 function initHeader() {
   const hdr = document.querySelector("header.hdr");
   if (!hdr) return;
+  // ブランドをクリックでデフォルトビュー (SOQL) に戻る
+  const brand = hdr.querySelector(".brand");
+  if (brand && brand.dataset.brandClick !== "true") {
+    brand.dataset.brandClick = "true";
+    brand.style.cursor = "pointer";
+    brand.title = "クリックで SOQL クエリ画面に戻る";
+    brand.addEventListener("click", () => switchToView("soql"));
+  }
   // 既存に version badge が無ければ追加
   if (!document.getElementById("verBadge")) {
     const v = chrome.runtime.getManifest().version;
