@@ -56,7 +56,7 @@ function bindTabs() {
 function bindEvents() {
   document.getElementById("btnRefresh").addEventListener("click", refreshSession);
   document.getElementById("btnSettings").addEventListener("click", () => {
-    chrome.runtime.openOptionsPage ? chrome.runtime.openOptionsPage() : toast("設定は未実装です");
+    chrome.runtime.openOptionsPage ? chrome.runtime.openOptionsPage() : toast("設定は未実装です", { kind: "warn" });
   });
   // バージョン表示 + 自動アップデート
   const verEl = document.getElementById("versionBadge");
@@ -67,10 +67,10 @@ function bindEvents() {
   const btnUpd = document.getElementById("btnCheckUpdate");
   if (btnUpd) {
     btnUpd.addEventListener("click", async () => {
-      toast("アップデート確認中…");
+      toast("⏳ アップデート確認中…");
       chrome.runtime.sendMessage({ type: "sfdt:checkUpdate" }, (res) => {
-        if (res && res.ok) toast(`v${res.version} を確認しました (新版があれば自動更新)`);
-        else toast("確認に失敗しました");
+        if (res && res.ok) toast(`v${res.version} を確認しました (新版があれば自動更新)`, { kind: "ok" });
+        else toast("❌ 確認に失敗しました", { kind: "err" });
       });
     });
   }
@@ -107,7 +107,7 @@ function bindEvents() {
     btn.addEventListener("click", () => {
       const el = document.getElementById(btn.dataset.copy);
       if (!el) return;
-      navigator.clipboard.writeText(el.textContent.trim()).then(() => toast("コピーしました"));
+      navigator.clipboard.writeText(el.textContent.trim()).then(() => toast("📋 コピーしました", { kind: "ok" }));
     });
   });
 
@@ -223,9 +223,10 @@ function setStatus(msg) {
   document.getElementById("statusMsg").textContent = msg;
 }
 
-function toast(msg) {
+function toast(msg, opts = {}) {
+  document.querySelectorAll(".toast").forEach((t) => t.remove());
   const el = document.createElement("div");
-  el.className = "toast";
+  el.className = "toast" + (opts.kind ? " " + opts.kind : "");
   el.textContent = msg;
   document.body.appendChild(el);
   setTimeout(() => el.remove(), 1600);
@@ -267,7 +268,7 @@ function showDevToolsHelp() {
 }
 
 async function runQuickAction(act) {
-  if (!state.host) { toast("Salesforce タブが必要です"); return; }
+  if (!state.host) { toast("⚠ Salesforce タブが必要です", { kind: "warn" }); return; }
   const baseLightning = state.host.endsWith(".lightning.force.com")
     ? state.host
     : state.host.replace(/\.my\.salesforce\.com$/, ".lightning.force.com");
@@ -283,10 +284,10 @@ async function runQuickAction(act) {
 }
 
 async function doSoql() {
-  if (!state.sid) { toast("先に SF タブに接続してください"); return; }
+  if (!state.sid) { toast("⚠ 先に SF タブに接続してください", { kind: "warn" }); return; }
   const soql = document.getElementById("soqlText").value.trim();
   const tooling = document.getElementById("soqlTooling").checked;
-  if (!soql) { toast("クエリを入力してください"); return; }
+  if (!soql) { toast("⚠ クエリを入力してください", { kind: "warn" }); return; }
   setStatus("SOQL 実行中…");
   const t0 = performance.now();
   const r = await runSoql({ host: state.host, sid: state.sid, soql, apiVersion: state.apiVersion, tooling });
@@ -352,14 +353,14 @@ async function renderHistory() {
       if (el._suppressed) return;
       document.getElementById("soqlText").value = h.soql;
       document.getElementById("soqlTooling").checked = !!h.tooling;
-      toast("クエリを復元しました");
+      toast("📋 クエリを復元しました", { kind: "ok" });
     });
     // ダブルクリック=削除
     el.addEventListener("dblclick", async (e) => {
       e.preventDefault();
       el._suppressed = true;
       await deleteHistoryAt(idx);
-      toast("履歴を削除しました");
+      toast("🗑 履歴を削除しました", { kind: "warn" });
     });
     // 長押し (500ms) = ピン留め切替
     let pressTimer = null;
@@ -400,7 +401,7 @@ async function togglePinAt(index) {
   });
   await chrome.storage.local.set({ [HISTORY_KEY]: hist });
   await renderHistory();
-  toast(hist[0] && hist[0].pinned ? "ピン留めしました" : "ピンを外しました");
+  toast(hist[0] && hist[0].pinned ? "📌 ピン留めしました" : "ピンを外しました", { kind: "ok" });
 }
 
 async function clearHistory() {
@@ -409,12 +410,12 @@ async function clearHistory() {
   const kept = hist.filter((h) => h.pinned);
   await chrome.storage.local.set({ [HISTORY_KEY]: kept });
   await renderHistory();
-  toast(kept.length ? `ピン留め ${kept.length} 件を残してクリア` : "履歴をクリアしました");
+  toast(kept.length ? `🗑 ピン留め ${kept.length} 件を残してクリア` : "🗑 履歴をクリアしました", { kind: "warn" });
 }
 
 // ====== クイックログイン (Login as User) ======
 async function searchUsersForLogin() {
-  if (!state.sid) { toast("先に SF に接続してください"); return; }
+  if (!state.sid) { toast("⚠ 先に SF に接続してください", { kind: "warn" }); return; }
   const term = document.getElementById("loginAsSearch").value.trim();
   const result = document.getElementById("loginAsResult");
   result.innerHTML = `<div class="meta">検索中…</div>`;
@@ -467,7 +468,7 @@ async function searchUsersForLogin() {
 }
 
 function loginAsUser(u) {
-  if (!state.host || !state.orgId) { toast("セッション情報がありません"); return; }
+  if (!state.host || !state.orgId) { toast("⚠ セッション情報がありません", { kind: "warn" }); return; }
   // Salesforce Login As の URL: /servlet/servlet.su?oid=<OrgId15>&suorgadminid=<UserId15>&retURL=/lightning/&targetURL=/
   const orgId = state.orgId.substring(0, 15);
   const userId = (u.Id || "").substring(0, 15);
@@ -477,11 +478,11 @@ function loginAsUser(u) {
     : state.host.replace(/\.my\.salesforce\.com$/, ".lightning.force.com");
   const url = `https://${state.apiHost}/servlet/servlet.su?oid=${orgId}&suorgadminid=${userId}&retURL=%2Flightning%2F&targetURL=%2Flightning%2F`;
   chrome.tabs.create({ url });
-  toast(`${u.Name} としてログインします`);
+  toast(`👤 ${u.Name} としてログインします`, { kind: "ok" });
 }
 
 function exportCsv() {
-  if (!state.lastRecords || !state.lastRecords.length) { toast("結果がありません"); return; }
+  if (!state.lastRecords || !state.lastRecords.length) { toast("📭 結果がありません", { kind: "warn" }); return; }
   const csv = recordsToCsv(state.lastRecords);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -537,23 +538,23 @@ async function doParseId() {
   `;
   const cp = document.getElementById("cp18");
   if (cp) cp.addEventListener("click", () => {
-    navigator.clipboard.writeText(id18 || "").then(() => toast(`📋 18桁ID をコピーしました: ${id18}`));
+    navigator.clipboard.writeText(id18 || "").then(() => toast(`📋 18桁ID をコピーしました: ${id18}`, { kind: "ok" }));
   });
 }
 
 async function openIdInOrg() {
   const raw = document.getElementById("idInput").value.trim();
-  if (!/^[a-zA-Z0-9]{15,18}$/.test(raw)) { toast("有効な ID を入力してください"); return; }
-  if (!state.host) { toast("SF タブが必要です"); return; }
+  if (!/^[a-zA-Z0-9]{15,18}$/.test(raw)) { toast("⚠ 有効な ID を入力してください", { kind: "warn" }); return; }
+  if (!state.host) { toast("⚠ SF タブが必要です", { kind: "warn" }); return; }
   chrome.tabs.create({ url: `https://${state.host}/${raw}` });
 }
 
 async function doApiCall() {
-  if (!state.sid) { toast("先に SF タブに接続してください"); return; }
+  if (!state.sid) { toast("⚠ 先に SF タブに接続してください", { kind: "warn" }); return; }
   const method = document.getElementById("apiMethod").value;
   const path = document.getElementById("apiPath").value.trim();
   const body = document.getElementById("apiBody").value.trim();
-  if (!path) { toast("パスを入力してください"); return; }
+  if (!path) { toast("⚠ パスを入力してください", { kind: "warn" }); return; }
   setStatus("API 呼び出し中…");
   const t0 = performance.now();
   const r = await sfFetch({
@@ -599,7 +600,7 @@ function renderLinks() {
   const root = document.getElementById("linkList");
   root.innerHTML = "";
   const openLink = (path) => {
-    if (!state.host) { toast("SF タブが必要です"); return; }
+    if (!state.host) { toast("⚠ SF タブが必要です", { kind: "warn" }); return; }
     const lhost = state.host.endsWith(".lightning.force.com")
       ? state.host
       : state.host.replace(/\.my\.salesforce\.com$/, ".lightning.force.com");

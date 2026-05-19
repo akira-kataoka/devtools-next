@@ -4,6 +4,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.46.0 (2026-05-20 04:40)** — popup toast にも kind 対応 + 全 popup 呼出統一:
+  - **✨ popup `.toast.ok / .err / .warn` 色分け CSS 追加**: panel と同じ 3 色 (深緑 / 深赤 / 深橙) + border-left
+  - **✨ popup `toast(msg, {kind})` 実装**: 連続呼出で既存 .toast を全 remove (stack なし) + kind class 付与
+  - **✨ popup 全 toast 呼出 (約 18 箇所) に kind を付与**: 接続成功 ok / クエリ復元 ok / ピン留め ok → `ok`、未接続/未入力警告 → `warn`、確認失敗 → `err`。**panel/tool/popup の 3 環境すべてで toast 色分け統一**
+  - **🧪 design-docs.js / sf-api.js / picker.js には toast 呼出なし確認** (panel.js / popup.js の 2 ファイルで完結)
 - **v1.45.0 (2026-05-20 04:35)** — panelToast kind 全箇所適用:
   - **✨ 全 panelToast 呼出 (約 18 箇所) に `{kind:"ok"|"err"|"warn"}` を付与**: コピー成功 / 追加 → `ok` (深緑)、 削除 / 警告 / 未取得 → `warn` (深橙)、コピー失敗 / Error → `err` (深赤)。**従来全部 accent 青で同じ見た目だった toast が、操作結果のシリアス度を色で即座に区別可能に**
   - **対象**: Apex/REST/Inspector JSON コピー成功/失敗、ChangeSet 追加/除外、URL/curl/設計書コピー、Inspector 戻る、Mermaid Live Editor 警告、Export 必須エラー、TD ダブルクリックコピー
