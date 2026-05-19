@@ -56,7 +56,7 @@
           <button id="btnExportCsv">CSV</button>
           <button id="btnRunSoql" class="primary">▶ 実行 (Ctrl+Enter)</button>
         </div>
-        <textarea id="soqlText" rows="8" spellcheck="false">SELECT Id, Name, CreatedDate FROM Account ORDER BY CreatedDate DESC LIMIT 50</textarea>
+        <textarea id="soqlText" rows="8" spellcheck="false" placeholder="例: SELECT Id, Name FROM Account WHERE CreatedDate = LAST_N_DAYS:30 ORDER BY CreatedDate DESC LIMIT 50">SELECT Id, Name, CreatedDate FROM Account ORDER BY CreatedDate DESC LIMIT 50</textarea>
         <div id="soqlMeta" class="meta"></div>
         <div id="soqlResult" class="grid"></div>
       </div>
@@ -181,7 +181,7 @@
           <label><input type="checkbox" id="apexFetchLog" checked /> Debug Log 取得</label>
           <button id="btnRunApex" class="primary">▶ 実行 (Ctrl+Enter)</button>
         </div>
-        <textarea id="apexCode" rows="10" spellcheck="false">// 匿名 Apex
+        <textarea id="apexCode" rows="10" spellcheck="false" placeholder="例: System.debug(UserInfo.getName()); &#10;または DELETE [SELECT Id FROM Account WHERE Name LIKE 'Test%'];">// 匿名 Apex
 Account a = [SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 1];
 System.debug('Latest Account: ' + a);
 System.debug('Now: ' + System.now());</textarea>

@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.21.0 (2026-05-20 02:35)** — 🎉 サイクル30 達成記念 + 入力ガード + ガイド充実:
+  - **🐛 Export 0 件選択時のダウンロードガード**: SOQL 空 or `exState.selected` が空なら panelToast で警告して中断。**空 CSV が生成されない**
+  - **✨ textarea プレースホルダ例文充実**: SOQL は `SELECT ... LAST_N_DAYS:30 ...`、Apex は `System.debug` / `DELETE [SELECT...]` 等の実用例を placeholder に
+  - **🧪 README に「設計書ジェネレータ 22 種類 手動テストガイド」追加**: 各 design type の入力例 / 期待結果 / エラーパターンを 1 表で網羅。新規ユーザーの動作確認手順として最適
 - **v1.20.0 (2026-05-20 02:30)** — CSV 全列クォート統一 + Inspector ヒント + フッタ改善:
   - **🐛 exToCsv も全列クォート方式に統一**: Limits CSV と同じく全フィールド `"..."` 形式、null は `""` 表現。**ロケール差で安全な統一フォーマット**
   - **✨ Inspector 空状態の説明強化**: 「📭 該当フィールドなし」+ 状況に応じた **💡 ヒント** (「空値も表示」/「System 項目を表示」/フィルタクリアの案内) を表示
@@ -314,6 +318,35 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 ```
 
 ---
+
+### 🧪 設計書ジェネレータ 22 種類 手動テストガイド
+
+各 design type で「未入力時」「正常入力時」「存在しない値」を 3 段階でテスト:
+
+| # | type | 入力例 (正常) | 期待結果 |
+|---|---|---|---|
+| 1 | objectDef | `Account` | 概要 + 項目定義 + 子リレーション + RecordType |
+| 2 | profileDetail | `営業ユーザー` または `@MyPS` | 9 シート (Object/FLS/System/Apex/VF/Tab/RecordType/App) |
+| 3 | flsReport | `Account` | 全項目 × Profile/PermSet 縦持ち |
+| 4 | fieldPermMatrix | `Account` | 行=Field、列=Profile/PermSet、セル RW/R-/-- |
+| 5 | objectPermMatrix | (入力不要) | セル CRUDVM 6 桁 |
+| 6 | profileList | (入力不要) | 全 Profile 一覧 |
+| 7 | permsetList | (入力不要) | 全 PermissionSet 一覧 |
+| 8 | apexClassList | (入力不要) | 全 ApexClass 一覧 |
+| 9 | apexTriggerList | (入力不要) | 全 Trigger 一覧 (BI/AI/BU/AU/BD/AD/AUD) |
+| 10 | flowList | (入力不要) | Active Flow 一覧 |
+| 11 | validationRuleList | (任意 `Account`) | 入力規則一覧 |
+| 12 | recordTypeList | (任意 `Account`) | RecordType 一覧 |
+| 13 | fieldSetList | `Account` | FieldSet 一覧 |
+| 14 | customSettingList | (入力不要) | カスタム設定一覧 |
+| 15 | appList | (入力不要) | AppDefinition + AppMenuItem |
+| 16 | accessControl | (入力不要) | OWD + UserRole 階層 |
+| 17 | flowDetail | `My_Flow` | Flow 内の 14 要素分解 |
+| 18 | apexDetail | `AccountController` | SymbolTable から methods/properties/innerClasses |
+| 19 | lwcDetail | `myComponent` | バンドル内全ファイル |
+| 20 | erDiagram | `Account` | Mermaid + 「🔗 Mermaid Live Editor で可視化」ボタン |
+
+未入力時は「入力必須: <ヒント>」、存在しない値は「⚠ HTTP 404 ... が見つかりません」が表示されることを確認。
 
 ### 🧪 大量データエクスポート memory 検証手順
 

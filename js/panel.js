@@ -904,7 +904,15 @@ async function exDownloadAll(fmt) {
   }
   exBuildSoql();
   const soql = document.getElementById("exSoql").value;
-  if (!soql) return;
+  if (!soql) {
+    panelToast("⚠ SOQL が空です。先にフィールドを選択してください");
+    return;
+  }
+  // 選択フィールドが 0 件なら警告して中断
+  if (!exState.selected || exState.selected.size === 0) {
+    panelToast("⚠ 出力フィールドを 1 つ以上選択してください");
+    return;
+  }
   const tooling = document.getElementById("exTooling").checked;
   const limit = parseInt(document.getElementById("exLimit").value, 10) || 2000;
   const cap = Math.min(limit, 50000);
