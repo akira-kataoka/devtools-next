@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.51.0 (2026-05-20 08:35)** — Picker reload リセット + .meta smooth transition:
+  - **🐛 Picker reload (⟳) ボタンで selectedIdx / scrollTop / 検索クエリも一緒にリセット**: 旧データ位置を指したまま新データを表示する違和感を解消。`scrollMemory.delete(cacheKey)` で前回スクロール位置記憶もクリア。`⏳/❌` 絵文字付きステータスメッセージで進捗可視化
+  - **✨ `.meta` に `transition: opacity 0.25s ease`**: loading-pulse 完了時 (class removeChild 後) に opacity が ガクッと切替らず滑らかにフェード。**Inspector / SOQL / Login History の完了体感が滑らかに**
+  - **🧪 検証完了 (3 件すべて修正不要)**: ①design-docs.js apiError は SF error 配列優先 + object error + JSON truncate (240) で多層フォールバック実装済 ②Login Status filter は WHERE Status='Success' / Status!='Success' / 空 (All) で正しく分岐 ③Picker reload のみ selectedIdx 残留問題あり → 修正済
 - **v1.50.0 (2026-05-20 08:30)** — 🎉 累計50リリース節目 - 15→18桁展開 + CSV to clipboard + 検証完了:
   - **✨ Inspector 「📋 貼付」で 15桁 ID を 18桁に自動展開**: `to18CharId()` で checksum 計算、`📋 貼付: 001xxx (15→18 展開)` toast で可視化。**REST API は両方受け入れるが 18桁の方がオブジェクト判定で安全**
   - **✨ SOQL ツールバーに「📋 CSV」ボタン追加 (Inspector Reloaded 参考)**: ダウンロードせず直接クリップボード経由。Excel / Slack / メールに即ペースト可能。既存 `📥 CSV` (ダウンロード) と並列配置で用途別選択

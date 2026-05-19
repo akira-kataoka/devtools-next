@@ -265,12 +265,16 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
     overlay.addEventListener("click", (e) => { if (e.target === overlay) close(null); });
     overlay.querySelector(".picker-reload").addEventListener("click", async () => {
       cache.delete(cacheKey);
-      $count.textContent = "再取得中…";
+      scrollMemory.delete(cacheKey);
+      $count.textContent = "⏳ 再取得中…";
       try {
         items = await def.load({ host, sid, apiVersion, parentObject });
         cache.set(cacheKey, items);
+        selectedIdx = 0; // reload 後は先頭に戻す
+        $input.value = ""; // 検索クエリもクリア
         render();
-      } catch (e) { $count.textContent = "失敗: " + (e.message || e); }
+        if ($list) $list.scrollTop = 0;
+      } catch (e) { $count.textContent = "❌ 失敗: " + (e.message || e); }
     });
 
     let selectedIdx = 0;
