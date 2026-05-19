@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.27.0 (2026-05-20 03:05)** — UI トランジション + 空メッセージ絵文字 + ボタンホバー:
+  - **✨ popup tabs / panel nav-btn にトランジション**: `transition: color/border-color/background 0.15s` で **タブ切替が滑らかに**。tab ホバー時に薄いアクセント背景
+  - **✨ recordsTable 空時メッセージを絵文字化**: `該当なし` → **`📭 該当データなし`** + 中央寄せ + padding 増やしてリッチに
+  - **✨ button.primary ホバーで青いリング**: `box-shadow: 0 0 0 3px rgba(27,150,255,0.2)` で**フォーカスっぽいハロー効果**、押せる感の強調
 - **v1.26.0 (2026-05-20 03:00)** — Picker キーボード拡張 + Excel 重複確認:
   - **✨ Picker のキーボード操作を Home/End/PageUp/PageDown まで拡張**: 従来は ↑↓ Enter Esc のみ → 先頭/末尾/10 行ジャンプ可能に。**大量候補からの素早い移動が可能**
   - **🧪 Excel シート名重複サフィックス確認**: `toExcelXml` で同名シートに `_2 / _3` を付与する既存ロジックを再確認 (31 文字制限内で切る)

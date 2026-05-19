@@ -47,9 +47,11 @@ html, body {
 .tab {
   flex: 1; padding: 8px 0; cursor: pointer; border: none; background: transparent;
   color: var(--fg-dim); font-size: 12px; font-weight: 600;
+  border-bottom: 2px solid transparent;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
-.tab.active { color: var(--accent); border-bottom: 2px solid var(--accent); background: var(--bg); }
-.tab:hover { color: var(--fg); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--bg); }
+.tab:hover { color: var(--fg); background: rgba(27,150,255,0.05); }
 
 .panel { padding: 10px; }
 .panel.hidden { display: none; }
@@ -87,8 +89,8 @@ button {
   border-radius: 6px; padding: 7px 10px; cursor: pointer; font-size: 11px; font-weight: 600;
 }
 button:hover { border-color: var(--accent); }
-button.primary { background: var(--accent); color: #fff; border-color: var(--accent-2); }
-button.primary:hover { background: var(--accent-2); }
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent-2); transition: box-shadow 0.15s, background 0.15s; }
+button.primary:hover { background: var(--accent-2); box-shadow: 0 0 0 3px rgba(27, 150, 255, 0.2); }
 
 textarea, input[type=text], select {
   width: 100%;

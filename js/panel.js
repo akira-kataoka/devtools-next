@@ -1850,7 +1850,7 @@ async function doEnableDebug() {
 // (旧 doLimits は新ダッシュボード版に置換済 — 下部参照)
 
 function recordsTable(records) {
-  if (!records || !records.length) return `<div class="meta" style="padding:8px">該当なし</div>`;
+  if (!records || !records.length) return `<div class="meta" style="padding:16px;text-align:center;font-size:12px">📭 該当データなし</div>`;
   const cols = new Set();
   records.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
   const headers = Array.from(cols);
