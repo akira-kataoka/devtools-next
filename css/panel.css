@@ -425,7 +425,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   padding: 6px 10px; border-bottom: 1px solid var(--line);
   cursor: pointer; font-size: 11px;
 }
-.picker-row:not(.header):hover { background: #112042; }
+.picker-row:not(.header):hover { background: #112042; border-left: 3px solid var(--accent); padding-left: 7px; }
 .picker-row.selected { background: rgba(27, 150, 255, 0.15); border-left: 3px solid var(--accent); }
 .picker-row.header {
   background: #112042; color: var(--accent); font-weight: 700; font-size: 10px;

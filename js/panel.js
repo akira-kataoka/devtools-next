@@ -1383,6 +1383,14 @@ function renderInspectorFields() {
       const formatted = v.toLocaleString("ja-JP");
       const unit = f.type === "currency" ? " ¥" : (f.type === "percent" ? " %" : "");
       valHtml = `<div class="fval" title="raw: ${escape(String(v))}">${escape(formatted)}${escape(unit)}</div>`;
+    } else if ((f.type === "date" || f.type === "datetime") && typeof v === "string") {
+      // ISO 文字列を読みやすく整形 (date: YYYY-MM-DD, datetime: YYYY-MM-DD HH:mm)
+      let display = v;
+      const m = v.match(/^(\d{4}-\d{2}-\d{2})(?:T(\d{2}:\d{2}))?/);
+      if (m) {
+        display = f.type === "datetime" && m[2] ? `${m[1]} ${m[2]}` : m[1];
+      }
+      valHtml = `<div class="fval" title="raw: ${escape(v)}">${escape(display)}</div>`;
       // 参照先オブジェクト名を describe から取得 (KeyPrefix 逆引きに頼らない確実な方法)
       const refObj = (f.referenceTo || [])[0] || "";
       const refLabel = refObj ? `<span style="color:var(--fg-dim);font-size:9px;margin-left:6px">→ ${escape(refObj)}</span>` : "";

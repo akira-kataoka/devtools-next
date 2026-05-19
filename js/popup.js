@@ -151,7 +151,7 @@ function bindEvents() {
 }
 
 async function refreshSession() {
-  setStatus("セッション取得中…");
+  setStatus("⏳ セッション取得中…");
   const active = await getActiveSfTab();
   if (!active) {
     setBadge("非SF", false);

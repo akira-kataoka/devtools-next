@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.36.0 (2026-05-20 03:50)** — 日付フォーマット + ローディング + Picker ホバー:
+  - **✨ Inspector で date/datetime 型を整形表示**: ISO 文字列 (`2026-05-20T03:45:00.000+0000`) → date: `2026-05-20`、datetime: `2026-05-20 03:45` に整形。title 属性に raw 値併記
+  - **✨ popup ローディング表示**: `setStatus("⏳ セッション取得中…")` で **⏳ 絵文字** 付き、待機中であることを明示
+  - **✨ Picker 行ホバー強化**: 背景 `#112042` + 左 3px のアクセント色 border-left + padding 調整 → **どの行をホバーしているか視覚的に明確**
 - **v1.35.0 (2026-05-20 03:45)** — 数値フォーマット + セルコピー:
   - **✨ Inspector で数値型のロケール 3桁区切り**: `int/double/currency/percent` で `v.toLocaleString("ja-JP")` 適用 (例: `1234567` → `1,234,567`)、currency に `¥`、percent に `%` 単位、title 属性に raw 値併記
   - **✨ 結果テーブルのセルをダブルクリックでコピー**: `td.cell-copyable` クラス + dblclick リスナー → `📋 コピー: <値先頭40字>...` toast、`cursor:copy` でカーソル明示
