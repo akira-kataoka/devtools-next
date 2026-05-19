@@ -877,6 +877,22 @@ function cancelExDownload() {
   }
 }
 
+// Export ボタン文言を動的変更 (走行中は ⏸ 取消)
+function setExportButtonsLabel(running) {
+  const map = {
+    btnExDlCsv: { running: "⏸ 取消 (CSV)", idle: "CSV ダウンロード" },
+    btnExDlExcel: { running: "⏸ 取消 (Excel)", idle: "Excel (.xls) ダウンロード" },
+    btnExDlJson: { running: "⏸ 取消 (JSON)", idle: "JSON ダウンロード" },
+  };
+  for (const [id, labels] of Object.entries(map)) {
+    const b = document.getElementById(id);
+    if (b) {
+      b.textContent = running ? labels.running : labels.idle;
+      b.classList.toggle("dl-running", !!running);
+    }
+  }
+}
+
 async function exDownloadAll(fmt) {
   if (!state.sid) return;
   if (exDownloadActive) {
@@ -896,6 +912,7 @@ async function exDownloadAll(fmt) {
   const t0 = performance.now();
   exDownloadCancelFlag = false;
   exDownloadActive = true;
+  setExportButtonsLabel(true);
   progress.innerHTML = `<span class="pill">0 件取得…</span> <span class="meta">もう一度 ダウンロード を押すとキャンセル</span>`;
 
   const base = tooling ? `/services/data/v${state.apiVersion}/tooling/query/` : `/services/data/v${state.apiVersion}/query/`;
@@ -903,12 +920,14 @@ async function exDownloadAll(fmt) {
   while (nextPath && all.length < cap) {
     if (exDownloadCancelFlag) {
       exDownloadActive = false;
+      setExportButtonsLabel(false);
       progress.innerHTML = `<span class="pill warn">⏸ キャンセル済</span> ${all.length} 件取得した時点で停止`;
       return;
     }
     const r = await sfFetch({ host: state.host, sid: state.sid, path: nextPath });
     if (!r.ok) {
       exDownloadActive = false;
+      setExportButtonsLabel(false);
       displayApiError(progress, r.status, r.data, "Export");
       return;
     }
@@ -918,6 +937,7 @@ async function exDownloadAll(fmt) {
   }
   if (all.length > cap) all = all.slice(0, cap);
   exDownloadActive = false;
+  setExportButtonsLabel(false);
   const dt = Math.round(performance.now() - t0);
   progress.innerHTML = `<span class="pill ok">${all.length} 件取得完了</span> ${dt}ms / 出力中…`;
 
@@ -1487,6 +1507,27 @@ async function doGenerateDesign() {
       preview.innerHTML = `<h2>${escape(result.title)}</h2><p>Excel 形式 (SpreadsheetML XML / .xls) を生成しました。</p><p><b>ダウンロード</b> ボタンで保存 → ダブルクリックで Excel が直接開きます。<br/>Excel が「保存形式を選ぶ」と聞いてきたら <b>.xlsx</b> を選んで再保存してください。</p><pre><code>${escape(result.source.substring(0, 800))}…</code></pre>`;
     } else {
       preview.innerHTML = `<pre><code>${escape(result.source)}</code></pre>`;
+    }
+    // ER 図 (Mermaid) の場合は Live Editor ボタンを追加
+    if (result.type === "erDiagram" && result.sections && result.sections[0] && result.sections[0].mermaid) {
+      const mermaidText = result.sections[0].mermaid;
+      const liveBtn = document.createElement("button");
+      liveBtn.className = "primary";
+      liveBtn.style.marginTop = "8px";
+      liveBtn.textContent = "🔗 Mermaid Live Editor で可視化";
+      liveBtn.title = "別タブで mermaid.live を開いて図を表示";
+      liveBtn.addEventListener("click", () => {
+        // mermaid.live は #pako: base64 で URL に埋め込めるが、軽量のため #base64: 形式で
+        try {
+          const state = { code: mermaidText, mermaid: { theme: "dark" }, autoSync: true, updateDiagram: true };
+          const enc = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+          chrome.tabs.create({ url: `https://mermaid.live/edit#base64:${enc}` });
+        } catch (e) {
+          chrome.tabs.create({ url: "https://mermaid.live/" });
+          panelToast("Mermaid Live Editor を開きました (コードをペーストしてください)");
+        }
+      });
+      preview.appendChild(liveBtn);
     }
   } catch (e) {
     const dt = Math.round(performance.now() - t0);

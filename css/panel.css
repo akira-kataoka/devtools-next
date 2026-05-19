@@ -27,6 +27,15 @@ button {
 button:hover { border-color: var(--accent); }
 button.primary { background: var(--accent); color: #fff; border-color: var(--accent-2); }
 button.primary:hover { background: var(--accent-2); }
+
+/* Export ダウンロード走行中ボタンを 取消 風に */
+button.dl-running {
+  background: var(--warn) !important;
+  border-color: var(--warn) !important;
+  color: #fff !important;
+  font-weight: 700;
+}
+button.dl-running:hover { background: var(--err) !important; }
 input, select, textarea {
   background: #0a1224; color: var(--fg); border: 1px solid var(--line);
   border-radius: 5px; padding: 5px 8px;
