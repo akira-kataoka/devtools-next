@@ -1,0 +1,10 @@
+{
+  "extensionName": {
+    "message": "Salesforce DevTool",
+    "description": "Extension name"
+  },
+  "extensionDescription": {
+    "message": "Developer utilities for Salesforce: SOQL runner, ID parser, Setup shortcuts, REST/Tooling API explorer, session inspector, anonymous Apex, Login History viewer.",
+    "description": "Extension description"
+  }
+}

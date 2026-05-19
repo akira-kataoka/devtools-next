@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Salesforce DevTool</title>
+  <link rel="stylesheet" href="../css/popup.css" />
+</head>
+<body>
+  <header class="hdr">
+    <div class="hdr-l">
+      <span class="brand">SF DevTool</span>
+      <span id="versionBadge" class="badge" title="現在のバージョン">v?</span>
+      <span id="orgBadge" class="badge">未接続</span>
+    </div>
+    <div class="hdr-r">
+      <button id="btnRefresh" class="ico" title="再取得">⟳</button>
+      <button id="btnCheckUpdate" class="ico" title="アップデート確認・自動再ロード">⬆</button>
+      <button id="btnSettings" class="ico" title="設定">⚙</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="home">ホーム</button>
+    <button class="tab" data-tab="soql">SOQL</button>
+    <button class="tab" data-tab="id">ID解析</button>
+    <button class="tab" data-tab="api">API</button>
+    <button class="tab" data-tab="links">便利リンク</button>
+  </nav>
+
+  <main class="panel" id="panel-home">
+    <section class="card whats-new">
+      <h2>🚀 ツールを全画面で開く (F12 不要)</h2>
+      <div class="whats-new-body">
+        <div style="margin-bottom:6px">下のボタンで、すべての機能を 1 つのフルスクリーンタブで使えます (F12 を押さなくても OK)</div>
+        <button id="btnOpenTool" class="primary" style="width:100%;font-size:13px;padding:10px">🛠️ Salesforce DevTool を開く</button>
+        <ul class="whats-new-list" style="margin-top:8px">
+          <li>🔍 レコード Inspector / 📥 データエクスポート / Apex 実行</li>
+          <li>🔗 API URL ビルダー / 📦 変更セット (package.xml)</li>
+          <li>📊 Limits ダッシュボード / 設計書ジェネレータ 20種</li>
+        </ul>
+        <div style="font-size:10px;color:var(--fg-dim);margin-top:4px">
+          ※ F12 → "Salesforce" タブ からの旧導線も引き続き使えます
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>セッション情報</h2>
+      <div class="kv"><span>ドメイン</span><code id="info-host">-</code></div>
+      <div class="kv"><span>Org ID</span><code id="info-orgid">-</code></div>
+      <div class="kv"><span>User ID</span><code id="info-userid">-</code></div>
+      <div class="kv"><span>Session</span>
+        <code id="info-session">-</code>
+        <button class="mini" data-copy="info-session">copy</button>
+      </div>
+      <div class="kv"><span>API ver</span>
+        <select id="info-apiver">
+          <option>62.0</option><option>61.0</option><option>60.0</option><option>59.0</option>
+        </select>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>クイックアクション</h2>
+      <div class="grid2">
+        <button data-act="openSetup">Setup を開く</button>
+        <button data-act="openDevConsole">Developer Console</button>
+        <button data-act="openObjectMgr">オブジェクトマネージャ</button>
+        <button data-act="openProfile">マイプロフィール</button>
+        <button data-act="openOrgInfo">組織情報</button>
+        <button data-act="logoutUI">ログアウト</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>🔐 他ユーザーとしてログイン (Login as User)</h2>
+      <div class="row">
+        <input id="loginAsSearch" placeholder="名前 / Username / Email で検索 (Active のみ)" />
+        <button id="btnLoginAsSearch" class="primary">検索</button>
+      </div>
+      <div id="loginAsResult" class="login-as-result"></div>
+    </section>
+  </main>
+
+  <main class="panel hidden" id="panel-soql">
+    <section class="card">
+      <h2>SOQL クエリ</h2>
+      <textarea id="soqlText" rows="6" spellcheck="false">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 20</textarea>
+      <div class="row">
+        <label><input type="checkbox" id="soqlTooling" /> Tooling API</label>
+        <button id="btnRunSoql" class="primary">実行</button>
+        <button id="btnExportCsv">CSV</button>
+        <button id="btnClearHistory" class="mini" title="履歴を全削除">履歴クリア</button>
+      </div>
+      <div id="soqlMeta" class="meta"></div>
+      <div id="soqlResult" class="result"></div>
+    </section>
+    <section class="card">
+      <h2>履歴 (最新10件)</h2>
+      <div id="soqlHistory" class="history"></div>
+    </section>
+  </main>
+
+  <main class="panel hidden" id="panel-id">
+    <section class="card">
+      <h2>Salesforce ID 解析</h2>
+      <input type="text" id="idInput" placeholder="15桁 / 18桁 の Salesforce ID" />
+      <div class="row">
+        <button id="btnParseId" class="primary">解析</button>
+        <button id="btnOpenId">レコードを開く</button>
+      </div>
+      <div id="idResult" class="result"></div>
+    </section>
+  </main>
+
+  <main class="panel hidden" id="panel-api">
+    <section class="card">
+      <h2>REST API 探索</h2>
+      <div class="row">
+        <select id="apiMethod">
+          <option>GET</option><option>POST</option><option>PATCH</option><option>DELETE</option>
+        </select>
+        <input id="apiPath" placeholder="/services/data/v62.0/sobjects/Account/describe" />
+      </div>
+      <textarea id="apiBody" rows="4" placeholder='POST/PATCH の JSON ボディ（任意）'></textarea>
+      <div class="row">
+        <button id="btnApiSend" class="primary">送信</button>
+        <button id="btnApiLimits">/limits</button>
+        <button id="btnApiVersions">/versions</button>
+      </div>
+      <div id="apiMeta" class="meta"></div>
+      <pre id="apiResult" class="code"></pre>
+    </section>
+  </main>
+
+  <main class="panel hidden" id="panel-links">
+    <section class="card">
+      <h2>便利リンク</h2>
+      <div class="links" id="linkList"></div>
+    </section>
+  </main>
+
+  <footer class="ftr">
+    <span id="statusMsg">Ready</span>
+    <a href="#" id="openDevtools">DevTools パネルを開く方法</a>
+  </footer>
+
+  <script src="../js/popup.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+{
+  "manifest_version": 3,
+  "name": "Salesforce DevTool",
+  "version": "0.7.0",
+  "description": "Salesforce 開発者向けユーティリティ拡張。SOQL/Apex 実行、レコードInspector、データエクスポート、API URLビルダー、変更セット/package.xml、Login as User、Login History、設計書20種、Limitsダッシュボード、自動アップデート。",
+  "default_locale": "ja",
+  "permissions": [
+    "cookies",
+    "storage",
+    "activeTab",
+    "scripting",
+    "tabs",
+    "contextMenus",
+    "clipboardWrite",
+    "alarms",
+    "notifications"
+  ],
+  "host_permissions": [
+    "https://*.salesforce.com/*",
+    "https://*.force.com/*",
+    "https://*.lightning.force.com/*",
+    "https://*.my.salesforce.com/*",
+    "https://*.cloudforce.com/*",
+    "https://*.salesforce-setup.com/*",
+    "https://*.salesforce-experience.com/*",
+    "https://*.visualforce.com/*",
+    "https://*.sandbox.my.salesforce.com/*"
+  ],
+  "background": {
+    "service_worker": "js/background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Salesforce DevTool",
+    "default_popup": "html/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "devtools_page": "html/devtools.html",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.salesforce.com/*",
+        "https://*.force.com/*",
+        "https://*.lightning.force.com/*",
+        "https://*.my.salesforce.com/*",
+        "https://*.visualforce.com/*"
+      ],
+      "js": ["js/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["html/*.html", "html/tool.html", "css/*.css", "js/*.js", "icons/*.png", "VERSION.txt"],
+      "matches": [
+        "https://*.salesforce.com/*",
+        "https://*.force.com/*",
+        "https://*.lightning.force.com/*",
+        "https://*.my.salesforce.com/*"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1529 @@
+// 設計書ジェネレータ。Salesforce のメタデータを REST/Tooling API から集めて
+// Markdown / HTML / CSV / TSV / Mermaid で出力する。
+
+import { sfFetch, runSoql } from "./sf-api.js";
+
+/**
+ * 各設計書タイプの定義。
+ * fetch: { host, sid, apiVersion, obj? } を受け取り { title, rows[], note? } を返す。
+ * rows: ヘッダ配列 + データ行 (オブジェクト配列)。
+ */
+
+export async function generateDesign({ type, host, sid, apiVersion, obj, format }) {
+  let result;
+  switch (type) {
+    case "objectDef":          result = await buildObjectDef({ host, sid, apiVersion, obj }); break;
+    case "profileList":        result = await buildProfileList({ host, sid, apiVersion }); break;
+    case "permsetList":        result = await buildPermSetList({ host, sid, apiVersion }); break;
+    case "apexClassList":      result = await buildApexClassList({ host, sid, apiVersion }); break;
+    case "apexTriggerList":    result = await buildApexTriggerList({ host, sid, apiVersion }); break;
+    case "flowList":           result = await buildFlowList({ host, sid, apiVersion }); break;
+    case "validationRuleList": result = await buildValidationRuleList({ host, sid, apiVersion, obj }); break;
+    case "recordTypeList":     result = await buildRecordTypeList({ host, sid, apiVersion, obj }); break;
+    case "fieldSetList":       result = await buildFieldSetList({ host, sid, apiVersion, obj }); break;
+    case "customSettingList":  result = await buildCustomSettingList({ host, sid, apiVersion }); break;
+    case "erDiagram":          result = await buildErDiagram({ host, sid, apiVersion, obj }); break;
+    case "fieldPermMatrix":    result = await buildFieldPermMatrix({ host, sid, apiVersion, obj }); break;
+    case "objectPermMatrix":   result = await buildObjectPermMatrix({ host, sid, apiVersion }); break;
+    case "profileDetail":      result = await buildProfileDetail({ host, sid, apiVersion, obj }); break;
+    case "flsReport":          result = await buildFlsReport({ host, sid, apiVersion, obj }); break;
+    case "appList":            result = await buildAppList({ host, sid, apiVersion }); break;
+    case "accessControl":      result = await buildAccessControl({ host, sid, apiVersion }); break;
+    case "flowDetail":         result = await buildFlowDetail({ host, sid, apiVersion, obj }); break;
+    case "apexDetail":         result = await buildApexDetail({ host, sid, apiVersion, obj }); break;
+    case "lwcDetail":          result = await buildLwcDetail({ host, sid, apiVersion, obj }); break;
+    default: throw new Error("unknown design type: " + type);
+  }
+  result.format = format;
+  result.source = formatOutput(result, format);
+  return result;
+}
+
+// ============ オブジェクト定義書 ============
+async function buildObjectDef({ host, sid, apiVersion, obj }) {
+  if (!obj) throw new Error("オブジェクト API 名を入力してください");
+  const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
+  if (!r.ok) throw new Error(`describe 失敗: HTTP ${r.status} ${JSON.stringify(r.data)}`);
+  const d = r.data;
+  const fields = d.fields || [];
+
+  // フィールド表
+  const headers = [
+    "No", "API名", "ラベル", "型", "桁/精度", "必須", "一意", "外部ID", "計算式",
+    "参照先", "選択リスト値", "デフォルト", "説明",
+  ];
+  const rows = fields.map((f, i) => ({
+    "No": i + 1,
+    "API名": f.name,
+    "ラベル": f.label,
+    "型": f.type + (f.length ? "" : ""),
+    "桁/精度": f.type === "string" || f.type === "textarea" || f.type === "email" || f.type === "phone" || f.type === "url"
+      ? String(f.length || "")
+      : (f.precision != null && f.scale != null ? `${f.precision},${f.scale}` : ""),
+    "必須": !f.nillable && !f.defaultedOnCreate && f.createable ? "○" : "",
+    "一意": f.unique ? "○" : "",
+    "外部ID": f.externalId ? "○" : "",
+    "計算式": f.calculated ? "○" : "",
+    "参照先": (f.referenceTo || []).join(", "),
+    "選択リスト値": (f.picklistValues || []).slice(0, 30).map((p) => p.value + (p.active ? "" : "(無効)")).join(" / "),
+    "デフォルト": f.defaultValue != null ? String(f.defaultValue) : "",
+    "説明": f.inlineHelpText || "",
+  }));
+
+  // メタ情報
+  const meta = [
+    ["API名", d.name],
+    ["ラベル", d.label],
+    ["カスタム", d.custom ? "Yes" : "No"],
+    ["キー Prefix", d.keyPrefix || ""],
+    ["項目数", String(fields.length)],
+    ["レコードタイプ", String((d.recordTypeInfos || []).filter((r) => !r.master).length)],
+    ["子リレーション数", String((d.childRelationships || []).length)],
+    ["共有モデル", d.customSetting ? "Custom Setting" : "Standard"],
+    ["作成可", d.createable ? "○" : ""],
+    ["更新可", d.updateable ? "○" : ""],
+    ["削除可", d.deletable ? "○" : ""],
+    ["検索可", d.queryable ? "○" : ""],
+    ["FLS必須", d.feedEnabled ? "Feed有効" : ""],
+  ];
+
+  // 子リレーション
+  const childRels = (d.childRelationships || []).map((c, i) => ({
+    "No": i + 1,
+    "子オブジェクト": c.childSObject,
+    "リレーション項目": c.field,
+    "リレーション名": c.relationshipName || "",
+    "カスケード削除": c.cascadeDelete ? "○" : "",
+    "再ペアレント": c.deprecatedAndHidden ? "(廃止)" : "",
+  }));
+
+  // レコードタイプ
+  const rts = (d.recordTypeInfos || []).filter((r) => !r.master).map((r, i) => ({
+    "No": i + 1,
+    "API名": r.developerName,
+    "ラベル": r.name,
+    "ID": r.recordTypeId,
+    "有効": r.available ? "○" : "",
+    "デフォルト": r.defaultRecordTypeMapping ? "○" : "",
+  }));
+
+  return {
+    title: `オブジェクト定義書: ${d.label} (${d.name})`,
+    type: "objectDef",
+    sections: [
+      { heading: "1. オブジェクト概要", kvRows: meta },
+      { heading: "2. 項目定義", headers, rows },
+      ...(childRels.length ? [{ heading: "3. 子リレーション", headers: Object.keys(childRels[0] || {}), rows: childRels }] : []),
+      ...(rts.length ? [{ heading: "4. レコードタイプ", headers: Object.keys(rts[0] || {}), rows: rts }] : []),
+    ],
+    note: `生成元: /services/data/v${apiVersion}/sobjects/${d.name}/describe`,
+  };
+}
+
+// ============ プロファイル一覧 ============
+async function buildProfileList({ host, sid, apiVersion }) {
+  const r = await runSoql({
+    host, sid, apiVersion,
+    soql: `SELECT Id, Name, UserLicense.Name, UserType, CreatedDate, LastModifiedDate, Description FROM Profile ORDER BY Name LIMIT 200`,
+  });
+  if (!r.ok) throw new Error(`Profile 取得失敗: ${JSON.stringify(r.data)}`);
+  const headers = ["No", "プロファイル名", "ライセンス", "UserType", "説明", "更新日"];
+  const rows = (r.data.records || []).map((p, i) => ({
+    "No": i + 1,
+    "プロファイル名": p.Name,
+    "ライセンス": p.UserLicense ? p.UserLicense.Name : "",
+    "UserType": p.UserType || "",
+    "説明": p.Description || "",
+    "更新日": fmtDate(p.LastModifiedDate),
+  }));
+  return {
+    title: "プロファイル一覧",
+    type: "profileList",
+    sections: [{ heading: "プロファイル", headers, rows }],
+    note: `合計 ${rows.length} 件`,
+  };
+}
+
+// ============ 権限セット一覧 ============
+async function buildPermSetList({ host, sid, apiVersion }) {
+  const r = await runSoql({
+    host, sid, apiVersion,
+    soql: `SELECT Id, Name, Label, License.Name, IsCustom, NamespacePrefix, Description, LastModifiedDate FROM PermissionSet WHERE IsOwnedByProfile=false ORDER BY Name LIMIT 500`,
+  });
+  if (!r.ok) throw new Error(`PermissionSet 取得失敗: ${JSON.stringify(r.data)}`);
+  const headers = ["No", "API名", "ラベル", "ライセンス", "Namespace", "カスタム", "説明", "更新日"];
+  const rows = (r.data.records || []).map((p, i) => ({
+    "No": i + 1,
+    "API名": p.Name,
+    "ラベル": p.Label,
+    "ライセンス": p.License ? p.License.Name : "",
+    "Namespace": p.NamespacePrefix || "",
+    "カスタム": p.IsCustom ? "○" : "",
+    "説明": p.Description || "",
+    "更新日": fmtDate(p.LastModifiedDate),
+  }));
+  return {
+    title: "権限セット一覧",
+    type: "permsetList",
+    sections: [{ heading: "PermissionSet", headers, rows }],
+    note: `合計 ${rows.length} 件 (プロファイル付随を除く)`,
+  };
+}
+
+// ============ ApexClass 一覧 ============
+async function buildApexClassList({ host, sid, apiVersion }) {
+  const r = await runSoql({
+    host, sid, apiVersion, tooling: true,
+    soql: `SELECT Id, Name, ApiVersion, Status, NamespacePrefix, LengthWithoutComments, CreatedDate, LastModifiedDate FROM ApexClass WHERE ManageableState='unmanaged' OR ManageableState='installedEditable' ORDER BY Name LIMIT 500`,
+  });
+  if (!r.ok) throw new Error(`ApexClass 取得失敗: ${JSON.stringify(r.data)}`);
+  const headers = ["No", "クラス名", "Namespace", "APIVer", "ステータス", "行数(コメント除)", "更新日"];
+  const rows = (r.data.records || []).map((p, i) => ({
+    "No": i + 1,
+    "クラス名": p.Name,
+    "Namespace": p.NamespacePrefix || "",
+    "APIVer": p.ApiVersion,
+    "ステータス": p.Status,
+    "行数(コメント除)": p.LengthWithoutComments,
+    "更新日": fmtDate(p.LastModifiedDate),
+  }));
+  return {
+    title: "Apex クラス一覧",
+    type: "apexClassList",
+    sections: [{ heading: "ApexClass", headers, rows }],
+    note: `合計 ${rows.length} 件 (unmanaged + installedEditable)`,
+  };
+}
+
+// ============ ApexTrigger 一覧 ============
+async function buildApexTriggerList({ host, sid, apiVersion }) {
+  const r = await runSoql({
+    host, sid, apiVersion, tooling: true,
+    soql: `SELECT Id, Name, TableEnumOrId, UsageBeforeInsert, UsageAfterInsert, UsageBeforeUpdate, UsageAfterUpdate, UsageBeforeDelete, UsageAfterDelete, UsageAfterUndelete, Status, LastModifiedDate FROM ApexTrigger ORDER BY TableEnumOrId, Name LIMIT 500`,
+  });
+  if (!r.ok) throw new Error(`ApexTrigger 取得失敗: ${JSON.stringify(r.data)}`);
+  const headers = ["No", "トリガ名", "対象オブジェクト", "BI", "AI", "BU", "AU", "BD", "AD", "AUD", "ステータス", "更新日"];
+  const rows = (r.data.records || []).map((p, i) => ({
+    "No": i + 1,
+    "トリガ名": p.Name,
+    "対象オブジェクト": p.TableEnumOrId,
+    "BI": p.UsageBeforeInsert ? "○" : "",
+    "AI": p.UsageAfterInsert ? "○" : "",
+    "BU": p.UsageBeforeUpdate ? "○" : "",
+    "AU": p.UsageAfterUpdate ? "○" : "",
+    "BD": p.UsageBeforeDelete ? "○" : "",
+    "AD": p.UsageAfterDelete ? "○" : "",
+    "AUD": p.UsageAfterUndelete ? "○" : "",
+    "ステータス": p.Status,
+    "更新日": fmtDate(p.LastModifiedDate),
+  }));
+  return {
+    title: "Apex トリガ一覧",
+    type: "apexTriggerList",
+    sections: [{ heading: "ApexTrigger", headers, rows }],
+    note: `BI=Before Insert / AI=After Insert / BU=Before Update / AU=After Update / BD=Before Delete / AD=After Delete / AUD=After Undelete  合計 ${rows.length} 件`,
+  };
+}
+
+// ============ Flow 一覧 ============
+async function buildFlowList({ host, sid, apiVersion }) {
+  const r = await runSoql({
+    host, sid, apiVersion, tooling: true,
+    soql: `SELECT Id, MasterLabel, DeveloperName, ProcessType, IsActive, VersionNumber, Description, LastModifiedDate FROM FlowDefinitionView WHERE IsActive=true ORDER BY MasterLabel LIMIT 500`,
+  });
+  if (!r.ok) {
+    // FlowDefinitionView が無い org 向けに Flow へフォールバック
+    const r2 = await runSoql({
+      host, sid, apiVersion, tooling: true,
+      soql: `SELECT Id, MasterLabel, ProcessType, Status, VersionNumber, Definition.DeveloperName FROM Flow WHERE Status='Active' ORDER BY MasterLabel LIMIT 500`,
+    });
+    if (!r2.ok) throw new Error(`Flow 取得失敗: ${JSON.stringify(r2.data)}`);
+    const headers = ["No", "ラベル", "API名", "ProcessType", "Status", "Version"];
+    const rows = (r2.data.records || []).map((f, i) => ({
+      "No": i + 1, "ラベル": f.MasterLabel, "API名": f.Definition ? f.Definition.DeveloperName : "",
+      "ProcessType": f.ProcessType, "Status": f.Status, "Version": f.VersionNumber,
+    }));
+    return { title: "Flow 一覧 (Active)", type: "flowList", sections: [{ heading: "Flow", headers, rows }], note: `合計 ${rows.length} 件` };
+  }
+  const headers = ["No", "ラベル", "API名", "ProcessType", "有効", "Version", "説明", "更新日"];
+  const rows = (r.data.records || []).map((f, i) => ({
+    "No": i + 1,
+    "ラベル": f.MasterLabel,
+    "API名": f.DeveloperName,
+    "ProcessType": f.ProcessType,
+    "有効": f.IsActive ? "○" : "",
+    "Version": f.VersionNumber,
+    "説明": f.Description || "",
+    "更新日": fmtDate(f.LastModifiedDate),
+  }));
+  return { title: "Flow 一覧 (Active)", type: "flowList", sections: [{ heading: "Flow", headers, rows }], note: `合計 ${rows.length} 件` };
+}
+
+// ============ 入力規則一覧 ============
+async function buildValidationRuleList({ host, sid, apiVersion, obj }) {
+  const where = obj ? `WHERE EntityDefinition.QualifiedApiName='${obj.replace(/'/g, "\\'")}'` : "";
+  const r = await runSoql({
+    host, sid, apiVersion, tooling: true,
+    soql: `SELECT Id, ValidationName, Active, Description, ErrorDisplayField, ErrorMessage, EntityDefinition.QualifiedApiName, LastModifiedDate FROM ValidationRule ${where} ORDER BY EntityDefinition.QualifiedApiName, ValidationName LIMIT 500`,
+  });
+  if (!r.ok) throw new Error(`ValidationRule 取得失敗: ${JSON.stringify(r.data)}`);
+  const headers = ["No", "オブジェクト", "ルール名", "有効", "エラー表示項目", "エラーメッセージ", "説明", "更新日"];
+  const rows = (r.data.records || []).map((v, i) => ({
+    "No": i + 1,
+    "オブジェクト": v.EntityDefinition ? v.EntityDefinition.QualifiedApiName : "",
+    "ルール名": v.ValidationName,
+    "有効": v.Active ? "○" : "",
+    "エラー表示項目": v.ErrorDisplayField || "(top of page)",
+    "エラーメッセージ": v.ErrorMessage || "",
+    "説明": v.Description || "",
+    "更新日": fmtDate(v.LastModifiedDate),
+  }));
+  return {
+    title: obj ? `入力規則一覧: ${obj}` : "入力規則一覧 (全オブジェクト)",
+    type: "validationRuleList",
+    sections: [{ heading: "ValidationRule", headers, rows }],
+    note: `合計 ${rows.length} 件`,
+  };
+}
+
+// ============ レコードタイプ一覧 ============
+async function buildRecordTypeList({ host, sid, apiVersion, obj }) {
+  const where = obj ? `WHERE SobjectType='${obj.replace(/'/g, "\\'")}'` : "";
+  const r = await runSoql({
+    host, sid, apiVersion,
+    soql: `SELECT Id, Name, DeveloperName, SobjectType, IsActive, Description, BusinessProcessId FROM RecordType ${where} ORDER BY SobjectType, DeveloperName LIMIT 500`,
+  });
+  if (!r.ok) throw new Error(`RecordType 取得失敗: ${JSON.stringify(r.data)}`);
+  const headers = ["No", "オブジェクト", "API名", "ラベル", "有効", "BusinessProcess", "説明"];
+  const rows = (r.data.records || []).map((rt, i) => ({
+    "No": i + 1,
+    "オブジェクト": rt.SobjectType,
+    "API名": rt.DeveloperName,
+    "ラベル": rt.Name,
+    "有効": rt.IsActive ? "○" : "",
+    "BusinessProcess": rt.BusinessProcessId || "",
+    "説明": rt.Description || "",
+  }));
+  return {
+    title: obj ? `レコードタイプ一覧: ${obj}` : "レコードタイプ一覧 (全オブジェクト)",
+    type: "recordTypeList",
+    sections: [{ heading: "RecordType", headers, rows }],
+    note: `合計 ${rows.length} 件`,
+  };
+}
+
+// ============ FieldSet 一覧 ============
+async function buildFieldSetList({ host, sid, apiVersion, obj }) {
+  if (!obj) throw new Error("オブジェクト API 名を入力してください");
+  const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
+  if (!r.ok) throw new Error(`describe 失敗: HTTP ${r.status}`);
+  const sets = (r.data.namedLayoutInfos || r.data.fieldSets) ? (r.data.fieldSets || []) : [];
+  // describe レスポンスに FieldSet は無いため、Tooling FieldSet を引く
+  const tr = await runSoql({
+    host, sid, apiVersion, tooling: true,
+    soql: `SELECT Id, DeveloperName, MasterLabel, Description, EntityDefinition.QualifiedApiName FROM FieldSet WHERE EntityDefinition.QualifiedApiName='${obj.replace(/'/g, "\\'")}' ORDER BY DeveloperName LIMIT 200`,
+  });
+  if (!tr.ok) throw new Error(`FieldSet 取得失敗: ${JSON.stringify(tr.data)}`);
+  const headers = ["No", "API名", "ラベル", "説明"];
+  const rows = (tr.data.records || []).map((fs, i) => ({
+    "No": i + 1,
+    "API名": fs.DeveloperName,
+    "ラベル": fs.MasterLabel,
+    "説明": fs.Description || "",
+  }));
+  return {
+    title: `フィールドセット一覧: ${obj}`,
+    type: "fieldSetList",
+    sections: [{ heading: "FieldSet", headers, rows }],
+    note: `合計 ${rows.length} 件`,
+  };
+}
+
+// ============ カスタム設定一覧 ============
+async function buildCustomSettingList({ host, sid, apiVersion }) {
+  const r = await runSoql({
+    host, sid, apiVersion, tooling: true,
+    soql: `SELECT Id, DeveloperName, MasterLabel, CustomSettingsType, Description FROM CustomObject WHERE CustomSettingsType != null ORDER BY DeveloperName LIMIT 500`,
+  });
+  if (!r.ok) throw new Error(`CustomSetting 取得失敗: ${JSON.stringify(r.data)}`);
+  const headers = ["No", "API名", "ラベル", "種別", "説明"];
+  const rows = (r.data.records || []).map((c, i) => ({
+    "No": i + 1,
+    "API名": c.DeveloperName + "__c",
+    "ラベル": c.MasterLabel,
+    "種別": c.CustomSettingsType, // 'List' or 'Hierarchy'
+    "説明": c.Description || "",
+  }));
+  return {
+    title: "カスタム設定一覧",
+    type: "customSettingList",
+    sections: [{ heading: "CustomSetting", headers, rows }],
+    note: `合計 ${rows.length} 件`,
+  };
+}
+
+// ============ ER 図 (Mermaid) ============
+async function buildErDiagram({ host, sid, apiVersion, obj }) {
+  if (!obj) throw new Error("基点オブジェクト API 名を入力してください (例: Account)");
+  // 起点 + 直接の参照先を 1 hop 取る
+  const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
+  if (!r.ok) throw new Error(`describe 失敗: HTTP ${r.status}`);
+  const d = r.data;
+  const lines = ["erDiagram"];
+  const seen = new Set([d.name]);
+
+  // 親方向 (reference 項目)
+  const refs = (d.fields || []).filter((f) => f.type === "reference" && (f.referenceTo || []).length);
+  refs.forEach((f) => {
+    (f.referenceTo || []).forEach((to) => {
+      lines.push(`    ${d.name} }o--|| ${to} : "${f.name}"`);
+      seen.add(to);
+    });
+  });
+  // 子方向 (childRelationships)
+  (d.childRelationships || []).slice(0, 30).forEach((c) => {
+    if (!c.childSObject) return;
+    lines.push(`    ${d.name} ||--o{ ${c.childSObject} : "${c.field}"`);
+    seen.add(c.childSObject);
+  });
+
+  // 各エンティティに API 名表示用の空ブロック
+  Array.from(seen).forEach((name) => {
+    lines.push(`    ${name} {`);
+    if (name === d.name) {
+      (d.fields || []).slice(0, 8).forEach((f) => {
+        lines.push(`        ${sanitizeType(f.type)} ${f.name} "${f.label.replace(/"/g, "'")}"`);
+      });
+    }
+    lines.push(`    }`);
+  });
+
+  const mermaid = lines.join("\n");
+
+  return {
+    title: `ER 図: ${d.label} (${d.name}) を起点とした 1-hop`,
+    type: "erDiagram",
+    sections: [{ heading: "ER 図 (Mermaid)", mermaid }],
+    note: "Mermaid Live Editor (https://mermaid.live) に貼ると可視化されます。",
+  };
+}
+
+function sanitizeType(t) {
+  return (t || "string").replace(/[^A-Za-z0-9_]/g, "_");
+}
+
+// =============================================================================
+// プロファイル / 権限セット 詳細レポート (Salesforce Profile Reader 互換)
+// =============================================================================
+// 引数 obj には Profile 名 or PermissionSet API 名 を入れる。
+// 「<プロファイル名>」または「@<PermissionSet API名>」(@ プレフィックスで権限セット)
+async function buildProfileDetail({ host, sid, apiVersion, obj }) {
+  if (!obj) throw new Error("プロファイル名 (Profile.Name) または '@<PermissionSet API名>' を入力してください");
+
+  const isPermSet = obj.startsWith("@");
+  const lookupName = isPermSet ? obj.substring(1) : obj;
+
+  // 1. 対象 PermissionSet を特定 (Profile は IsOwnedByProfile=true の PermissionSet として存在)
+  let psSoql;
+  if (isPermSet) {
+    psSoql = `SELECT Id, Name, Label, IsOwnedByProfile, License.Name, Description FROM PermissionSet WHERE Name='${lookupName.replace(/'/g, "\\'")}' AND IsOwnedByProfile=false LIMIT 1`;
+  } else {
+    psSoql = `SELECT Id, Name, Label, IsOwnedByProfile, Profile.Name, Profile.UserLicense.Name, Profile.UserType, Profile.Description FROM PermissionSet WHERE IsOwnedByProfile=true AND Profile.Name='${lookupName.replace(/'/g, "\\'")}' LIMIT 1`;
+  }
+  const psR = await runSoql({ host, sid, apiVersion, soql: psSoql });
+  if (!psR.ok) throw new Error(`PermissionSet 取得失敗: ${JSON.stringify(psR.data)}`);
+  const ps = (psR.data.records || [])[0];
+  if (!ps) throw new Error(isPermSet ? `権限セット '${lookupName}' が見つかりません` : `プロファイル '${lookupName}' が見つかりません`);
+  const psId = ps.Id;
+  const targetType = ps.IsOwnedByProfile ? "プロファイル" : "権限セット";
+  const targetName = ps.IsOwnedByProfile ? (ps.Profile ? ps.Profile.Name : ps.Name) : (ps.Label || ps.Name);
+
+  // 2. PermissionSet 全フィールド (System 権限) を describe で取得し、ON のものを抽出
+  const sysR = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/PermissionSet/${psId}` });
+  const systemPerms = [];
+  if (sysR.ok && sysR.data) {
+    for (const [k, v] of Object.entries(sysR.data)) {
+      if (k.startsWith("Permissions") && v === true) {
+        systemPerms.push({ "権限名": k.replace(/^Permissions/, ""), "ON/OFF": "ON" });
+      }
+    }
+  }
+
+  // 3. ObjectPermissions
+  const opR = await fetchAllPaged({ host, sid, apiVersion,
+    soql: `SELECT SObjectType, PermissionsRead, PermissionsCreate, PermissionsEdit, PermissionsDelete, PermissionsViewAllRecords, PermissionsModifyAllRecords FROM ObjectPermissions WHERE ParentId='${psId}' ORDER BY SObjectType`,
+  });
+  const objHeaders = ["オブジェクト", "Read", "Create", "Edit", "Delete", "ViewAll", "ModifyAll"];
+  const objRows = (opR.records || []).map((r) => ({
+    "オブジェクト": r.SObjectType,
+    "Read": r.PermissionsRead ? "○" : "",
+    "Create": r.PermissionsCreate ? "○" : "",
+    "Edit": r.PermissionsEdit ? "○" : "",
+    "Delete": r.PermissionsDelete ? "○" : "",
+    "ViewAll": r.PermissionsViewAllRecords ? "○" : "",
+    "ModifyAll": r.PermissionsModifyAllRecords ? "○" : "",
+  }));
+
+  // 4. FieldPermissions (FLS) — このプロファイル/権限セットの全フィールド
+  const fpR = await fetchAllPaged({ host, sid, apiVersion,
+    soql: `SELECT SObjectType, Field, PermissionsRead, PermissionsEdit FROM FieldPermissions WHERE ParentId='${psId}' ORDER BY SObjectType, Field`,
+  });
+  const fldHeaders = ["オブジェクト", "フィールド API 名", "Read", "Edit", "アクセス"];
+  const fldRows = (fpR.records || []).map((r) => ({
+    "オブジェクト": r.SObjectType,
+    "フィールド API 名": (r.Field || "").replace(/^[^.]+\./, ""),
+    "Read": r.PermissionsRead ? "○" : "",
+    "Edit": r.PermissionsEdit ? "○" : "",
+    "アクセス": r.PermissionsEdit ? "RW (Read + Edit)" : (r.PermissionsRead ? "R (Read のみ)" : "アクセス無し"),
+  }));
+
+  // 5. Apex クラスアクセス / VF ページアクセス (SetupEntityAccess)
+  const seaR = await fetchAllPaged({ host, sid, apiVersion,
+    soql: `SELECT SetupEntityType, SetupEntityId FROM SetupEntityAccess WHERE ParentId='${psId}'`,
+  });
+  // SetupEntityId は ApexClass / ApexPage / TabSet / NamedCredential など。名前解決のため別途引く
+  const apexIds = [];
+  const vfIds = [];
+  const otherEntities = [];
+  for (const r of (seaR.records || [])) {
+    if (r.SetupEntityType === "ApexClass") apexIds.push(r.SetupEntityId);
+    else if (r.SetupEntityType === "ApexPage") vfIds.push(r.SetupEntityId);
+    else otherEntities.push({ "種別": r.SetupEntityType, "Id": r.SetupEntityId });
+  }
+  let apexRows = []; let vfRows = [];
+  if (apexIds.length) {
+    const ids = apexIds.map((i) => `'${i}'`).join(",");
+    const rr = await runSoql({ host, sid, apiVersion, tooling: true,
+      soql: `SELECT Id, Name, NamespacePrefix FROM ApexClass WHERE Id IN (${ids}) ORDER BY Name`,
+    });
+    if (rr.ok) apexRows = (rr.data.records || []).map((r, i) => ({ "No": i + 1, "クラス名": r.Name, "Namespace": r.NamespacePrefix || "" }));
+  }
+  if (vfIds.length) {
+    const ids = vfIds.map((i) => `'${i}'`).join(",");
+    const rr = await runSoql({ host, sid, apiVersion,
+      soql: `SELECT Id, Name, NamespacePrefix FROM ApexPage WHERE Id IN (${ids}) ORDER BY Name`,
+    });
+    if (rr.ok) vfRows = (rr.data.records || []).map((r, i) => ({ "No": i + 1, "VF Page": r.Name, "Namespace": r.NamespacePrefix || "" }));
+  }
+
+  // 6. Tab 設定 (PermissionSetTabSetting)
+  const tabR = await runSoql({ host, sid, apiVersion,
+    soql: `SELECT Name, Visibility FROM PermissionSetTabSetting WHERE ParentId='${psId}' ORDER BY Name`,
+  });
+  const tabRows = ((tabR.ok && tabR.data.records) || []).map((t, i) => ({
+    "No": i + 1, "タブ": t.Name, "可視性": t.Visibility,
+  }));
+
+  // 7. レコードタイプ可視性 (PermissionSet → assignedRecordTypes 系は API 限定的なので RecordTypeVisibility を試行)
+  let rtRows = [];
+  try {
+    const rtR = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/tooling/query/?q=` +
+      encodeURIComponent(`SELECT Id, RecordTypeId, RecordType.DeveloperName, RecordType.SobjectType, Visible, IsDefault FROM PermissionSetRecordTypeVisibility WHERE ParentId='${psId}' ORDER BY RecordType.SobjectType, RecordType.DeveloperName`) });
+    if (rtR.ok) {
+      rtRows = (rtR.data.records || []).map((rt, i) => ({
+        "No": i + 1,
+        "オブジェクト": rt.RecordType ? rt.RecordType.SobjectType : "",
+        "RecordType": rt.RecordType ? rt.RecordType.DeveloperName : "",
+        "Visible": rt.Visible ? "○" : "",
+        "Default": rt.IsDefault ? "○" : "",
+      }));
+    }
+  } catch {}
+
+  // 8. ApplicationVisibility (PermissionSet → Application 可視性) — Tooling 経由
+  let appRows = [];
+  try {
+    const appR = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/tooling/query/?q=` +
+      encodeURIComponent(`SELECT Application, Visible, IsDefault FROM PermissionSetApplicationVisibility WHERE ParentId='${psId}' ORDER BY Application`) });
+    if (appR.ok) {
+      appRows = (appR.data.records || []).map((a, i) => ({
+        "No": i + 1, "アプリケーション": a.Application, "Visible": a.Visible ? "○" : "", "Default": a.IsDefault ? "○" : "",
+      }));
+    }
+  } catch {}
+
+  // === サマリ ===
+  const summary = [
+    ["種別", targetType],
+    ["名前", targetName],
+    ["ラベル", ps.Label || ""],
+    ["ライセンス", isPermSet ? (ps.License ? ps.License.Name : "") : (ps.Profile && ps.Profile.UserLicense ? ps.Profile.UserLicense.Name : "")],
+    ["UserType", (!isPermSet && ps.Profile && ps.Profile.UserType) || ""],
+    ["説明", isPermSet ? (ps.Description || "") : (ps.Profile && ps.Profile.Description || "")],
+    ["PermissionSet Id", psId],
+    ["生成日時", new Date().toLocaleString("ja-JP")],
+    ["集計件数 Object 権限", String(objRows.length)],
+    ["集計件数 Field 権限 (FLS)", String(fldRows.length)],
+    ["集計件数 System 権限 ON", String(systemPerms.length)],
+    ["集計件数 Apex Class アクセス", String(apexRows.length)],
+    ["集計件数 VF Page アクセス", String(vfRows.length)],
+    ["集計件数 Tab 設定", String(tabRows.length)],
+    ["集計件数 RecordType 可視性", String(rtRows.length)],
+    ["集計件数 App 可視性", String(appRows.length)],
+  ];
+
+  const sections = [];
+  sections.push({ heading: "1.サマリ", kvRows: summary });
+  if (objRows.length) sections.push({ heading: "2.Object 権限", headers: objHeaders, rows: objRows });
+  if (fldRows.length) sections.push({ heading: "3.項目レベルセキュリティ (FLS)", headers: fldHeaders, rows: fldRows });
+  if (systemPerms.length) sections.push({ heading: "4.System 権限 (ON のみ)", headers: ["権限名", "ON/OFF"], rows: systemPerms });
+  if (apexRows.length) sections.push({ heading: "5.Apex Class アクセス", headers: Object.keys(apexRows[0]), rows: apexRows });
+  if (vfRows.length) sections.push({ heading: "6.VF Page アクセス", headers: Object.keys(vfRows[0]), rows: vfRows });
+  if (tabRows.length) sections.push({ heading: "7.Tab 設定", headers: Object.keys(tabRows[0]), rows: tabRows });
+  if (rtRows.length) sections.push({ heading: "8.RecordType 可視性", headers: Object.keys(rtRows[0]), rows: rtRows });
+  if (appRows.length) sections.push({ heading: "9.App 可視性", headers: Object.keys(appRows[0]), rows: appRows });
+
+  return {
+    title: `${targetType}詳細レポート: ${targetName}`,
+    type: "profileDetail",
+    sections,
+    note: `Excel 形式推奨 (各章が別シート)。プロファイル名指定なら '営業ユーザー'、権限セットなら '@MyPermSet_API名' のように @ を先頭に付けてください。`,
+  };
+}
+
+// =============================================================================
+// FLS レポート (1オブジェクト × 全 Profile/PermSet)。fieldPermMatrix と似るが、
+// フィールド毎に「Read 可能なロール一覧」「Edit 可能なロール一覧」を縦持ちで出す書き方
+// =============================================================================
+async function buildFlsReport({ host, sid, apiVersion, obj }) {
+  if (!obj) throw new Error("オブジェクト API 名を入力してください (例: Account)");
+
+  const dr = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
+  if (!dr.ok) throw new Error(`describe 失敗: HTTP ${dr.status}`);
+  const allFields = (dr.data.fields || [])
+    .filter((f) => !f.calculated && f.type !== "id")
+    .map((f) => ({ name: f.name, label: f.label, type: f.type, required: !f.nillable && !f.defaultedOnCreate && f.createable }));
+
+  const fpR = await fetchAllPaged({ host, sid, apiVersion,
+    soql: `SELECT Field, PermissionsRead, PermissionsEdit, Parent.Name, Parent.IsOwnedByProfile, Parent.Profile.Name, Parent.Label FROM FieldPermissions WHERE SobjectType='${obj.replace(/'/g, "\\'")}'`,
+  });
+
+  // フィールドごとに Profile/PermSet 一覧を集計
+  const map = new Map(); // field -> { read: [], edit: [], noAccess: [] }
+  for (const rec of (fpR.records || [])) {
+    if (!rec.Parent) continue;
+    const isP = !!rec.Parent.IsOwnedByProfile;
+    const name = (isP ? "👤 " : "🔑 ") + (isP ? ((rec.Parent.Profile && rec.Parent.Profile.Name) || rec.Parent.Name) : (rec.Parent.Label || rec.Parent.Name));
+    const fld = (rec.Field || "").replace(/^[^.]+\./, "");
+    if (!map.has(fld)) map.set(fld, { read: [], edit: [], noAccess: [] });
+    const m = map.get(fld);
+    if (rec.PermissionsEdit) m.edit.push(name);
+    else if (rec.PermissionsRead) m.read.push(name);
+    else m.noAccess.push(name);
+  }
+
+  const headers = ["No", "API 名", "ラベル", "型", "必須", "編集可 (Edit)", "参照のみ (Read)", "アクセス無し (--)"];
+  const rows = allFields.map((f, i) => {
+    const m = map.get(f.name) || { read: [], edit: [], noAccess: [] };
+    return {
+      "No": i + 1,
+      "API 名": f.name,
+      "ラベル": f.label,
+      "型": f.type,
+      "必須": f.required ? "○" : "",
+      "編集可 (Edit)": m.edit.sort().join("\n"),
+      "参照のみ (Read)": m.read.sort().join("\n"),
+      "アクセス無し (--)": m.noAccess.sort().join("\n"),
+    };
+  });
+
+  return {
+    title: `項目レベルセキュリティ (FLS) レポート: ${obj}`,
+    type: "flsReport",
+    sections: [
+      { heading: "凡例", kvRows: [
+        ["👤 名前", "プロファイル"],
+        ["🔑 名前", "権限セット"],
+        ["Edit", "編集可 (PermissionsEdit=true)"],
+        ["Read", "参照可だが編集不可 (PermissionsRead=true, PermissionsEdit=false)"],
+        ["--", "アクセスなし"],
+      ]},
+      { heading: "FLS 一覧", headers, rows },
+    ],
+    note: "Excel 形式推奨 (セルの折り返し有効)。Profile Reader 互換書式。",
+  };
+}
+
+// ============ アプリケーション一覧 ============
+async function buildAppList({ host, sid, apiVersion }) {
+  // Tooling: CustomApplication (Lightning + Classic) + AppDefinition (Lightning Apps の正規)
+  const r = await runSoql({
+    host, sid, apiVersion, tooling: true,
+    soql: `SELECT Id, DeveloperName, MasterLabel, NamespacePrefix, UiType, NavType, ProfileId, Description FROM AppDefinition ORDER BY MasterLabel LIMIT 500`,
+  });
+  if (!r.ok) throw new Error(`AppDefinition 取得失敗: ${JSON.stringify(r.data)}`);
+  const headers = ["No", "API 名", "ラベル", "Namespace", "UI種別", "ナビ", "説明"];
+  const rows = (r.data.records || []).map((a, i) => ({
+    "No": i + 1,
+    "API 名": a.DeveloperName,
+    "ラベル": a.MasterLabel,
+    "Namespace": a.NamespacePrefix || "",
+    "UI種別": a.UiType || "",
+    "ナビ": a.NavType || "",
+    "説明": a.Description || "",
+  }));
+
+  // AppMenuItem (ユーザーに見えるアプリ)
+  const m = await runSoql({
+    host, sid, apiVersion,
+    soql: `SELECT Id, ApplicationId, Label, Name, Type, IsVisible, IsAccessible, SortOrder FROM AppMenuItem ORDER BY SortOrder NULLS LAST, Label LIMIT 200`,
+  });
+  const menuHeaders = ["No", "ラベル", "Name", "Type", "可視", "アクセス可", "Order"];
+  const menuRows = m.ok ? (m.data.records || []).map((x, i) => ({
+    "No": i + 1, "ラベル": x.Label || "", "Name": x.Name || "",
+    "Type": x.Type || "", "可視": x.IsVisible ? "○" : "", "アクセス可": x.IsAccessible ? "○" : "",
+    "Order": x.SortOrder == null ? "" : x.SortOrder,
+  })) : [];
+
+  return {
+    title: "アプリケーション一覧 (Lightning Apps)",
+    type: "appList",
+    sections: [
+      { heading: "AppDefinition (Lightning + Classic)", headers, rows },
+      ...(menuRows.length ? [{ heading: "AppMenuItem (ユーザー表示順)", headers: menuHeaders, rows: menuRows }] : []),
+    ],
+    note: `合計 ${rows.length} アプリ`,
+  };
+}
+
+// ============ アクセスコントロール定義書 (OWD / 共有設定 / Role hierarchy) ============
+async function buildAccessControl({ host, sid, apiVersion }) {
+  // 1. EntityDefinition: 各オブジェクトの InternalSharingModel / ExternalSharingModel
+  const owdR = await runSoql({
+    host, sid, apiVersion, tooling: true,
+    soql: `SELECT QualifiedApiName, Label, InternalSharingModel, ExternalSharingModel, IsCustomizable FROM EntityDefinition WHERE InternalSharingModel != null ORDER BY QualifiedApiName LIMIT 500`,
+  });
+  const owdHeaders = ["No", "オブジェクト", "ラベル", "内部共有 (OWD)", "外部共有 (OWD)", "カスタマイズ可"];
+  const owdRows = owdR.ok ? (owdR.data.records || []).map((e, i) => ({
+    "No": i + 1,
+    "オブジェクト": e.QualifiedApiName,
+    "ラベル": e.Label,
+    "内部共有 (OWD)": e.InternalSharingModel || "",
+    "外部共有 (OWD)": e.ExternalSharingModel || "",
+    "カスタマイズ可": e.IsCustomizable ? "○" : "",
+  })) : [];
+
+  // 2. UserRole (ロール階層)
+  const roleR = await runSoql({
+    host, sid, apiVersion,
+    soql: `SELECT Id, Name, DeveloperName, ParentRoleId, OpportunityAccessForAccountOwner, CaseAccessForAccountOwner, ContactAccessForAccountOwner FROM UserRole ORDER BY Name LIMIT 500`,
+  });
+  const roleHeaders = ["No", "ロール名", "API名", "親ロールId", "Opp(Account所有者)", "Case(Account所有者)", "Contact(Account所有者)"];
+  const roleRows = roleR.ok ? (roleR.data.records || []).map((r, i) => ({
+    "No": i + 1,
+    "ロール名": r.Name,
+    "API名": r.DeveloperName,
+    "親ロールId": r.ParentRoleId || "",
+    "Opp(Account所有者)": r.OpportunityAccessForAccountOwner || "",
+    "Case(Account所有者)": r.CaseAccessForAccountOwner || "",
+    "Contact(Account所有者)": r.ContactAccessForAccountOwner || "",
+  })) : [];
+
+  // 3. 共有ルール (SharingRules はオブジェクト別だが、Tooling では SharingRules は metadata 経由のみ。Tooling/EntityDefinition から代用)
+  // ここでは MA(MA= Manual Sharing 等) のあるオブジェクトを並べる
+  const sharingObjs = owdRows.filter((r) => r["内部共有 (OWD)"] !== "ReadWrite" && r["内部共有 (OWD)"] !== "Read");
+  const sharingHeaders = ["No", "オブジェクト", "内部 OWD", "外部 OWD", "備考"];
+  const sharingRows = sharingObjs.map((r, i) => ({
+    "No": i + 1,
+    "オブジェクト": r["オブジェクト"],
+    "内部 OWD": r["内部共有 (OWD)"],
+    "外部 OWD": r["外部共有 (OWD)"],
+    "備考": (r["内部共有 (OWD)"] === "Private" ? "Private のため共有ルール推奨" :
+             r["内部共有 (OWD)"] === "ControlledByParent" ? "親レコードに従属" : ""),
+  }));
+
+  return {
+    title: "アクセスコントロール定義書",
+    type: "accessControl",
+    sections: [
+      { heading: "1. 組織共通の既定設定 (OWD)", headers: owdHeaders, rows: owdRows },
+      { heading: "2. 共有設計上の注意 (Private/ControlledByParent)", headers: sharingHeaders, rows: sharingRows },
+      { heading: "3. ロール階層 (UserRole)", headers: roleHeaders, rows: roleRows },
+    ],
+    note: `OWD レコード ${owdRows.length} 件 / Role ${roleRows.length} 件。Sharing Rules の詳細は metadata API (SharingRules) でのみ取得可能。`,
+  };
+}
+
+// ============ フロー設計図 (1 Flow 詳細) ============
+async function buildFlowDetail({ host, sid, apiVersion, obj }) {
+  if (!obj) throw new Error("Flow API 名 (FlowDefinition.DeveloperName) を入力してください");
+
+  // Active version を引く
+  const r = await runSoql({
+    host, sid, apiVersion, tooling: true,
+    soql: `SELECT Id, MasterLabel, ProcessType, Status, VersionNumber, Description, Metadata FROM Flow WHERE Definition.DeveloperName='${obj.replace(/'/g, "\\'")}' AND Status='Active' ORDER BY VersionNumber DESC LIMIT 1`,
+  });
+  if (!r.ok) throw new Error(`Flow 取得失敗: ${JSON.stringify(r.data)}`);
+  let flow = (r.data.records || [])[0];
+  if (!flow) {
+    // Active が無ければ最新を引く
+    const r2 = await runSoql({
+      host, sid, apiVersion, tooling: true,
+      soql: `SELECT Id, MasterLabel, ProcessType, Status, VersionNumber, Description, Metadata FROM Flow WHERE Definition.DeveloperName='${obj.replace(/'/g, "\\'")}' ORDER BY VersionNumber DESC LIMIT 1`,
+    });
+    if (!r2.ok || !(r2.data.records || []).length) throw new Error(`Flow '${obj}' が見つかりません`);
+    flow = r2.data.records[0];
+  }
+
+  const meta = flow.Metadata || {};
+  const summary = [
+    ["Flow API 名", obj],
+    ["ラベル", flow.MasterLabel],
+    ["ProcessType", flow.ProcessType],
+    ["Status", flow.Status],
+    ["Version", flow.VersionNumber],
+    ["Description", flow.Description || ""],
+  ];
+
+  const sections = [{ heading: "1. サマリ", kvRows: summary }];
+
+  // 各要素を整理 (Salesforce Flow metadata の代表要素のみ)
+  const collect = (arr, headers, mapFn, title) => {
+    if (!arr || !arr.length) return;
+    sections.push({
+      heading: title,
+      headers,
+      rows: arr.map((x, i) => ({ "No": i + 1, ...mapFn(x) })),
+    });
+  };
+
+  collect(meta.variables, ["No", "name", "dataType", "isCollection", "isInput", "isOutput"],
+    (v) => ({ name: v.name, dataType: v.dataType, isCollection: v.isCollection ? "○" : "", isInput: v.isInput ? "○" : "", isOutput: v.isOutput ? "○" : "" }),
+    "2. 変数 (variables)");
+
+  collect(meta.constants, ["No", "name", "dataType", "value"],
+    (c) => ({ name: c.name, dataType: c.dataType, value: c.value && c.value.stringValue || "" }),
+    "3. 定数 (constants)");
+
+  collect(meta.formulas, ["No", "name", "dataType", "expression"],
+    (f) => ({ name: f.name, dataType: f.dataType, expression: f.expression }),
+    "4. 計算式 (formulas)");
+
+  collect(meta.decisions, ["No", "name", "label", "defaultConnectorLabel"],
+    (d) => ({ name: d.name, label: d.label, defaultConnectorLabel: d.defaultConnectorLabel || "" }),
+    "5. 分岐 (decisions)");
+
+  collect(meta.assignments, ["No", "name", "label", "assignmentItemsCount"],
+    (a) => ({ name: a.name, label: a.label || "", assignmentItemsCount: (a.assignmentItems || []).length }),
+    "6. 代入 (assignments)");
+
+  collect(meta.recordCreates, ["No", "name", "label", "object"],
+    (x) => ({ name: x.name, label: x.label || "", object: x.object }),
+    "7. レコード作成 (recordCreates)");
+
+  collect(meta.recordUpdates, ["No", "name", "label", "object"],
+    (x) => ({ name: x.name, label: x.label || "", object: x.object }),
+    "8. レコード更新 (recordUpdates)");
+
+  collect(meta.recordLookups, ["No", "name", "label", "object", "getFirstRecordOnly"],
+    (x) => ({ name: x.name, label: x.label || "", object: x.object, getFirstRecordOnly: x.getFirstRecordOnly ? "○" : "" }),
+    "9. レコード取得 (recordLookups)");
+
+  collect(meta.recordDeletes, ["No", "name", "label", "object"],
+    (x) => ({ name: x.name, label: x.label || "", object: x.object }),
+    "10. レコード削除 (recordDeletes)");
+
+  collect(meta.screens, ["No", "name", "label", "fieldCount"],
+    (x) => ({ name: x.name, label: x.label || "", fieldCount: (x.fields || []).length }),
+    "11. 画面 (screens)");
+
+  collect(meta.loops, ["No", "name", "label", "collectionReference"],
+    (x) => ({ name: x.name, label: x.label || "", collectionReference: x.collectionReference || "" }),
+    "12. ループ (loops)");
+
+  collect(meta.subflows, ["No", "name", "label", "flowName"],
+    (x) => ({ name: x.name, label: x.label || "", flowName: x.flowName }),
+    "13. サブフロー (subflows)");
+
+  collect(meta.actionCalls, ["No", "name", "label", "actionName", "actionType"],
+    (x) => ({ name: x.name, label: x.label || "", actionName: x.actionName, actionType: x.actionType }),
+    "14. アクション呼び出し (actionCalls)");
+
+  return {
+    title: `フロー設計図: ${flow.MasterLabel} (${obj}) v${flow.VersionNumber}`,
+    type: "flowDetail",
+    sections,
+    note: `Salesforce Flow metadata から各要素を抽出。要素 0 件のセクションは省略。`,
+  };
+}
+
+// ============ Apex 設計図 (1 クラス詳細) ============
+async function buildApexDetail({ host, sid, apiVersion, obj }) {
+  if (!obj) throw new Error("Apex クラス名を入力してください");
+  const r = await runSoql({
+    host, sid, apiVersion, tooling: true,
+    soql: `SELECT Id, Name, ApiVersion, Status, NamespacePrefix, LengthWithoutComments, IsValid, Body, SymbolTable FROM ApexClass WHERE Name='${obj.replace(/'/g, "\\'")}' LIMIT 1`,
+  });
+  if (!r.ok || !r.data.records || !r.data.records[0]) throw new Error(`ApexClass '${obj}' が見つかりません`);
+  const c = r.data.records[0];
+
+  const summary = [
+    ["クラス名", c.Name],
+    ["API Version", c.ApiVersion],
+    ["Status", c.Status],
+    ["Namespace", c.NamespacePrefix || ""],
+    ["LengthWithoutComments", String(c.LengthWithoutComments)],
+    ["IsValid", c.IsValid ? "○" : "✗"],
+  ];
+
+  const sections = [{ heading: "1. サマリ", kvRows: summary }];
+
+  // SymbolTable からメソッド / プロパティ / 内部クラスを抽出
+  const sym = c.SymbolTable;
+  if (sym) {
+    const methods = sym.methods || [];
+    if (methods.length) {
+      sections.push({
+        heading: "2. メソッド一覧",
+        headers: ["No", "名前", "可視性", "戻り型", "引数", "static", "annotations"],
+        rows: methods.map((m, i) => ({
+          "No": i + 1,
+          "名前": m.name,
+          "可視性": m.visibility || "",
+          "戻り型": m.returnType || "void",
+          "引数": (m.parameters || []).map((p) => `${p.type || ""} ${p.name || ""}`).join(", "),
+          "static": (m.modifiers || []).includes("static") ? "○" : "",
+          "annotations": (m.annotations || []).map((a) => a.name).join(", "),
+        })),
+      });
+    }
+    const props = sym.properties || [];
+    if (props.length) {
+      sections.push({
+        heading: "3. プロパティ",
+        headers: ["No", "名前", "型", "可視性"],
+        rows: props.map((p, i) => ({
+          "No": i + 1, "名前": p.name, "型": p.type, "可視性": p.visibility || "",
+        })),
+      });
+    }
+    const variables = sym.variables || [];
+    if (variables.length) {
+      sections.push({
+        heading: "4. インスタンス変数",
+        headers: ["No", "名前", "型", "可視性"],
+        rows: variables.map((v, i) => ({
+          "No": i + 1, "名前": v.name, "型": v.type, "可視性": v.visibility || "",
+        })),
+      });
+    }
+    const innerClasses = sym.innerClasses || [];
+    if (innerClasses.length) {
+      sections.push({
+        heading: "5. 内部クラス",
+        headers: ["No", "名前", "メソッド数", "プロパティ数"],
+        rows: innerClasses.map((ic, i) => ({
+          "No": i + 1, "名前": ic.name,
+          "メソッド数": (ic.methods || []).length,
+          "プロパティ数": (ic.properties || []).length,
+        })),
+      });
+    }
+    const externalRefs = sym.externalReferences || [];
+    if (externalRefs.length) {
+      sections.push({
+        heading: "6. 外部参照",
+        headers: ["No", "名前", "Namespace"],
+        rows: externalRefs.map((er, i) => ({
+          "No": i + 1, "名前": er.name, "Namespace": er.namespace || "",
+        })),
+      });
+    }
+  } else {
+    sections.push({ heading: "2. 解析失敗", kvRows: [["SymbolTable", "(未取得 — IsValid=false の可能性)"]] });
+  }
+
+  // ApexTrigger 参照 (このクラスを呼び出すトリガ)
+  const trR = await runSoql({
+    host, sid, apiVersion, tooling: true,
+    soql: `SELECT Name, TableEnumOrId FROM ApexTrigger WHERE Body LIKE '%${obj.replace(/'/g, "\\'")}%' ORDER BY Name LIMIT 50`,
+  });
+  if (trR.ok && trR.data.records && trR.data.records.length) {
+    sections.push({
+      heading: "7. このクラスを参照するトリガ (Body一致)",
+      headers: ["No", "トリガ名", "対象オブジェクト"],
+      rows: trR.data.records.map((t, i) => ({ "No": i + 1, "トリガ名": t.Name, "対象オブジェクト": t.TableEnumOrId })),
+    });
+  }
+
+  return {
+    title: `Apex 設計図: ${c.Name}`,
+    type: "apexDetail",
+    sections,
+    note: `SymbolTable はコンパイルが成功している場合のみ取得可。IsValid=false なら再保存後に再試行を。`,
+  };
+}
+
+// ============ LWC 設計図 (1 LightningComponentBundle 詳細) ============
+async function buildLwcDetail({ host, sid, apiVersion, obj }) {
+  if (!obj) throw new Error("LWC バンドル名 (DeveloperName) を入力してください");
+
+  const bR = await runSoql({
+    host, sid, apiVersion, tooling: true,
+    soql: `SELECT Id, DeveloperName, MasterLabel, ApiVersion, Description, NamespacePrefix, IsExposed, TargetConfigs FROM LightningComponentBundle WHERE DeveloperName='${obj.replace(/'/g, "\\'")}' LIMIT 1`,
+  });
+  if (!bR.ok || !bR.data.records || !bR.data.records[0]) throw new Error(`LightningComponentBundle '${obj}' が見つかりません`);
+  const b = bR.data.records[0];
+
+  const summary = [
+    ["LWC 名", b.DeveloperName],
+    ["ラベル", b.MasterLabel],
+    ["API Version", b.ApiVersion],
+    ["Namespace", b.NamespacePrefix || ""],
+    ["IsExposed", b.IsExposed ? "○" : ""],
+    ["説明", b.Description || ""],
+  ];
+
+  // LightningComponentResource (バンドル内の各ファイル)
+  const rR = await runSoql({
+    host, sid, apiVersion, tooling: true,
+    soql: `SELECT Id, FilePath, Format, Source FROM LightningComponentResource WHERE LightningComponentBundleId='${b.Id}' ORDER BY FilePath LIMIT 100`,
+  });
+  const resources = rR.ok ? (rR.data.records || []) : [];
+  const fileHeaders = ["No", "ファイル名", "形式", "サイズ", "概要 (先頭 80 文字)"];
+  const fileRows = resources.map((res, i) => {
+    const filename = (res.FilePath || "").split("/").pop();
+    const src = res.Source || "";
+    return {
+      "No": i + 1,
+      "ファイル名": filename,
+      "形式": res.Format || "",
+      "サイズ": src.length + " 文字",
+      "概要 (先頭 80 文字)": src.substring(0, 80).replace(/\n/g, " "),
+    };
+  });
+
+  // js-meta.xml の TargetConfigs パース (簡易)
+  const targetSheet = [];
+  if (b.TargetConfigs) {
+    targetSheet.push(["TargetConfigs (XML)", b.TargetConfigs.substring(0, 500)]);
+  }
+
+  const sections = [
+    { heading: "1. サマリ", kvRows: summary },
+    { heading: "2. バンドル内ファイル", headers: fileHeaders, rows: fileRows },
+  ];
+  if (targetSheet.length) sections.push({ heading: "3. TargetConfigs", kvRows: targetSheet });
+
+  return {
+    title: `LWC 設計図: ${b.MasterLabel} (${b.DeveloperName})`,
+    type: "lwcDetail",
+    sections,
+    note: `バンドル内ファイル ${fileRows.length} 件。IsExposed=true なら App Builder に公開済。`,
+  };
+}
+
+// 共通: nextRecordsUrl を辿って 50,000 件まで集める
+async function fetchAllPaged({ host, sid, apiVersion, soql, tooling = false }) {
+  const base = tooling ? `/services/data/v${apiVersion}/tooling/query/` : `/services/data/v${apiVersion}/query/`;
+  let nextPath = `${base}?q=${encodeURIComponent(soql)}`;
+  let records = [];
+  while (nextPath) {
+    const r = await sfFetch({ host, sid, path: nextPath });
+    if (!r.ok) return { ok: false, status: r.status, data: r.data, records };
+    records = records.concat((r.data && r.data.records) || []);
+    nextPath = r.data && r.data.nextRecordsUrl ? r.data.nextRecordsUrl : null;
+    if (records.length > 50000) break;
+  }
+  return { ok: true, records };
+}
+
+// ============ フィールド権限マトリクス (Profile/PermissionSet × Field) ============
+async function buildFieldPermMatrix({ host, sid, apiVersion, obj }) {
+  if (!obj) throw new Error("オブジェクト API 名を入力してください (例: Account)");
+
+  // 1. オブジェクトの全 fields を describe で取得 (順序維持用)
+  const dr = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
+  if (!dr.ok) throw new Error(`describe 失敗: HTTP ${dr.status}`);
+  const allFields = (dr.data.fields || [])
+    .filter((f) => !f.calculated && f.type !== "id") // 計算項目と Id は権限対象外
+    .map((f) => ({ name: f.name, label: f.label, type: f.type, required: !f.nillable && !f.defaultedOnCreate && f.createable }));
+
+  // 2. FieldPermissions を SOQL で取得。SObjectType フィルタで該当オブジェクトのみ。
+  //    Parent は PermissionSet を経由する (Profile も IsOwnedByProfile=true の PermissionSet として存在)
+  let allRecs = [];
+  let nextPath = `/services/data/v${apiVersion}/query/?q=` + encodeURIComponent(
+    `SELECT Field, PermissionsRead, PermissionsEdit, Parent.Name, Parent.IsOwnedByProfile, Parent.Profile.Name, Parent.Label ` +
+    `FROM FieldPermissions WHERE SobjectType='${obj.replace(/'/g, "\\'")}' LIMIT 10000`
+  );
+  while (nextPath) {
+    const r = await sfFetch({ host, sid, path: nextPath });
+    if (!r.ok) throw new Error(`FieldPermissions 取得失敗: HTTP ${r.status} ${JSON.stringify(r.data).substring(0, 200)}`);
+    allRecs = allRecs.concat(r.data.records || []);
+    nextPath = r.data && r.data.nextRecordsUrl ? r.data.nextRecordsUrl : null;
+    if (allRecs.length > 50000) break; // 安全弁
+  }
+
+  // 3. ピボット用に Parent (= 列見出し) を集計
+  const parents = new Map(); // key: parentKey, value: { label, isProfile }
+  for (const rec of allRecs) {
+    if (!rec.Parent) continue;
+    const isProfile = !!rec.Parent.IsOwnedByProfile;
+    const label = isProfile
+      ? (rec.Parent.Profile && rec.Parent.Profile.Name) || rec.Parent.Name
+      : (rec.Parent.Label || rec.Parent.Name);
+    const key = (isProfile ? "P|" : "S|") + label;
+    if (!parents.has(key)) parents.set(key, { label, isProfile, key });
+  }
+  // 列順: プロファイル先、権限セット後、名前昇順
+  const cols = Array.from(parents.values()).sort((a, b) => {
+    if (a.isProfile !== b.isProfile) return a.isProfile ? -1 : 1;
+    return a.label.localeCompare(b.label);
+  });
+
+  // 4. セル値マップ (fieldName → parentKey → "RW"|"R-"|"--")
+  const cellMap = new Map();
+  for (const rec of allRecs) {
+    const fld = (rec.Field || "").replace(/^[^.]+\./, ""); // "Account.Name" → "Name"
+    const isProfile = !!(rec.Parent && rec.Parent.IsOwnedByProfile);
+    const label = isProfile
+      ? (rec.Parent.Profile && rec.Parent.Profile.Name) || rec.Parent.Name
+      : (rec.Parent.Label || rec.Parent.Name);
+    const key = (isProfile ? "P|" : "S|") + label;
+    const r = !!rec.PermissionsRead;
+    const w = !!rec.PermissionsEdit;
+    const v = w ? "RW" : (r ? "R-" : "--");
+    if (!cellMap.has(fld)) cellMap.set(fld, new Map());
+    cellMap.get(fld).set(key, v);
+  }
+
+  // 5. 行データ生成 (allFields 順、describe にあって FieldPermissions に無い欄は空)
+  const headers = ["No", "API名", "ラベル", "型", "必須", ...cols.map((c) => (c.isProfile ? "👤 " : "🔑 ") + c.label)];
+  const rows = allFields.map((f, i) => {
+    const row = {
+      "No": i + 1,
+      "API名": f.name,
+      "ラベル": f.label,
+      "型": f.type,
+      "必須": f.required ? "○" : "",
+    };
+    const fc = cellMap.get(f.name) || new Map();
+    for (const c of cols) {
+      row[(c.isProfile ? "👤 " : "🔑 ") + c.label] = fc.get(c.key) || "--";
+    }
+    return row;
+  });
+
+  // 6. 凡例
+  const legend = [
+    ["記号", "意味"],
+    ["RW", "Read + Edit 可"],
+    ["R-", "Read のみ"],
+    ["--", "アクセス無し (PermissionsRead=false / レコード無し)"],
+    ["👤", "プロファイル"],
+    ["🔑", "権限セット"],
+  ];
+
+  return {
+    title: `フィールド権限マトリクス: ${obj}`,
+    type: "fieldPermMatrix",
+    sections: [
+      { heading: "凡例", kvRows: legend },
+      { heading: "サマリ", kvRows: [
+        ["対象オブジェクト", obj],
+        ["対象フィールド数", String(allFields.length)],
+        ["プロファイル数", String(cols.filter((c) => c.isProfile).length)],
+        ["権限セット数", String(cols.filter((c) => !c.isProfile).length)],
+        ["FieldPermissions レコード数", String(allRecs.length)],
+      ]},
+      { heading: "マトリクス", headers, rows },
+    ],
+    note: `Excel 形式推奨。横列が多いので Excel の「ウィンドウ枠の固定 (B2)」で 左 4列と先頭行を固定すると見やすい。`,
+  };
+}
+
+// ============ オブジェクト権限マトリクス (Profile/PermissionSet × Object) ============
+async function buildObjectPermMatrix({ host, sid, apiVersion }) {
+  // ObjectPermissions: PermissionsRead/Create/Edit/Delete/ViewAllRecords/ModifyAllRecords × Parent (PermissionSet)
+  let allRecs = [];
+  let nextPath = `/services/data/v${apiVersion}/query/?q=` + encodeURIComponent(
+    `SELECT SObjectType, PermissionsRead, PermissionsCreate, PermissionsEdit, PermissionsDelete, ` +
+    `PermissionsViewAllRecords, PermissionsModifyAllRecords, ` +
+    `Parent.Name, Parent.IsOwnedByProfile, Parent.Profile.Name, Parent.Label ` +
+    `FROM ObjectPermissions LIMIT 10000`
+  );
+  while (nextPath) {
+    const r = await sfFetch({ host, sid, path: nextPath });
+    if (!r.ok) throw new Error(`ObjectPermissions 取得失敗: HTTP ${r.status}`);
+    allRecs = allRecs.concat(r.data.records || []);
+    nextPath = r.data && r.data.nextRecordsUrl ? r.data.nextRecordsUrl : null;
+    if (allRecs.length > 50000) break;
+  }
+
+  const parents = new Map();
+  const objects = new Set();
+  for (const rec of allRecs) {
+    if (!rec.Parent) continue;
+    const isProfile = !!rec.Parent.IsOwnedByProfile;
+    const label = isProfile
+      ? (rec.Parent.Profile && rec.Parent.Profile.Name) || rec.Parent.Name
+      : (rec.Parent.Label || rec.Parent.Name);
+    const key = (isProfile ? "P|" : "S|") + label;
+    if (!parents.has(key)) parents.set(key, { label, isProfile, key });
+    objects.add(rec.SObjectType);
+  }
+  const cols = Array.from(parents.values()).sort((a, b) => {
+    if (a.isProfile !== b.isProfile) return a.isProfile ? -1 : 1;
+    return a.label.localeCompare(b.label);
+  });
+
+  const cellMap = new Map(); // obj -> parentKey -> "CRUD..." 文字列
+  for (const rec of allRecs) {
+    if (!rec.Parent) continue;
+    const isProfile = !!rec.Parent.IsOwnedByProfile;
+    const label = isProfile
+      ? (rec.Parent.Profile && rec.Parent.Profile.Name) || rec.Parent.Name
+      : (rec.Parent.Label || rec.Parent.Name);
+    const key = (isProfile ? "P|" : "S|") + label;
+    const c = rec.PermissionsCreate ? "C" : "-";
+    const r = rec.PermissionsRead ? "R" : "-";
+    const u = rec.PermissionsEdit ? "U" : "-";
+    const d = rec.PermissionsDelete ? "D" : "-";
+    const va = rec.PermissionsViewAllRecords ? "V" : "-";
+    const ma = rec.PermissionsModifyAllRecords ? "M" : "-";
+    if (!cellMap.has(rec.SObjectType)) cellMap.set(rec.SObjectType, new Map());
+    cellMap.get(rec.SObjectType).set(key, `${c}${r}${u}${d}${va}${ma}`);
+  }
+
+  const objList = Array.from(objects).sort();
+  const headers = ["No", "オブジェクト", ...cols.map((c) => (c.isProfile ? "👤 " : "🔑 ") + c.label)];
+  const rows = objList.map((o, i) => {
+    const row = { "No": i + 1, "オブジェクト": o };
+    const fc = cellMap.get(o) || new Map();
+    for (const c of cols) {
+      row[(c.isProfile ? "👤 " : "🔑 ") + c.label] = fc.get(c.key) || "------";
+    }
+    return row;
+  });
+
+  return {
+    title: "オブジェクト権限マトリクス",
+    type: "objectPermMatrix",
+    sections: [
+      { heading: "凡例", kvRows: [
+        ["記号", "意味 (順: Create/Read/Update/Delete/ViewAll/ModifyAll)"],
+        ["CRUDVM", "全権限あり (Create + Read + Update + Delete + ViewAll + ModifyAll)"],
+        ["-R----", "読取のみ"],
+        ["------", "権限なし"],
+        ["👤", "プロファイル"],
+        ["🔑", "権限セット"],
+      ]},
+      { heading: "サマリ", kvRows: [
+        ["対象オブジェクト数", String(objList.length)],
+        ["プロファイル数", String(cols.filter((c) => c.isProfile).length)],
+        ["権限セット数", String(cols.filter((c) => !c.isProfile).length)],
+        ["ObjectPermissions レコード数", String(allRecs.length)],
+      ]},
+      { heading: "マトリクス", headers, rows },
+    ],
+    note: "セル形式: [C][R][U][D][V][M]  C=Create R=Read U=Edit D=Delete V=ViewAllRecords M=ModifyAllRecords。各位置に文字があれば true、ハイフンなら false。",
+  };
+}
+function fmtDate(s) {
+  if (!s) return "";
+  return s.replace("T", " ").replace(/\.\d+\+\d+$/, "").replace(/\+\d+$/, "");
+}
+
+// =================== 出力フォーマッタ ===================
+
+export function formatOutput(result, format) {
+  const fmt = (format || "markdown").toLowerCase();
+  if (result.type === "erDiagram" && result.sections[0].mermaid) {
+    const m = result.sections[0].mermaid;
+    if (fmt === "html") {
+      return `<h1>${esc(result.title)}</h1>\n<pre><code>${esc(m)}</code></pre>\n<p>${esc(result.note || "")}</p>`;
+    }
+    if (fmt === "markdown") {
+      return `# ${result.title}\n\n\`\`\`mermaid\n${m}\n\`\`\`\n\n${result.note || ""}\n`;
+    }
+    // CSV/TSV はそのままテキスト
+    return m;
+  }
+  if (fmt === "markdown") return toMarkdown(result);
+  if (fmt === "html") return toHtml(result);
+  if (fmt === "csv") return toCsv(result, ",");
+  if (fmt === "tsv") return toCsv(result, "\t");
+  if (fmt === "excel" || fmt === "xls") return toExcelXml(result);
+  return toMarkdown(result);
+}
+
+// Excel 2003 SpreadsheetML XML 出力。各 section を別シートで出す。
+// 拡張子は .xls だが中身は XML。Excel が直接開き、保存時に .xlsx 化を促す。
+function toExcelXml(result) {
+  const header = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Styles>
+  <Style ss:ID="Default" ss:Name="Normal"><Font ss:FontName="Yu Gothic UI" ss:Size="10"/></Style>
+  <Style ss:ID="title"><Font ss:FontName="Yu Gothic UI" ss:Size="14" ss:Bold="1" ss:Color="#1B96FF"/></Style>
+  <Style ss:ID="note"><Font ss:FontName="Yu Gothic UI" ss:Size="9" ss:Italic="1" ss:Color="#666666"/></Style>
+  <Style ss:ID="header">
+    <Font ss:FontName="Yu Gothic UI" ss:Size="10" ss:Bold="1" ss:Color="#FFFFFF"/>
+    <Interior ss:Color="#0C66E4" ss:Pattern="Solid"/>
+    <Alignment ss:Horizontal="Center" ss:Vertical="Center" ss:WrapText="1"/>
+    <Borders>
+      <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+      <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+      <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+      <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+    </Borders>
+  </Style>
+  <Style ss:ID="cell">
+    <Alignment ss:Vertical="Top" ss:WrapText="1"/>
+    <Borders>
+      <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CCCCCC"/>
+      <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CCCCCC"/>
+      <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CCCCCC"/>
+      <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1" ss:Color="#CCCCCC"/>
+    </Borders>
+  </Style>
+  <Style ss:ID="cellAlt" ss:Parent="cell">
+    <Interior ss:Color="#F4F8FE" ss:Pattern="Solid"/>
+  </Style>
+  <Style ss:ID="key" ss:Parent="cell"><Font ss:Bold="1"/></Style>
+ </Styles>`;
+
+  const parts = [header];
+  const sheets = [];
+
+  // 概要シート: 1枚目に必ず置く
+  const summary = [];
+  summary.push(['title', result.title]);
+  if (result.note) summary.push(['note', result.note]);
+  summary.push(['note', `生成日時: ${new Date().toLocaleString("ja-JP")}`]);
+  sheets.push({
+    name: "概要",
+    type: "summary",
+    rows: summary,
+  });
+
+  // 各 section をシート化
+  result.sections.forEach((s, idx) => {
+    let name = (s.heading || `Sheet${idx + 1}`).replace(/[\\/?*[\]:]/g, "_").substring(0, 31);
+    // 重複回避
+    const existing = sheets.filter((x) => x.name === name).length;
+    if (existing) name = (name + "_" + (existing + 1)).substring(0, 31);
+    sheets.push({ name, type: s.kvRows ? "kv" : "table", section: s });
+  });
+
+  // ER 図の mermaid テキストはシートに 1 列で
+  if (result.type === "erDiagram" && result.sections[0].mermaid) {
+    sheets.push({ name: "Mermaid", type: "raw", raw: result.sections[0].mermaid });
+  }
+
+  for (const sh of sheets) {
+    parts.push(`<Worksheet ss:Name="${xmlAttr(sh.name)}">`);
+    if (sh.type === "summary") {
+      parts.push(`<Table>`);
+      parts.push(`<Column ss:Width="600"/>`);
+      sh.rows.forEach((r) => {
+        const [style, text] = r;
+        parts.push(`<Row><Cell ss:StyleID="${style}"><Data ss:Type="String">${xmlText(text)}</Data></Cell></Row>`);
+      });
+      parts.push(`</Table>`);
+    } else if (sh.type === "raw") {
+      parts.push(`<Table>`);
+      sh.raw.split("\n").forEach((line) => {
+        parts.push(`<Row><Cell><Data ss:Type="String">${xmlText(line)}</Data></Cell></Row>`);
+      });
+      parts.push(`</Table>`);
+    } else if (sh.type === "kv") {
+      parts.push(`<Table>`);
+      parts.push(`<Column ss:Width="160"/><Column ss:Width="500"/>`);
+      parts.push(`<Row><Cell ss:StyleID="header"><Data ss:Type="String">項目</Data></Cell><Cell ss:StyleID="header"><Data ss:Type="String">値</Data></Cell></Row>`);
+      (sh.section.kvRows || []).forEach((kv, i) => {
+        const cs = i % 2 ? "cellAlt" : "cell";
+        parts.push(`<Row><Cell ss:StyleID="key"><Data ss:Type="String">${xmlText(kv[0])}</Data></Cell><Cell ss:StyleID="${cs}"><Data ss:Type="String">${xmlText(kv[1])}</Data></Cell></Row>`);
+      });
+      parts.push(`</Table>`);
+    } else if (sh.type === "table") {
+      const headers = sh.section.headers || [];
+      const rows = sh.section.rows || [];
+      parts.push(`<Table>`);
+      headers.forEach(() => parts.push(`<Column ss:Width="120"/>`));
+      // header row (freeze pane 用に行ID 1)
+      parts.push(`<Row ss:Height="22">` + headers.map((h) =>
+        `<Cell ss:StyleID="header"><Data ss:Type="String">${xmlText(h)}</Data></Cell>`
+      ).join("") + `</Row>`);
+      rows.forEach((r, i) => {
+        const cs = i % 2 ? "cellAlt" : "cell";
+        parts.push(`<Row>` + headers.map((h) => {
+          const v = r[h];
+          const isNum = typeof v === "number" && Number.isFinite(v);
+          const type = isNum ? "Number" : "String";
+          const text = isNum ? String(v) : xmlText(v == null ? "" : String(v));
+          return `<Cell ss:StyleID="${cs}"><Data ss:Type="${type}">${text}</Data></Cell>`;
+        }).join("") + `</Row>`);
+      });
+      parts.push(`</Table>`);
+      // ヘッダ行固定
+      parts.push(`<WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+  <FreezePanes/><FrozenNoSplit/><SplitHorizontal>1</SplitHorizontal><TopRowBottomPane>1</TopRowBottomPane><ActivePane>2</ActivePane>
+  </WorksheetOptions>`);
+    }
+    parts.push(`</Worksheet>`);
+  }
+
+  parts.push(`</Workbook>`);
+  return parts.join("\n");
+}
+
+function xmlText(s) {
+  if (s == null) return "";
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;")
+    .replace(/\r?\n/g, "&#10;")
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
+}
+function xmlAttr(s) { return xmlText(s); }
+
+function toMarkdown(result) {
+  const lines = [`# ${result.title}`, ""];
+  if (result.note) lines.push(`> ${result.note}`, "");
+  for (const s of result.sections) {
+    if (s.heading) lines.push(`## ${s.heading}`, "");
+    if (s.kvRows) {
+      lines.push("| 項目 | 値 |", "|---|---|");
+      for (const [k, v] of s.kvRows) lines.push(`| ${md(k)} | ${md(v)} |`);
+      lines.push("");
+    } else if (s.headers && s.rows) {
+      lines.push("| " + s.headers.map(md).join(" | ") + " |");
+      lines.push("|" + s.headers.map(() => "---").join("|") + "|");
+      for (const r of s.rows) lines.push("| " + s.headers.map((h) => md(r[h])).join(" | ") + " |");
+      lines.push("");
+    }
+  }
+  return lines.join("\n");
+}
+
+function md(v) {
+  if (v == null) return "";
+  return String(v).replace(/\r?\n/g, " ").replace(/\|/g, "\\|");
+}
+
+function toHtml(result) {
+  const parts = [`<h1>${esc(result.title)}</h1>`];
+  if (result.note) parts.push(`<blockquote>${esc(result.note)}</blockquote>`);
+  for (const s of result.sections) {
+    if (s.heading) parts.push(`<h2>${esc(s.heading)}</h2>`);
+    if (s.kvRows) {
+      parts.push("<table><thead><tr><th>項目</th><th>値</th></tr></thead><tbody>");
+      for (const [k, v] of s.kvRows) parts.push(`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`);
+      parts.push("</tbody></table>");
+    } else if (s.headers && s.rows) {
+      parts.push("<table><thead><tr>" + s.headers.map((h) => `<th>${esc(h)}</th>`).join("") + "</tr></thead><tbody>");
+      for (const r of s.rows) {
+        parts.push("<tr>" + s.headers.map((h) => `<td>${esc(r[h])}</td>`).join("") + "</tr>");
+      }
+      parts.push("</tbody></table>");
+    }
+  }
+  return parts.join("\n");
+}
+
+function toCsv(result, sep) {
+  const lines = [];
+  lines.push(`# ${result.title}`);
+  if (result.note) lines.push(`# ${result.note}`);
+  for (const s of result.sections) {
+    if (s.heading) { lines.push(""); lines.push(`# ${s.heading}`); }
+    if (s.kvRows) {
+      lines.push(["項目", "値"].map(csvCell).join(sep));
+      for (const [k, v] of s.kvRows) lines.push([k, v].map(csvCell).join(sep));
+    } else if (s.headers && s.rows) {
+      lines.push(s.headers.map(csvCell).join(sep));
+      for (const r of s.rows) lines.push(s.headers.map((h) => csvCell(r[h])).join(sep));
+    }
+  }
+  return lines.join("\n");
+}
+function csvCell(v) {
+  if (v == null) return "";
+  const s = String(v);
+  if (/[",\n\t]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// Markdown を簡易 HTML にレンダリング (プレビュー用)。完全な仕様ではなく headings/table/code/list/blockquote/hr/inline-code/bold/italic だけ対応
+export function markdownToHtml(md) {
+  if (!md) return "";
+  const lines = md.split(/\r?\n/);
+  const out = [];
+  let inCode = false; let codeLang = "";
+  let tableBuf = null;
+  let listBuf = null;
+
+  const flushTable = () => {
+    if (!tableBuf) return;
+    const [h, sep, ...rows] = tableBuf;
+    const heads = splitMd(h);
+    out.push("<table><thead><tr>" + heads.map((c) => `<th>${inline(c)}</th>`).join("") + "</tr></thead><tbody>");
+    for (const r of rows) {
+      const cells = splitMd(r);
+      out.push("<tr>" + cells.map((c) => `<td>${inline(c)}</td>`).join("") + "</tr>");
+    }
+    out.push("</tbody></table>");
+    tableBuf = null;
+  };
+  const flushList = () => {
+    if (!listBuf) return;
+    out.push("<ul>" + listBuf.map((i) => `<li>${inline(i)}</li>`).join("") + "</ul>");
+    listBuf = null;
+  };
+
+  for (const line of lines) {
+    if (line.startsWith("```")) {
+      flushTable(); flushList();
+      if (inCode) { out.push("</code></pre>"); inCode = false; }
+      else { codeLang = line.slice(3).trim(); out.push(`<pre><code class="lang-${esc(codeLang)}">`); inCode = true; }
+      continue;
+    }
+    if (inCode) { out.push(esc(line)); continue; }
+    if (/^\s*\|.*\|\s*$/.test(line)) {
+      if (!tableBuf) tableBuf = [];
+      tableBuf.push(line);
+      continue;
+    } else if (tableBuf) flushTable();
+
+    if (/^\s*[-*]\s+/.test(line)) {
+      if (!listBuf) listBuf = [];
+      listBuf.push(line.replace(/^\s*[-*]\s+/, ""));
+      continue;
+    } else if (listBuf) flushList();
+
+    let m;
+    if ((m = line.match(/^###\s+(.*)$/))) out.push(`<h3>${inline(m[1])}</h3>`);
+    else if ((m = line.match(/^##\s+(.*)$/))) out.push(`<h2>${inline(m[1])}</h2>`);
+    else if ((m = line.match(/^#\s+(.*)$/))) out.push(`<h1>${inline(m[1])}</h1>`);
+    else if ((m = line.match(/^>\s?(.*)$/))) out.push(`<blockquote>${inline(m[1])}</blockquote>`);
+    else if (/^---+$/.test(line)) out.push(`<hr/>`);
+    else if (line.trim() === "") out.push("");
+    else out.push(`<p>${inline(line)}</p>`);
+  }
+  flushTable(); flushList();
+  if (inCode) out.push("</code></pre>");
+  return out.join("\n");
+}
+
+function splitMd(line) {
+  // | a | b | c | → ["a", "b", "c"]  (両端の | を取り除いて split)
+  return line.trim().replace(/^\||\|$/g, "").split("|").map((s) => s.trim().replace(/^---+$/, ""));
+}
+
+function inline(s) {
+  return esc(s)
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+)\*/g, "<em>$1</em>");
+}
