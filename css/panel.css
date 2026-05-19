@@ -554,8 +554,18 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .limit-row .limit-name { color: var(--fg); font-weight: 600; }
 .limit-row .limit-bar-wrap { background: #1f2c46; border-radius: 8px; height: 10px; overflow: hidden; position: relative; }
 .limit-row .limit-bar { height: 100%; background: linear-gradient(90deg, var(--ok), var(--accent)); transition: width 0.3s; }
+.limit-row .limit-bar.low { background: var(--ok); }
+.limit-row .limit-bar.mid { background: linear-gradient(90deg, var(--ok), var(--accent)); }
 .limit-row .limit-bar.warn { background: linear-gradient(90deg, var(--accent), var(--warn)); }
 .limit-row .limit-bar.critical { background: linear-gradient(90deg, var(--warn), var(--err)); }
+.limit-row .limit-bar-wrap::before, .limit-row .limit-bar-wrap::after {
+  content: ""; position: absolute; top: 0; bottom: 0; width: 1px;
+  background: rgba(255,255,255,0.18); pointer-events: none;
+}
+.limit-row .limit-bar-wrap::before { left: 70%; }
+.limit-row .limit-bar-wrap::after { left: 90%; }
+.limit-row .limit-pct.low { color: var(--ok); }
+.limit-row .limit-pct.mid { color: var(--accent); }
 .limit-row .limit-pct { font-weight: 700; }
 .limit-row .limit-pct.warn { color: var(--warn); }
 .limit-row .limit-pct.critical { color: var(--err); }

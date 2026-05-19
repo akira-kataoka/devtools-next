@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.40.0 (2026-05-20 04:10)** — 🎉 サイクル50 達成 - Limits 4段階配色 + REST copy + Inspector scroll 復元:
+  - **✨ Limits バー 4段階配色 (low/mid/warn/critical)**: `<50%` 純緑、`50-70%` 緑→accent、`70-90%` accent→warn、`90+%` warn→err。`.limit-bar-wrap` に 70%/90% の薄い縦ライン (`::before` / `::after`) を追加してしきい値視認
+  - **✨ REST Result に 📋 結果コピーボタン**: Apex 同様 `navigator.clipboard.writeText` + panelToast。**巨大 JSON レスポンスを全選択不要で一発コピー**
+  - **✨ Inspector reference 戻る時に scrollTop 復元**: `inspectHistory` の各エントリに `scrollTop` を保存、`doInspect({restoreScrollTop})` で `renderInspectorFields()` 完了後に復元。**3 階層クリックで深堀り→3 回戻る、各位置で同じスクロール位置に戻る**
 - **v1.39.0 (2026-05-20 04:05)** — Inspector ヘッダ sticky + nav border-left + Apex copy:
   - **✨ Inspector フィールドヘッダを sticky 化**: `.field-row-header { position: sticky; top: 0; z-index: 2 }` + 下線 2px accent。**200+ 項目スクロール時に「API 名 / 型 / 値 / フラグ」列タイトル常時可視**
   - **✨ ナビゲーション active タブに左 3px accent border**: `.nav-btn.active` に `border-left: 3px solid var(--accent)` + padding-left 補正。**選択中のビューが Picker ホバー同様の視覚言語で識別可能**

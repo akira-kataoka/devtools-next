@@ -326,6 +326,16 @@ function bindEvents() {
       panelToast("❌ コピー失敗: " + (e.message || e));
     }
   });
+  document.getElementById("btnRestCopy").addEventListener("click", async () => {
+    const txt = document.getElementById("restResult").textContent || "";
+    if (!txt) { panelToast("📭 コピーする結果がありません"); return; }
+    try {
+      await navigator.clipboard.writeText(txt);
+      panelToast(`📋 REST 結果コピー (${txt.length} 文字)`);
+    } catch (e) {
+      panelToast("❌ コピー失敗: " + (e.message || e));
+    }
+  });
   enableTabToSpaces(document.getElementById("apexCode"));
   enableTabToSpaces(document.getElementById("soqlText"));
   document.getElementById("apexCode").addEventListener("keydown", (e) => {
@@ -1243,7 +1253,7 @@ function inspectGoBack() {
   if (prev) {
     document.getElementById("inspectRef").value = `${prev.obj}:${prev.id}`;
     panelToast(`⏪ 戻る: ${prev.obj}:${prev.id}`);
-    doInspect({ skipHistory: true });
+    doInspect({ skipHistory: true, restoreScrollTop: prev.scrollTop || 0 });
   }
   updateInspectBackButton();
 }
@@ -1286,7 +1296,9 @@ async function doInspect(opts = {}) {
   if (!raw) return;
   // 現在のレコードを履歴に push してから新規取得 (戻るボタン用)
   if (!opts.skipHistory && inspectState.obj && inspectState.id) {
-    inspectHistory.push({ obj: inspectState.obj, id: inspectState.id });
+    const curResult = document.getElementById("inspectResult");
+    const scrollTop = curResult ? curResult.scrollTop : 0;
+    inspectHistory.push({ obj: inspectState.obj, id: inspectState.id, scrollTop });
     if (inspectHistory.length > 20) inspectHistory.shift();
     updateInspectBackButton();
   }
@@ -1352,6 +1364,10 @@ async function doInspect(opts = {}) {
     `<span class="pill">${fieldCount} 項目 / 値あり ${filledCount}</span> ${dt}ms`;
 
   renderInspectorFields();
+  if (opts.restoreScrollTop) {
+    const r = document.getElementById("inspectResult");
+    if (r) r.scrollTop = opts.restoreScrollTop;
+  }
 }
 
 function renderInspectorFields() {
@@ -1539,7 +1555,7 @@ function renderLimitsList() {
     <div>項目</div><div>使用</div><div>残量</div><div>上限</div><div>使用率</div><div>%</div>
   </div>`];
   for (const r of rows) {
-    const cls = r.pct >= 90 ? "critical" : (r.pct >= 70 ? "warn" : "");
+    const cls = r.pct >= 90 ? "critical" : (r.pct >= 70 ? "warn" : (r.pct >= 50 ? "mid" : "low"));
     html.push(`<div class="limit-row">
       <div class="limit-name">${escape(r.name)}</div>
       <div>${r.used.toLocaleString()}</div>
