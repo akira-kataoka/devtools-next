@@ -528,7 +528,7 @@ async function doParseId() {
   `;
   const cp = document.getElementById("cp18");
   if (cp) cp.addEventListener("click", () => {
-    navigator.clipboard.writeText(id18 || "").then(() => toast("18桁ID をコピーしました"));
+    navigator.clipboard.writeText(id18 || "").then(() => toast(`📋 18桁ID をコピーしました: ${id18}`));
   });
 }
 

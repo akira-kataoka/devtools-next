@@ -115,6 +115,13 @@ function panelToast(msg, opts = {}) {
   setTimeout(() => el.remove(), opts.duration || 1800);
 }
 
+// 共通: ファイル名用タイムスタンプ生成 YYYYMMDD-HHmm
+function tsForFilename() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
+}
+
 // textarea で Tab キーを 2 spaces に変換 (focus 移動を防ぐ)
 function enableTabToSpaces(el) {
   if (!el || el.dataset.tabHandled === "true") return;
@@ -756,7 +763,7 @@ sf project deploy validate --source-dir force-app --target-org production --test
   const blob = new Blob([bundle], { type: "text/markdown;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = `sfdx-bundle-${new Date().toISOString().substring(0, 10)}.md`; a.click();
+  a.href = url; a.download = `sfdx-bundle-${tsForFilename()}.md`; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
   document.getElementById("csMeta").innerHTML += ` <span class="pill ok">SFDX バンドル (.md) ダウンロード</span>`;
 }
@@ -987,7 +994,7 @@ async function exDownloadAll(fmt) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `${exState.obj}_${new Date().toISOString().substring(0, 10)}.${ext}`;
+  a.download = `${exState.obj}_${tsForFilename()}.${ext}`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
   progress.innerHTML = `<span class="pill ok">${all.length} 件 ${fmt.toUpperCase()} ダウンロード完了</span>`;
@@ -1497,7 +1504,7 @@ function exportLimitsCsv() {
   const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = url; a.download = `limits-${Date.now()}.csv`; a.click();
+  a.href = url; a.download = `limits-${tsForFilename()}.csv`; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
@@ -1631,7 +1638,7 @@ function downloadDesignSource() {
   const ext = extMap[fmt] || "txt";
   const mime = mimeMap[fmt] || "text/plain;charset=utf-8";
   const safeName = (lastDesign.title || "design").replace(/[\\/?*[\]:"<>|]/g, "_").substring(0, 80);
-  const ts = new Date().toISOString().replace(/[:.]/g, "-").substring(0, 19);
+  const ts = tsForFilename();
 
   // Excel/HTML/CSV は UTF-8 BOM を付ける (Excel が文字化けしないように)
   let body = lastDesign.source;
@@ -1749,7 +1756,7 @@ function exportCsv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `soql-${Date.now()}.csv`;
+  a.download = `soql-${tsForFilename()}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
@@ -2126,7 +2133,7 @@ function exportLoginCsv() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `login-history-${Date.now()}.csv`;
+  a.download = `login-history-${tsForFilename()}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }

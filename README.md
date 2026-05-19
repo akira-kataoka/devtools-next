@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.23.0 (2026-05-20 02:45)** — タイムスタンプ統一 + コピー Toast 充実:
+  - **✨ ダウンロードファイル名のタイムスタンプ統一**: `tsForFilename()` ヘルパー導入 → `YYYYMMDD-HHmm` 形式 (例: `Account_20260520-0245.csv`)。**Excel 出力/CSV/JSON/SFDX バンドル/SOQL/Limits/Login History の 7 種類で統一**。従来 `Date.now()` (ms タイムスタンプ) や `toISOString()` (`2026-05-20T...`) がバラついていたのを整理
+  - **✨ 18桁 ID コピー toast を値表示付きに**: `"18桁ID をコピーしました"` → **`"📋 18桁ID をコピーしました: 0011x000abcdAAAA"`** で確認しやすく
+  - **🧪 picker overlay z-index 99999 vs sticky ヘッダ 100 → 衝突なし確認済**
 - **v1.22.0 (2026-05-20 02:40)** — 便利リンクカテゴリ化 + title 動的化:
   - **✨ popup の便利リンクをカテゴリ別グルーピング**: 「⚙️ Setup / 💻 開発 / 📊 監視 / 🔐 セキュリティ」の 4 カテゴリに 18 リンクを再編成。`.links-group-title` で各カテゴリヘッダをアクセント色で明示
   - **✨ tool.html の document.title を動的更新**: view 切替時に `<ビュー名> - DevToolsNext` 形式に。**ブラウザタブで現在のビューが一目で分かる**、複数 tool タブを開いていても識別可能
