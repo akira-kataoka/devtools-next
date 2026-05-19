@@ -933,7 +933,17 @@ async function exDownloadAll(fmt) {
     }
     all = all.concat((r.data && r.data.records) || []);
     const pct = Math.min(100, Math.round((all.length / cap) * 100));
-    progress.innerHTML = `<span class="pill">${all.length} / ${cap} 件 (${pct}%)</span>` +
+    // ETA 計算: 経過時間 / 取得済件数 = 1 件あたり時間 → 残件数 × それ
+    const elapsedMs = performance.now() - t0;
+    let etaHtml = "";
+    if (all.length > 0 && all.length < cap && elapsedMs > 1000) {
+      const remaining = Math.max(0, cap - all.length);
+      const msPerRec = elapsedMs / all.length;
+      const etaSec = Math.round((remaining * msPerRec) / 1000);
+      const etaLabel = etaSec < 60 ? `約 ${etaSec}秒` : `約 ${Math.floor(etaSec/60)}分${etaSec%60}秒`;
+      etaHtml = ` <span class="pill" title="残り時間の概算">⏱ ETA ${etaLabel}</span>`;
+    }
+    progress.innerHTML = `<span class="pill">${all.length} / ${cap} 件 (${pct}%)</span>${etaHtml}` +
       `<span class="dl-bar"><span class="dl-bar-fill" style="width:${pct}%"></span></span>` +
       `<span class="meta">もう一度 ダウンロード を押すとキャンセル</span>`;
     nextPath = r.data && r.data.nextRecordsUrl ? r.data.nextRecordsUrl : null;

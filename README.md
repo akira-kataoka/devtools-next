@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.15.0 (2026-05-20 02:05)** — Picker 多重防止 + ヘッダ sticky + ETA:
+  - **🐛 Picker 多重表示防止**: `showPicker()` 呼出時に `.picker-overlay` が既存なら無視して resolve(null)。Picker トリガを連打しても 1 つだけ表示
+  - **✨ tool.html ヘッダ sticky 化**: 長スクロール時もブランド/version/再接続/kbd-hint が常に見える (`position:sticky; top:0; backdrop-filter:blur(6px)`)
+  - **✨ Export 進捗に ETA (残り時間概算) 表示**: 経過時間 / 取得済件数で 1 件あたりを算出 → 残件 × その = 概算残り時間。`⏱ ETA 約 XX秒/X分Y秒` pill 表示
 - **v1.14.0 (2026-05-20 02:00)** — 進捗バー + toast 統一 + 履歴拡大:
   - **✨ Export 進捗バー視覚化**: ダウンロード中のプログレス領域に `<span class="dl-bar">` で **160×6 px のグラデーション進捗バー** (緑→青)、`<span class="pill">XXX / YYY 件 (NN%)</span>` と併記。**残り何件か直感的に把握可能**
   - **✨ panelToast を copy 系全てに適用**: `copyDesignSource` (📋 設計書ソースをコピーしました) / `apiCopyUrl` (📋 URL) / `apiCopyCurl` (📋 curl) / `csCopyXml` (📋 package.xml) を統一。**従来は meta 領域に "コピー完了" 追記する違和感ある形だった**

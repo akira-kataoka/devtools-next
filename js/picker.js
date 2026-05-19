@@ -196,6 +196,13 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }
     const def = PICKER_DEFS[kind];
     if (!def) { resolve(null); return; }
 
+    // 多重表示防止: 既存の Picker があれば再呼出は無視
+    if (document.querySelector(".picker-overlay")) {
+      console.log("[DevToolsNext] Picker already open, ignoring duplicate showPicker call");
+      resolve(null);
+      return;
+    }
+
     const cacheKey = `${kind}|${host}|${parentObject || ""}`;
     let items = cache.get(cacheKey);
 
