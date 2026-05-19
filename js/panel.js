@@ -436,6 +436,7 @@ function bindEvents() {
   document.getElementById("btnApiCurlCopy").addEventListener("click", apiCopyCurl);
   document.getElementById("btnApiOpen").addEventListener("click", apiOpenInBrowser);
   document.getElementById("apiOp").addEventListener("change", apiBuildUrl);
+  updateApiInputVisibility(); // 初期描画時にも反映
 
   // 変更セット / package.xml
   document.getElementById("btnCsLoad").addEventListener("click", csOnModeChange);
@@ -1147,10 +1148,42 @@ const API_HELP = {
   "event-log-file": "EventLogFile の一覧。LogDate, EventType, LogFile (バイナリ) を持つ。",
 };
 
+// op ごとに必要な input の表示制御 (apiObj / apiId)
+const API_OP_INPUTS = {
+  describe: { obj: true, id: false },
+  describeGlobal: { obj: false, id: false },
+  get: { obj: true, id: true },
+  getByExtId: { obj: true, id: true },
+  create: { obj: true, id: false },
+  update: { obj: true, id: true },
+  upsert: { obj: true, id: true },
+  delete: { obj: true, id: true },
+  query: { obj: false, id: false },
+  "tooling-query": { obj: false, id: false },
+  search: { obj: false, id: false },
+  composite: { obj: false, id: false },
+  "composite-tree": { obj: true, id: false },
+  batch: { obj: false, id: false },
+  limits: { obj: false, id: false },
+  versions: { obj: false, id: false },
+  userinfo: { obj: false, id: false },
+  "event-log-file": { obj: false, id: true },
+};
+
+function updateApiInputVisibility() {
+  const op = document.getElementById("apiOp").value;
+  const cfg = API_OP_INPUTS[op] || { obj: true, id: true };
+  const apiObj = document.getElementById("apiObj");
+  const apiId = document.getElementById("apiId");
+  if (apiObj) apiObj.style.display = cfg.obj ? "" : "none";
+  if (apiId) apiId.style.display = cfg.id ? "" : "none";
+}
+
 function apiBuildUrl() {
   if (!state.apiHost) {
     document.getElementById("apiBuildMeta").innerHTML = `<span class="pill warn">SF に接続後に生成可能</span>`;
   }
+  updateApiInputVisibility();
   const op = document.getElementById("apiOp").value;
   const objName = document.getElementById("apiObj").value.trim();
   const id = document.getElementById("apiId").value.trim();
@@ -1338,11 +1371,18 @@ async function doInspect(opts = {}) {
   if (!raw) return;
   // 現在のレコードを履歴に push してから新規取得 (戻るボタン用)
   if (!opts.skipHistory && inspectState.obj && inspectState.id) {
-    const curResult = document.getElementById("inspectResult");
-    const scrollTop = curResult ? curResult.scrollTop : 0;
-    inspectHistory.push({ obj: inspectState.obj, id: inspectState.id, scrollTop });
-    if (inspectHistory.length > 20) inspectHistory.shift();
-    updateInspectBackButton();
+    // 同一レコードの再 inspect は履歴に積まない (重複防止)
+    const last = inspectHistory[inspectHistory.length - 1];
+    const sameAsLast = last && last.obj === inspectState.obj && last.id === inspectState.id;
+    // 新規 raw が現在表示中と同じならスキップ
+    const movingToCurrent = raw && (raw === inspectState.id || raw === `${inspectState.obj}:${inspectState.id}`);
+    if (!sameAsLast && !movingToCurrent) {
+      const curResult = document.getElementById("inspectResult");
+      const scrollTop = curResult ? curResult.scrollTop : 0;
+      inspectHistory.push({ obj: inspectState.obj, id: inspectState.id, scrollTop });
+      if (inspectHistory.length > 20) inspectHistory.shift();
+      updateInspectBackButton();
+    }
   }
   const myId = ++inspectRunId;
   const meta = document.getElementById("inspectMeta");
@@ -1846,7 +1886,14 @@ async function reconnect() {
     updateInspectBackButton();
     console.log("[DevToolsNext] Inspector history cleared (Org change)");
   }
-  document.getElementById("orgInfo").textContent = `Org: ${state.orgId} @ ${state.apiHost}`;
+  // sandbox / developer / production の判定 + 色付きバッジ
+  const h = state.apiHost || "";
+  let envLabel = "PROD", envClass = "env-prod";
+  if (/\.sandbox\./.test(h)) { envLabel = "SBX"; envClass = "env-sbx"; }
+  else if (/\.develop\./.test(h) || /\.scratch\./.test(h)) { envLabel = "DEV"; envClass = "env-dev"; }
+  document.getElementById("orgInfo").innerHTML =
+    `<span class="env-badge ${envClass}" title="${envLabel === "SBX" ? "Sandbox" : envLabel === "DEV" ? "Developer/Scratch" : "Production (本番)"}">${envLabel}</span> ` +
+    `Org: ${escape(state.orgId)} @ ${escape(state.apiHost)}`;
 }
 
 // レースガード: 連続実行された時、古いリクエストの結果を捨てる

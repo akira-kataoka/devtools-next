@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.52.0 (2026-05-20 08:40)** — Inspector 履歴重複防止 + API op 入力制御 + 環境バッジ:
+  - **🐛 Inspector 履歴重複防止**: 同一レコードを再 inspect しても `inspectHistory` に積まない。`sameAsLast` (履歴末尾と同一) と `movingToCurrent` (現在表示中と同一の raw 入力) の両方で判定 → **`back` ボタンで同じレコードを何度も巻き戻る現象を解消**
+  - **✨ API URL Builder の op 切替時に不要 input を hide**: `API_OP_INPUTS` テーブルで 18 op それぞれに `{obj, id}` 表示要否を定義。`describe` は obj のみ / `query`/`limits`/`versions`/`userinfo` は両方非表示 / `get`/`update`/`delete` は両方表示。**画面ノイズ削減 + 何を入力すべきか即座に分かる**
+  - **✨ orgInfo に環境バッジ追加 (ORGanizer 参考)**: `*.sandbox.*` → 🟢 `SBX` / `*.develop.*`/`*.scratch.*` → 🟡 `DEV` / それ以外 → 🔴 `PROD`。**本番組織での誤操作を視覚的に予防** (color tag per org の簡易版)
 - **v1.51.0 (2026-05-20 08:35)** — Picker reload リセット + .meta smooth transition:
   - **🐛 Picker reload (⟳) ボタンで selectedIdx / scrollTop / 検索クエリも一緒にリセット**: 旧データ位置を指したまま新データを表示する違和感を解消。`scrollMemory.delete(cacheKey)` で前回スクロール位置記憶もクリア。`⏳/❌` 絵文字付きステータスメッセージで進捗可視化
   - **✨ `.meta` に `transition: opacity 0.25s ease`**: loading-pulse 完了時 (class removeChild 後) に opacity が ガクッと切替らず滑らかにフェード。**Inspector / SOQL / Login History の完了体感が滑らかに**
