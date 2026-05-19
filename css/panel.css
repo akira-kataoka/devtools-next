@@ -374,7 +374,11 @@ body.picker-open { overflow: hidden; }
 .panel-toast.ok { background: #14532d; border-left-color: var(--ok); }
 .panel-toast.err { background: #4a1414; border-left-color: var(--err); }
 .panel-toast.warn { background: #4d3308; border-left-color: var(--warn); }
-.panel-toast.loading { background: #1a2540; border-left-color: var(--fg-dim); color: var(--fg-dim); }
+.panel-toast.loading { background: #1a2540; border-left-color: var(--fg-dim); color: var(--fg-dim); animation: panelToastIn 0.15s ease-out, sfdtPulse 1.2s ease-in-out infinite; }
+@keyframes sfdtPulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.55 } }
+.meta.loading-pulse {
+  animation: sfdtPulse 1.2s ease-in-out infinite;
+}
 @keyframes panelToastIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Export 進捗バー */

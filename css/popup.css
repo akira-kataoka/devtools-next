@@ -252,5 +252,6 @@ select { font-family: inherit; }
 .toast.ok { background: #14532d; border-left-color: var(--ok); }
 .toast.err { background: #4a1414; border-left-color: var(--err); }
 .toast.warn { background: #4d3308; border-left-color: var(--warn); }
-.toast.loading { background: #1a2540; border-left-color: var(--fg-dim); color: var(--fg-dim); }
+.toast.loading { background: #1a2540; border-left-color: var(--fg-dim); color: var(--fg-dim); animation: fadein 0.15s ease-out, popupPulse 1.2s ease-in-out infinite; }
+@keyframes popupPulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.55 } }
 @keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }

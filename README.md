@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.48.0 (2026-05-20 08:20)** — loading pulse アニメ + タブ切替時 toast クリア:
+  - **✨ `.toast.loading` / `.panel-toast.loading` に opacity pulse**: `@keyframes sfdtPulse` (1.2s ease-in-out infinite) で 1.0 ↔ 0.55 を行き来。**進行中であることが視覚的に分かる** (静的 ⏳ よりも明示的)
+  - **✨ Inspector / Export describe / SOQL / LoginHistory の meta に `.loading-pulse` クラス付与**: 取得中表示も pulse、結果出ると removeClass で停止。**toast と meta の loading UX 統一**
+  - **🐛 タブ切替時に前ビューの toast が画面外に残らない**: `switchToView()` 冒頭で `.panel-toast` を全 remove。**ナビ遷移時のゴースト toast 問題解消**
 - **v1.47.0 (2026-05-20 08:15)** — toast loading 色 + background 通知絵文字統一:
   - **✨ `.toast.loading` / `.panel-toast.loading` 薄青グレー追加**: 進行中表示専用の控えめな色 (`#1a2540` + `var(--fg-dim)` border)。**OK/ERR/WARN の 4 色目として実装 → 完了前 toast (アップデート確認中等) の視覚的識別**
   - **✨ popup `⏳ アップデート確認中…` toast に `{kind:"loading"}` 適用**: 結果 toast (✅ ok / ❌ err) との差別化

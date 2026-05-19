@@ -260,6 +260,8 @@ async function renderRecentNav() {
 }
 
 function switchToView(v) {
+  // ビュー切替時は前ビューの toast を残さない (画面外に残り続ける問題の予防)
+  document.querySelectorAll(".panel-toast").forEach((t) => t.remove());
   document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
   const matched = document.querySelectorAll('.nav-btn[data-view="' + v + '"]');
   matched.forEach((b) => {
@@ -817,11 +819,14 @@ async function exLoadFields() {
   if (!state.sid) { document.getElementById("exMeta").innerHTML = `<span class="pill err">未接続</span>`; return; }
   const obj = document.getElementById("exObj").value.trim();
   if (!obj) return;
-  document.getElementById("exMeta").textContent = "⏳ describe 取得中…";
+  const exMetaEl = document.getElementById("exMeta");
+  exMetaEl.textContent = "⏳ describe 取得中…";
+  exMetaEl.classList.add("loading-pulse");
 
   const r = await sfFetch({ host: state.host, sid: state.sid, path: `/services/data/v${state.apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
   if (!r.ok) {
-    document.getElementById("exMeta").innerHTML = `<span class="pill err">describe 失敗 HTTP ${r.status}</span> ${escape(JSON.stringify(r.data).substring(0, 200))}`;
+    exMetaEl.classList.remove("loading-pulse");
+    exMetaEl.innerHTML = `<span class="pill err">describe 失敗 HTTP ${r.status}</span> ${escape(JSON.stringify(r.data).substring(0, 200))}`;
     return;
   }
   // queryable で createable/updateable/calculated 等の判別はメモ。SOQL select 対象は describe.fields の中で
@@ -836,7 +841,8 @@ async function exLoadFields() {
   // Name が無い場合の代替
   if (exState.selected.size === 0 && exState.fields[0]) exState.selected.add(exState.fields[0].name);
 
-  document.getElementById("exMeta").innerHTML = `<span class="pill ok">${escape(obj)}</span> <span class="pill">${exState.fields.length} 項目</span> 標準フィールドを ${exState.selected.size} 件選択中`;
+  exMetaEl.classList.remove("loading-pulse");
+  exMetaEl.innerHTML = `<span class="pill ok">${escape(obj)}</span> <span class="pill">${exState.fields.length} 項目</span> 標準フィールドを ${exState.selected.size} 件選択中`;
   exRenderFieldList();
   exBuildSoql();
 }
@@ -1308,6 +1314,7 @@ async function doInspect(opts = {}) {
   const myId = ++inspectRunId;
   const meta = document.getElementById("inspectMeta");
   meta.textContent = `⏳ 取得中… #${myId}`;
+  meta.classList.add("loading-pulse");
 
   let objName = null, id = null;
   if (raw.includes(":")) {
@@ -1316,6 +1323,7 @@ async function doInspect(opts = {}) {
     id = raw;
   }
   if (!/^[a-zA-Z0-9]{15,18}$/.test(id)) {
+    meta.classList.remove("loading-pulse");
     meta.innerHTML = `<span class="pill err">有効な ID ではありません</span>`;
     return;
   }
@@ -1331,6 +1339,7 @@ async function doInspect(opts = {}) {
       objName = r.data.records[0].QualifiedApiName;
     }
     if (!objName) {
+      meta.classList.remove("loading-pulse");
       meta.innerHTML = `<span class="pill err">KeyPrefix='${escape(prefix)}' のオブジェクトが見つかりません</span>。'<Object>:<Id>' 形式で指定してください`;
       return;
     }
@@ -1348,11 +1357,13 @@ async function doInspect(opts = {}) {
     return;
   }
 
-  if (!descR.ok) { displayApiError(meta, descR.status, descR.data, `Inspector describe(${objName})`); return; }
+  if (!descR.ok) { meta.classList.remove("loading-pulse"); displayApiError(meta, descR.status, descR.data, `Inspector describe(${objName})`); return; }
   if (!recR.ok) {
+    meta.classList.remove("loading-pulse");
     meta.innerHTML = `<span class="pill err">レコード取得失敗 HTTP ${recR.status}</span> ${escape(JSON.stringify(recR.data).substring(0, 200))}`;
     return;
   }
+  meta.classList.remove("loading-pulse");
   inspectState.obj = objName;
   inspectState.id = id;
   inspectState.describe = descR.data;
@@ -1814,6 +1825,7 @@ async function doSoql() {
   const tooling = document.getElementById("useTooling").checked;
   const meta = document.getElementById("soqlMeta");
   meta.textContent = `⏳ 実行中… #${myId}`;
+  meta.classList.add("loading-pulse");
   const t0 = performance.now();
   const r = await runSoql({ host: state.host, sid: state.sid, soql, apiVersion: state.apiVersion, tooling });
   const dt = Math.round(performance.now() - t0);
@@ -1830,6 +1842,7 @@ async function doSoql() {
   }
   const recs = (r.data && r.data.records) || [];
   state.lastRecords = recs;
+  meta.classList.remove("loading-pulse");
   meta.innerHTML = `<span class="pill ok">${recs.length} 件</span> total=${r.data.totalSize ?? recs.length} / ${dt}ms${tooling ? ' <span class="pill warn">Tooling</span>' : ""}`;
   document.getElementById("soqlResult").innerHTML = recordsTable(recs);
 }
@@ -2167,6 +2180,7 @@ async function doFetchLoginHistory() {
   const statusFilter = document.getElementById("loginStatus").value;
   const meta = document.getElementById("loginMeta");
   meta.textContent = "⏳ 取得中…";
+  meta.classList.add("loading-pulse");
 
   let where = "";
   if (statusFilter === "Success") where = "WHERE Status = 'Success' ";
@@ -2204,6 +2218,7 @@ async function doFetchLoginHistory() {
 
   const successCount = recs.filter((r) => r.Status === "Success").length;
   const failedCount = recs.length - successCount;
+  meta.classList.remove("loading-pulse");
   meta.innerHTML = `<span class="pill ok">${recs.length} 件</span> ` +
     `<span class="pill ok">Success ${successCount}</span> ` +
     `<span class="pill err">Failed ${failedCount}</span> / ${dt}ms`;
