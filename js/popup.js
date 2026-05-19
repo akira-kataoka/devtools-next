@@ -137,7 +137,12 @@ async function refreshSession() {
   if (!active) {
     setBadge("非SF", false);
     fillInfo({});
-    setStatus("⚠️ Salesforce タブが見つかりません。SF にログインしたタブを開いてから ⟳ を押してください。");
+    setStatus(
+      "⚠️ Salesforce タブが見つかりません\n" +
+      "  1. Salesforce (Lightning または Classic) のタブを開く\n" +
+      "  2. ログインを完了させる\n" +
+      "  3. このボタン ⟳ を再度押す"
+    );
     return;
   }
   state.tab = active.tab;
@@ -148,8 +153,13 @@ async function refreshSession() {
   if (!session) {
     setBadge("Cookie無", false);
     fillInfo({ host: state.host });
-    setStatus(`⚠️ sid Cookie が ${state.host} で見つかりません。\n` +
-      `→ そのタブで一度ログインしているか確認、または ${state.apiHost} 側で開き直してから再試行してください。`);
+    setStatus(
+      `⚠️ sid Cookie が見つかりません (host: ${state.host})\n` +
+      `  1. ${state.host} のタブで一度ログインを確認\n` +
+      `  2. ブラウザを最近再起動した場合はセッションが失われている可能性\n` +
+      `  3. もしくは ${state.apiHost} 側で直接開いて再試行\n` +
+      `  → 解決後にこの ⟳ ボタンを押してください`
+    );
     return;
   }
   state.sid = session.sid;

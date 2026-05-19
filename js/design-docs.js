@@ -1087,8 +1087,19 @@ async function buildFieldPermMatrix({ host, sid, apiVersion, obj, progress = () 
     `SELECT Field, PermissionsRead, PermissionsEdit, Parent.Name, Parent.IsOwnedByProfile, Parent.Profile.Name, Parent.Label ` +
     `FROM FieldPermissions WHERE SobjectType='${obj.replace(/'/g, "\\'")}' LIMIT 10000`
   );
+  const startedAt = performance.now();
   while (nextPath) {
-    progress(`FieldPermissions 取得中... (${allRecs.length} 件)`);
+    // ETA 計算: ページ size から大体の総件数を推測する (typically 2000/page)
+    let etaLabel = "";
+    if (allRecs.length > 0) {
+      const elapsed = performance.now() - startedAt;
+      const msPerRec = elapsed / allRecs.length;
+      // ページが続く間は最低 +2000 件はあると仮定し概算
+      const estRemaining = nextPath ? Math.max(2000, Math.round(allRecs.length * 0.3)) : 0;
+      const etaSec = Math.round((estRemaining * msPerRec) / 1000);
+      if (etaSec > 1) etaLabel = ` / ETA 約 ${etaSec < 60 ? etaSec + "秒" : Math.floor(etaSec/60) + "分" + (etaSec%60) + "秒"}`;
+    }
+    progress(`FieldPermissions 取得中... (${allRecs.length} 件${etaLabel})`);
     const r = await sfFetch({ host, sid, path: nextPath });
     if (!r.ok) throw apiError(`FieldPermissions(${obj})`, r);
     allRecs = allRecs.concat(r.data.records || []);
