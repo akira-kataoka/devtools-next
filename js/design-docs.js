@@ -9,29 +9,47 @@ import { sfFetch, runSoql } from "./sf-api.js";
  * rows: ヘッダ配列 + データ行 (オブジェクト配列)。
  */
 
-export async function generateDesign({ type, host, sid, apiVersion, obj, format }) {
+// 統一エラー: HTTP ステータスを必ず先頭に付ける形式で投げる
+// panel.js の displayApiError 互換正規表現 (/HTTP \d{3}/) に必ずマッチさせる
+function apiError(ctx, response) {
+  const status = response && response.status != null ? response.status : "?";
+  const data = response && response.data ? response.data : null;
+  const body = data ? (JSON.stringify(data).substring(0, 200)) : "";
+  return new Error(`HTTP ${status} ${ctx}: ${body}`);
+}
+
+// 統一: 入力必須チェック
+function requireInput(value, hint) {
+  if (!value || !String(value).trim()) {
+    throw new Error(`入力必須: ${hint}`);
+  }
+}
+
+export async function generateDesign({ type, host, sid, apiVersion, obj, format, onProgress }) {
   let result;
+  const progress = onProgress || (() => {});
+  const ctx = { host, sid, apiVersion, obj, progress };
   switch (type) {
-    case "objectDef":          result = await buildObjectDef({ host, sid, apiVersion, obj }); break;
-    case "profileList":        result = await buildProfileList({ host, sid, apiVersion }); break;
-    case "permsetList":        result = await buildPermSetList({ host, sid, apiVersion }); break;
-    case "apexClassList":      result = await buildApexClassList({ host, sid, apiVersion }); break;
-    case "apexTriggerList":    result = await buildApexTriggerList({ host, sid, apiVersion }); break;
-    case "flowList":           result = await buildFlowList({ host, sid, apiVersion }); break;
-    case "validationRuleList": result = await buildValidationRuleList({ host, sid, apiVersion, obj }); break;
-    case "recordTypeList":     result = await buildRecordTypeList({ host, sid, apiVersion, obj }); break;
-    case "fieldSetList":       result = await buildFieldSetList({ host, sid, apiVersion, obj }); break;
-    case "customSettingList":  result = await buildCustomSettingList({ host, sid, apiVersion }); break;
-    case "erDiagram":          result = await buildErDiagram({ host, sid, apiVersion, obj }); break;
-    case "fieldPermMatrix":    result = await buildFieldPermMatrix({ host, sid, apiVersion, obj }); break;
-    case "objectPermMatrix":   result = await buildObjectPermMatrix({ host, sid, apiVersion }); break;
-    case "profileDetail":      result = await buildProfileDetail({ host, sid, apiVersion, obj }); break;
-    case "flsReport":          result = await buildFlsReport({ host, sid, apiVersion, obj }); break;
-    case "appList":            result = await buildAppList({ host, sid, apiVersion }); break;
-    case "accessControl":      result = await buildAccessControl({ host, sid, apiVersion }); break;
-    case "flowDetail":         result = await buildFlowDetail({ host, sid, apiVersion, obj }); break;
-    case "apexDetail":         result = await buildApexDetail({ host, sid, apiVersion, obj }); break;
-    case "lwcDetail":          result = await buildLwcDetail({ host, sid, apiVersion, obj }); break;
+    case "objectDef":          result = await buildObjectDef(ctx); break;
+    case "profileList":        result = await buildProfileList(ctx); break;
+    case "permsetList":        result = await buildPermSetList(ctx); break;
+    case "apexClassList":      result = await buildApexClassList(ctx); break;
+    case "apexTriggerList":    result = await buildApexTriggerList(ctx); break;
+    case "flowList":           result = await buildFlowList(ctx); break;
+    case "validationRuleList": result = await buildValidationRuleList(ctx); break;
+    case "recordTypeList":     result = await buildRecordTypeList(ctx); break;
+    case "fieldSetList":       result = await buildFieldSetList(ctx); break;
+    case "customSettingList":  result = await buildCustomSettingList(ctx); break;
+    case "erDiagram":          result = await buildErDiagram(ctx); break;
+    case "fieldPermMatrix":    result = await buildFieldPermMatrix(ctx); break;
+    case "objectPermMatrix":   result = await buildObjectPermMatrix(ctx); break;
+    case "profileDetail":      result = await buildProfileDetail(ctx); break;
+    case "flsReport":          result = await buildFlsReport(ctx); break;
+    case "appList":            result = await buildAppList(ctx); break;
+    case "accessControl":      result = await buildAccessControl(ctx); break;
+    case "flowDetail":         result = await buildFlowDetail(ctx); break;
+    case "apexDetail":         result = await buildApexDetail(ctx); break;
+    case "lwcDetail":          result = await buildLwcDetail(ctx); break;
     default: throw new Error("unknown design type: " + type);
   }
   result.format = format;
@@ -41,9 +59,9 @@ export async function generateDesign({ type, host, sid, apiVersion, obj, format 
 
 // ============ オブジェクト定義書 ============
 async function buildObjectDef({ host, sid, apiVersion, obj }) {
-  if (!obj) throw new Error("オブジェクト API 名を入力してください");
+  requireInput(obj, "オブジェクト API 名 (例: Account)");
   const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
-  if (!r.ok) throw new Error(`describe 失敗: HTTP ${r.status} ${JSON.stringify(r.data)}`);
+  if (!r.ok) throw apiError(`describe(${obj})`, r);
   const d = r.data;
   const fields = d.fields || [];
 
@@ -126,7 +144,7 @@ async function buildProfileList({ host, sid, apiVersion }) {
     host, sid, apiVersion,
     soql: `SELECT Id, Name, UserLicense.Name, UserType, CreatedDate, LastModifiedDate, Description FROM Profile ORDER BY Name LIMIT 200`,
   });
-  if (!r.ok) throw new Error(`Profile 取得失敗: ${JSON.stringify(r.data)}`);
+  if (!r.ok) throw apiError("Profile 取得", r);
   const headers = ["No", "プロファイル名", "ライセンス", "UserType", "説明", "更新日"];
   const rows = (r.data.records || []).map((p, i) => ({
     "No": i + 1,
@@ -150,7 +168,7 @@ async function buildPermSetList({ host, sid, apiVersion }) {
     host, sid, apiVersion,
     soql: `SELECT Id, Name, Label, License.Name, IsCustom, NamespacePrefix, Description, LastModifiedDate FROM PermissionSet WHERE IsOwnedByProfile=false ORDER BY Name LIMIT 500`,
   });
-  if (!r.ok) throw new Error(`PermissionSet 取得失敗: ${JSON.stringify(r.data)}`);
+  if (!r.ok) throw apiError("PermissionSet 取得", r);
   const headers = ["No", "API名", "ラベル", "ライセンス", "Namespace", "カスタム", "説明", "更新日"];
   const rows = (r.data.records || []).map((p, i) => ({
     "No": i + 1,
@@ -176,7 +194,7 @@ async function buildApexClassList({ host, sid, apiVersion }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, Name, ApiVersion, Status, NamespacePrefix, LengthWithoutComments, CreatedDate, LastModifiedDate FROM ApexClass WHERE ManageableState='unmanaged' OR ManageableState='installedEditable' ORDER BY Name LIMIT 500`,
   });
-  if (!r.ok) throw new Error(`ApexClass 取得失敗: ${JSON.stringify(r.data)}`);
+  if (!r.ok) throw apiError("ApexClass 取得", r);
   const headers = ["No", "クラス名", "Namespace", "APIVer", "ステータス", "行数(コメント除)", "更新日"];
   const rows = (r.data.records || []).map((p, i) => ({
     "No": i + 1,
@@ -201,7 +219,7 @@ async function buildApexTriggerList({ host, sid, apiVersion }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, Name, TableEnumOrId, UsageBeforeInsert, UsageAfterInsert, UsageBeforeUpdate, UsageAfterUpdate, UsageBeforeDelete, UsageAfterDelete, UsageAfterUndelete, Status, LastModifiedDate FROM ApexTrigger ORDER BY TableEnumOrId, Name LIMIT 500`,
   });
-  if (!r.ok) throw new Error(`ApexTrigger 取得失敗: ${JSON.stringify(r.data)}`);
+  if (!r.ok) throw apiError("ApexTrigger 取得", r);
   const headers = ["No", "トリガ名", "対象オブジェクト", "BI", "AI", "BU", "AU", "BD", "AD", "AUD", "ステータス", "更新日"];
   const rows = (r.data.records || []).map((p, i) => ({
     "No": i + 1,
@@ -266,7 +284,7 @@ async function buildValidationRuleList({ host, sid, apiVersion, obj }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, ValidationName, Active, Description, ErrorDisplayField, ErrorMessage, EntityDefinition.QualifiedApiName, LastModifiedDate FROM ValidationRule ${where} ORDER BY EntityDefinition.QualifiedApiName, ValidationName LIMIT 500`,
   });
-  if (!r.ok) throw new Error(`ValidationRule 取得失敗: ${JSON.stringify(r.data)}`);
+  if (!r.ok) throw apiError("ValidationRule 取得", r);
   const headers = ["No", "オブジェクト", "ルール名", "有効", "エラー表示項目", "エラーメッセージ", "説明", "更新日"];
   const rows = (r.data.records || []).map((v, i) => ({
     "No": i + 1,
@@ -293,7 +311,7 @@ async function buildRecordTypeList({ host, sid, apiVersion, obj }) {
     host, sid, apiVersion,
     soql: `SELECT Id, Name, DeveloperName, SobjectType, IsActive, Description, BusinessProcessId FROM RecordType ${where} ORDER BY SobjectType, DeveloperName LIMIT 500`,
   });
-  if (!r.ok) throw new Error(`RecordType 取得失敗: ${JSON.stringify(r.data)}`);
+  if (!r.ok) throw apiError("RecordType 取得", r);
   const headers = ["No", "オブジェクト", "API名", "ラベル", "有効", "BusinessProcess", "説明"];
   const rows = (r.data.records || []).map((rt, i) => ({
     "No": i + 1,
@@ -323,7 +341,7 @@ async function buildFieldSetList({ host, sid, apiVersion, obj }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, DeveloperName, MasterLabel, Description, EntityDefinition.QualifiedApiName FROM FieldSet WHERE EntityDefinition.QualifiedApiName='${obj.replace(/'/g, "\\'")}' ORDER BY DeveloperName LIMIT 200`,
   });
-  if (!tr.ok) throw new Error(`FieldSet 取得失敗: ${JSON.stringify(tr.data)}`);
+  if (!tr.ok) throw apiError("FieldSet 取得", tr);
   const headers = ["No", "API名", "ラベル", "説明"];
   const rows = (tr.data.records || []).map((fs, i) => ({
     "No": i + 1,
@@ -345,7 +363,7 @@ async function buildCustomSettingList({ host, sid, apiVersion }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, DeveloperName, MasterLabel, CustomSettingsType, Description FROM CustomObject WHERE CustomSettingsType != null ORDER BY DeveloperName LIMIT 500`,
   });
-  if (!r.ok) throw new Error(`CustomSetting 取得失敗: ${JSON.stringify(r.data)}`);
+  if (!r.ok) throw apiError("CustomSetting 取得", r);
   const headers = ["No", "API名", "ラベル", "種別", "説明"];
   const rows = (r.data.records || []).map((c, i) => ({
     "No": i + 1,
@@ -651,7 +669,7 @@ async function buildAppList({ host, sid, apiVersion }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, DeveloperName, MasterLabel, NamespacePrefix, UiType, NavType, ProfileId, Description FROM AppDefinition ORDER BY MasterLabel LIMIT 500`,
   });
-  if (!r.ok) throw new Error(`AppDefinition 取得失敗: ${JSON.stringify(r.data)}`);
+  if (!r.ok) throw apiError("AppDefinition 取得", r);
   const headers = ["No", "API 名", "ラベル", "Namespace", "UI種別", "ナビ", "説明"];
   const rows = (r.data.records || []).map((a, i) => ({
     "No": i + 1,
@@ -1029,12 +1047,12 @@ async function fetchAllPaged({ host, sid, apiVersion, soql, tooling = false }) {
 }
 
 // ============ フィールド権限マトリクス (Profile/PermissionSet × Field) ============
-async function buildFieldPermMatrix({ host, sid, apiVersion, obj }) {
-  if (!obj) throw new Error("オブジェクト API 名を入力してください (例: Account)");
-
+async function buildFieldPermMatrix({ host, sid, apiVersion, obj, progress = () => {} }) {
+  requireInput(obj, "オブジェクト API 名 (例: Account)");
+  progress("describe 取得中...");
   // 1. オブジェクトの全 fields を describe で取得 (順序維持用)
   const dr = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
-  if (!dr.ok) throw new Error(`describe 失敗: HTTP ${dr.status}`);
+  if (!dr.ok) throw apiError(`describe(${obj})`, dr);
   const allFields = (dr.data.fields || [])
     .filter((f) => !f.calculated && f.type !== "id") // 計算項目と Id は権限対象外
     .map((f) => ({ name: f.name, label: f.label, type: f.type, required: !f.nillable && !f.defaultedOnCreate && f.createable }));
@@ -1047,12 +1065,14 @@ async function buildFieldPermMatrix({ host, sid, apiVersion, obj }) {
     `FROM FieldPermissions WHERE SobjectType='${obj.replace(/'/g, "\\'")}' LIMIT 10000`
   );
   while (nextPath) {
+    progress(`FieldPermissions 取得中... (${allRecs.length} 件)`);
     const r = await sfFetch({ host, sid, path: nextPath });
-    if (!r.ok) throw new Error(`FieldPermissions 取得失敗: HTTP ${r.status} ${JSON.stringify(r.data).substring(0, 200)}`);
+    if (!r.ok) throw apiError(`FieldPermissions(${obj})`, r);
     allRecs = allRecs.concat(r.data.records || []);
     nextPath = r.data && r.data.nextRecordsUrl ? r.data.nextRecordsUrl : null;
     if (allRecs.length > 50000) break; // 安全弁
   }
+  progress(`集計中... ${allRecs.length} 件のレコードをピボット`);
 
   // 3. ピボット用に Parent (= 列見出し) を集計
   const parents = new Map(); // key: parentKey, value: { label, isProfile }

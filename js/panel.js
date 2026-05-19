@@ -1363,11 +1363,20 @@ async function doGenerateDesign() {
 
   const t0 = performance.now();
   try {
-    const result = await generateDesign({ type, host: state.host, sid: state.sid, apiVersion: state.apiVersion, obj, format });
+    // 進捗コールバック: design-docs.js から呼ばれる
+    const onProgress = (msg) => {
+      meta.innerHTML = `<span class="pill warn">⏳ 生成中…</span> <span class="meta">${escape(msg)}</span>`;
+    };
+    const result = await generateDesign({ type, host: state.host, sid: state.sid, apiVersion: state.apiVersion, obj, format, onProgress });
     const dt = Math.round(performance.now() - t0);
     lastDesign = result;
     const totalRows = result.sections.reduce((n, s) => n + ((s.rows && s.rows.length) || (s.kvRows && s.kvRows.length) || 0), 0);
-    meta.innerHTML = `<span class="pill ok">${result.title}</span> <span class="pill">${result.sections.length} シート / ${totalRows} 行</span> ${dt}ms / 形式=${format}`;
+    // 0 件結果の統一表示
+    if (totalRows === 0) {
+      meta.innerHTML = `<span class="pill warn">結果 0 件</span> <span class="meta">${escape(result.title)}: 該当データなし</span> ${dt}ms / 形式=${format}`;
+    } else {
+      meta.innerHTML = `<span class="pill ok">${result.title}</span> <span class="pill">${result.sections.length} シート / ${totalRows} 行</span> ${dt}ms / 形式=${format}`;
+    }
     source.textContent = result.source;
 
     // プレビュー

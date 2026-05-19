@@ -4,6 +4,12 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.2.0 (2026-05-20 01:00)** — エラー統一 + 進捗表示:
+  - **🐛 design-docs.js エラー throw 統一**: `apiError(ctx, response)` ヘルパー導入で全エラーが `HTTP <status> <ctx>: <body>` 形式に。panel.js の `displayApiError` の HTTP 検出正規表現が確実に効く
+  - **🐛 入力必須チェック統一**: `requireInput(value, hint)` ヘルパーで全ジェネレータの未入力エラーが「入力必須: <ヒント>」形式
+  - **🐛 「結果 0 件」統一表示**: doGenerateDesign で totalRows=0 の場合 `<span class="pill warn">結果 0 件</span> XXX: 該当データなし` 表示
+  - **✨ 進捗コールバック対応**: design-docs.js の長時間処理 (fieldPermMatrix 等) で `progress(msg)` 呼び出し → meta 領域に「⏳ 生成中… XXX 件取得中…」と表示
+  - **🧪 401 テスト手順を README に追加**: セッション期限切れ動作確認のステップバイステップ
 - **v1.1.0 (2026-05-20 00:55)** — 洗練継続:
   - **🐛 Org 切替時の Picker キャッシュ invalidate**: `panel.js reconnect()` で前回 OrgId と比較し、変わっていれば `invalidatePickerCache()` を呼んでキャッシュ全消去
   - **📱 tool.html レスポンシブ対応**: 横幅 < 1000px でサイドバーが 60px のアイコン専用バーに自動折りたたみ、ホバー or タップで展開。横幅 < 700px ではヘッダのブランド名も縮小、ツールバーが折り返し
@@ -239,6 +245,18 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 ```
 
 ---
+
+### 🧪 401 INVALID_SESSION_ID テスト手順
+
+セッション期限切れの動作確認手順。期待動作: フッターに `⚠ HTTP 401` + 復旧 hint が表示され、UI が固まらない。
+
+1. Salesforce タブにログインしている状態で拡張アイコン → 「接続OK」確認
+2. **意図的にセッションを失効させる**: Setup → Session Management → 現在のセッションを終了 (End)
+3. 別タブで DevToolsNext (tool.html) を開く
+4. SOQL タブ → `SELECT Id FROM Account LIMIT 1` → 実行
+5. **期待結果**: meta 領域に `⚠ HTTP 401 (SOQL 実行) — INVALID_SESSION_ID Session expired or invalid 💡 Salesforce にログインし直してから popup の ⟳ で再接続してください` が表示される (UI は固まらない、コンソールエラーも出ない)
+6. Salesforce タブで再ログイン → popup の ⟳ ボタンで再接続 → 「接続OK」復帰確認
+7. 同じ SOQL を再実行 → 成功すること
 
 ### 🔄 自動アップデートの仕組み (v0.6.0〜)
 
