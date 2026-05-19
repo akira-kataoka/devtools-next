@@ -337,6 +337,14 @@ function bindEvents() {
   document.getElementById("btnInspectOpenInOrg").addEventListener("click", openInspectedInOrg);
   document.getElementById("btnInspectExportJson").addEventListener("click", () => exportInspect("json"));
   document.getElementById("btnInspectExportCsv").addEventListener("click", () => exportInspect("csv"));
+  const btnCopyJson = document.getElementById("btnInspectCopyJson");
+  if (btnCopyJson) btnCopyJson.addEventListener("click", async () => {
+    if (!inspectState.record) { panelToast("⚠ レコード未取得です"); return; }
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(inspectState.record, null, 2));
+      panelToast(`📋 ${inspectState.obj}:${inspectState.id} の JSON をコピー`);
+    } catch (e) { panelToast("⚠ コピー失敗: " + (e.message || e)); }
+  });
   document.getElementById("inspectFilter").addEventListener("input", renderInspectorFields);
   document.getElementById("inspectShowNull").addEventListener("change", renderInspectorFields);
   document.getElementById("inspectShowSystem").addEventListener("change", renderInspectorFields);

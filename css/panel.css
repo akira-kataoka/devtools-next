@@ -50,7 +50,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
   text-align: left; background: transparent; border: 1px solid transparent;
   color: var(--fg-dim); padding: 8px 10px; border-radius: 6px;
 }
-.nav-btn { transition: background 0.15s, color 0.15s, border-color 0.15s; }
+.nav-btn { transition: background 0.1s, color 0.1s, border-color 0.1s; }
 .nav-btn:hover { background: var(--bg3); color: var(--fg); }
 .nav-btn.active { background: var(--bg3); color: var(--accent); border-color: var(--line); }
 

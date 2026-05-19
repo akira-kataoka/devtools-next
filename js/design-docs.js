@@ -1400,7 +1400,11 @@ function toExcelXml(result) {
       const headers = sh.section.headers || [];
       const rows = sh.section.rows || [];
       parts.push(`<Table>`);
-      headers.forEach(() => parts.push(`<Column ss:Width="120"/>`));
+      // 1列目 (通常 "No" や API 名) は 80、それ以外は 180 をデフォルト幅に
+      headers.forEach((h, hi) => {
+        const w = hi === 0 ? 60 : (String(h).length > 20 ? 220 : 180);
+        parts.push(`<Column ss:Width="${w}"/>`);
+      });
       // header row (freeze pane 用に行ID 1)
       parts.push(`<Row ss:Height="22">` + headers.map((h) =>
         `<Cell ss:StyleID="header"><Data ss:Type="String">${xmlText(h)}</Data></Cell>`

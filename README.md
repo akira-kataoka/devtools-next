@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.34.0 (2026-05-20 03:40)** — Inspector JSON コピー + Excel 列幅 + transition 短縮:
+  - **✨ Inspector に「📋 JSON」コピーボタン追加**: 全項目を JSON 形式でクリップボードへ。`navigator.clipboard.writeText` + panelToast 通知。**ダウンロードせずに即ペースト可能**
+  - **✨ design-docs Excel 列幅を可変化**: 1列目 (No 等) 60、長い見出し (>20 文字) 220、それ以外 180 px。**従来一律 120 から見出し長さに応じた自動調整に変更**
+  - **✨ hover transition を 0.15s → 0.1s に短縮**: タブ/ナビ切替のレスポンスが更にキビキビ
 - **v1.33.0 (2026-05-20 03:35)** — reference 参照先表示 + 結果テーブル縞模様:
   - **✨ Inspector reference 値に「→ Object 名」併記**: 例 `001xxxxxx → Account` のように参照先オブジェクト名を `var(--fg-dim) 9px` で添える。**ID だけ見て何のレコードか分からない問題を解消**
   - **✨ 結果テーブルに縞模様**: `.grid tr:nth-child(even) td` / `.result tr:nth-child(even) td` に `rgba(27,150,255,0.025)` の薄背景。**長いリストで行を見失わない**、ホバー時は引き続きアクセント色
