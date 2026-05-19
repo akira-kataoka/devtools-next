@@ -332,18 +332,35 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick }
     $input.addEventListener("input", () => render());
     $input.addEventListener("keydown", (e) => {
       const rows = $list.querySelectorAll(".picker-row:not(.header)");
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        selectedIdx = Math.min(selectedIdx + 1, rows.length - 1);
-        render();
+      const lastIdx = rows.length - 1;
+      const scrollToSelected = () => {
         const sel = $list.querySelector(".picker-row.selected");
         if (sel) sel.scrollIntoView({ block: "nearest" });
+      };
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        selectedIdx = Math.min(selectedIdx + 1, lastIdx);
+        render(); scrollToSelected();
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
         selectedIdx = Math.max(selectedIdx - 1, 0);
-        render();
-        const sel = $list.querySelector(".picker-row.selected");
-        if (sel) sel.scrollIntoView({ block: "nearest" });
+        render(); scrollToSelected();
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        selectedIdx = 0;
+        render(); scrollToSelected();
+      } else if (e.key === "End") {
+        e.preventDefault();
+        selectedIdx = lastIdx;
+        render(); scrollToSelected();
+      } else if (e.key === "PageDown") {
+        e.preventDefault();
+        selectedIdx = Math.min(selectedIdx + 10, lastIdx);
+        render(); scrollToSelected();
+      } else if (e.key === "PageUp") {
+        e.preventDefault();
+        selectedIdx = Math.max(selectedIdx - 10, 0);
+        render(); scrollToSelected();
       } else if (e.key === "Enter") {
         e.preventDefault();
         const sel = $list.querySelector(".picker-row.selected");
