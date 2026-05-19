@@ -1508,6 +1508,12 @@ async function doGenerateDesign() {
       meta.innerHTML = `<span class="pill warn">結果 0 件</span> <span class="meta">${escape(result.title)}: 該当データなし</span> ${dt}ms / 形式=${format}`;
     } else {
       meta.innerHTML = `<span class="pill ok">${result.title}</span> <span class="pill">${result.sections.length} シート / ${totalRows} 行</span> ${dt}ms / 形式=${format}`;
+      // ダウンロードボタンを目立たせる (生成成功時)
+      const dlBtn = document.getElementById("btnDesignDownload");
+      if (dlBtn) {
+        dlBtn.classList.add("ready-pulse");
+        setTimeout(() => dlBtn.classList.remove("ready-pulse"), 3000);
+      }
     }
     source.textContent = result.source;
 

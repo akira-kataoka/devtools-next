@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.16.0 (2026-05-20 02:10)** — ソート明示 + 限度強調 + DL 強調:
+  - **✨ SOQL 履歴ヘッダにソート規則を明示**: 「📌 ピン留め優先 / その後 最新順 (最大10件)」と表示。role="list" 付与で a11y 対応
+  - **✨ Limits ダッシュボード 70% 超のカードを赤/橙ボーダー強調**: `.limit-card.critical { border-color:err; box-shadow:0 0 0 1px err }` で枠線色、危険な上限が一目で識別可能
+  - **✨ 設計書生成完了後の DL ボタンを 3 秒間パルス強調**: `.ready-pulse` で緑背景 + 6px box-shadow パルスアニメーション 3 回。**「次にこれを押せばダウンロード」を視覚で誘導**
 - **v1.15.0 (2026-05-20 02:05)** — Picker 多重防止 + ヘッダ sticky + ETA:
   - **🐛 Picker 多重表示防止**: `showPicker()` 呼出時に `.picker-overlay` が既存なら無視して resolve(null)。Picker トリガを連打しても 1 つだけ表示
   - **✨ tool.html ヘッダ sticky 化**: 長スクロール時もブランド/version/再接続/kbd-hint が常に見える (`position:sticky; top:0; backdrop-filter:blur(6px)`)

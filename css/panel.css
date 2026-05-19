@@ -134,6 +134,18 @@ textarea {
   40%  { background: rgba(27, 150, 255, 0.2); }
   100% { background: rgba(27, 150, 255, 0);   transform: scale(1); }
 }
+
+/* 設計書生成完了後の DL ボタン強調 (3 秒間パルス) */
+@keyframes readyPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(46, 204, 113, 0); }
+  50%      { box-shadow: 0 0 0 6px rgba(46, 204, 113, 0.4); }
+}
+.ready-pulse {
+  animation: readyPulse 1s ease-in-out 3;
+  background: var(--ok) !important;
+  border-color: var(--ok) !important;
+  color: #fff !important;
+}
 .nav-btn.flash {
   animation: navFlash 0.45s ease-out;
 }
@@ -459,6 +471,8 @@ button:disabled:hover, button[disabled]:hover {
 .limit-card .sub { font-size: 10px; color: var(--fg-dim); margin-top: 2px; }
 .limit-card.critical .val { color: var(--err); }
 .limit-card.warn .val { color: var(--warn); }
+.limit-card.critical { border-color: var(--err); box-shadow: 0 0 0 1px var(--err); }
+.limit-card.warn { border-color: var(--warn); }
 
 .limits-grid {
   flex: 1; overflow: auto; min-height: 200px;
