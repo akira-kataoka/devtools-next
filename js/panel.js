@@ -321,22 +321,22 @@ function bindEvents() {
   document.getElementById("btnLoadApex").addEventListener("click", loadSelectedApex);
   document.getElementById("btnApexCopy").addEventListener("click", async () => {
     const txt = document.getElementById("apexResult").textContent || "";
-    if (!txt) { panelToast("📭 コピーする結果がありません"); return; }
+    if (!txt) { panelToast("📭 コピーする結果がありません", { kind: "warn" }); return; }
     try {
       await navigator.clipboard.writeText(txt);
-      panelToast(`📋 Apex 結果コピー (${txt.length} 文字)`);
+      panelToast(`📋 Apex 結果コピー (${txt.length} 文字)`, { kind: "ok" });
     } catch (e) {
-      panelToast("❌ コピー失敗: " + (e.message || e));
+      panelToast("❌ コピー失敗: " + (e.message || e), { kind: "err" });
     }
   });
   document.getElementById("btnRestCopy").addEventListener("click", async () => {
     const txt = document.getElementById("restResult").textContent || "";
-    if (!txt) { panelToast("📭 コピーする結果がありません"); return; }
+    if (!txt) { panelToast("📭 コピーする結果がありません", { kind: "warn" }); return; }
     try {
       await navigator.clipboard.writeText(txt);
-      panelToast(`📋 REST 結果コピー (${txt.length} 文字)`);
+      panelToast(`📋 REST 結果コピー (${txt.length} 文字)`, { kind: "ok" });
     } catch (e) {
-      panelToast("❌ コピー失敗: " + (e.message || e));
+      panelToast("❌ コピー失敗: " + (e.message || e), { kind: "err" });
     }
   });
   enableTabToSpaces(document.getElementById("apexCode"));
@@ -362,11 +362,11 @@ function bindEvents() {
   document.getElementById("btnInspectExportCsv").addEventListener("click", () => exportInspect("csv"));
   const btnCopyJson = document.getElementById("btnInspectCopyJson");
   if (btnCopyJson) btnCopyJson.addEventListener("click", async () => {
-    if (!inspectState.record) { panelToast("⚠ レコード未取得です"); return; }
+    if (!inspectState.record) { panelToast("⚠ レコード未取得です", { kind: "warn" }); return; }
     try {
       await navigator.clipboard.writeText(JSON.stringify(inspectState.record, null, 2));
-      panelToast(`📋 ${inspectState.obj}:${inspectState.id} の JSON をコピー`);
-    } catch (e) { panelToast("⚠ コピー失敗: " + (e.message || e)); }
+      panelToast(`📋 ${inspectState.obj}:${inspectState.id} の JSON をコピー`, { kind: "ok" });
+    } catch (e) { panelToast("⚠ コピー失敗: " + (e.message || e), { kind: "err" }); }
   });
   document.getElementById("inspectFilter").addEventListener("input", renderInspectorFields);
   document.getElementById("inspectShowNull").addEventListener("change", renderInspectorFields);
@@ -644,10 +644,10 @@ function csRenderCandidates() {
     el.addEventListener("click", () => {
       if (selectedNames.has(key)) {
         csState.selected = csState.selected.filter((s) => !(s.type === c.type && s.name === c.name));
-        panelToast(`➖ 除外: ${c.type}:${c.name}`);
+        panelToast(`➖ 除外: ${c.type}:${c.name}`, { kind: "warn" });
       } else {
         csState.selected.push({ ...c });
-        panelToast(`➕ 追加: ${c.type}:${c.name}`);
+        panelToast(`➕ 追加: ${c.type}:${c.name}`, { kind: "ok" });
       }
       csRenderCandidates();
       csRenderSelected();
@@ -730,7 +730,7 @@ async function csCopyXml() {
   const t = document.getElementById("csXml").textContent;
   if (!t) return;
   await navigator.clipboard.writeText(t);
-  panelToast("📋 package.xml をコピーしました");
+  panelToast("📋 package.xml をコピーしました", { kind: "ok" });
 }
 
 function csDownloadXml() {
@@ -959,12 +959,12 @@ async function exDownloadAll(fmt) {
   exBuildSoql();
   const soql = document.getElementById("exSoql").value;
   if (!soql) {
-    panelToast("⚠ SOQL が空です。先にフィールドを選択してください");
+    panelToast("⚠ SOQL が空です。先にフィールドを選択してください", { kind: "warn" });
     return;
   }
   // 選択フィールドが 0 件なら警告して中断
   if (!exState.selected || exState.selected.size === 0) {
-    panelToast("⚠ 出力フィールドを 1 つ以上選択してください");
+    panelToast("⚠ 出力フィールドを 1 つ以上選択してください", { kind: "warn" });
     return;
   }
   const tooling = document.getElementById("exTooling").checked;
@@ -1229,11 +1229,11 @@ function apiBuildUrl() {
 
 async function apiCopyUrl() {
   const t = document.getElementById("apiBuildUrl").textContent;
-  if (t) { await navigator.clipboard.writeText(t); panelToast("📋 URL をコピーしました"); }
+  if (t) { await navigator.clipboard.writeText(t); panelToast("📋 URL をコピーしました", { kind: "ok" }); }
 }
 async function apiCopyCurl() {
   const t = document.getElementById("apiBuildCurl").textContent;
-  if (t) { await navigator.clipboard.writeText(t); panelToast("📋 curl コマンドをコピーしました"); }
+  if (t) { await navigator.clipboard.writeText(t); panelToast("📋 curl コマンドをコピーしました", { kind: "ok" }); }
 }
 function apiOpenInBrowser() {
   const url = document.getElementById("apiBuildUrl").textContent;
@@ -1255,7 +1255,7 @@ function inspectGoBack() {
   const prev = inspectHistory.pop();
   if (prev) {
     document.getElementById("inspectRef").value = `${prev.obj}:${prev.id}`;
-    panelToast(`⏪ 戻る: ${prev.obj}:${prev.id}`);
+    panelToast(`⏪ 戻る: ${prev.obj}:${prev.id}`, { kind: "ok" });
     doInspect({ skipHistory: true, restoreScrollTop: prev.scrollTop || 0 });
   }
   updateInspectBackButton();
@@ -1660,7 +1660,7 @@ async function doGenerateDesign() {
           chrome.tabs.create({ url: `https://mermaid.live/edit#base64:${enc}` });
         } catch (e) {
           chrome.tabs.create({ url: "https://mermaid.live/" });
-          panelToast("Mermaid Live Editor を開きました (コードをペーストしてください)");
+          panelToast("Mermaid Live Editor を開きました (コードをペーストしてください)", { kind: "warn" });
         }
       });
       preview.appendChild(liveBtn);
@@ -1699,9 +1699,9 @@ async function copyDesignSource() {
   if (!lastDesign) return;
   try {
     await navigator.clipboard.writeText(lastDesign.source || "");
-    panelToast("📋 設計書ソースをコピーしました");
+    panelToast("📋 設計書ソースをコピーしました", { kind: "ok" });
   } catch (e) {
-    panelToast("⚠ コピー失敗: " + String(e));
+    panelToast("⚠ コピー失敗: " + String(e), { kind: "err" });
   }
 }
 
@@ -1952,7 +1952,7 @@ function recordsTable(records) {
       td.dataset.copyBound = "true";
       td.addEventListener("dblclick", () => {
         const txt = td.textContent;
-        navigator.clipboard.writeText(txt).then(() => panelToast(`📋 コピー: ${txt.substring(0, 40)}${txt.length > 40 ? "…" : ""}`));
+        navigator.clipboard.writeText(txt).then(() => panelToast(`📋 コピー: ${txt.substring(0, 40)}${txt.length > 40 ? "…" : ""}`, { kind: "ok" }));
       });
     });
   }, 0);
