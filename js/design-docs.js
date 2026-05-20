@@ -530,7 +530,7 @@ async function buildFlowList({ host, sid, apiVersion }) {
       r2types[key] = (r2types[key] || 0) + 1;
     });
     const r2breakdown = Object.keys(r2types).sort().map((t) => `${processTypeLabel(t)} ${fmtNum(r2types[t])} 件`).join(" / ");
-    return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${fmtNum(rows.length)} 件 / 種別内訳: ${r2breakdown} — 種別と状態は業務用語で表記しています` };
+    return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${fmtNum(rows.length)} 件 / 種別内訳: ${r2breakdown}。**業務担当者向け**: フロー (Flow) は管理者がノーコードで構築できる業務プロセス自動化機能です。種別と状態は業務用語で表記しています。組織内の自動化資産棚卸し、業務プロセス可視化、運用引継ぎ、改修計画の優先度判断にご活用ください。各フローの詳細は「フロー設計図」を選択してください。` };
   }
   const records = r.data.records || [];
   const headers = ["No", "ラベル", "API 名", "種別", "アクティブ", "バージョン", "説明", "更新日"];
@@ -565,7 +565,7 @@ async function buildFlowList({ host, sid, apiVersion }) {
       makeCoverSection({ docTitle: "フロー一覧 (アクティブのみ)", target: "組織全体 (全アクティブ Flow)", orgHost: host, revision: "初版" }),
       { heading: "フロー", headers, rows },
     ],
-    note: `合計 ${fmtNum(records.length)} 件 / 種別内訳: ${typeBreakdown}${legacyNote} — Process Builder は Salesforce 公式アナウンスにより段階的に廃止予定です`,
+    note: `合計 ${fmtNum(records.length)} 件 / 種別内訳: ${typeBreakdown}${legacyNote}。**業務担当者向け**: 本一覧はアクティブな自動化資産 (Flow + 既存 Workflow Rule / Process Builder) を網羅します。**Process Builder は Salesforce 公式アナウンスにより段階的に廃止予定**のため、移行計画の対象洗い出し資料として優先活用してください。Workflow Rule は項目自動更新・メール送信が主用途のため、Flow への置換時の影響範囲確認にも有用です。`,
   };
 }
 
@@ -1188,7 +1188,7 @@ async function buildAppList({ host, sid, apiVersion }) {
       const menuSummary = menuRecords.length
         ? ` / AppMenuItem 種別内訳: ${menuTypeBreakdown} (表示 ${fmtNum(visibleMenu)} / 非表示 ${fmtNum(hiddenMenu)})`
         : "";
-      return `AppDefinition ${fmtNum(appRecords.length)} 件 (Lightning ${fmtNum(lightning)} / Classic ${fmtNum(aloha)}${otherUi ? ` / その他 ${fmtNum(otherUi)}` : ""}) / AppMenuItem ${fmtNum(menuRecords.length)} 件${menuSummary} — 「並び順」はプロファイル単位で別途上書き可能`;
+      return `AppDefinition ${fmtNum(appRecords.length)} 件 (Lightning ${fmtNum(lightning)} / Classic ${fmtNum(aloha)}${otherUi ? ` / その他 ${fmtNum(otherUi)}` : ""}) / AppMenuItem ${fmtNum(menuRecords.length)} 件${menuSummary}。**業務担当者向け**: アプリは Salesforce 上の業務領域 (営業/サービス/マーケ等) を分けるための枠組みです。App Launcher (Salesforce 右上の点 9 個メニュー) に表示される項目と一致します。Lightning と Classic の併存状況、Classic 廃止検討、業務領域ごとのアクセス権設計、不要アプリ整理に活用できます。「並び順」はプロファイル単位で別途上書き可能のため、プロファイル詳細レポートと合わせて確認してください。`;
     })(),
   };
 }
