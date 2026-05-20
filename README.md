@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.87.0 (2026-05-20 11:35)** — 設計書 download にもサイズ + 形式 + 未生成警告:
+  - **✨ `downloadDesignSource()` の完了 toast 追加**: `📥 設計書ダウンロード: MD 312.4 KB` 形式で形式 + サイズ表示 (B/KB/MB 自動切替)。**従来 silent download だった UX が「何形式で何 KB 保存されたか」即視認可能**
+  - **🛡 `downloadDesignSource()` 未生成時の警告 toast**: `lastDesign === null` 時 `📭 まだ設計書が未生成です` (kind:warn) → 従来 silent return で UX 不明瞭だった問題を解消
+  - **🧪 Apex copy / REST copy / CSV download 等は v1.45.0 (panelToast kind 全箇所適用) で既に成功 toast 出力済**
 - **v1.86.0 (2026-05-20 11:30)** — 設計書 copy サイズ表示 + README Trim 強化:
   - **✨ `copyDesignSource()` の toast にサイズ表示**: `📋 設計書ソースをコピー (312.4 KB)` 形式で B/KB/MB 自動切替 (Apex 結果 pill と同パターン)
   - **🛡 `copyDesignSource()` 未生成時の警告 toast 追加**: `lastDesign === null` の場合 `📭 まだ設計書が未生成です` (kind:warn) を表示 (従来は silent return)

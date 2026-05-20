@@ -1840,7 +1840,7 @@ async function copyDesignSource() {
 }
 
 function downloadDesignSource() {
-  if (!lastDesign) return;
+  if (!lastDesign) { panelToast("📭 まだ設計書が未生成です", { kind: "warn" }); return; }
   const fmt = lastDesign.format || "markdown";
   const extMap = { markdown: "md", html: "html", csv: "csv", tsv: "tsv", excel: "xls", xls: "xls" };
   const mimeMap = {
@@ -1868,6 +1868,13 @@ function downloadDesignSource() {
   a.download = `${safeName}_${ts}.${ext}`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
+  // ダウンロード完了 toast (サイズ + 形式)
+  const sz = body.length;
+  let label;
+  if (sz < 1024) label = `${sz} B`;
+  else if (sz < 1048576) label = `${(sz / 1024).toFixed(1)} KB`;
+  else label = `${(sz / 1048576).toFixed(1)} MB`;
+  panelToast(`📥 設計書ダウンロード: ${ext.toUpperCase()} ${label}`, { kind: "ok" });
 }
 
 async function getInspectedHost() {
