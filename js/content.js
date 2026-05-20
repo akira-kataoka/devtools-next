@@ -121,6 +121,21 @@ function flashToast(text) {
         resize: vertical;
       }
       textarea:focus { outline: 2px solid #1b96ff; outline-offset: 0; }
+      /* v3.52.0: mini-panel textarea カーソル位置インジケータ (panel/tool と同様の 3 モード統一) */
+      .cursor-pos-wrap { position: relative; display: block; }
+      .cursor-pos-wrap > textarea { width: 100%; }
+      .cursor-pos-badge {
+        position: absolute; right: 6px; bottom: 4px;
+        background: rgba(11,18,32,0.85); color: #9fb0c9;
+        padding: 1px 6px; border-radius: 8px;
+        font: 9px ui-monospace, Consolas, monospace;
+        pointer-events: none; user-select: none;
+        border: 1px solid #1f2c46;
+        white-space: nowrap;
+      }
+      .cursor-pos-wrap > textarea:focus + .cursor-pos-badge {
+        color: #1b96ff; border-color: #1b96ff;
+      }
       .row { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
       .row .meta { color: #9fb0c9; font-size: 10px; flex: 1; }
       button.primary {
@@ -272,6 +287,32 @@ function flashToast(text) {
   const meta = $("mta");
   const res = $("res");
   const histRow = $("histRow");
+
+  // v3.52.0: mini-panel qry textarea にカーソル位置インジケータ (3 モード統一)
+  if (qry && !qry.dataset.cursorPosAttached) {
+    qry.dataset.cursorPosAttached = "true";
+    const wrap = document.createElement("span");
+    wrap.className = "cursor-pos-wrap";
+    qry.parentNode.insertBefore(wrap, qry);
+    wrap.appendChild(qry);
+    const badge = document.createElement("span");
+    badge.className = "cursor-pos-badge";
+    badge.textContent = "L:1 C:1";
+    badge.title = "現在のカーソル位置 (行:列) — SF エラーメッセージの行/列番号と照合できます";
+    wrap.appendChild(badge);
+    const updatePos = () => {
+      const value = qry.value;
+      const pos = qry.selectionStart || 0;
+      const before = value.substring(0, pos);
+      const line = (before.match(/\n/g) || []).length + 1;
+      const lastNl = before.lastIndexOf("\n");
+      const col = pos - (lastNl + 1) + 1;
+      const totalLines = (value.match(/\n/g) || []).length + 1;
+      badge.textContent = `L:${line}/${totalLines} C:${col}`;
+    };
+    ["input", "click", "keyup", "select", "focus"].forEach((ev) => qry.addEventListener(ev, updatePos));
+    updatePos();
+  }
   let lastRecs = []; // v2.10.0: CSV コピー用に最終結果保持
 
   // v3.44.0: SOQL 履歴を chrome.storage.local に永続化
