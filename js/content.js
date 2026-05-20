@@ -138,6 +138,17 @@ function flashToast(text) {
       }
       .quick-btn:hover { background: #1b96ff; color: #fff; border-color: #1b96ff; }
       .quick-btn:disabled { opacity: 0.4; cursor: default; }
+      /* v2.94.0: mini-panel SOQL オートコンプリート (ユーザー要望「ユーザーモードでも入力補助が欲しい」) */
+      .ac-pop {
+        position: absolute; left: 12px; right: 12px;
+        max-height: 180px; overflow-y: auto;
+        background: #0a1224; border: 1px solid #1b96ff;
+        border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        z-index: 100;
+      }
+      .ac-pop .ac-item { padding: 4px 8px; cursor: pointer; font-size: 11px; color: #e6ecf5; font-family: ui-monospace, Consolas, monospace; }
+      .ac-pop .ac-item:hover, .ac-pop .ac-item.selected { background: rgba(27,150,255,0.2); color: #fff; }
+      .ac-pop .ac-lbl { color: #9fb0c9; font-size: 9px; margin-left: 6px; }
       /* v2.86.0 Team K: SOQL 履歴チップ */
       .history-row {
         display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
@@ -281,6 +292,109 @@ function flashToast(text) {
     if (e.isComposing || e.keyCode === 229) return;
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") runBtn.click();
   });
+
+  // v2.94.0 mini-panel SOQL オートコンプリート (FROM 後はオブジェクト、SELECT/WHERE 後は項目)
+  let acPop = null, acItems = [], acIdx = 0, acStart = 0;
+  let acObjsCache = null;
+  const acFieldsCache = new Map();
+  const acHide = () => { if (acPop) { acPop.remove(); acPop = null; } acItems = []; };
+  const acGetObjs = async () => {
+    if (acObjsCache) return acObjsCache;
+    try {
+      const host = location.hostname;
+      const ss = await chrome.runtime.sendMessage({ type: "sfdt:getSession", host });
+      if (!ss || !ss.ok) return [];
+      // describe global を REST で
+      const r = await chrome.runtime.sendMessage({
+        type: "sfdt:fetch",
+        payload: { host, sid: ss.session.sid, path: `/services/data/v62.0/sobjects/`, method: "GET" },
+      });
+      if (r && r.ok && r.data && Array.isArray(r.data.sobjects)) {
+        acObjsCache = r.data.sobjects.filter((s) => s.queryable).map((s) => ({ name: s.name, label: s.label || "" }));
+        return acObjsCache;
+      }
+    } catch {}
+    return [];
+  };
+  const acGetFields = async (objName) => {
+    if (!objName) return [];
+    if (acFieldsCache.has(objName)) return acFieldsCache.get(objName);
+    try {
+      const host = location.hostname;
+      const ss = await chrome.runtime.sendMessage({ type: "sfdt:getSession", host });
+      if (!ss || !ss.ok) return [];
+      const r = await chrome.runtime.sendMessage({
+        type: "sfdt:fetch",
+        payload: { host, sid: ss.session.sid, path: `/services/data/v62.0/sobjects/${encodeURIComponent(objName)}/describe`, method: "GET" },
+      });
+      if (r && r.ok && r.data && Array.isArray(r.data.fields)) {
+        const fields = r.data.fields.map((f) => ({ name: f.name, label: f.label || "", type: f.type || "" }));
+        acFieldsCache.set(objName, fields);
+        return fields;
+      }
+    } catch {}
+    return [];
+  };
+  const acRender = () => {
+    if (!acItems.length) { acHide(); return; }
+    if (!acPop) {
+      acPop = document.createElement("div");
+      acPop.className = "ac-pop";
+      acPop.style.top = (qry.offsetTop + qry.offsetHeight + 2) + "px";
+      qry.parentElement.appendChild(acPop);
+    }
+    acPop.innerHTML = acItems.map((it, i) =>
+      `<div class="ac-item${i === acIdx ? " selected" : ""}" data-i="${i}">${it.name}<span class="ac-lbl">${it.label || ""}</span></div>`).join("");
+    acPop.querySelectorAll(".ac-item").forEach((el) => {
+      el.addEventListener("mousedown", (e) => { e.preventDefault(); acInsert(Number(el.dataset.i)); });
+    });
+  };
+  const acInsert = (i) => {
+    const cand = acItems[i]; if (!cand) return;
+    const pos = qry.selectionStart;
+    const before = qry.value.substring(0, acStart);
+    const after = qry.value.substring(pos);
+    qry.value = before + cand.name + after;
+    const np = before.length + cand.name.length;
+    qry.setSelectionRange(np, np);
+    qry.focus();
+    acHide();
+  };
+  const acUpdate = async () => {
+    const text = qry.value;
+    const pos = qry.selectionStart;
+    const before = text.substring(0, pos);
+    const wm = before.match(/([A-Za-z0-9_]*)$/);
+    const word = wm ? wm[1] : "";
+    acStart = pos - word.length;
+    const ctx = before.substring(0, pos - word.length).trimEnd();
+    const lk = ctx.match(/\b(FROM|SELECT|WHERE|AND|OR|ORDER\s+BY|GROUP\s+BY)\b[^A-Za-z_]*$/i) || ctx.match(/(,)\s*$/);
+    if (!lk) { acHide(); return; }
+    const kw = lk[1].toUpperCase().replace(/\s+/g, " ");
+    const q = word.toLowerCase();
+    if (kw === "FROM") {
+      const objs = await acGetObjs();
+      acItems = objs.filter((s) => !q || s.name.toLowerCase().startsWith(q) || s.label.toLowerCase().includes(q)).slice(0, 15);
+    } else {
+      // FROM オブジェクト取得 → 項目候補
+      const fm = text.match(/\bFROM\s+([A-Za-z0-9_]+)/i);
+      const obj = fm ? fm[1] : null;
+      if (!obj) { acHide(); return; }
+      const fields = await acGetFields(obj);
+      acItems = fields.filter((f) => !q || f.name.toLowerCase().startsWith(q) || f.label.toLowerCase().includes(q)).slice(0, 15);
+    }
+    acIdx = 0;
+    acRender();
+  };
+  qry.addEventListener("input", acUpdate);
+  qry.addEventListener("blur", () => setTimeout(() => acHide(), 150));
+  qry.addEventListener("keydown", (e) => {
+    if (!acItems.length) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); acIdx = Math.min(acIdx + 1, acItems.length - 1); acRender(); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); acIdx = Math.max(acIdx - 1, 0); acRender(); }
+    else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); e.stopPropagation(); acInsert(acIdx); }
+    else if (e.key === "Escape") { e.preventDefault(); acHide(); }
+  }, true);
 
   // v2.8.0: 現在ページから ID + sObject を抽出して WHERE Id='...' を挿入
   useIdBtn.addEventListener("click", () => {
