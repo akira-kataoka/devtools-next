@@ -112,57 +112,67 @@ function bindEvents() {
     });
   });
 
-  document.getElementById("info-apiver").addEventListener("change", (e) => {
-    state.apiVersion = e.target.value;
-  });
+  // v2.78.0: popup 抜本簡素化に伴い、撤廃された SOQL/API タブの DOM が無くても安全に init を続行できるよう
+  // 全イベントバインドを defensive null チェック化 ($ ヘルパーで存在時のみ addEventListener)
+  const $on = (id, ev, fn) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener(ev, fn);
+  };
 
-  document.getElementById("btnRunSoql").addEventListener("click", doSoql);
-  document.getElementById("btnExportCsv").addEventListener("click", exportCsv);
-  document.getElementById("btnClearHistory").addEventListener("click", clearHistory);
-  document.getElementById("soqlText").addEventListener("keydown", (e) => {
-    if (e.isComposing || e.keyCode === 229) return; // IME 確定中はスキップ
+  $on("info-apiver", "change", (e) => { state.apiVersion = e.target.value; });
+
+  // SOQL タブ関連 (popup 簡素化で撤廃済) — null セーフ
+  $on("btnRunSoql", "click", doSoql);
+  $on("btnExportCsv", "click", exportCsv);
+  $on("btnClearHistory", "click", clearHistory);
+  $on("soqlText", "keydown", (e) => {
+    if (e.isComposing || e.keyCode === 229) return;
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") doSoql();
   });
 
-  // クイックログイン (Login as User)
-  document.getElementById("btnLoginAsSearch").addEventListener("click", searchUsersForLogin);
-  document.getElementById("loginAsSearch").addEventListener("keydown", (e) => {
-    if (e.isComposing || e.keyCode === 229) return; // IME 確定中はスキップ
+  // クイックログイン (Login as User) - ホームタブで保持
+  $on("btnLoginAsSearch", "click", searchUsersForLogin);
+  $on("loginAsSearch", "keydown", (e) => {
+    if (e.isComposing || e.keyCode === 229) return;
     if (e.key === "Enter") searchUsersForLogin();
   });
 
-  document.getElementById("btnParseId").addEventListener("click", doParseId);
-  document.getElementById("btnOpenId").addEventListener("click", openIdInOrg);
-  // 入力時に 15 桁または 18 桁の英数字なら自動解析 (debounce 250ms)
+  // ID 解析 - ホームタブで保持
+  $on("btnParseId", "click", doParseId);
+  $on("btnOpenId", "click", openIdInOrg);
   let _idTimer = null;
-  document.getElementById("idInput").addEventListener("input", (e) => {
+  $on("idInput", "input", (e) => {
     if (_idTimer) clearTimeout(_idTimer);
     const v = e.target.value.trim();
     if (/^[a-zA-Z0-9]{15}$/.test(v) || /^[a-zA-Z0-9]{18}$/.test(v)) {
       _idTimer = setTimeout(() => doParseId(), 250);
     }
   });
-  document.getElementById("idInput").addEventListener("keydown", (e) => {
+  $on("idInput", "keydown", (e) => {
     if (e.key === "Enter") { e.preventDefault(); doParseId(); }
   });
 
-  document.getElementById("btnApiSend").addEventListener("click", doApiCall);
-  document.getElementById("btnApiLimits").addEventListener("click", () => {
-    document.getElementById("apiMethod").value = "GET";
-    document.getElementById("apiPath").value = `/services/data/v${state.apiVersion}/limits`;
+  // API タブ関連 (popup 簡素化で撤廃済) — null セーフ
+  $on("btnApiSend", "click", doApiCall);
+  $on("btnApiLimits", "click", () => {
+    const m = document.getElementById("apiMethod"); if (m) m.value = "GET";
+    const p = document.getElementById("apiPath"); if (p) p.value = `/services/data/v${state.apiVersion}/limits`;
     doApiCall();
   });
-  document.getElementById("btnApiVersions").addEventListener("click", () => {
-    document.getElementById("apiMethod").value = "GET";
-    document.getElementById("apiPath").value = `/services/data`;
+  $on("btnApiVersions", "click", () => {
+    const m = document.getElementById("apiMethod"); if (m) m.value = "GET";
+    const p = document.getElementById("apiPath"); if (p) p.value = `/services/data`;
     doApiCall();
   });
 
-  document.getElementById("openDevtools").addEventListener("click", (e) => {
-    e.preventDefault();
+  // 全画面で開く — フッタリンクと最上部 CTA の両方に対応
+  const openTool = (e) => {
+    if (e) e.preventDefault();
     chrome.tabs.create({ url: chrome.runtime.getURL("html/tool.html") });
     window.close();
-  });
+  };
+  $on("openDevtools", "click", openTool);
+  $on("btnOpenTool", "click", openTool);
 }
 
 async function refreshSession() {

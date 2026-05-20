@@ -20,14 +20,53 @@
   --line: #1f2c46;
 }
 * { box-sizing: border-box; }
+/* v2.78.0: popup 幅 460→480 拡大 + リサイズ可能化試行
+   Chrome 拡張 popup は max 800x600 程度の制約あり (仕様)
+   body に resize: both を付けることで一部 Chrome バージョンではユーザーがドラッグで広げられる */
 html, body {
   margin: 0; padding: 0;
-  width: 460px;
-  min-height: 560px;
+  width: 480px;
+  min-width: 360px;
+  max-width: 780px;
+  min-height: 580px;
+  max-height: 600px;
   background: var(--bg);
   color: var(--fg);
   font: 12px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", "Yu Gothic UI", sans-serif;
+  resize: both;
+  overflow: auto;
 }
+
+/* v2.78.0: 抜本簡素化に伴う最上部の大型 CTA「全画面で開く」ボタン
+   初めてのユーザーにも一目で主要動線が分かるよう、アイコン + タイトル + 補助テキスト + 矢印を横並びに配置 */
+.cta-open-tool {
+  display: flex !important;
+  align-items: center;
+  gap: 12px;
+  width: calc(100% - 20px);
+  margin: 10px;
+  padding: 14px 16px !important;
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-2) 100%) !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 10px !important;
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 12px rgba(27,150,255,0.3);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.cta-open-tool:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(27,150,255,0.5);
+}
+.cta-open-tool:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.cta-icon { font-size: 28px; line-height: 1; flex-shrink: 0; }
+.cta-body { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.cta-title { font-size: 14px; font-weight: 700; }
+.cta-sub { font-size: 10px; font-weight: 400; opacity: 0.85; line-height: 1.4; }
+.cta-arrow { font-size: 22px; line-height: 1; opacity: 0.7; flex-shrink: 0; }
 .hdr {
   display: flex; justify-content: space-between; align-items: center;
   padding: 8px 12px;

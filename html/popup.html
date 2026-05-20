@@ -23,33 +23,20 @@
   </header>
 
   <nav class="tabs" aria-label="メイン タブ">
-    <button class="tab active" data-tab="home" aria-label="ホーム + ID 解析">ホーム</button>
-    <button class="tab" data-tab="soql" aria-label="SOQL クエリ">SOQL</button>
-    <button class="tab" data-tab="api" aria-label="REST API 探索">API</button>
-    <button class="tab" data-tab="links" aria-label="便利リンク">便利リンク</button>
+    <button class="tab active" data-tab="home" aria-label="ホーム + ID 解析">🏠 ホーム</button>
+    <button class="tab" data-tab="links" aria-label="便利リンク">🔗 便利リンク</button>
   </nav>
 
   <main class="panel" id="panel-home">
-    <section class="card whats-new" id="cardWhatsNew">
-      <h2 style="cursor:pointer;user-select:none" id="whatsNewToggle" title="クリックで折りたたみ・展開を切り替えます">
-        <span id="whatsNewArrow">▼</span> 🚀 DevToolsNext を全画面で開く (F12 不要)
-      </h2>
-      <div class="whats-new-body" id="whatsNewBody">
-        <div style="margin-bottom:6px">下のボタンで、すべての機能を 1 つのフルスクリーンタブで使えます (F12 を押さなくても OK)</div>
-        <button id="btnOpenTool" class="primary" style="width:100%;font-size:13px;padding:10px">🛠️ DevToolsNext を開く</button>
-        <ul class="whats-new-list" style="margin-top:8px">
-          <li>🔍 レコード Inspector / 📥 データエクスポート / Apex 実行</li>
-          <li>🔗 API URL ビルダー / 📦 変更セット (package.xml)</li>
-          <li>📊 Limits ダッシュボード / 設計書ジェネレータ 22 種類 (業務向け凡例付き)</li>
-        </ul>
-        <div style="font-size:10px;color:var(--fg-dim);margin-top:6px;padding:4px 6px;background:rgba(27,150,255,0.05);border:1px solid var(--line);border-radius:4px">
-          ⌨️ <b>キーボード操作:</b> <kbd>Ctrl+Enter</kbd> 実行 / <kbd>Esc</kbd> 閉じる / <kbd>↑↓</kbd> Picker 移動
-        </div>
-        <div style="font-size:10px;color:var(--fg-dim);margin-top:4px">
-          ※ F12 → "Salesforce" タブ からの旧導線も引き続き使えます
-        </div>
-      </div>
-    </section>
+    <!-- v2.78.0: 抜本簡素化 - 最上部に大型 CTA。SOQL/API/設計書などの主要機能は全画面ツールに集約 -->
+    <button id="btnOpenTool" class="primary cta-open-tool" title="DevToolsNext の全機能を 1 つのフルスクリーンタブで起動します (F12 不要)">
+      <span class="cta-icon">🛠️</span>
+      <span class="cta-body">
+        <span class="cta-title">DevToolsNext を全画面で開く</span>
+        <span class="cta-sub">SOQL / Inspector / Apex / 設計書 22 種類 / API ビルダー / Limits ほか全機能</span>
+      </span>
+      <span class="cta-arrow">→</span>
+    </button>
 
     <section class="card">
       <h2>セッション情報</h2>
@@ -96,45 +83,6 @@
         <button id="btnOpenId" aria-label="ID のレコードを開く">レコードを開く</button>
       </div>
       <div id="idResult" class="result" role="region" aria-label="ID 解析結果"></div>
-    </section>
-  </main>
-
-  <main class="panel hidden" id="panel-soql">
-    <section class="card">
-      <h2>SOQL クエリ</h2>
-      <textarea id="soqlText" rows="6" spellcheck="false" placeholder="SOQL クエリを入力してください">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 20</textarea>
-      <div class="row">
-        <label title="Tooling API を使う場合はチェックしてください (ApexClass / ValidationRule 等)"><input type="checkbox" id="soqlTooling" /> Tooling API を使用</label>
-        <button id="btnRunSoql" class="primary" title="SOQL クエリを実行します">実行</button>
-        <button id="btnExportCsv" title="クエリ結果を CSV ファイルとしてダウンロードします">CSV</button>
-        <button id="btnClearHistory" class="mini" title="SOQL 履歴をすべて削除します (ピン留め項目も削除されます)">履歴クリア</button>
-      </div>
-      <div id="soqlMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
-      <div id="soqlResult" class="result" role="region" aria-label="SOQL クエリ結果"></div>
-    </section>
-    <section class="card">
-      <h2>履歴 <span style="font-size:10px;color:var(--fg-dim);font-weight:400">— 📌 ピン留め優先 / その後 最新順 (最大10件)</span></h2>
-      <div id="soqlHistory" class="history" role="list"></div>
-    </section>
-  </main>
-
-  <main class="panel hidden" id="panel-api">
-    <section class="card">
-      <h2>REST API 探索</h2>
-      <div class="row">
-        <select id="apiMethod">
-          <option>GET</option><option>POST</option><option>PATCH</option><option>DELETE</option>
-        </select>
-        <input id="apiPath" placeholder="REST API パスを入力してください (例: /services/data/v62.0/sobjects/Account/describe)" title="先頭の / から指定します" />
-      </div>
-      <textarea id="apiBody" rows="4" placeholder='POST / PATCH の場合は JSON ボディを入力してください (GET / DELETE では不要)'></textarea>
-      <div class="row">
-        <button id="btnApiSend" class="primary" title="指定したパスとメソッドで REST API を送信します">送信</button>
-        <button id="btnApiLimits" title="/limits エンドポイントに GET します">/limits</button>
-        <button id="btnApiVersions" title="/services/data エンドポイントで利用可能な API バージョン一覧を取得します">/versions</button>
-      </div>
-      <div id="apiMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
-      <pre id="apiResult" class="code" role="region" aria-label="REST API レスポンス"></pre>
     </section>
   </main>
 
