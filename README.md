@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.45.0 (2026-05-20 16:35)** — 🚨 ユーザー要望 Phase 35: 残ボタン disabled 統一 + lockBtn ヘルパー導入:
+  - **🐛 panel.js lockBtn() ヘルパー追加**: ボタン id を渡すと無効化し、戻り値の関数で解除できる共通ヘルパー (DRY 化)
+  - **🐛 panel.js doLimits / doMetadataList / doFetchLogs / doFetchLoginHistory / doGenerateDesign**: 5 関数全てに lockBtn を適用して実行中の二重クリック防止 (btnLimits / btnMetadata / btnFetchLogs / btnFetchLogin / btnDesignGen)
+  - **🐛 panel.js doGenerateDesign**: ローディング表示「生成中…」→「⏳ 設計書を生成しています…」、try/catch を try/finally に変更してエラー時もボタン解除を保証
+  - **🐛 panel.js doFetchLoginHistory エラー context**: 「Login History 取得」→「ログイン履歴の取得」に
 - **v2.44.0 (2026-05-20 16:30)** — 🚨 ユーザー要望 Phase 34: 全主要ボタンの実行中 disabled 統一:
   - **🐛 panel.js doInspect (btnInspect)**: 実行中ボタン無効化 + opacity (二重クリック防止)、全分岐 (KeyPrefix エラー / describe エラー / record エラー / 成功) で再有効化、record エラーヒント ですます調 詳細化
   - **🐛 panel.js doDescribe (btnDescribe)**: 実行中ボタン無効化、空入力時に「⚠ オブジェクトの API 名を入力してください」 pill 表示

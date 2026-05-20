@@ -1714,9 +1714,19 @@ function exportInspect(fmt) {
 // ====== Limits ダッシュボード (置換実装) ======
 let lastLimitsData = null;
 
+// 共通: ボタンの実行中ロック (二重クリック防止). 戻り値は解除関数
+function lockBtn(id) {
+  const b = document.getElementById(id);
+  if (!b) return () => {};
+  b.disabled = true; b.style.opacity = "0.6";
+  return () => { b.disabled = false; b.style.opacity = ""; };
+}
+
 async function doLimits() {
   if (!state.sid) return;
+  const unlock = lockBtn("btnLimits");
   const r = await sfFetch({ host: state.host, sid: state.sid, path: `/services/data/v${state.apiVersion}/limits` });
+  unlock();
   if (!r.ok) {
     document.getElementById("limitsResult").innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;
     document.getElementById("limitsSummary").innerHTML = "";
@@ -1809,6 +1819,7 @@ let designRunId = 0;
 
 async function doGenerateDesign() {
   if (!state.sid) { document.getElementById("designMeta").innerHTML = `<span class="pill err">Salesforce 未接続</span> Salesforce タブで再接続してください`; return; }
+  const unlock = lockBtn("btnDesignGen");
   const type = document.getElementById("designType").value;
   const obj = document.getElementById("designObj").value.trim();
   const format = document.getElementById("designFormat").value;
@@ -1817,7 +1828,7 @@ async function doGenerateDesign() {
   const source = document.getElementById("designSource");
 
   const myId = ++designRunId;
-  meta.textContent = `生成中… #${myId}`;
+  meta.textContent = `⏳ 設計書を生成しています… #${myId}`;
   preview.innerHTML = "";
   source.textContent = "";
 
@@ -1914,6 +1925,8 @@ async function doGenerateDesign() {
     }
     preview.innerHTML = "";
     source.textContent = "";
+  } finally {
+    unlock();
   }
 }
 
@@ -2219,10 +2232,12 @@ async function doRest() {
 
 async function doMetadataList() {
   if (!state.sid) return;
+  const unlock = lockBtn("btnMetadata");
   const type = document.getElementById("mdType").value;
   const path = `/services/data/v${state.apiVersion}/tooling/query/?q=` +
     encodeURIComponent(`SELECT Id, Name, NamespacePrefix, ManageableState, CreatedDate, LastModifiedDate FROM ${type} ORDER BY LastModifiedDate DESC LIMIT 200`);
   const r = await sfFetch({ host: state.host, sid: state.sid, path });
+  unlock();
   if (!r.ok) {
     const elem = document.getElementById("metadataResult");
     const m = document.createElement("div");
@@ -2245,8 +2260,10 @@ async function doMetadataList() {
 
 async function doFetchLogs() {
   if (!state.sid) return;
+  const unlock = lockBtn("btnFetchLogs");
   const q = `SELECT Id, LogUser.Name, Status, Application, Operation, LogLength, DurationMilliseconds, StartTime FROM ApexLog ORDER BY StartTime DESC LIMIT 20`;
   const r = await runSoql({ host: state.host, sid: state.sid, soql: q, apiVersion: state.apiVersion, tooling: true });
+  unlock();
   if (!r.ok) {
     const elem = document.getElementById("logsResult");
     const m = document.createElement("div");
@@ -2653,6 +2670,7 @@ async function loadSelectedApex() {
 // ====== LoginHistory ビュー ======
 async function doFetchLoginHistory() {
   if (!state.sid) return;
+  const unlock = lockBtn("btnFetchLogin");
   const limit = parseInt(document.getElementById("loginLimit").value, 10) || 50;
   const statusFilter = document.getElementById("loginStatus").value;
   const meta = document.getElementById("loginMeta");
@@ -2670,11 +2688,13 @@ async function doFetchLoginHistory() {
   const dt = Math.round(performance.now() - t0);
 
   if (!r.ok) {
-    displayApiError(meta, r.status, r.data, "Login History 取得");
+    unlock();
+    displayApiError(meta, r.status, r.data, "ログイン履歴の取得");
     document.getElementById("loginResult").innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;
     state.lastLoginRecords = null;
     return;
   }
+  unlock();
   const recs = (r.data && r.data.records) || [];
   state.lastLoginRecords = recs;
 
