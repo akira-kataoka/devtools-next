@@ -1859,7 +1859,11 @@ export function markdownToHtml(md) {
     if (!tableBuf) return;
     const [h, sep, ...rows] = tableBuf;
     const heads = splitMd(h);
-    out.push("<table><thead><tr>" + heads.map((c) => `<th>${inline(c)}</th>`).join("") + "</tr></thead><tbody>");
+    // ヘッダ th に title 属性 (列名を tooltip 表示) を付与 — 長い見出しが省略されても hover で読める
+    out.push("<table><thead><tr>" + heads.map((c) => {
+      const plain = c.replace(/[*`_]/g, "").trim();
+      return `<th title="${esc(plain)}">${inline(c)}</th>`;
+    }).join("") + "</tr></thead><tbody>");
     for (const r of rows) {
       const cells = splitMd(r);
       out.push("<tr>" + cells.map((c) => `<td>${inline(c)}</td>`).join("") + "</tr>");
