@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.90.0 (2026-05-20 11:50)** — 🎉 累計90リリース節目 - Login History CSV toast + 全16 download 一覧表:
+  - **✨ `exportLoginCsv()` 完了 toast**: `📥 Login History CSV (N 件 / <size>)` 形式 (件数 + サイズ)
+  - **🛡 `exportLoginCsv()` 未取得時警告**: `📭 Login History 未取得 (先に「取得」をクリック)`
+  - **📖 README に「全 Download / Copy 一覧」テーブル追加 (v1.90.0 時点)**: 16 種類の操作 × 関数 × 形式 × toast 文言 × 未取得警告 × 実装バージョンを一覧化。**実装の完全性が一目で確認可能**
 - **v1.89.0 (2026-05-20 11:45)** — Limits / Inspector export にも統一 toast:
   - **✨ `exportLimitsCsv()` 完了 toast**: `📥 Limits CSV ダウンロード (35 項目 / 3.4 KB)` 形式
   - **🛡 `exportLimitsCsv()` 未取得時警告**: `📭 Limits 未取得 (先に「取得」をクリック)`
@@ -729,6 +733,31 @@ Picker モーダルのアクセシビリティ確認:
 2. `document.body.classList.remove("picker-open")`
 3. `focusReturnTarget` に focus 戻し (DOM 接続確認、v1.74.0)
 4. `resolve(val)` で `await showPicker()` を解決
+
+### 📥 全 Download / Copy 一覧 (v1.90.0 時点)
+
+すべての download/copy 操作は `panelToast` (panel) または `toast` (popup) で結果フィードバック (📥 成功 / 📭 未取得 / ❌ 失敗) を表示:
+
+| 機能 | 関数 | 形式 | toast (実装 ver) | 未取得警告 |
+|---|---|---|---|---|
+| SOQL 結果 download | `exportCsv()` | CSV | `📥 CSV ...行` + ソート反映 (v1.58) | ✅ v1.49 |
+| SOQL 結果 copy | `copyCsvToClipboard()` | CSV (clipboard) | `📋 CSV ...行` + ソート反映 (v1.58) | ✅ v1.49 |
+| 設計書 download | `downloadDesignSource()` | MD/HTML/CSV/TSV/XLS | `📥 設計書ダウンロード: <fmt> <size>` (v1.87) | ✅ |
+| 設計書 copy | `copyDesignSource()` | source (clipboard) | `📋 設計書ソースをコピー (<size>)` (v1.86) | ✅ |
+| ChangeSet package.xml | `csDownloadXml()` | XML | `📥 package.xml ダウンロード (<size>)` (v1.88) | ✅ |
+| ChangeSet SFDX bundle | `csDownloadSfdxBundle()` | MD | `📥 SFDX バンドル (.md) ダウンロード (<size>)` (v1.88) | ✅ |
+| Inspector レコード JSON | `exportInspect("json")` | JSON | `📥 Object:Id を JSON ダウンロード (<size>)` (v1.89) | ✅ |
+| Inspector レコード CSV | `exportInspect("csv")` | CSV | `📥 Object:Id を CSV ダウンロード (<size>)` (v1.89) | ✅ |
+| Inspector レコード JSON copy | `btnInspectCopyJson` | JSON (clipboard) | `📋 Object:Id の JSON をコピー` (v1.45) | ✅ v1.45 |
+| Limits CSV | `exportLimitsCsv()` | CSV | `📥 Limits CSV (35 項目 / <size>)` (v1.89) | ✅ |
+| Login History CSV | `exportLoginCsv()` | CSV | `📥 Login History CSV (N 件 / <size>)` (v1.90) | ✅ v1.90 |
+| Apex 結果 copy | `btnApexCopy` | text (clipboard) | `📋 Apex 結果コピー (N 文字)` (v1.45) | ✅ v1.45 |
+| REST 結果 copy | `btnRestCopy` | text (clipboard) | `📋 REST 結果コピー (N 文字)` (v1.45) | ✅ v1.45 |
+| popup SOQL CSV | `popup exportCsv()` | CSV | toast 標準 (v1.45+) | ✅ |
+| popup 18桁ID copy | clickHandler | text | `📋 18桁ID をコピーしました: ...` (v1.45) | - |
+| popup curl/URL copy | API Builder | text | `📋 URL をコピーしました` / `📋 curl ...` (v1.45) | - |
+
+**累計 16 種類**の download/copy 操作で **統一 toast + 未取得警告** を完備。
 
 ### 🧪 VERSION 整合性チェック手順 (v1.85.0+)
 

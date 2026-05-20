@@ -2554,7 +2554,7 @@ function loginHistoryTable(rows) {
 }
 
 function exportLoginCsv() {
-  if (!state.lastLoginRecords || !state.lastLoginRecords.length) return;
+  if (!state.lastLoginRecords || !state.lastLoginRecords.length) { panelToast("📭 Login History 未取得 (先に「取得」をクリック)", { kind: "warn" }); return; }
   const csv = recordsToCsv(state.lastLoginRecords);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -2563,6 +2563,9 @@ function exportLoginCsv() {
   a.download = `login-history-${tsForFilename()}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const sz = csv.length;
+  const label = sz < 1024 ? `${sz} B` : `${(sz / 1024).toFixed(1)} KB`;
+  panelToast(`📥 Login History CSV (${state.lastLoginRecords.length} 件 / ${label})`, { kind: "ok" });
 }
 
 // ====== saved queries (chrome.storage.local) ======
