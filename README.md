@@ -8,6 +8,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.39.0 (2026-05-20 16:05)** — 🚨 ユーザー要望 Phase 29: displayApiError hint links / 設計書 トップへ / Mermaid:
+  - **🐛 panel.js displayApiError hint links (HTTP 401/403/404/400/429/500) 11 個**: ラベルを「動詞 + 業務語」に統一 (「セッション管理を開く」→「🔧 セッション設定を開く」、「Login History」→「📜 ログイン履歴を確認する」、「プロファイル一覧」→「👤 プロファイル一覧を開く」、「OWD 設定」→「🔓 共有設定 (OWD) を開く」、「Describe ビューを開く」→「📖 Describe ビューで項目を確認する」、「Limits ダッシュボード」→「📊 Limits ダッシュボードで使用状況を確認する」、「Status Trust ページ (外部)」→「🌐 Salesforce Trust (障害情報) を確認する」)
+  - **🐛 panel.js 設計書プレビュー「▲ トップへ」ボタン**: 「▲ トップへ」→「▲ 先頭へ戻る」、title「プレビューの先頭にスクロール」→「クリックでプレビューの先頭までスクロールします」
+  - **🐛 panel.js Mermaid Live Editor ボタン title**: 「別タブで mermaid.live を開いて図を表示」→「新しいタブで mermaid.live を開き、ER 図を可視化します」
 - **v2.38.0 (2026-05-20 16:00)** — 🚨 ユーザー要望 Phase 28: Apex Debug ログ / API body サンプル / openIdInOrg:
   - **🐛 panel.js Apex Debug ログ取得失敗時**: hint を ですます調 詳細化 (「削除済または期限切れの可能性」→「ログが削除済か期限切れの可能性があります」、「ApexLog 参照権限が不足しています」→「Apex ログの参照権限が不足しています (Setup → ユーザ → 権限セットをご確認ください)」、「Trace Flag が未設定の可能性」を ですます調 + 補足追加)
   - **🐛 panel.js Apex 成功時表示**: 「(コンパイル & 実行 OK)」→「(コンパイル・実行に成功しました)」

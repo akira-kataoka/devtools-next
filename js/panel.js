@@ -1849,8 +1849,8 @@ async function doGenerateDesign() {
     if (!preview.querySelector(".design-top-btn")) {
       const topBtn = document.createElement("button");
       topBtn.className = "design-top-btn";
-      topBtn.textContent = "▲ トップへ";
-      topBtn.title = "プレビューの先頭にスクロール";
+      topBtn.textContent = "▲ 先頭へ戻る";
+      topBtn.title = "クリックでプレビューの先頭までスクロールします";
       topBtn.addEventListener("click", () => preview.scrollTo({ top: 0, behavior: "smooth" }));
       preview.appendChild(topBtn);
     }
@@ -1861,7 +1861,7 @@ async function doGenerateDesign() {
       liveBtn.className = "primary";
       liveBtn.style.marginTop = "8px";
       liveBtn.textContent = "🔗 Mermaid Live Editor で可視化";
-      liveBtn.title = "別タブで mermaid.live を開いて図を表示";
+      liveBtn.title = "新しいタブで mermaid.live を開き、ER 図を可視化します";
       liveBtn.addEventListener("click", () => {
         // mermaid.live は #pako: base64 で URL に埋め込めるが、軽量のため #base64: 形式で
         try {
@@ -2408,45 +2408,45 @@ function displayApiError(elem, status, data, ctx = "") {
     hint = {
       text: "セッションの有効期限が切れています。Salesforce へログインし直し、ポップアップの ⟳ ボタンで再接続してください (Lightning ドメインの sid は REST から使えない場合があります)。",
       links: [
-        { label: "セッション管理を開く", path: "/lightning/setup/SecuritySession/home" },
-        { label: "Login History", action: "navView", view: "login" },
+        { label: "🔧 セッション設定を開く", path: "/lightning/setup/SecuritySession/home" },
+        { label: "📜 ログイン履歴を確認する", action: "navView", view: "login" },
       ],
     };
   } else if (status === 403) {
     hint = {
       text: "現在のユーザに権限がありません。プロファイル / 権限セットまたは OWD (組織既定の共有設定) で対象オブジェクトのアクセス権をご確認ください。",
       links: [
-        { label: "プロファイル一覧", path: "/lightning/setup/EnhancedProfiles/home" },
-        { label: "権限セット一覧", path: "/lightning/setup/PermSets/home" },
-        { label: "OWD 設定", path: "/lightning/setup/SecuritySharing/home" },
+        { label: "👤 プロファイル一覧を開く", path: "/lightning/setup/EnhancedProfiles/home" },
+        { label: "🔑 権限セット一覧を開く", path: "/lightning/setup/PermSets/home" },
+        { label: "🔓 共有設定 (OWD) を開く", path: "/lightning/setup/SecuritySharing/home" },
       ],
     };
   } else if (status === 404) {
     hint = {
       text: "指定された名前 / Id が見つかりません。タイプミスがないかを確認するか、🔍 候補リストから選択してください。",
       links: [
-        { label: "オブジェクトマネージャ", path: "/lightning/setup/ObjectManager/home" },
+        { label: "📋 オブジェクトマネージャを開く", path: "/lightning/setup/ObjectManager/home" },
       ],
     };
   } else if (status === 400) {
     hint = {
       text: "リクエストの内容が不正です。SOQL の構文・項目名・参照可能性をご確認ください (Describe ビューから対象オブジェクトの項目を確認できます)。",
       links: [
-        { label: "Describe ビューを開く", action: "navView", view: "describe" },
+        { label: "📖 Describe ビューで項目を確認する", action: "navView", view: "describe" },
       ],
     };
   } else if (status === 429) {
     hint = {
       text: "API コール数の上限に達しました。Limits ビューから現在の使用状況をご確認ください。",
       links: [
-        { label: "Limits ダッシュボード", action: "navView", view: "limits" },
+        { label: "📊 Limits ダッシュボードで使用状況を確認する", action: "navView", view: "limits" },
       ],
     };
   } else if (status === 500 || status === 503) {
     hint = {
       text: "Salesforce サーバ側で問題が発生しています。しばらくお待ちいただいた後、再度お試しください。",
       links: [
-        { label: "Status Trust ページ (外部)", url: "https://status.salesforce.com/" },
+        { label: "🌐 Salesforce Trust (障害情報) を確認する", url: "https://status.salesforce.com/" },
       ],
     };
   }
