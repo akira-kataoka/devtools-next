@@ -730,19 +730,31 @@ async function buildAppList({ host, sid, apiVersion }) {
 
 // ============ アクセスコントロール定義書 (OWD / 共有設定 / Role hierarchy) ============
 async function buildAccessControl({ host, sid, apiVersion }) {
+  // v2.12.0: 業務向けに OWD 値を日本語+原文併記、凡例セクション追加
+  const owdLabel = (v) => {
+    const m = {
+      "Private": "Private (非公開)",
+      "Read": "Public Read (参照のみ全員可)",
+      "ReadWrite": "Public Read/Write (全員参照/編集可)",
+      "ReadWriteTransfer": "Public Read/Write/Transfer (リード等)",
+      "FullAccess": "Public Full Access (キャンペーン等)",
+      "ControlledByParent": "Controlled By Parent (親に従属)",
+    };
+    return v ? (m[v] || v) : "";
+  };
   // 1. EntityDefinition: 各オブジェクトの InternalSharingModel / ExternalSharingModel
   const owdR = await runSoql({
     host, sid, apiVersion, tooling: true,
     soql: `SELECT QualifiedApiName, Label, InternalSharingModel, ExternalSharingModel, IsCustomizable FROM EntityDefinition WHERE InternalSharingModel != null ORDER BY QualifiedApiName LIMIT 500`,
   });
-  const owdHeaders = ["No", "オブジェクト", "ラベル", "内部共有 (OWD)", "外部共有 (OWD)", "カスタマイズ可"];
+  const owdHeaders = ["No", "API 名", "オブジェクト名", "内部共有 (OWD)", "外部共有 (OWD)", "カスタマイズ可否"];
   const owdRows = owdR.ok ? (owdR.data.records || []).map((e, i) => ({
     "No": i + 1,
-    "オブジェクト": e.QualifiedApiName,
-    "ラベル": e.Label,
-    "内部共有 (OWD)": e.InternalSharingModel || "",
-    "外部共有 (OWD)": e.ExternalSharingModel || "",
-    "カスタマイズ可": e.IsCustomizable ? "○" : "",
+    "API 名": e.QualifiedApiName,
+    "オブジェクト名": e.Label,
+    "内部共有 (OWD)": owdLabel(e.InternalSharingModel),
+    "外部共有 (OWD)": owdLabel(e.ExternalSharingModel),
+    "カスタマイズ可否": e.IsCustomizable ? "可" : "不可",
   })) : [];
 
   // 2. UserRole (ロール階層)
@@ -750,15 +762,24 @@ async function buildAccessControl({ host, sid, apiVersion }) {
     host, sid, apiVersion,
     soql: `SELECT Id, Name, DeveloperName, ParentRoleId, OpportunityAccessForAccountOwner, CaseAccessForAccountOwner, ContactAccessForAccountOwner FROM UserRole ORDER BY Name LIMIT 500`,
   });
-  const roleHeaders = ["No", "ロール名", "API名", "親ロールId", "Opp(Account所有者)", "Case(Account所有者)", "Contact(Account所有者)"];
+  const roleHeaders = ["No", "ロール名", "API 名", "親ロール Id", "商談アクセス (取引先所有者)", "ケースアクセス (取引先所有者)", "取引先責任者アクセス (取引先所有者)"];
+  const accessLabel = (v) => {
+    const m = {
+      "None": "アクセス権なし",
+      "Read": "参照のみ",
+      "Edit": "参照・編集可",
+      "ControlledByParent": "親に従属",
+    };
+    return v ? (m[v] || v) : "";
+  };
   const roleRows = roleR.ok ? (roleR.data.records || []).map((r, i) => ({
     "No": i + 1,
     "ロール名": r.Name,
-    "API名": r.DeveloperName,
-    "親ロールId": r.ParentRoleId || "",
-    "Opp(Account所有者)": r.OpportunityAccessForAccountOwner || "",
-    "Case(Account所有者)": r.CaseAccessForAccountOwner || "",
-    "Contact(Account所有者)": r.ContactAccessForAccountOwner || "",
+    "API 名": r.DeveloperName,
+    "親ロール Id": r.ParentRoleId || "",
+    "商談アクセス (取引先所有者)": accessLabel(r.OpportunityAccessForAccountOwner),
+    "ケースアクセス (取引先所有者)": accessLabel(r.CaseAccessForAccountOwner),
+    "取引先責任者アクセス (取引先所有者)": accessLabel(r.ContactAccessForAccountOwner),
   })) : [];
 
   // 3. 共有ルール (SharingRules はオブジェクト別だが、Tooling では SharingRules は metadata 経由のみ。Tooling/EntityDefinition から代用)
@@ -774,15 +795,28 @@ async function buildAccessControl({ host, sid, apiVersion }) {
              r["内部共有 (OWD)"] === "ControlledByParent" ? "親レコードに従属" : ""),
   }));
 
+  // 凡例 (v2.12.0: 業務担当者の理解のための略語/値の説明)
+  const legendHeaders = ["項目", "意味"];
+  const legendRows = [
+    { "項目": "OWD", "意味": "Organization-Wide Defaults (組織共通の既定共有設定)" },
+    { "項目": "Private (非公開)", "意味": "レコード所有者と上位ロールのみアクセス可" },
+    { "項目": "Public Read (参照のみ)", "意味": "全ユーザが参照可能、編集は所有者のみ" },
+    { "項目": "Public Read/Write", "意味": "全ユーザが参照・編集可能" },
+    { "項目": "Controlled By Parent", "意味": "親レコードのアクセス権限に従う (例: 取引先責任者)" },
+    { "項目": "Sharing Rules", "意味": "OWD で制限したレコードを追加共有する補完ルール (本設計書では Metadata API 必須のため未取得)" },
+    { "項目": "PermSet 上乗せ", "意味": "プロファイル + Permission Set の合算で実効権限が決まる" },
+  ];
+
   return {
     title: "アクセスコントロール定義書",
     type: "accessControl",
     sections: [
-      { heading: "1. 組織共通の既定設定 (OWD)", headers: owdHeaders, rows: owdRows },
-      { heading: "2. 共有設計上の注意 (Private/ControlledByParent)", headers: sharingHeaders, rows: sharingRows },
+      { heading: "0. 凡例 / 略語の説明", headers: legendHeaders, rows: legendRows },
+      { heading: "1. 組織共通の既定共有設定 (OWD)", headers: owdHeaders, rows: owdRows },
+      { heading: "2. 共有設計上の注意 (非公開 / 親従属)", headers: sharingHeaders, rows: sharingRows },
       { heading: "3. ロール階層 (UserRole)", headers: roleHeaders, rows: roleRows },
     ],
-    note: `OWD レコード ${owdRows.length} 件 / Role ${roleRows.length} 件。Sharing Rules の詳細は metadata API (SharingRules) でのみ取得可能。`,
+    note: `OWD ${owdRows.length} 件 / ロール ${roleRows.length} 件。共有ルールの詳細は Metadata API (SharingRules) からのみ取得可能なため、本書では取得していません。`,
   };
 }
 

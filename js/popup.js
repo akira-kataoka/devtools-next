@@ -57,7 +57,7 @@ function bindTabs() {
 function bindEvents() {
   document.getElementById("btnRefresh").addEventListener("click", refreshSession);
   document.getElementById("btnSettings").addEventListener("click", () => {
-    chrome.runtime.openOptionsPage ? chrome.runtime.openOptionsPage() : toast("設定は未実装です", { kind: "warn" });
+    chrome.runtime.openOptionsPage ? chrome.runtime.openOptionsPage() : toast("⚠ 設定画面はまだ実装されていません", { kind: "warn" });
   });
   // バージョン表示 + 自動アップデート
   const verEl = document.getElementById("versionBadge");
@@ -70,8 +70,8 @@ function bindEvents() {
     btnUpd.addEventListener("click", async () => {
       toast("⏳ アップデート確認中…", { kind: "loading" });
       chrome.runtime.sendMessage({ type: "sfdt:checkUpdate" }, (res) => {
-        if (res && res.ok) toast(`v${res.version} を確認しました (新版があれば自動更新)`, { kind: "ok" });
-        else toast("❌ 確認に失敗しました", { kind: "err" });
+        if (res && res.ok) toast(`✓ v${res.version} を確認しました (新版があれば自動で適用されます)`, { kind: "ok" });
+        else toast("❌ アップデート確認に失敗しました", { kind: "err" });
       });
     });
   }
@@ -271,7 +271,7 @@ function showDevToolsHelp() {
 }
 
 async function runQuickAction(act) {
-  if (!state.host) { toast("⚠ Salesforce タブが必要です", { kind: "warn" }); return; }
+  if (!state.host) { toast("⚠ Salesforce のタブを開いてから操作してください", { kind: "warn" }); return; }
   const baseLightning = state.host.endsWith(".lightning.force.com")
     ? state.host
     : state.host.replace(/\.my\.salesforce\.com$/, ".lightning.force.com");
@@ -287,7 +287,7 @@ async function runQuickAction(act) {
 }
 
 async function doSoql() {
-  if (!state.sid) { toast("⚠ 先に SF タブに接続してください", { kind: "warn" }); return; }
+  if (!state.sid) { toast("⚠ 先に Salesforce タブへ接続してください", { kind: "warn" }); return; }
   const soql = document.getElementById("soqlText").value.trim();
   const tooling = document.getElementById("soqlTooling").checked;
   if (!soql) { toast("⚠ クエリを入力してください", { kind: "warn" }); return; }
@@ -484,11 +484,11 @@ function loginAsUser(u) {
     : state.host.replace(/\.my\.salesforce\.com$/, ".lightning.force.com");
   const url = `https://${state.apiHost}/servlet/servlet.su?oid=${orgId}&suorgadminid=${userId}&retURL=%2Flightning%2F&targetURL=%2Flightning%2F`;
   chrome.tabs.create({ url });
-  toast(`👤 ${u.Name} としてログインします`, { kind: "ok" });
+  toast(`👤 ${u.Name} さんとしてログインします`, { kind: "ok" });
 }
 
 function exportCsv() {
-  if (!state.lastRecords || !state.lastRecords.length) { toast("📭 結果がありません", { kind: "warn" }); return; }
+  if (!state.lastRecords || !state.lastRecords.length) { toast("📭 エクスポート対象がありません (先に SOQL を実行してください)", { kind: "warn" }); return; }
   const csv = recordsToCsv(state.lastRecords);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -622,7 +622,7 @@ async function doParseId() {
   `;
   const cp = document.getElementById("cp18");
   if (cp) cp.addEventListener("click", () => {
-    navigator.clipboard.writeText(id18 || "").then(() => toast(`📋 18桁ID をコピーしました: ${id18}`, { kind: "ok" }));
+    navigator.clipboard.writeText(id18 || "").then(() => toast(`📋 18 桁 ID をコピーしました: ${id18}`, { kind: "ok" }));
   });
 }
 
@@ -634,7 +634,7 @@ async function openIdInOrg() {
 }
 
 async function doApiCall() {
-  if (!state.sid) { toast("⚠ 先に SF タブに接続してください", { kind: "warn" }); return; }
+  if (!state.sid) { toast("⚠ 先に Salesforce タブへ接続してください", { kind: "warn" }); return; }
   const method = document.getElementById("apiMethod").value;
   const path = document.getElementById("apiPath").value.trim();
   const body = document.getElementById("apiBody").value.trim();
