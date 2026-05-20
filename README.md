@@ -8,6 +8,12 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.21.0 (2026-05-20 14:35)** — 🚨 ユーザー要望 Phase 11: 設計書/Apex/REST/Export/Describe タブ placeholder + title 業務化:
+  - **🐛 html/panel.html, html/tool.html 設計書タブ**: designObj placeholder を「設計書の種類に応じて入力してください」+ title で objectDef/profileDetail/PermSet 等の使い分け説明、生成/コピー/ダウンロードボタンに機能説明 title、空状態メッセージを「設計書はまだ生成されていません」に
+  - **🐛 Apex タブ**: 保存済みドロップダウン/読込/保存/Debug ログチェック/実行ボタンに title 追加、placeholder ですます調 (「名前を付けて保存します...」)、「Debug Log 取得」→「Debug ログを取得」
+  - **🐛 REST タブ**: restPath/restBody placeholder を「REST API パスを入力してください」「POST / PATCH の場合は JSON ボディを入力してください (GET / DELETE では不要)」に、送信ボタン title 追加
+  - **🐛 Describe タブ**: descObj placeholder ですます調、取得ボタン title 追加
+  - **🐛 Export タブ**: exObj/exFieldFilter/exWhere/exOrder/exLimit/exSoql placeholder を ですます調 + 詳細化、Tooling API ラベルに使い所説明 title、全選択/全解除/標準のみ/フィールド読込/SOQL 組立/実行/各ダウンロードボタンに機能説明 title
 - **v2.20.0 (2026-05-20 14:30)** — 🚨 ユーザー要望 Phase 10: requireInput / 自動更新通知 / ChangeSet UI:
   - **🐛 design-docs.js requireInput()**: 入力必須エラーを「入力必須: XXX」から「XXX を入力してください」形式に統一。すべての設計書入力欄でエラー文が ですます調 に。requireInput のヒント文も自然化 (例: "基点オブジェクト" → "基点となるオブジェクト"、"プロファイル名 ... '@PermSet_API名'" → "プロファイル名 ... 『@PermSet_API名』形式"、"LWC バンドル DeveloperName" → "LWC コンポーネントの DeveloperName (例: myComponent)")
   - **🐛 background.js 自動更新通知**: chrome.notifications のタイトル/メッセージを ですます調 + 自然化 ("DevToolsNext 自動更新" → "DevToolsNext を自動更新しました")

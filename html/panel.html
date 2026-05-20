@@ -91,36 +91,36 @@
 
       <div class="view hidden" data-view="dataexport">
         <div class="toolbar">
-          <input id="exObj" placeholder="オブジェクト API 名 (例: Account)" list="dl-sobjects" autocomplete="off" style="flex:1;max-width:240px" />
-          <button id="btnExLoadFields">フィールド読込</button>
+          <input id="exObj" placeholder="エクスポート対象のオブジェクト API 名を入力してください (例: Account)" list="dl-sobjects" autocomplete="off" style="flex:1;max-width:240px" />
+          <button id="btnExLoadFields" title="指定オブジェクトの全フィールドを読み込みます">フィールド読込</button>
           <span class="grow"></span>
-          <label class="inspector-opt"><input type="checkbox" id="exTooling" /> Tooling API</label>
-          <button id="btnExBuild">SOQL 組立</button>
-          <button id="btnExRun" class="primary">▶ 実行</button>
+          <label class="inspector-opt" title="Tooling API を使う場合はチェックしてください (ApexClass / ValidationRule 等)"><input type="checkbox" id="exTooling" /> Tooling API を使用</label>
+          <button id="btnExBuild" title="選択したフィールドと条件から SOQL を自動生成します">SOQL 組立</button>
+          <button id="btnExRun" class="primary" title="SOQL を実行してエクスポート結果を取得します (最大 50,000 件)">▶ 実行</button>
         </div>
         <div class="export-layout">
           <div class="export-left">
             <div class="export-pane-label">
               フィールド
-              <button id="btnExSelectAll" class="mini-btn">全選択</button>
-              <button id="btnExSelectNone" class="mini-btn">全解除</button>
-              <button id="btnExSelectStandard" class="mini-btn">標準のみ</button>
+              <button id="btnExSelectAll" class="mini-btn" title="全フィールドを選択します">全選択</button>
+              <button id="btnExSelectNone" class="mini-btn" title="フィールド選択をすべて解除します">全解除</button>
+              <button id="btnExSelectStandard" class="mini-btn" title="標準フィールド (カスタム以外) のみを選択します">標準のみ</button>
             </div>
-            <input id="exFieldFilter" placeholder="フィールド絞込み..." />
+            <input id="exFieldFilter" placeholder="フィールド名で絞り込めます" />
             <div id="exFieldList" class="export-field-list"></div>
           </div>
           <div class="export-right">
             <div class="export-pane-label">条件 / 出力</div>
-            <label class="export-row">WHERE <input id="exWhere" placeholder="例: IsActive = true AND CreatedDate >= LAST_N_DAYS:30" /></label>
-            <label class="export-row">ORDER BY <input id="exOrder" placeholder="例: CreatedDate DESC" /></label>
-            <label class="export-row">LIMIT <input id="exLimit" type="number" value="2000" min="1" max="50000" style="width:120px" /></label>
-            <div class="export-pane-label">組立 SOQL</div>
-            <textarea id="exSoql" rows="5" spellcheck="false" placeholder="フィールド読込後に自動生成"></textarea>
+            <label class="export-row">WHERE <input id="exWhere" placeholder="絞り込み条件を入力してください (例: IsActive = true AND CreatedDate >= LAST_N_DAYS:30)" /></label>
+            <label class="export-row">ORDER BY <input id="exOrder" placeholder="並び順を指定してください (例: CreatedDate DESC)" /></label>
+            <label class="export-row">LIMIT <input id="exLimit" type="number" value="2000" min="1" max="50000" style="width:120px" title="取得件数の上限を指定してください (最大 50,000 件)" /></label>
+            <div class="export-pane-label">組み立てた SOQL</div>
+            <textarea id="exSoql" rows="5" spellcheck="false" placeholder="フィールドを読み込んだ後、SOQL がここに自動生成されます"></textarea>
             <div class="export-pane-label">エクスポート</div>
             <div class="row">
-              <button id="btnExDlCsv">CSV ダウンロード</button>
-              <button id="btnExDlExcel">Excel (.xls) ダウンロード</button>
-              <button id="btnExDlJson">JSON ダウンロード</button>
+              <button id="btnExDlCsv" title="クエリ結果を CSV ファイルとしてダウンロードします">CSV ダウンロード</button>
+              <button id="btnExDlExcel" title="クエリ結果を Excel (.xls / SpreadsheetML) でダウンロードします">Excel (.xls) ダウンロード</button>
+              <button id="btnExDlJson" title="クエリ結果を JSON ファイルとしてダウンロードします">JSON ダウンロード</button>
               <span id="exProgress" class="meta"></span>
             </div>
             <div id="exMeta" class="meta"></div>
@@ -178,15 +178,15 @@
 
       <div class="view hidden" data-view="apex">
         <div class="toolbar">
-          <select id="apexSaved"></select>
-          <button id="btnLoadApex">読込</button>
-          <input id="apexSavedName" placeholder="名前を付けて保存..." />
-          <button id="btnSaveApex">保存</button>
+          <select id="apexSaved" title="保存済みの匿名 Apex を選択して読み込みます"></select>
+          <button id="btnLoadApex" title="選択した保存済み Apex をエディタに読み込みます">読込</button>
+          <input id="apexSavedName" placeholder="名前を付けて保存します..." title="現在のコードに名前を付けて保存します" />
+          <button id="btnSaveApex" title="入力した名前で現在のコードを保存します">保存</button>
           <span class="grow"></span>
-          <label><input type="checkbox" id="apexFetchLog" checked /> Debug Log 取得</label>
-          <button id="btnRunApex" class="primary">▶ 実行 (Ctrl+Enter)</button>
+          <label title="実行後の Debug ログを自動取得します"><input type="checkbox" id="apexFetchLog" checked /> Debug ログを取得</label>
+          <button id="btnRunApex" class="primary" title="匿名 Apex を実行します (Ctrl+Enter でも実行できます)">▶ 実行 (Ctrl+Enter)</button>
         </div>
-        <textarea id="apexCode" rows="10" spellcheck="false" placeholder="例: System.debug(UserInfo.getName()); &#10;または DELETE [SELECT Id FROM Account WHERE Name LIKE 'Test%'];">// 匿名 Apex
+        <textarea id="apexCode" rows="10" spellcheck="false" placeholder="例: System.debug(UserInfo.getName());&#10;または DELETE [SELECT Id FROM Account WHERE Name LIKE 'Test%'];">// 匿名 Apex
 Account a = [SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 1];
 System.debug('Latest Account: ' + a);
 System.debug('Now: ' + System.now());</textarea>
@@ -200,8 +200,8 @@ System.debug('Now: ' + System.now());</textarea>
 
       <div class="view hidden" data-view="describe">
         <div class="toolbar">
-          <input id="descObj" placeholder="オブジェクト API 名 (例: Account)" list="dl-sobjects" autocomplete="off" />
-          <button id="btnDescribe" class="primary">取得</button>
+          <input id="descObj" placeholder="オブジェクトの API 名を入力してください (例: Account)" list="dl-sobjects" autocomplete="off" />
+          <button id="btnDescribe" class="primary" title="指定したオブジェクトの describe 情報を取得します">取得</button>
         </div>
         <div id="describeResult" class="grid"></div>
       </div>
@@ -211,10 +211,10 @@ System.debug('Now: ' + System.now());</textarea>
           <select id="restMethod">
             <option>GET</option><option>POST</option><option>PATCH</option><option>DELETE</option>
           </select>
-          <input id="restPath" placeholder="/services/data/v62.0/sobjects/Account/describe" />
-          <button id="btnRest" class="primary">送信</button>
+          <input id="restPath" placeholder="REST API パスを入力してください (例: /services/data/v62.0/sobjects/Account/describe)" title="先頭の / から指定します。バージョンは UI 上部の API バージョンと同期します" />
+          <button id="btnRest" class="primary" title="指定したパスとメソッドで REST API を送信します">送信</button>
         </div>
-        <textarea id="restBody" rows="6" placeholder="JSON body (任意)"></textarea>
+        <textarea id="restBody" rows="6" placeholder="POST / PATCH の場合は JSON ボディを入力してください (GET / DELETE では不要)"></textarea>
         <div id="restMeta" class="meta"></div>
         <div class="toolbar">
           <button id="btnRestCopy" title="REST API のレスポンスをクリップボードにコピーします">📋 結果コピー</button>
@@ -378,7 +378,7 @@ System.debug('Now: ' + System.now());</textarea>
             <option value="lwcDetail">★ LWC 設計図 (LightningComponentBundle)</option>
             <option value="erDiagram">ER 図 (Mermaid)</option>
           </select>
-          <input id="designObj" placeholder="オブジェクト API 名 / プロファイル名 / @PermSet名 (種類に応じて)" list="dl-sobjects" autocomplete="off" />
+          <input id="designObj" placeholder="設計書の種類に応じて入力してください (オブジェクト API 名 / プロファイル名 / @PermSet 名 等)" list="dl-sobjects" autocomplete="off" title="objectDef や erDiagram は『Account』等の API 名、profileDetail は『営業ユーザー』等のプロファイル名、または @PermSet_API名 形式で権限セットを指定できます" />
           <select id="designFormat">
             <option value="excel">Excel (.xls / SpreadsheetML) ⚠ 大量行は遅い</option>
             <option value="markdown">Markdown</option>
@@ -386,16 +386,16 @@ System.debug('Now: ' + System.now());</textarea>
             <option value="csv">CSV</option>
             <option value="tsv">TSV (Excel貼付)</option>
           </select>
-          <button id="btnDesignGen" class="primary">▶ 生成</button>
+          <button id="btnDesignGen" class="primary" title="選択した設計書を生成します">▶ 生成</button>
           <span class="grow"></span>
-          <button id="btnDesignCopy">クリップボード</button>
-          <button id="btnDesignDownload">ダウンロード</button>
+          <button id="btnDesignCopy" title="設計書のソースをクリップボードにコピーします">クリップボード</button>
+          <button id="btnDesignDownload" title="設計書を選択した形式でダウンロードします">ダウンロード</button>
         </div>
         <div id="designMeta" class="meta"></div>
         <div class="design-split">
           <div class="design-pane">
             <div class="design-pane-label">プレビュー</div>
-            <div id="designPreview" class="design-preview"><div class="empty-hint">📋 まだ設計書未生成<br><span class="empty-hint-sub">↑ 設計書タイプを選択 → オブジェクト指定 → 「生成」をクリック</span></div></div>
+            <div id="designPreview" class="design-preview"><div class="empty-hint">📋 設計書はまだ生成されていません<br><span class="empty-hint-sub">↑ 設計書の種類を選択し、対象を指定して「生成」ボタンをクリックしてください</span></div></div>
           </div>
           <div class="design-pane">
             <div class="design-pane-label">ソース</div>
