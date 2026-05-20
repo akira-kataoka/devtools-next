@@ -7,6 +7,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.93.0 (2026-05-20 12:05)** — recordsToCsv ネスト平坦化 + datetime ISO 整形:
+  - **🐛 `recordsToCsv()` でネストリレーション (例 `Account.Owner`) を平坦化**: 従来 `"{"attributes":{...},"Name":"Akira"}" ` raw JSON 文字列が CSV セルに入って Excel で表示崩れ → `Akira Kataoka [005xx0000000abc]` 形式 (画面表示と統一、panel.js stringify と同パターン)
+  - **🐛 datetime ISO 文字列 `2026-05-20T03:45:00.000+0000` を `2026-05-20 03:45` に整形**: regex `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}` 判定 → Excel で日時として認識可能 (Login History v1.91 と同パターンを全 CSV download に波及)
+  - **影響範囲**: SOQL CSV / Inspector CSV / Login History CSV / 設計書 CSV/TSV / Picker recent (内部) **すべての CSV 生成箇所**
 - **v1.92.0 (2026-05-20 12:00)** — Limits CSV 使用率列を数値化 + to18CharId 検証:
   - **🐛 `exportLimitsCsv()` 使用率列を `"85%"` → `85` (数値) に変更**: 列名も `使用率` → `使用率(%)` に明示。**Excel/Sheets で数値ソート/条件付き書式が機能** (従来は文字列 `"85%"` で数値扱いされなかった)
   - **🧪 `to18CharId` の Salesforce 公式アルゴリズム準拠を確認**: 15 桁を 5 文字 × 3 グループに分割、各グループ大文字 bit map で 32 文字テーブル参照 → 末尾 3 桁生成 (sf-api.js:217)。修正不要

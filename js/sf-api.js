@@ -251,19 +251,51 @@ export function lookupPrefix(idStr) {
 }
 
 /** CSV エクスポート（SOQL 結果 records 配列を想定）
- *  全列をダブルクォートで囲む統一フォーマット (Limits/Export/Design 各 CSV と整合) */
+ *  全列をダブルクォートで囲む統一フォーマット (Limits/Export/Design 各 CSV と整合)
+ *  v1.93.0+: ネストリレーション (attributes 持ち) を平坦化 (Name [Id] 形式)、
+ *           datetime ISO 文字列を YYYY-MM-DD HH:mm に整形 (Excel で日時認識可能) */
 export function recordsToCsv(records) {
   if (!records || !records.length) return "";
   const cols = new Set();
   records.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
   const headers = Array.from(cols);
+  // ネストオブジェクト平坦化 (panel.js stringify と同パターン)
+  const flatten = (v) => {
+    if (v == null) return "";
+    if (typeof v !== "object") return String(v);
+    if (v.attributes && typeof v.attributes === "object") {
+      const fields = Object.keys(v).filter((k) => k !== "attributes");
+      if (v.records && Array.isArray(v.records)) return `[${v.records.length} 件のサブクエリ]`;
+      const prefer = ["Name", "Subject", "Title", "DeveloperName", "MasterLabel", "FullName"];
+      for (const p of prefer) {
+        if (fields.includes(p) && v[p] != null) {
+          const id = fields.includes("Id") && v.Id ? ` [${String(v.Id).substring(0, 18)}]` : "";
+          return `${flatten(v[p])}${id}`;
+        }
+      }
+      if (fields.length) return `${fields[0]}=${flatten(v[fields[0]])}`;
+      return "{}";
+    }
+    return JSON.stringify(v);
+  };
+  // datetime ISO → YYYY-MM-DD HH:mm 整形 (文字列のみ対象、type は判定できないので regex)
+  const isoRe = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/;
+  const dateOnlyRe = /^\d{4}-\d{2}-\d{2}$/;
+  const formatValue = (v) => {
+    const s = flatten(v);
+    if (typeof v === "string") {
+      const m = v.match(isoRe);
+      if (m) return `${m[1]} ${m[2]}`;
+      if (dateOnlyRe.test(v)) return v; // date 型はそのまま
+    }
+    return s;
+  };
   // 全列クォート: null/数値/オブジェクト も全部 "..." で囲む
   const escAll = (v) => {
-    if (v == null) return `""`;
-    const s = typeof v === "object" ? JSON.stringify(v) : String(v);
+    const s = formatValue(v);
     return `"${s.replace(/"/g, '""')}"`;
   };
-  const lines = [headers.map(escAll).join(",")];
+  const lines = [headers.map((h) => `"${h.replace(/"/g, '""')}"`).join(",")];
   for (const r of records) {
     lines.push(headers.map((h) => escAll(r[h])).join(","));
   }
