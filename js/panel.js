@@ -145,6 +145,24 @@ function setupDesignPicker() {
       placeholder = "(入力不要 — 全件取得します)";
     }
     input.placeholder = placeholder;
+    // v3.42.0: 「対象」入力要否を pill で視覚化
+    const hint = document.getElementById("designObjHint");
+    if (hint) {
+      const OPTIONAL_TYPES = new Set(["validationRuleList", "recordTypeList", "fieldSetList"]);
+      if (NO_INPUT_TYPES.has(type)) {
+        hint.textContent = "対象: 不要";
+        hint.className = "pill ok";
+        hint.title = "この種類は組織全体を対象とするため「対象」入力は不要です";
+      } else if (OPTIONAL_TYPES.has(type)) {
+        hint.textContent = "対象: 任意";
+        hint.className = "pill";
+        hint.title = "「対象」を入力すると特定オブジェクトに絞り込めます。空欄なら全オブジェクト横断";
+      } else {
+        hint.textContent = "対象: 必須";
+        hint.className = "pill warn";
+        hint.title = "この種類は「対象」入力が必須です (オブジェクト API 名 / プロファイル名 / Flow / Apex / LWC 等)";
+      }
+    }
     if (NO_INPUT_TYPES.has(type)) {
       // 入力不要なら disable + Picker トリガも追加しない
       input.disabled = true;

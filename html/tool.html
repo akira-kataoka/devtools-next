@@ -460,6 +460,7 @@ System.debug('Now: ' + System.now());</textarea>
             <option value="erDiagram">ER 図 (Mermaid)</option>
           </select>
           <input id="designObj" placeholder="設計書の種類に応じて入力してください (オブジェクト API 名 / プロファイル名 / @PermSet 名 等)" list="dl-sobjects" autocomplete="off" title="objectDef や erDiagram は『Account』等の API 名、profileDetail は『営業ユーザー』等のプロファイル名、または @PermSet_API名 形式で権限セットを指定できます" />
+          <span id="designObjHint" class="pill" title="選択した設計書の種類で「対象」入力が必須かどうかを示します" style="font-size:10px">対象: -</span>
           <button id="btnDesignFromTab" title="現在のタブが Salesforce レコードページなら、その対象オブジェクト名を自動入力します (objectDef / erDiagram / fieldPermMatrix 等で便利)">📍 現在タブから</button>
           <select id="designFormat">
             <option value="excel">Excel (.xls / SpreadsheetML) ⚠ 大量行は遅い</option>
