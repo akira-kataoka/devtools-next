@@ -171,6 +171,21 @@ textarea {
   flex: 1; overflow: auto; min-height: 100px;
   background: #0a1224; border: 1px solid var(--line); border-radius: 6px;
 }
+/* v3.15.0: 結果領域 (grid/limits-grid) の初期空状態ガイド統一スタイル — メタデータ/Inspector/Limits/Login/SOQL/Apex 各画面で同じ見た目 */
+.empty-state {
+  padding: 24px 16px;
+  color: var(--fg-dim);
+  font-size: 13px;
+  line-height: 1.7;
+  background: linear-gradient(180deg, rgba(27,150,255,0.04) 0%, transparent 100%);
+  border-radius: 4px;
+}
+.empty-state strong { color: var(--accent); font-weight: 600; }
+.empty-state code {
+  background: var(--bg3); color: var(--fg);
+  padding: 1px 5px; border-radius: 3px;
+  font-size: 11px; border: 1px solid var(--line);
+}
 .grid table { width: 100%; border-collapse: collapse; font-size: 11px; }
 td.cell-copyable { cursor: copy; }
 td.cell-copyable:hover { color: var(--accent); }

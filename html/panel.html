@@ -124,7 +124,7 @@
         </div>
         <textarea id="soqlText" rows="8" spellcheck="false" placeholder="SOQL クエリを入力してください&#10;例 1: SELECT Id, Name FROM Account WHERE CreatedDate = LAST_N_DAYS:30 ORDER BY CreatedDate DESC LIMIT 50&#10;例 2: SELECT Id, Subject, Status FROM Case WHERE Owner.Name = 'John Doe' AND IsClosed = false&#10;例 3: SELECT Id, Name, (SELECT Id, Subject FROM Tasks) FROM Account WHERE Industry = 'Manufacturing' LIMIT 10&#10;&#10;Ctrl+Enter で実行できます (入力中にオートコンプリート候補が表示されます)" title="SOQL クエリを入力します。Tooling API オブジェクト (ApexClass / ValidationRule 等) は左の『Tooling API を使用』にチェックしてください。日付リテラル (LAST_N_DAYS / TODAY / THIS_MONTH 等) と親子クエリ (サブクエリ) もサポートします">SELECT Id, Name, CreatedDate FROM Account ORDER BY CreatedDate DESC LIMIT 50</textarea>
         <div id="soqlMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
-        <div id="soqlResult" class="grid" role="region" aria-label="SOQL クエリ結果"></div>
+        <div id="soqlResult" class="grid" role="region" aria-label="SOQL クエリ結果"><div class="empty-state">👆 上のエディタに SOQL クエリを入力して「▶ 実行 (Ctrl+Enter)」を押してください。<br/>取得後はテーブル内で列ソート・絞り込み・CSV/エビデンス保存ができます。<br/><br/><strong>💡 ヒント</strong>: 入力中に <code>SELECT</code>/<code>FROM</code>/<code>WHERE</code> の文脈に応じたオートコンプリート候補が表示されます (↑↓ で選択・Tab で確定)。Tooling API オブジェクト (<code>ApexClass</code>/<code>ValidationRule</code> 等) を取得するときは「Tooling API を使用」にチェックしてください。</div></div>
       </div>
 
       <div class="view hidden" data-view="inspector">
@@ -149,7 +149,7 @@
             <label class="inspector-opt" title="システム項目 (Id / CreatedById / LastModifiedDate / SystemModstamp 等) を表示します"><input type="checkbox" id="inspectShowSystem" /> システム項目を表示します</label>
           </div>
           <div class="inspector-right">
-            <div id="inspectResult" class="grid"></div>
+            <div id="inspectResult" class="grid"><div class="empty-state">👆 上の入力欄にレコード ID を入力して「▶ 取得 (Enter)」を押してください。<br/>取得後は項目をクリックでインライン編集 (PATCH 保存) できます。<br/><br/><strong>💡 ヒント</strong>: 現在開いている Salesforce レコードページがあれば「現在タブから取得」で自動入力できます。フィールド絞り込みは API 名/ラベル/値の部分一致対応。📋 JSON コピー、📥 JSON/CSV ダウンロード、📸 エビデンス保存も可能です。</div></div>
           </div>
         </div>
       </div>
@@ -332,7 +332,7 @@ System.debug('Now: ' + System.now());</textarea>
           <button id="btnMetadata" class="primary" title="選択したメタデータ型の一覧を Tooling API から取得します">一覧取得</button>
           <button id="btnMetadataEvidence" title="現在のメタデータ一覧を Markdown 形式のエビデンスとしてダウンロードします">📸 エビデンス</button>
         </div>
-        <div id="metadataResult" class="grid"><div class="empty-state" style="padding:24px 16px;color:var(--muted);font-size:13px;line-height:1.7;">👆 上のセレクトでメタデータ型を選択して「一覧取得」を押してください。<br/>取得後はテーブル内で並び替え・絞り込み・📸 エビデンス保存ができます。<br/><br/><strong>💡 ヒント</strong>: <code>ApexClass</code>/<code>ApexTrigger</code> は API バージョン棚卸し、<code>Flow</code> は ProcessType 確認、<code>Profile</code>/<code>PermissionSet</code> は権限調査、<code>ValidationRule</code> は入力規則棚卸しに便利です。</div></div>
+        <div id="metadataResult" class="grid"><div class="empty-state">👆 上のセレクトでメタデータ型を選択して「一覧取得」を押してください。<br/>取得後はテーブル内で並び替え・絞り込み・📸 エビデンス保存ができます。<br/><br/><strong>💡 ヒント</strong>: <code>ApexClass</code>/<code>ApexTrigger</code> は API バージョン棚卸し、<code>Flow</code> は ProcessType 確認、<code>Profile</code>/<code>PermissionSet</code> は権限調査、<code>ValidationRule</code> は入力規則棚卸しに便利です。</div></div>
       </div>
 
       <div class="view hidden" data-view="logs">
@@ -340,7 +340,7 @@ System.debug('Now: ' + System.now());</textarea>
           <button id="btnFetchLogs" class="primary" title="最新 20 件の ApexLog (Debug ログ) を取得します">最新 20 件</button>
           <button id="btnEnableDebug" title="自身に対する DebugLevel + TraceFlag を有効化します (Apex 実行ログ取得のため)">DebugLevel ON</button>
         </div>
-        <div id="logsResult" class="grid"></div>
+        <div id="logsResult" class="grid"><div class="empty-state">👆 「最新 20 件」を押すと、自身が直近で生成した ApexLog (Debug ログ) を取得できます。<br/><br/><strong>💡 ヒント</strong>: ログが取得できない場合は先に「DebugLevel ON」を押して TraceFlag を有効化してください (24 時間有効)。匿名 Apex 実行時は自動でログ取得されるため、本画面で確認できます。各行クリックでログ本文をモーダル表示します。</div></div>
       </div>
 
       <div class="view hidden" data-view="login">
@@ -361,7 +361,7 @@ System.debug('Now: ' + System.now());</textarea>
           <button id="btnLoginEvidence" title="現在のログイン履歴を Markdown 形式のエビデンスとしてダウンロードします (テスト工程の証跡用)">📸 エビデンス</button>
         </div>
         <div id="loginMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
-        <div id="loginResult" class="grid"><div class="empty-state" style="padding:24px 16px;color:var(--muted);font-size:13px;line-height:1.7;">👆 取得件数とステータスを選んで「取得」を押してください。<br/>取得後はテーブル内で列ソート・絞り込み・📸 エビデンス保存ができます。<br/><br/><strong>💡 ヒント</strong>: 「失敗のみ」を選ぶと、パスワード誤りや IP 制限などの認証失敗を素早く確認できます。CSV/エビデンス保存はセキュリティ監査の証跡としてご活用ください。</div></div>
+        <div id="loginResult" class="grid"><div class="empty-state">👆 取得件数とステータスを選んで「取得」を押してください。<br/>取得後はテーブル内で列ソート・絞り込み・📸 エビデンス保存ができます。<br/><br/><strong>💡 ヒント</strong>: 「失敗のみ」を選ぶと、パスワード誤りや IP 制限などの認証失敗を素早く確認できます。CSV/エビデンス保存はセキュリティ監査の証跡としてご活用ください。</div></div>
       </div>
 
       <div class="view hidden" data-view="limits">
@@ -378,7 +378,7 @@ System.debug('Now: ' + System.now());</textarea>
           <button id="btnLimitsEvidence" title="現在の Limits 使用状況を Markdown 形式のエビデンスとしてダウンロードします (テスト工程の証跡用)">📸 エビデンス</button>
         </div>
         <div id="limitsSummary" class="limits-summary"></div>
-        <div id="limitsResult" class="limits-grid"><div class="empty-state" style="padding:24px 16px;color:var(--muted);font-size:13px;line-height:1.7;">👆 「取得 / 更新」を押すと、API コール数・Apex 実行回数・ストレージ等 30 種類以上の組織制限が表示されます。<br/>各行はクリックでピン止め (お気に入り)、列ヘッダクリックでソートできます。<br/><br/><strong>💡 ヒント</strong>: 業務日中に定期取得 → 📸 エビデンス保存しておくと、ガバナ制限ヒット時の原因分析や次年度のライセンス見積りに活用できます。</div></div>
+        <div id="limitsResult" class="limits-grid"><div class="empty-state">👆 「取得 / 更新」を押すと、API コール数・Apex 実行回数・ストレージ等 30 種類以上の組織制限が表示されます。<br/>各行はクリックでピン止め (お気に入り)、列ヘッダクリックでソートできます。<br/><br/><strong>💡 ヒント</strong>: 業務日中に定期取得 → 📸 エビデンス保存しておくと、ガバナ制限ヒット時の原因分析や次年度のライセンス見積りに活用できます。</div></div>
       </div>
 
       <div class="view hidden" data-view="design">
