@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🆘 トラブルシューティング (README)
+    url: https://github.com/akira-kataoka/devtools-next/blob/main/README.md#-トラブルシューティング-v3200-
+    about: 13 種類の典型症状 × 原因 × 対処法を確認できます (Issue 起票前にご確認ください)
+  - name: 🙋 ロール別 FAQ (README)
+    url: https://github.com/akira-kataoka/devtools-next/blob/main/README.md#-ロール別-faq-v3220-
+    about: 業務利用者 / 管理者 / 開発者 別の使い方 19 問

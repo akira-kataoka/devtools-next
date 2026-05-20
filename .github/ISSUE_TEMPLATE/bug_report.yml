@@ -1,0 +1,77 @@
+name: 🐞 バグ報告
+description: 機能が動かない / 想定と異なる挙動を報告
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        報告ありがとうございます。**先に [トラブルシューティング](../blob/main/README.md#-トラブルシューティング-v3200-) をご確認ください** (13 症状の対処法が記載されています)。
+
+  - type: input
+    id: version
+    attributes:
+      label: 拡張バージョン
+      description: popup / panel ヘッダの `vX.Y.Z` バッジを記載
+      placeholder: 例 v3.56.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mode
+    attributes:
+      label: 発生モード
+      description: どの UI で発生しましたか?
+      options:
+        - 💻 開発者モード (panel / tool フルスクリーン)
+        - ⚙️ 管理者モード (popup)
+        - 👤 ユーザーモード (mini-panel)
+        - 不明 / 複数モード
+    validations:
+      required: true
+
+  - type: dropdown
+    id: env
+    attributes:
+      label: 対象組織の環境
+      description: ENV バッジの色で判別 (緑=SBX / オレンジ=DEV / 赤パルス=PROD)
+      options:
+        - Sandbox (SBX)
+        - Developer / Scratch (DEV)
+        - Production (PROD)
+        - 不明
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 再現手順
+      description: できるだけ具体的に (例: 1. SOQL ビューを開く 2. `SELECT Id FROM Account` を実行 3. ...)
+      placeholder: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待した挙動
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の挙動 + エラーメッセージ
+      description: 「📸 エビデンス」ボタンでダウンロードした Markdown を貼り付けると便利です
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: ブラウザ / OS
+      placeholder: 例 Chrome 130 / Windows 11
