@@ -82,10 +82,10 @@
         <input class="nav-search" id="navSearch" type="search" placeholder="🔍 機能を検索 (例: SOQL / Apex / 設計書)" aria-label="サイドメニュー機能検索" />
         <button class="nav-btn nav-home active" data-view="home" data-cat="home" title="ホームダッシュボードへ戻ります">🏠 ホーム</button>
 
-        <!-- v2.86.0: メニュー名詞ベース + 変更セット削除 -->
-        <button class="nav-sep" data-cat="data" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 🗃️ データ</button>
+        <!-- v2.91.0: 抜本再設計 — 3 カテゴリに集約、REST 統合、Describe 廃止 -->
+        <button class="nav-sep" data-cat="data" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 📦 データ</button>
         <div class="nav-group" data-cat="data">
-          <button class="nav-btn" data-view="soql" data-cat="data" title="SOQL を書いてレコードを検索 / CSV エクスポート (Tooling API 対応)"><span class="nav-label">🔎 SOQL クエリ</span><kbd class="nav-kbd">Q</kbd></button>
+          <button class="nav-btn" data-view="soql" data-cat="data" title="SOQL でレコードを検索 / CSV エクスポート (オートコンプリート対応 / Tooling API 対応)"><span class="nav-label">🔎 SOQL クエリ</span><kbd class="nav-kbd">Q</kbd></button>
           <button class="nav-btn" data-view="inspector" data-cat="data" title="レコード ID を指定して全項目の値を表示 / 参照辿り / 値コピー"><span class="nav-label">🔍 レコード詳細</span><kbd class="nav-kbd">I</kbd></button>
           <button class="nav-btn" data-view="dataexport" data-cat="data" title="オブジェクトの全項目を Excel / CSV / JSON で一括ダウンロード"><span class="nav-label">📥 一括エクスポート</span></button>
         </div>
@@ -93,26 +93,16 @@
         <button class="nav-sep" data-cat="dev" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 💻 開発</button>
         <div class="nav-group" data-cat="dev">
           <button class="nav-btn" data-view="apex" data-cat="dev" title="匿名 Apex (Developer Console と同じ) を実行・Debug ログ取得"><span class="nav-label">🟧 Apex 実行</span><kbd class="nav-kbd">A</kbd></button>
-          <button class="nav-btn" data-view="apiurl" data-cat="dev" title="REST API の URL を組み立てる補助ツール"><span class="nav-label">🔗 REST API URL</span></button>
-          <button class="nav-btn" data-view="rest" data-cat="dev" title="任意の REST API パスを直接呼び出します"><span class="nav-label">🌐 REST API</span><kbd class="nav-kbd">R</kbd></button>
-          <button class="nav-btn" data-view="describe" data-cat="dev" title="オブジェクトの項目定義 (describe) を表示"><span class="nav-label">📖 オブジェクト構造</span></button>
+          <button class="nav-btn" data-view="apiurl" data-cat="dev" title="REST API を組み立てて実行 (URL ビルダー + 実行を統合)"><span class="nav-label">🌐 REST API</span><kbd class="nav-kbd">R</kbd></button>
+          <button class="nav-btn" data-view="metadata" data-cat="dev" title="ApexClass / Flow / Profile 等のメタデータ一覧"><span class="nav-label">📦 メタデータ一覧</span></button>
+          <button class="nav-btn" data-view="design" data-cat="dev" title="オブジェクト定義書・プロファイル詳細など 22 種類の設計書を Excel で自動生成 (オブジェクト構造の確認はこちら)"><span class="nav-label">📋 設計書生成 (22 種)</span><kbd class="nav-kbd">D</kbd></button>
         </div>
 
-        <button class="nav-sep" data-cat="monitor" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 📊 監視</button>
+        <button class="nav-sep" data-cat="monitor" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 🛡️ 組織管理</button>
         <div class="nav-group" data-cat="monitor">
           <button class="nav-btn" data-view="limits" data-cat="monitor" title="API コール数・Apex 容量・ストレージ等の使用状況"><span class="nav-label">📊 使用状況</span><kbd class="nav-kbd">L</kbd></button>
           <button class="nav-btn" data-view="logs" data-cat="monitor" title="Apex 実行ログ (Debug ログ) を取得・表示"><span class="nav-label">📜 Apex 実行ログ</span></button>
           <button class="nav-btn" data-view="login" data-cat="monitor" title="ユーザのログイン履歴を取得"><span class="nav-label">🔐 ログイン履歴</span></button>
-        </div>
-
-        <button class="nav-sep" data-cat="meta" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 📦 メタデータ</button>
-        <div class="nav-group" data-cat="meta">
-          <button class="nav-btn" data-view="metadata" data-cat="meta" title="ApexClass / Flow / Profile 等のメタデータ一覧"><span class="nav-label">📦 メタデータ一覧</span></button>
-        </div>
-
-        <button class="nav-sep" data-cat="design" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 📋 設計書</button>
-        <div class="nav-group" data-cat="design">
-          <button class="nav-btn" data-view="design" data-cat="design" title="オブジェクト定義書・プロファイル詳細など 22 種類の設計書を Excel で自動生成"><span class="nav-label">📋 設計書生成</span><kbd class="nav-kbd">D</kbd></button>
         </div>
       </nav>
     </aside>
@@ -159,9 +149,7 @@
         <div class="home-secondary">
           <div class="home-secondary-title">他の機能</div>
           <div class="home-secondary-grid">
-            <button class="home-mini-card" data-go="apiurl" title="REST API の URL を組み立てる補助ツール">🔗 REST API URL</button>
-            <button class="home-mini-card" data-go="rest" title="任意の REST API パスを直接呼び出します">🌐 REST API</button>
-            <button class="home-mini-card" data-go="describe" title="オブジェクトの項目定義 (describe) を表示">📖 オブジェクト構造</button>
+            <button class="home-mini-card" data-go="apiurl" title="REST API を組み立てて実行 (URL ビルダー + 実行を統合)">🌐 REST API</button>
             <button class="home-mini-card" data-go="metadata" title="ApexClass / Flow / Profile 等のメタデータ一覧">📦 メタデータ一覧</button>
             <button class="home-mini-card" data-go="logs" title="Apex 実行ログ (Debug ログ) を取得">📜 Apex 実行ログ</button>
             <button class="home-mini-card" data-go="login" title="ユーザのログイン履歴を取得">🔐 ログイン履歴</button>

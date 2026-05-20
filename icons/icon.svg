@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- v2.91.0: DevToolsNext モダンアイコン (Salesforce blue + dev tool 風)
+     ユーザー要望: 「モダンなイメージで機能と合うアイコン」(2026-05-20)
+     構成: 角丸正方形 + Salesforce 風雲 (上層) + コード「< / >」記号 (中層) + アクセントドット (右下)
+     PNG 出力手順: README の「アイコン生成」セクション参照 (各サイズ 16/32/48/128 を rsvg-convert または ImageMagick で出力) -->
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="DevToolsNext Salesforce 開発支援ツール">
+  <defs>
+    <!-- 背景グラデ: Salesforce ブルー → 濃紺 -->
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1B96FF"/>
+      <stop offset="100%" stop-color="#0C66E4"/>
+    </linearGradient>
+    <!-- 雲シルエットのハイライト -->
+    <linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.96"/>
+      <stop offset="100%" stop-color="#E8F2FF" stop-opacity="0.88"/>
+    </linearGradient>
+    <!-- アクセント (緑) ドロップシャドウ用 -->
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+
+  <!-- 1. 角丸正方形の背景 -->
+  <rect x="0" y="0" width="128" height="128" rx="24" ry="24" fill="url(#bg)"/>
+
+  <!-- 2. Salesforce 風の雲シルエット (上半分) -->
+  <g filter="url(#shadow)">
+    <!-- 雲の本体 (3 つの円を結合した形状) -->
+    <path d="
+      M 32 56
+      C 24 56, 18 50, 18 42
+      C 18 34, 24 28, 32 28
+      C 33 22, 39 18, 46 18
+      C 53 18, 59 22, 60 28
+      C 62 24, 67 22, 72 22
+      C 82 22, 90 30, 90 40
+      C 96 40, 102 44, 102 50
+      C 102 54, 99 58, 95 58
+      L 32 58
+      Z" fill="url(#cloud)"/>
+  </g>
+
+  <!-- 3. コード記号「< / >」 (中央〜下) - 開発ツールであることを示す -->
+  <g stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- 左 < -->
+    <polyline points="46,78 32,92 46,106"/>
+    <!-- スラッシュ / -->
+    <line x1="74" y1="74" x2="58" y2="110"/>
+    <!-- 右 > -->
+    <polyline points="82,78 96,92 82,106"/>
+  </g>
+
+  <!-- 4. アクセント: 右上に小さな緑のドット (有効インジケータ) -->
+  <circle cx="96" cy="36" r="6" fill="#2ECC71" stroke="#FFFFFF" stroke-width="1.5"/>
+</svg>
