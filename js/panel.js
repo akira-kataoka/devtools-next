@@ -2958,7 +2958,15 @@ function recordsTable(records) {
   const cols = new Set();
   records.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
   const headers = Array.from(cols);
-  const head = `<tr>${headers.map((h) => `<th class="sortable" data-col="${escape(h)}" title="クリックで ${escape(h)} 列をソート">${escape(h)}</th>`).join("")}</tr>`;
+  // v2.97.0: 全表共通の検索フィルタ (ユーザー要望「ログイン履歴と他の表もソート・検索できるように」)
+  // テーブル直上に検索 input を追加、入力で行 textContent.toLowerCase().includes(q) でフィルタ
+  const tableId = "tbl_" + Math.random().toString(36).slice(2, 8);
+  const searchInput = `<div class="table-filter-row" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11px;color:var(--fg-dim)">
+    <span>🔍</span>
+    <input class="table-filter-input" data-target="${tableId}" placeholder="表内を検索 (全列対象 / リアルタイム絞り込み / Esc でクリア)" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:4px 8px;border-radius:4px;font-size:11px" />
+    <span class="table-filter-count" data-target="${tableId}">${records.length} 件</span>
+  </div>`;
+  const head = `<tr>${headers.map((h) => `<th class="sortable" data-col="${escape(h)}" title="クリックで ${escape(h)} 列をソート (昇順→降順→元順)">${escape(h)}</th>`).join("")}</tr>`;
   // SF ID 形式判定 (15/18桁 英数字、ただし純数値や URL は除外)
   const isLikelyId = (v) => /^[a-zA-Z0-9]{15,18}$/.test(v) && /[a-zA-Z]/.test(v) && /\d/.test(v);
   const rows = records.map((r) =>
@@ -3027,8 +3035,32 @@ function recordsTable(records) {
       th.dataset.sortBound = "true";
       th.addEventListener("click", () => sortTableByTh(th));
     });
+    // v2.97.0: 表内検索フィルタのバインド
+    document.querySelectorAll(".table-filter-input:not([data-filter-bound])").forEach((inp) => {
+      inp.dataset.filterBound = "true";
+      const target = inp.dataset.target;
+      const countEl = document.querySelector(`.table-filter-count[data-target="${target}"]`);
+      const table = inp.closest(".grid, .result, .login-as-result, [class*='grid']")?.querySelector("table")
+        || inp.parentElement.parentElement.querySelector("table");
+      if (!table) return;
+      inp.addEventListener("input", () => {
+        const q = inp.value.trim().toLowerCase();
+        let visible = 0, total = 0;
+        Array.from(table.tBodies[0] ? table.tBodies[0].rows : table.rows).forEach((tr) => {
+          if (tr.querySelector("th")) return; // ヘッダ行スキップ
+          total++;
+          const hit = !q || tr.textContent.toLowerCase().includes(q);
+          tr.style.display = hit ? "" : "none";
+          if (hit) visible++;
+        });
+        if (countEl) countEl.textContent = q ? `${visible} / ${total} 件` : `${total} 件`;
+      });
+      inp.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") { inp.value = ""; inp.dispatchEvent(new Event("input")); }
+      });
+    });
   }, 0);
-  return `<table>${head}${rows}</table>`;
+  return searchInput + `<table id="${tableId}">${head}${rows}</table>`;
 }
 
 // th クリックで in-place ソート (asc → desc → unsort トグル)
