@@ -305,7 +305,7 @@ select { font-family: inherit; }
   white-space: pre; user-select: text;
 }
 
-.links { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.links { display: flex; flex-direction: column; gap: 4px; }
 .links a {
   background: #142447; color: var(--fg); border: 1px solid var(--line);
   border-radius: 6px; padding: 7px 10px; font-size: 11px; text-decoration: none;
@@ -323,6 +323,25 @@ select { font-family: inherit; }
   margin-top: 2px;
 }
 .links-group-title:first-child { margin-top: 0; padding-top: 0; }
+/* v3.45.0: カテゴリ折りたたみ (details/summary) — 状態は chrome.storage 永続化 */
+details.links-group { margin: 0; }
+details.links-group > summary {
+  list-style: none; cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 6px;
+}
+details.links-group > summary::-webkit-details-marker { display: none; }
+details.links-group > summary::before {
+  content: "▶"; color: var(--accent); font-size: 9px;
+  transition: transform 0.15s ease;
+  display: inline-block;
+}
+details.links-group[open] > summary::before { transform: rotate(90deg); }
+/* details 内のリンクは 2 列 grid */
+details.links-group[open] {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+}
+details.links-group[open] > summary { grid-column: 1 / -1; }
+details.links-group:not([open]) > a { display: none; }
 
 .ftr {
   position: sticky; bottom: 0; background: var(--bg2);

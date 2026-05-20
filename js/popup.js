@@ -771,7 +771,7 @@ async function doApiCall() {
   setStatus(r.ok ? "✓ 成功しました" : "❌ 失敗しました");
 }
 
-function renderLinks() {
+async function renderLinks() {
   // カテゴリ別グルーピング: Setup / 開発 / 監視 / セキュリティ
   const groups = [
     { title: "⚙️ 設定 (Setup)", links: [
@@ -811,6 +811,16 @@ function renderLinks() {
     chrome.tabs.create({ url: `https://${lhost}${path}` });
   };
   // v3.43.0: フィルタ対応 — リンク名で部分一致絞り込み
+  // v3.45.0: カテゴリ折りたたみ対応 — 各グループを <details>/<summary> で表示・状態は chrome.storage に保存
+  const COLLAPSED_KEY = "sfdtPopupLinksCollapsed";
+  let collapsedSet = new Set();
+  try {
+    const stored = await chrome.storage.local.get(COLLAPSED_KEY);
+    if (Array.isArray(stored[COLLAPSED_KEY])) collapsedSet = new Set(stored[COLLAPSED_KEY]);
+  } catch {}
+  const persistCollapsed = () => {
+    try { chrome.storage.local.set({ [COLLAPSED_KEY]: [...collapsedSet] }); } catch {}
+  };
   const renderFiltered = (q) => {
     root.innerHTML = "";
     const qn = (q || "").toLowerCase().trim();
@@ -818,18 +828,28 @@ function renderLinks() {
     groups.forEach((g) => {
       const matched = g.links.filter(([label]) => !qn || label.toLowerCase().includes(qn));
       if (!matched.length) return;
-      const heading = document.createElement("div");
-      heading.className = "links-group-title";
-      heading.textContent = g.title;
-      root.appendChild(heading);
+      const details = document.createElement("details");
+      details.className = "links-group";
+      // フィルタ中は常時展開、それ以外は前回保存値に従う
+      details.open = !!qn || !collapsedSet.has(g.title);
+      details.addEventListener("toggle", () => {
+        if (qn) return; // フィルタ中の toggle は永続化しない
+        if (details.open) collapsedSet.delete(g.title); else collapsedSet.add(g.title);
+        persistCollapsed();
+      });
+      const summary = document.createElement("summary");
+      summary.className = "links-group-title";
+      summary.textContent = g.title;
+      details.appendChild(summary);
       matched.forEach(([label, path]) => {
         const a = document.createElement("a");
         a.textContent = label;
         a.href = "#";
         a.addEventListener("click", (e) => { e.preventDefault(); openLink(path); });
-        root.appendChild(a);
+        details.appendChild(a);
         hits++;
       });
+      root.appendChild(details);
     });
     if (!hits && qn) {
       const empty = document.createElement("div");
