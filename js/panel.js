@@ -433,6 +433,28 @@ function bindEvents() {
       if (v) switchToView(v);
     });
   });
+  // v2.84.0: API URL ビルダー / REST 探索の使い方ガイドの「例チップ」クリックで入力欄を埋める
+  document.querySelectorAll(".api-example-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      // API URL ビルダー用
+      if (chip.dataset.op) {
+        const opSel = document.getElementById("apiOp");
+        const objIn = document.getElementById("apiObj");
+        if (opSel) opSel.value = chip.dataset.op;
+        if (objIn) objIn.value = chip.dataset.obj || "";
+        const buildBtn = document.getElementById("btnApiBuild");
+        if (buildBtn) buildBtn.click();
+      }
+      // REST 探索用
+      if (chip.dataset.restMethod) {
+        const m = document.getElementById("restMethod");
+        const p = document.getElementById("restPath");
+        if (m) m.value = chip.dataset.restMethod;
+        if (p) p.value = chip.dataset.restPath || "";
+        panelToast(`📋 例を入力欄に設定しました。「送信」ボタンをクリックして実行してください`, { kind: "ok" });
+      }
+    });
+  });
   const btnRecon = document.getElementById("btnReconnect");
   if (btnRecon) btnRecon.addEventListener("click", reconnect);
   const apiVerEl = document.getElementById("apiVer");

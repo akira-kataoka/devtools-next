@@ -85,10 +85,14 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 
 .cols { display: flex; height: calc(100% - 38px); }
 .side {
-  width: 180px; background: var(--bg2); border-right: 1px solid var(--line);
+  /* v2.84.0: 縦スクロール対応 (ユーザー報告「下まで見えない」の根本対応)
+     .side は折りたたみアニメ用に overflow: hidden を保ち、内部の .nav に縦スクロールを持たせる */
+  width: 200px; background: var(--bg2); border-right: 1px solid var(--line);
   transition: width 0.18s ease;
   position: relative;
   overflow: hidden;
+  display: flex; flex-direction: column;
+  height: 100%;
 }
 .side.collapsed { width: 38px; }
 .side.collapsed .nav-btn { padding: 8px 4px; font-size: 0; white-space: nowrap; overflow: hidden; }
@@ -104,18 +108,36 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 }
 .side-toggle:hover { background: var(--bg3); color: var(--accent); border-color: var(--accent); }
 .side.collapsed .side-toggle { transform: rotate(180deg); }
-/* v2.80.0: サイドバーの「最近メニュー」を撤去したので nav の上余白を縮小 + 全機能が縦に収まるよう padding/gap を詰める */
-.nav { display: flex; flex-direction: column; padding: 6px; gap: 2px; padding-top: 28px; }
+/* v2.84.0: サイドバーが画面より長い場合に縦スクロール可能化 (致命的バグ修正) + スクロールバー細く */
+.nav {
+  display: flex; flex-direction: column;
+  padding: 6px; gap: 2px; padding-top: 28px;
+  flex: 1; min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line) transparent;
+}
+.nav::-webkit-scrollbar { width: 6px; }
+.nav::-webkit-scrollbar-track { background: transparent; }
+.nav::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+.nav::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 .nav-btn {
   text-align: left; background: transparent; border: 1px solid transparent;
   color: var(--fg-dim); padding: 6px 10px; border-radius: 6px;
   font-size: 12px;
 }
-.nav-btn { transition: background 0.1s, color 0.1s, border-color 0.1s; }
+.nav-btn { transition: background 0.1s, color 0.1s, border-color 0.1s, transform 0.05s; }
 .nav-btn:hover { background: var(--bg3); color: var(--fg); }
+/* v2.84.0: 選択状態をより明確に (グラデ背景 + 太枠 + 太字) */
 .nav-btn.active {
-  background: var(--bg3); color: var(--accent); border-color: var(--line);
-  border-left: 3px solid var(--accent); padding-left: 7px;
+  background: linear-gradient(90deg, rgba(27,150,255,0.25), rgba(27,150,255,0.08));
+  color: #fff;
+  border-color: var(--accent);
+  border-left: 4px solid var(--accent);
+  padding-left: 6px;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(27,150,255,0.2);
 }
 
 .main { flex: 1; padding: 10px; overflow: auto; display: flex; flex-direction: column; }
@@ -255,24 +277,37 @@ td.cell-nested { word-break: break-word; }
   box-shadow: 0 0 0 2px rgba(27,150,255,0.2);
 }
 
-/* Team B - カテゴリヘッダ (button 化、クリックで開閉) */
+/* v2.84.0 Team B 強化: カテゴリヘッダの視認性向上 (薄いグラデ背景 + 矢印アイコン強調) */
 .nav-sep {
-  display: flex; align-items: center; gap: 4px;
+  display: flex; align-items: center; gap: 6px;
   width: 100%; text-align: left;
-  background: transparent; border: none;
+  background: linear-gradient(90deg, rgba(27,150,255,0.08), transparent);
+  border: none;
   cursor: pointer;
-  padding: 6px 10px 2px;
+  padding: 7px 10px 5px;
   font-size: 10px;
   color: var(--accent);
   font-weight: 700;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.4px;
   border-top: 1px solid var(--line);
-  margin-top: 4px;
+  margin-top: 6px;
   text-transform: uppercase;
+  border-radius: 4px;
   transition: color 0.1s, background 0.1s;
 }
-.nav-sep:hover { background: rgba(27,150,255,0.05); color: var(--fg); }
+.nav-sep:hover {
+  background: linear-gradient(90deg, rgba(27,150,255,0.18), rgba(27,150,255,0.04));
+  color: var(--fg);
+}
 .nav-sep:first-child { border-top: none; margin-top: 0; }
+.nav-sep .cat-arrow {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px;
+  background: rgba(27,150,255,0.2);
+  border-radius: 3px;
+  color: var(--accent);
+  font-size: 9px;
+}
 .cat-arrow {
   display: inline-block;
   transition: transform 0.18s ease;
@@ -313,6 +348,64 @@ td.cell-nested { word-break: break-word; }
 
 /* 検索でヒットしないボタンの非表示 */
 .nav-btn.search-hidden, .nav-sep.search-hidden, .nav-group.search-hidden { display: none; }
+
+/* v2.84.0: API URL ビルダー / REST 探索の使い方ガイドカード */
+.api-guide {
+  background: linear-gradient(135deg, rgba(27,150,255,0.08) 0%, rgba(12,102,228,0.04) 100%);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.api-guide-title {
+  font-size: 13px; font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+.api-guide-steps { margin: 0 0 10px; padding-left: 18px; }
+.api-guide-steps li { margin-bottom: 4px; color: var(--fg-dim); }
+.api-guide-steps li b { color: var(--fg); }
+.api-guide-steps code {
+  background: rgba(27,150,255,0.12);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 11px;
+  color: var(--accent);
+}
+.api-guide-examples {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+.api-guide-label { font-size: 11px; color: var(--fg-dim); font-weight: 700; }
+.api-example-chip {
+  background: rgba(27,150,255,0.12);
+  color: var(--accent);
+  border: 1px solid rgba(27,150,255,0.3);
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.api-example-chip:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+.api-guide-tip {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+  font-size: 11px;
+  color: var(--fg-dim);
+}
 .nav-btn.recent {
   font-size: 11px;
   color: var(--fg-dim);
