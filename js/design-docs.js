@@ -332,23 +332,32 @@ async function buildValidationRuleList({ host, sid, apiVersion, obj }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, ValidationName, Active, Description, ErrorDisplayField, ErrorMessage, EntityDefinition.QualifiedApiName, LastModifiedDate FROM ValidationRule ${where} ORDER BY EntityDefinition.QualifiedApiName, ValidationName LIMIT 500`,
   });
-  if (!r.ok) throw apiError("ValidationRule 取得", r);
-  const headers = ["No", "オブジェクト", "ルール名", "有効", "エラー表示項目", "エラーメッセージ", "説明", "更新日"];
+  if (!r.ok) throw apiError("入力規則の取得に失敗しました", r);
+  const headers = ["No", "オブジェクト", "ルール名 (API)", "有効", "エラー表示位置", "エラーメッセージ", "説明 (開発者向け)", "更新日"];
   const rows = (r.data.records || []).map((v, i) => ({
     "No": i + 1,
     "オブジェクト": v.EntityDefinition ? v.EntityDefinition.QualifiedApiName : "",
-    "ルール名": v.ValidationName,
-    "有効": v.Active ? "○" : "",
-    "エラー表示項目": v.ErrorDisplayField || "(top of page)",
+    "ルール名 (API)": v.ValidationName,
+    "有効": v.Active ? "○ 有効" : "− 無効",
+    "エラー表示位置": v.ErrorDisplayField ? `項目: ${v.ErrorDisplayField}` : "ページ上部 (全体)",
     "エラーメッセージ": v.ErrorMessage || "",
-    "説明": v.Description || "",
+    "説明 (開発者向け)": v.Description || "",
     "更新日": fmtDate(v.LastModifiedDate),
   }));
+  const legend = [
+    ["有効", "○ 有効 = ルール適用中、− 無効 = 一時的に停止 (テスト中等)"],
+    ["エラー表示位置", "項目: <API名> = その項目の直下に赤字で表示、ページ上部 = 画面トップに警告として表示"],
+    ["エラーメッセージ", "保存時に検証失敗した場合にユーザーへ表示される文言。多言語化したい場合は \\$Label を使用"],
+    ["説明", "Setup 画面の開発者向けメモ。ユーザーには表示されない"],
+  ];
   return {
     title: obj ? `入力規則一覧: ${obj}` : "入力規則一覧 (全オブジェクト)",
     type: "validationRuleList",
-    sections: [{ heading: "ValidationRule", headers, rows }],
-    note: `合計 ${rows.length} 件`,
+    sections: [
+      { heading: "0. 凡例", kvRows: legend },
+      { heading: "1. ValidationRule", headers, rows },
+    ],
+    note: `合計 ${rows.length} 件 / 無効ルールも本一覧には含まれます (Setup では既定で非表示)`,
   };
 }
 
@@ -359,22 +368,31 @@ async function buildRecordTypeList({ host, sid, apiVersion, obj }) {
     host, sid, apiVersion,
     soql: `SELECT Id, Name, DeveloperName, SobjectType, IsActive, Description, BusinessProcessId FROM RecordType ${where} ORDER BY SobjectType, DeveloperName LIMIT 500`,
   });
-  if (!r.ok) throw apiError("RecordType 取得", r);
-  const headers = ["No", "オブジェクト", "API名", "ラベル", "有効", "BusinessProcess", "説明"];
+  if (!r.ok) throw apiError("レコードタイプの取得に失敗しました", r);
+  const headers = ["No", "オブジェクト", "API名 (DeveloperName)", "ラベル (画面表示名)", "有効", "営業プロセス連携", "説明 (開発者向け)"];
   const rows = (r.data.records || []).map((rt, i) => ({
     "No": i + 1,
     "オブジェクト": rt.SobjectType,
-    "API名": rt.DeveloperName,
-    "ラベル": rt.Name,
-    "有効": rt.IsActive ? "○" : "",
-    "BusinessProcess": rt.BusinessProcessId || "",
-    "説明": rt.Description || "",
+    "API名 (DeveloperName)": rt.DeveloperName,
+    "ラベル (画面表示名)": rt.Name,
+    "有効": rt.IsActive ? "○ 有効" : "− 無効",
+    "営業プロセス連携": rt.BusinessProcessId ? `あり (${rt.BusinessProcessId.substring(0, 15)})` : "なし",
+    "説明 (開発者向け)": rt.Description || "",
   }));
+  const legend = [
+    ["レコードタイプとは", "同じオブジェクト内で異なるピックリスト値・ページレイアウト・営業プロセスを使い分ける仕組み"],
+    ["有効", "○ 有効 = プロファイル/権限セットで割当可能、− 無効 = 既存レコードは保持されるが新規作成不可"],
+    ["営業プロセス連携", "Opportunity / Lead / Case / Solution で利用される BusinessProcess (フェーズ/ステータス段階) との紐付け"],
+    ["割当て", "実際の利用可否はプロファイル/権限セットの『レコードタイプの割り当て』で決定 (本一覧はメタ定義のみ)"],
+  ];
   return {
     title: obj ? `レコードタイプ一覧: ${obj}` : "レコードタイプ一覧 (全オブジェクト)",
     type: "recordTypeList",
-    sections: [{ heading: "RecordType", headers, rows }],
-    note: `合計 ${rows.length} 件`,
+    sections: [
+      { heading: "0. 凡例", kvRows: legend },
+      { heading: "1. RecordType", headers, rows },
+    ],
+    note: `合計 ${rows.length} 件 / 無効レコードタイプも本一覧には含まれます`,
   };
 }
 
@@ -1085,16 +1103,26 @@ async function buildLwcDetail({ host, sid, apiVersion, obj }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, DeveloperName, MasterLabel, ApiVersion, Description, NamespacePrefix, IsExposed, TargetConfigs FROM LightningComponentBundle WHERE DeveloperName='${obj.replace(/'/g, "\\'")}' LIMIT 1`,
   });
-  if (!bR.ok) throw apiError(`LightningComponentBundle(${obj})`, bR);
-  if (!bR.data.records || !bR.data.records[0]) throw new Error(`HTTP 404 LightningComponentBundle '${obj}' が見つかりません`);
+  if (!bR.ok) throw apiError(`LWC コンポーネント (${obj}) の取得に失敗しました`, bR);
+  if (!bR.data.records || !bR.data.records[0]) throw new Error(`HTTP 404 LWC コンポーネント '${obj}' が見つかりません`);
   const b = bR.data.records[0];
 
+  // 形式の業務向け説明マップ
+  const formatMap = {
+    html: "html (テンプレート)",
+    js: "js (コントローラ)",
+    xml: "xml (メタデータ / 公開設定)",
+    css: "css (スタイル)",
+    svg: "svg (App Builder 用アイコン)",
+    json: "json (静的データ / Jest 設定)",
+  };
+
   const summary = [
-    ["LWC 名", b.DeveloperName],
-    ["ラベル", b.MasterLabel],
-    ["API Version", b.ApiVersion],
-    ["Namespace", b.NamespacePrefix || ""],
-    ["IsExposed", b.IsExposed ? "○" : ""],
+    ["コンポーネント名 (API)", b.DeveloperName],
+    ["ラベル (画面表示名)", b.MasterLabel],
+    ["API バージョン", b.ApiVersion],
+    ["ネームスペース", b.NamespacePrefix || "(なし: 標準パッケージ外)"],
+    ["App Builder に公開", b.IsExposed ? "○ 公開 (画面に配置可能)" : "− 非公開 (子コンポーネント専用)"],
     ["説明", b.Description || ""],
   ];
 
@@ -1104,16 +1132,17 @@ async function buildLwcDetail({ host, sid, apiVersion, obj }) {
     soql: `SELECT Id, FilePath, Format, Source FROM LightningComponentResource WHERE LightningComponentBundleId='${b.Id}' ORDER BY FilePath LIMIT 100`,
   });
   const resources = rR.ok ? (rR.data.records || []) : [];
-  const fileHeaders = ["No", "ファイル名", "形式", "サイズ", "概要 (先頭 80 文字)"];
+  const fileHeaders = ["No", "ファイル名", "形式", "サイズ", "先頭 80 文字 (プレビュー)"];
   const fileRows = resources.map((res, i) => {
     const filename = (res.FilePath || "").split("/").pop();
     const src = res.Source || "";
+    const fmt = (res.Format || "").toLowerCase();
     return {
       "No": i + 1,
       "ファイル名": filename,
-      "形式": res.Format || "",
-      "サイズ": src.length + " 文字",
-      "概要 (先頭 80 文字)": src.substring(0, 80).replace(/\n/g, " "),
+      "形式": formatMap[fmt] || res.Format || "",
+      "サイズ": src.length.toLocaleString() + " 文字",
+      "先頭 80 文字 (プレビュー)": src.substring(0, 80).replace(/\n/g, " "),
     };
   });
 
@@ -1123,17 +1152,25 @@ async function buildLwcDetail({ host, sid, apiVersion, obj }) {
     targetSheet.push(["TargetConfigs (XML)", b.TargetConfigs.substring(0, 500)]);
   }
 
+  const legend = [
+    ["LWC とは", "Lightning Web Component。Salesforce 標準の Web Components ベース UI フレームワーク"],
+    ["公開フラグ", "App Builder に公開: ○ = Lightning ページ等に配置可能、− = 親コンポーネントから呼び出し専用"],
+    ["バンドル構成", "1 つのコンポーネントは html (テンプレート) + js (コントローラ) + js-meta.xml (公開設定) を中心に複数ファイルで構成"],
+    ["TargetConfigs", "どの画面 (RecordPage / HomePage / AppPage / Community 等) で利用可能かを定義する XML"],
+  ];
+
   const sections = [
+    { heading: "0. 凡例", kvRows: legend },
     { heading: "1. サマリ", kvRows: summary },
     { heading: "2. バンドル内ファイル", headers: fileHeaders, rows: fileRows },
   ];
-  if (targetSheet.length) sections.push({ heading: "3. TargetConfigs", kvRows: targetSheet });
+  if (targetSheet.length) sections.push({ heading: "3. TargetConfigs (公開設定 XML)", kvRows: targetSheet });
 
   return {
     title: `LWC 設計図: ${b.MasterLabel} (${b.DeveloperName})`,
     type: "lwcDetail",
     sections,
-    note: `バンドル内ファイル ${fileRows.length} 件。IsExposed=true なら App Builder に公開済。`,
+    note: `バンドル内ファイル ${fileRows.length} 件 / 「App Builder に公開」が ○ の場合は管理者が Lightning ページに配置可能です`,
   };
 }
 

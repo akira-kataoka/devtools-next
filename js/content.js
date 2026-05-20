@@ -5,7 +5,7 @@
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg && msg.type === "sfdt:copy" && typeof msg.text === "string") {
     navigator.clipboard.writeText(msg.text).then(() => {
-      flashToast("コピーしました: " + msg.text);
+      flashToast("クリップボードにコピーしました: " + msg.text);
     });
   }
 });
@@ -165,14 +165,14 @@ function flashToast(text) {
   useIdBtn.addEventListener("click", () => {
     const info = extractRecordContext();
     if (!info) {
-      meta.innerHTML = `<span class="err">⚠ 現ページからレコード ID を抽出できません (レコード詳細ページで再試行)</span>`;
+      meta.innerHTML = `<span class="err">⚠ 現在のページからレコード ID を取得できませんでした (レコード詳細ページで再度お試しください)</span>`;
       return;
     }
     // SELECT Id, Name FROM <Object> WHERE Id = '<id>' 形式で生成 (既存 textarea は置換)
     const tpl = `SELECT Id, Name FROM ${info.obj || "Account"} WHERE Id = '${info.id}' LIMIT 1`;
     qry.value = tpl;
     qry.focus();
-    meta.innerHTML = `<span class="ok">📋 ${info.obj || "?"}:${info.id} を挿入</span>`;
+    meta.innerHTML = `<span class="ok">📋 ${info.obj || "?"}:${info.id} をクエリに挿入しました</span>`;
   });
   function extractRecordContext() {
     const href = location.href;
@@ -204,7 +204,7 @@ function flashToast(text) {
       const host = location.hostname;
       const sessionResp = await chrome.runtime.sendMessage({ type: "sfdt:getSession", host });
       if (!sessionResp || !sessionResp.ok || !sessionResp.session) {
-        meta.innerHTML = `<span class="err">❌ sid 取得失敗 (このタブで Salesforce にログイン済か確認)</span>`;
+        meta.innerHTML = `<span class="err">❌ セッション (sid) を取得できませんでした。本タブで Salesforce にログイン済みかご確認ください</span>`;
         return;
       }
       const r = await chrome.runtime.sendMessage({
@@ -212,16 +212,16 @@ function flashToast(text) {
         payload: { host, sid: sessionResp.session.sid, soql, apiVersion: "62.0" },
       });
       if (!r || !r.ok) {
-        meta.innerHTML = `<span class="err">❌ HTTP ${r ? r.status : "?"}</span>`;
+        meta.innerHTML = `<span class="err">❌ クエリ実行に失敗しました (HTTP ${r ? r.status : "?"})</span>`;
         res.textContent = JSON.stringify(r && r.data, null, 2);
         return;
       }
       const recs = (r.data && r.data.records) || [];
       lastRecs = recs;
-      meta.innerHTML = `<span class="ok">✓ ${recs.length} 件</span>`;
+      meta.innerHTML = `<span class="ok">✓ ${recs.length} 件を取得しました</span>`;
       res.innerHTML = renderTable(recs);
     } catch (e) {
-      meta.innerHTML = `<span class="err">❌ ${String(e && e.message || e)}</span>`;
+      meta.innerHTML = `<span class="err">❌ クエリ実行でエラーが発生しました: ${String(e && e.message || e)}</span>`;
     } finally {
       runBtn.disabled = false;
     }
@@ -229,7 +229,7 @@ function flashToast(text) {
 
   // CSV コピー
   copyCsvBtn.addEventListener("click", async () => {
-    if (!lastRecs.length) { meta.innerHTML = `<span class="err">📭 コピー対象がありません</span>`; return; }
+    if (!lastRecs.length) { meta.innerHTML = `<span class="err">📭 コピー対象のデータがありません</span>`; return; }
     try {
       const cols = new Set();
       lastRecs.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
@@ -252,14 +252,14 @@ function flashToast(text) {
       const lines = [headers.map((h) => `"${h}"`).join(",")];
       for (const r of lastRecs) lines.push(headers.map((h) => esc(r[h])).join(","));
       await navigator.clipboard.writeText(lines.join("\n"));
-      meta.innerHTML = `<span class="ok">📋 CSV ${lastRecs.length} 行をコピー</span>`;
+      meta.innerHTML = `<span class="ok">📋 CSV ${lastRecs.length} 行をクリップボードにコピーしました</span>`;
     } catch (e) {
-      meta.innerHTML = `<span class="err">❌ コピー失敗: ${String(e.message || e)}</span>`;
+      meta.innerHTML = `<span class="err">❌ クリップボードへのコピーに失敗しました: ${String(e.message || e)}</span>`;
     }
   });
 
   function renderTable(records) {
-    if (!records.length) return `<div style="color:#9fb0c9;padding:8px">📭 該当データなし</div>`;
+    if (!records.length) return `<div style="color:#9fb0c9;padding:8px">📭 該当データはありません</div>`;
     const cols = new Set();
     records.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
     const headers = Array.from(cols);
@@ -288,7 +288,7 @@ function flashToast(text) {
           const fromMatch = qry.value.match(/FROM\s+(\w+)/i);
           const obj = fromMatch ? fromMatch[1] : "Account";
           qry.value = `SELECT FIELDS(STANDARD) FROM ${obj} WHERE Id = '${id}' LIMIT 1`;
-          meta.innerHTML = `<span class="ok">🔍 ${obj}:${id} → 全標準フィールド検索</span>`;
+          meta.innerHTML = `<span class="ok">🔍 ${obj}:${id} の全標準フィールドを検索します</span>`;
           runBtn.click();
         });
       });
