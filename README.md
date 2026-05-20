@@ -17,6 +17,10 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.63.0 (2026-05-20 19:51)** — 🎊 サイクル 200 マイルストーン / Phase 54: ApexClass コードサイズをバイト換算 + Apex Limit 使用率明示:
+  - **🎊 累計 200 サイクル / 63 minor リリース達成**: 2026-05-20 13:30 のユーザー要望開始から約 6.5 時間で 54 Phase の連続改善
+  - **🐛 buildApexClassList**: 列名「コード行数 (コメント除く)」→「コードサイズ (コメント除く)」に正名化、表示を `12,345 文字` → `12.5 KB` (fmtBytes 自動単位) に変更 (LengthWithoutComments はバイト単位フィールドのため正確に)
+  - **🐛 buildApexClassList note**: 「総コード行数 N 行」→「総コードサイズ ${fmtBytes(N)} (Apex Limit 6 MB に対する使用率: 約 X.X%)」と Apex Limit 残量を視覚化 (組織全体の Apex 容量管理に有用)
 - **v2.62.0 (2026-05-20 19:47)** — 🚨 ユーザー要望 Phase 53: 説明列の長文 truncate + fmtTrunc ヘルパー導入:
   - **🔤 design-docs.js fmtTrunc ヘルパー追加**: 長文を指定文字数 (既定 200 文字) で切り詰めて末尾に「 … [+N 文字省略]」を付与。3 桁区切りで残り文字数も表示
   - **🐛 buildObjectDef**: ヘルプテキスト 150 文字 / 説明 200 文字で truncate

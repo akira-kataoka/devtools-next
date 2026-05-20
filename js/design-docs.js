@@ -273,14 +273,14 @@ async function buildApexClassList({ host, sid, apiVersion }) {
   const records = r.data.records || [];
   // コード行数の合計を算出 (組織全体のサイズ把握用)
   const totalLength = records.reduce((sum, p) => sum + (Number(p.LengthWithoutComments) || 0), 0);
-  const headers = ["No", "クラス名", "ネームスペース", "API バージョン", "ステータス", "コード行数 (コメント除く)", "作成日", "更新日"];
+  const headers = ["No", "クラス名", "ネームスペース", "API バージョン", "ステータス", "コードサイズ (コメント除く)", "作成日", "更新日"];
   const rows = records.map((p, i) => ({
     "No": i + 1,
     "クラス名": p.Name,
     "ネームスペース": p.NamespacePrefix || "(なし)",
     "API バージョン": p.ApiVersion != null ? `v${p.ApiVersion}` : "",
     "ステータス": statusLabel(p.Status),
-    "コード行数 (コメント除く)": fmtNum(p.LengthWithoutComments),
+    "コードサイズ (コメント除く)": p.LengthWithoutComments != null ? fmtBytes(p.LengthWithoutComments) : "",
     "作成日": fmtDate(p.CreatedDate),
     "更新日": fmtDate(p.LastModifiedDate),
   }));
@@ -288,7 +288,7 @@ async function buildApexClassList({ host, sid, apiVersion }) {
     title: "Apex クラス一覧",
     type: "apexClassList",
     sections: [{ heading: "Apex クラス", headers, rows }],
-    note: `合計 ${fmtNum(rows.length)} 件 (unmanaged + installedEditable のみ) / 総コード行数: ${fmtNum(totalLength)} 行 / コード行数は Apex Limit (組織あたり 6 MB) の試算目安としてご活用ください`,
+    note: `合計 ${fmtNum(rows.length)} 件 (unmanaged + installedEditable のみ) / 総コードサイズ: ${fmtBytes(totalLength)} (Apex Limit 6 MB に対する使用率: 約 ${((totalLength / (6 * 1024 * 1024)) * 100).toFixed(1)}%)`,
   };
 }
 
