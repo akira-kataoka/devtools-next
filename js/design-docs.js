@@ -901,7 +901,7 @@ async function buildAppList({ host, sid, apiVersion }) {
       { heading: "1. AppDefinition (組織内全アプリ)", headers, rows },
       ...(menuRows.length ? [{ heading: "2. AppMenuItem (App Launcher 表示順)", headers: menuHeaders, rows: menuRows }] : []),
     ],
-    note: `合計 ${fmtNum(rows.length)} アプリ / AppMenuItem の「並び順」はプロファイル単位で別途上書き可能`,
+    note: `AppDefinition ${fmtNum(rows.length)} 件 / AppMenuItem ${fmtNum(menuRows.length)} 件 / 「並び順」はプロファイル単位で別途上書き可能`,
   };
 }
 
