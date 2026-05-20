@@ -8,6 +8,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.10.0 (2026-05-20 13:30)** — mini-panel に 📋 CSV コピー + 列ソート:
+  - **✨ mini-panel ヘッダに「📋 CSV」ボタン**: 結果を CSV としてクリップボードコピー。ネスト平坦化 + ISO datetime 整形 (`recordsToCsv` 同パターン) を inline 実装で適用
+  - **✨ mini-panel 結果テーブルの列ヘッダ click でソート**: asc → desc → unsort 3 段階トグル、数値判定 (`/^-?\\d+(\\.\\d+)?$/`) で数値/文字列ソート分岐、`localeCompare("ja")` で日本語対応。**panel/tool と同等のソート UX を mini-panel にも**
+  - `lastRecs` 配列で結果保持 → unsort 時は再描画で原順序復元
 - **v2.9.0 (2026-05-20 13:25)** — mini-panel 結果テーブルの ID セルクリックで深掘り検索:
   - **✨ mini-panel の結果テーブル ID セル (15/18桁) を click で `SELECT FIELDS(STANDARD) FROM <Object> WHERE Id = '<id>'` 自動実行**: panel/tool の cell-id → Inspector ジャンプと同じ UX を mini-panel にも適用
   - 元クエリの `FROM` から Object 名を継承、なければ `Account` フォールバック

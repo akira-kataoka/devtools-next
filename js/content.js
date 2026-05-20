@@ -101,7 +101,10 @@ function flashToast(text) {
         padding: 6px 8px; font: 11px/1.4 ui-monospace, Consolas, monospace;
       }
       .result table { width: 100%; border-collapse: collapse; font-size: 11px; }
-      .result th { background: #112042; color: #1b96ff; padding: 3px 6px; text-align: left; position: sticky; top: 0; }
+      .result th { background: #112042; color: #1b96ff; padding: 3px 6px; text-align: left; position: sticky; top: 0; cursor: pointer; user-select: none; }
+      .result th:hover { background: #1a2d56; }
+      .result th[data-sort-dir="asc"]::after { content: " ▲"; font-size: 8px; opacity: 0.8; }
+      .result th[data-sort-dir="desc"]::after { content: " ▼"; font-size: 8px; opacity: 0.8; }
       .result td { padding: 3px 6px; border-bottom: 1px solid #1f2c46; vertical-align: top; max-width: 200px; word-break: break-word; }
       .err { color: #ff6b6b; }
       .ok { color: #2ecc71; }
@@ -117,6 +120,7 @@ function flashToast(text) {
         <textarea id="qry" placeholder="SELECT Id, Name FROM Account LIMIT 5" spellcheck="false">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 5</textarea>
         <div class="row">
           <button class="hdr-close" id="useId" title="現在ページのレコード ID を WHERE Id='...' で挿入" style="border-color:#1b96ff;color:#1b96ff">📋 ID 挿入</button>
+          <button class="hdr-close" id="copyCsv" title="結果を CSV としてクリップボードにコピー">📋 CSV</button>
           <span class="meta" id="mta">Ctrl+Enter で実行</span>
           <button class="primary" id="run">▶ 実行</button>
         </div>
@@ -132,10 +136,12 @@ function flashToast(text) {
   const closeBtn = $("cls");
   const openFullBtn = $("opn");
   const useIdBtn = $("useId");
+  const copyCsvBtn = $("copyCsv");
   const qry = $("qry");
   const runBtn = $("run");
   const meta = $("mta");
   const res = $("res");
+  let lastRecs = []; // v2.10.0: CSV コピー用に最終結果保持
 
   launcher.addEventListener("click", () => {
     panel.classList.toggle("open");
@@ -211,12 +217,44 @@ function flashToast(text) {
         return;
       }
       const recs = (r.data && r.data.records) || [];
+      lastRecs = recs;
       meta.innerHTML = `<span class="ok">✓ ${recs.length} 件</span>`;
       res.innerHTML = renderTable(recs);
     } catch (e) {
       meta.innerHTML = `<span class="err">❌ ${String(e && e.message || e)}</span>`;
     } finally {
       runBtn.disabled = false;
+    }
+  });
+
+  // CSV コピー
+  copyCsvBtn.addEventListener("click", async () => {
+    if (!lastRecs.length) { meta.innerHTML = `<span class="err">📭 コピー対象がありません</span>`; return; }
+    try {
+      const cols = new Set();
+      lastRecs.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
+      const headers = Array.from(cols);
+      const flatten = (v) => {
+        if (v == null) return "";
+        if (typeof v === "object") {
+          if (v.attributes) {
+            const f = Object.keys(v).filter((k) => k !== "attributes");
+            const pref = ["Name", "Subject", "Title"].find((p) => f.includes(p) && v[p]);
+            return pref ? `${v[pref]}${v.Id ? ` [${v.Id.substring(0, 18)}]` : ""}` : JSON.stringify(v);
+          }
+          return JSON.stringify(v);
+        }
+        const s = String(v);
+        const m = s.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+        return m ? `${m[1]} ${m[2]}` : s;
+      };
+      const esc = (v) => `"${flatten(v).replace(/"/g, '""')}"`;
+      const lines = [headers.map((h) => `"${h}"`).join(",")];
+      for (const r of lastRecs) lines.push(headers.map((h) => esc(r[h])).join(","));
+      await navigator.clipboard.writeText(lines.join("\n"));
+      meta.innerHTML = `<span class="ok">📋 CSV ${lastRecs.length} 行をコピー</span>`;
+    } catch (e) {
+      meta.innerHTML = `<span class="err">❌ コピー失敗: ${String(e.message || e)}</span>`;
     }
   });
 
@@ -227,7 +265,7 @@ function flashToast(text) {
     const headers = Array.from(cols);
     const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
     const isLikelyId = (v) => /^[a-zA-Z0-9]{15,18}$/.test(v) && /[a-zA-Z]/.test(v) && /\d/.test(v);
-    const head = `<tr>${headers.map((h) => `<th>${esc(h)}</th>`).join("")}</tr>`;
+    const head = `<tr>${headers.map((h) => `<th data-col="${esc(h)}">${esc(h)}</th>`).join("")}</tr>`;
     const rows = records.map((r) => `<tr>${headers.map((h) => {
       let v = r[h];
       if (v && typeof v === "object" && v.attributes) {
@@ -247,12 +285,39 @@ function flashToast(text) {
         td.addEventListener("click", () => {
           const id = td.dataset.id;
           if (!id) return;
-          // 既存 query の FROM 部分を取得して同じオブジェクトで再検索
           const fromMatch = qry.value.match(/FROM\s+(\w+)/i);
           const obj = fromMatch ? fromMatch[1] : "Account";
           qry.value = `SELECT FIELDS(STANDARD) FROM ${obj} WHERE Id = '${id}' LIMIT 1`;
           meta.innerHTML = `<span class="ok">🔍 ${obj}:${id} → 全標準フィールド検索</span>`;
           runBtn.click();
+        });
+      });
+      // v2.10.0: 列ヘッダ click でソート (asc → desc → unsort)
+      res.querySelectorAll("th[data-col]").forEach((th) => {
+        th.addEventListener("click", () => {
+          const cur = th.dataset.sortDir || "";
+          const next = cur === "asc" ? "desc" : (cur === "desc" ? "" : "asc");
+          res.querySelectorAll("th[data-col]").forEach((o) => { delete o.dataset.sortDir; });
+          if (next) th.dataset.sortDir = next;
+          const tbody = th.closest("table");
+          const allRows = Array.from(tbody.querySelectorAll("tr")).filter((tr) => !tr.querySelector("th"));
+          const idx = Array.prototype.indexOf.call(th.parentElement.children, th);
+          if (!next) {
+            // 元順序に戻す (lastRecs から再描画)
+            res.innerHTML = renderTable(lastRecs);
+            return;
+          }
+          const dir = next === "asc" ? 1 : -1;
+          allRows.sort((a, b) => {
+            const av = a.cells[idx] ? a.cells[idx].textContent : "";
+            const bv = b.cells[idx] ? b.cells[idx].textContent : "";
+            const an = parseFloat(av), bn = parseFloat(bv);
+            if (!isNaN(an) && !isNaN(bn) && /^-?\d+(\.\d+)?$/.test(av.trim()) && /^-?\d+(\.\d+)?$/.test(bv.trim())) {
+              return (an - bn) * dir;
+            }
+            return av.localeCompare(bv, "ja") * dir;
+          });
+          allRows.forEach((tr) => tbody.appendChild(tr));
         });
       });
     }, 0);
