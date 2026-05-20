@@ -1352,17 +1352,37 @@ async function inspectFromTab() {
     doInspect();
     return;
   }
-  // Classic: /<Id> ベース
+  // Lightning Setup: /lightning/setup/<feature>/page?address=%2F<Id>
+  // または query string や fragment 内に 15/18桁 ID
   try {
     const u = new URL(href);
+    // ?address=%2F<Id>... 形式 (encoded slash)
+    const addr = u.searchParams.get("address");
+    if (addr) {
+      const am = addr.match(/([a-zA-Z0-9]{15,18})/);
+      if (am) {
+        document.getElementById("inspectRef").value = am[1];
+        doInspect();
+        return;
+      }
+    }
+    // pathname に ID
     m = u.pathname.match(/\/([a-zA-Z0-9]{15,18})(?:\/|$)/);
     if (m) {
       document.getElementById("inspectRef").value = m[1];
       doInspect();
       return;
     }
+    // fragment 内に ID (Classic 旧 URL: #/sObject/<Id>/view 等)
+    const frag = u.hash || "";
+    const fm = frag.match(/([a-zA-Z0-9]{15,18})/);
+    if (fm) {
+      document.getElementById("inspectRef").value = fm[1];
+      doInspect();
+      return;
+    }
   } catch {}
-  document.getElementById("inspectMeta").innerHTML = `<span class="pill warn">タブからレコードIDを抽出できません</span> URL: ${escape(href.substring(0, 100))}`;
+  document.getElementById("inspectMeta").innerHTML = `<span class="pill warn">タブからレコードIDを抽出できません</span> URL: ${escape(href.substring(0, 100))}<br/>💡 レコード詳細画面で再試行 (Setup ページからは抽出できないことがあります)`;
 }
 
 let inspectRunId = 0;
@@ -1937,9 +1957,31 @@ async function doSoql() {
   document.getElementById("soqlResult").innerHTML = recordsTable(recs);
 }
 
+// 結果テーブルが列ソート中なら、その並びを state.lastRecords に反映してから返す
+function getOrderedRecordsForExport() {
+  const recs = state.lastRecords || [];
+  if (!recs.length) return recs;
+  const sortedTh = document.querySelector("#soqlResult th.sortable[data-sort-dir]");
+  if (!sortedTh) return recs;
+  const dir = sortedTh.dataset.sortDir === "desc" ? -1 : 1;
+  const col = sortedTh.dataset.col;
+  if (!col) return recs;
+  const sorted = recs.slice().sort((a, b) => {
+    const av = a[col] == null ? "" : String(a[col]);
+    const bv = b[col] == null ? "" : String(b[col]);
+    const an = parseFloat(av), bn = parseFloat(bv);
+    if (!isNaN(an) && !isNaN(bn) && /^-?\d+(\.\d+)?$/.test(av.trim()) && /^-?\d+(\.\d+)?$/.test(bv.trim())) {
+      return (an - bn) * dir;
+    }
+    return av.localeCompare(bv, "ja") * dir;
+  });
+  return sorted;
+}
+
 function exportCsv() {
   if (!state.lastRecords || !state.lastRecords.length) { panelToast("📭 エクスポート対象がありません", { kind: "warn" }); return; }
-  const csv = recordsToCsv(state.lastRecords);
+  const ordered = getOrderedRecordsForExport();
+  const csv = recordsToCsv(ordered);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -1947,14 +1989,19 @@ function exportCsv() {
   a.download = `soql-${tsForFilename()}.csv`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const sortedTh = document.querySelector("#soqlResult th.sortable[data-sort-dir]");
+  if (sortedTh) panelToast(`📥 CSV ${ordered.length} 行 (${sortedTh.dataset.col} ${sortedTh.dataset.sortDir} ソート反映)`, { kind: "ok" });
 }
 
 async function copyCsvToClipboard() {
   if (!state.lastRecords || !state.lastRecords.length) { panelToast("📭 コピー対象がありません", { kind: "warn" }); return; }
   try {
-    const csv = recordsToCsv(state.lastRecords);
+    const ordered = getOrderedRecordsForExport();
+    const csv = recordsToCsv(ordered);
     await navigator.clipboard.writeText(csv);
-    panelToast(`📋 CSV ${state.lastRecords.length} 行をクリップボードへ`, { kind: "ok" });
+    const sortedTh = document.querySelector("#soqlResult th.sortable[data-sort-dir]");
+    const hint = sortedTh ? ` (${sortedTh.dataset.col} ${sortedTh.dataset.sortDir} ソート反映)` : "";
+    panelToast(`📋 CSV ${ordered.length} 行をクリップボードへ${hint}`, { kind: "ok" });
   } catch (e) {
     panelToast("❌ コピー失敗: " + (e.message || e), { kind: "err" });
   }

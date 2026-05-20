@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.58.0 (2026-05-20 09:10)** — Lightning Setup URL 抽出 + CSV ソート反映:
+  - **🐛 Inspector「現在タブから取得」を Lightning Setup URL でも動作**: `?address=%2F<Id>` (encoded slash) クエリパラメタ、pathname の 15/18桁 ID、URL fragment (`#/sObject/...`) の 3 段階フォールバック。**従来 `/lightning/r/` のみ → Setup タブから ID 取得不可だったが、ManageUsers/ApexClasses 等の Setup URL からも抽出可能に**
+  - **🐛 SOQL 「📥 CSV」/「📋 CSV」が列ソートを反映**: `getOrderedRecordsForExport()` で `#soqlResult th.sortable[data-sort-dir]` を検出 → `state.lastRecords` を同じソートロジックで並び替えて出力。**従来「テーブルでソートしたのに CSV は元順」だった違和感を解消**。toast に `(<col> <dir> ソート反映)` ヒント表示
+  - **🧪 Picker Enter キーで現在ハイライト行を選択**: 既存実装 (picker.js:377-380) で `e.key === "Enter"` 時に `sel.click()` 動作確認、修正不要
 - **v1.57.0 (2026-05-20 09:05)** — getByExtId 形式チェック + placeholder 拡充:
   - **✨ API URL Builder `getByExtId` で形式エラー検出**: `id` が `<項目名>/<値>` 形式 (`/^[A-Za-z0-9_]+\/.+/`) でない場合に `⚠ 形式エラー: 「外部ID項目名/値」 (スラッシュ区切り)。例: Email/foo@bar.com` を表示
   - **✨ `#apiId` プレースホルダ拡充**: `Id (get/update/delete) または ExtIdField/値 (例 Email/x@y.com)` + title 属性で詳細ヒント。max-width も 200→280px に拡張
