@@ -95,6 +95,7 @@ async function init() {
     loadApexFetchLog();
     loadSoqlDraft();
     loadApexDraft();
+    loadRestBodyDraft();
     // v3.46.0: chrome.storage.local 変更を監視して、別画面/mini-panel での履歴更新を即時反映
     if (chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, area) => {
@@ -989,6 +990,9 @@ function bindEvents() {
   if (soqlTextEl) enableTabToSpaces(soqlTextEl);
   // v3.81.0: SOQL textarea の入力中 draft 自動保存 (300ms debounce)
   if (soqlTextEl) soqlTextEl.addEventListener("input", () => scheduleSaveSoqlDraft(soqlTextEl.value));
+  // v3.83.0: REST API body textarea の入力中 draft 自動保存 (3 連 textarea 完全救済)
+  const restBodyEl = document.getElementById("restBody");
+  if (restBodyEl) restBodyEl.addEventListener("input", () => scheduleSaveRestBodyDraft(restBodyEl.value));
   $on("apexCode", "keydown", (e) => {
     if (e.isComposing || e.keyCode === 229) return;
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") doRunApex();
@@ -3884,6 +3888,33 @@ async function doRest() {
   document.getElementById("restResult").textContent = JSON.stringify(r.data, null, 2);
   // v3.77.0: 履歴に push (HTTP ステータスに関わらず — 失敗 URL の再試行も業務上有用)
   pushRestHistory({ method, path, body });
+}
+
+// v3.83.0: REST API body textarea の入力中バックアップ (14 種、3 連 textarea 完全救済)
+// 業務シナリオ: POST/PATCH の JSON body を組み立て中にタブが落ちる → 復元したい
+// REST 履歴 (Phase 167) は送信時のスナップショットなので、コンパイル前の draft とは別問題
+const REST_BODY_DRAFT_KEY = "sfdtRestBodyDraft";
+let _restBodyDraftTimer = null;
+async function loadRestBodyDraft() {
+  try {
+    const data = await chrome.storage.local.get(REST_BODY_DRAFT_KEY);
+    const saved = data[REST_BODY_DRAFT_KEY];
+    if (typeof saved !== "string" || !saved.trim()) return;
+    const ta = document.getElementById("restBody");
+    if (!ta) return;
+    if (ta.value === saved) return;
+    ta.value = saved;
+    panelToast("📝 編集中だった REST API ボディを復元しました", { kind: "ok" });
+  } catch {}
+}
+function scheduleSaveRestBodyDraft(text) {
+  if (_restBodyDraftTimer) clearTimeout(_restBodyDraftTimer);
+  _restBodyDraftTimer = setTimeout(async () => {
+    try {
+      if (!text || !text.trim()) await chrome.storage.local.remove(REST_BODY_DRAFT_KEY);
+      else await chrome.storage.local.set({ [REST_BODY_DRAFT_KEY]: text });
+    } catch {}
+  }, 300);
 }
 
 // v3.82.0: Apex コード textarea の入力中バックアップ (Phase 171 SOQL と同パターン、13 種)
