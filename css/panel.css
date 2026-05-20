@@ -677,6 +677,25 @@ td.cell-nested { word-break: break-word; }
 .design-preview th { background: #112042; color: var(--accent); position: sticky; top: 0; z-index: 1; cursor: default; }
 .design-preview th:hover { background: #112042; /* sortable と区別: hover で色変化なし */ }
 .design-preview code { background: #0a1224; padding: 1px 4px; border-radius: 3px; font: 11px ui-monospace, Consolas, monospace; color: #d6e0f5; }
+/* v3.33.0: 凡例セクションを視覚的に区別 (情報補助なので主章と差別化) */
+.design-preview h2.design-legend {
+  color: var(--fg-dim) !important;
+  font-size: 12px;
+  border-left: 3px solid var(--fg-dim);
+  background: rgba(159,176,201,0.04) !important;
+  padding: 4px 10px;
+  border-bottom: 1px dashed var(--line);
+  letter-spacing: 0;
+}
+.design-preview h2.design-legend::before { content: "ℹ "; opacity: 0.6; font-size: 11px; }
+.design-preview table.design-legend {
+  background: rgba(159,176,201,0.03);
+  border: 1px dashed var(--line);
+  font-size: 10px;
+  margin-top: 0;
+}
+.design-preview table.design-legend th { background: rgba(159,176,201,0.08); color: var(--fg-dim); font-size: 10px; }
+.design-preview table.design-legend td { color: var(--fg-dim); }
 
 /* v3.23.0: 設計書プレビュー印刷最適化 — ブラウザ印刷 (Ctrl+P) で PDF 保存・物理印刷時の体裁を業務文書品質に */
 @media print {

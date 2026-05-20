@@ -2174,13 +2174,16 @@ function toHtml(result) {
   const parts = [`<h1>${esc(result.title)}</h1>`];
   if (result.note) parts.push(`<blockquote>${esc(result.note)}</blockquote>`);
   for (const s of result.sections) {
-    if (s.heading) parts.push(`<h2>${esc(s.heading)}</h2>`);
+    // v3.33.0: 凡例セクションには .design-legend クラスを付けて CSS で視覚的に区別
+    const isLegend = s.heading && /^(\d+\.\s*)?凡例/.test(s.heading);
+    const sectionClass = isLegend ? ' class="design-legend"' : "";
+    if (s.heading) parts.push(`<h2${sectionClass}>${esc(s.heading)}</h2>`);
     if (s.kvRows) {
-      parts.push("<table><thead><tr><th>項目</th><th>値</th></tr></thead><tbody>");
+      parts.push(`<table${sectionClass}><thead><tr><th>項目</th><th>値</th></tr></thead><tbody>`);
       for (const [k, v] of s.kvRows) parts.push(`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`);
       parts.push("</tbody></table>");
     } else if (s.headers && s.rows) {
-      parts.push("<table><thead><tr>" + s.headers.map((h) => `<th>${esc(h)}</th>`).join("") + "</tr></thead><tbody>");
+      parts.push(`<table${sectionClass}><thead><tr>` + s.headers.map((h) => `<th>${esc(h)}</th>`).join("") + "</tr></thead><tbody>");
       for (const r of s.rows) {
         parts.push("<tr>" + s.headers.map((h) => `<td>${esc(r[h])}</td>`).join("") + "</tr>");
       }

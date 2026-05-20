@@ -93,8 +93,12 @@ function flashToast(text) {
         background: transparent; border: 1px solid #1f2c46;
         color: #9fb0c9; padding: 3px 10px; border-radius: 4px;
         cursor: pointer; font-size: 11px; font-weight: 600;
+        transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
       }
       .hdr-close:hover { color: #ff6b6b; border-color: #ff6b6b; }
+      .hdr-close:focus-visible, .hdr-open:focus-visible, .quick-btn:focus-visible, button.primary:focus-visible {
+        outline: 2px solid #1b96ff; outline-offset: 1px;
+      }
       /* v2.79.0: hdr-open は SF 上から全画面 UI へ誘導する重要動線。アクセントカラーで強調 */
       .hdr-open {
         background: rgba(27,150,255,0.12);
@@ -114,9 +118,11 @@ function flashToast(text) {
       .row .meta { color: #9fb0c9; font-size: 10px; flex: 1; }
       button.primary {
         background: #1b96ff; color: #fff; border: none;
-        padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;
+        padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600;
+        transition: background 0.12s ease, transform 0.05s ease;
       }
       button.primary:hover { background: #0c66e4; }
+      button.primary:active:not(:disabled) { transform: translateY(1px); }
       button.primary:disabled { opacity: 0.5; cursor: default; }
       .result {
         margin-top: 8px; max-height: 280px; overflow: auto;
@@ -158,9 +164,11 @@ function flashToast(text) {
       .quick-btn {
         background: transparent; border: 1px solid #1f2c46;
         color: #1b96ff; padding: 3px 8px; border-radius: 4px;
-        cursor: pointer; font-size: 11px;
+        cursor: pointer; font-size: 11px; font-weight: 600;
+        transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
       }
       .quick-btn:hover { background: #1b96ff; color: #fff; border-color: #1b96ff; }
+      .quick-btn:active:not(:disabled) { transform: translateY(1px); }
       .quick-btn:disabled { opacity: 0.4; cursor: default; }
       /* v2.94.0: mini-panel SOQL オートコンプリート (ユーザー要望「ユーザーモードでも入力補助が欲しい」) */
       .ac-pop {
