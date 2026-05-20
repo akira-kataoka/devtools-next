@@ -17,6 +17,9 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.70.0 (2026-05-20 20:19)** — 🎊 Phase 61: 「カラム名・値・桁数の改善」累計サマリ表を README に追加:
+  - **📚 README に「v2.69.0 累計サマリ (Phase 50-60)」セクション追加**: ユーザー要望対応の Phase 50-60 改修を 5 カテゴリ表で整理 (数値整形 / 長文 truncate / カラム名統一 / 集計 note / 値表記)
+  - **🧪 設計書 22 種類のヘルパー適用最終確認**: fmtNum/fmtBytes/fmtTrunc/fmtPercent/fmtDate が全 builder に行き渡っていることを確認、残課題なし
 - **v2.69.0 (2026-05-20 20:15)** — 🚨 ユーザー要望 Phase 60: ProfileDetail + ApexDetail サマリ拡充:
   - **🐛 buildProfileDetail サマリ**: 9 シート毎の集計件数を「N 件」単位付きで表示 (Object 権限 / FLS / System 権限 / Apex / VF / Tab / RecordType / App 可視性)
   - **🐛 buildApexDetail サマリ**: API バージョン `v62.0` 形式、コードサイズを fmtBytes (KB/MB)、メソッド構成「合計 N 件 (global X / public Y / private Z / protected W)」と可視性別件数集計、プロパティ数・内部クラス数も追加
@@ -818,6 +821,20 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - **v0.1.0 (2026-05-19)**: 初版。popup 5タブ / DevTools 6ビュー / sf-api.js / アイコン / README / zip 配布
 
 ---
+
+## 🎊 v2.69.0 累計サマリ (Phase 50-60: 設計書カラム/値/桁数の改善)
+
+2026-05-20 19:25 のユーザー要望「出力する設計書のカラム名や出力される値や桁数などもしっかりと練ってほしい」を受けて Phase 50-60 で実施した設計書品質改善:
+
+| カテゴリ | 達成内容 |
+|---|---|
+| 🔢 数値整形 | **fmtNum / fmtBytes / fmtPercent ヘルパー** 導入。設計書全件数を 3 桁区切り、サイズを KB/MB 自動切替、比率を `XX.X%` 形式に統一 |
+| 🔤 長文 truncate | **fmtTrunc ヘルパー** 導入で 7 設計書 (ObjectDef / Profile / PermSet / Flow / ValidationRule / RecordType / CustomSetting / FieldSet) の説明列を 200 文字 + 末尾省略マーカーに |
+| 📐 カラム名統一 | 全設計書の `"API名"` → `"API 名"` (半角スペース)、`"コード行数"` → `"コードサイズ"` (バイト単位の正名化)、ApexClass/Trigger に新規「コードサイズ」列追加 |
+| 📊 集計 note | FLS レポート (編集可/参照のみ/アクセス無し %集計)、FieldPermMatrix (参照可率/編集可率)、ObjectPermMatrix (V/M 高権限付与数)、FlowDetail (13 要素種別件数)、ApexClass (Apex Limit 6 MB 使用率)、LWC (バンドル総サイズ)、ProfileDetail (9 シート件数)、ApexDetail (メソッド可視性別件数) |
+| ✨ 値表記 | Status 値を絵文字付き (○ 有効 / − 無効 / ✗ 削除済)、Flow バージョンを `v2` 形式に統一、ManageableState を業務語マッピング |
+
+設計書の各 note (脚注) で組織全体の規模感・傾向が一目で把握できるよう拡充されました。
 
 ## 🎊 v2.63.0 サイクル 200 マイルストーン (Phase 1-54 / 63 minor リリース)
 
