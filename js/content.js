@@ -82,6 +82,13 @@ function flashToast(text) {
         border-bottom: 1px solid #1f2c46;
       }
       .hdr-title { color: #1b96ff; font-weight: 700; font-size: 13px; }
+      /* v3.41.0: mini-panel ヘッダにも versionBadge (3 モード versionBadge 完全揃い) */
+      .hdr-ver {
+        font-size: 10px; font-weight: 700;
+        background: rgba(27,150,255,0.15); color: #1b96ff;
+        padding: 2px 7px; border-radius: 10px;
+        cursor: help;
+      }
       .hdr-mode {
         flex: 1;
         font-size: 10px; font-weight: 700; letter-spacing: 0.4px;
@@ -210,6 +217,7 @@ function flashToast(text) {
     <div class="panel" id="pnl" role="dialog" aria-label="DevToolsNext ミニパネル">
       <div class="hdr">
         <span class="hdr-title">🛠 DevToolsNext</span>
+        <span class="hdr-ver" id="hdrVer" title="現在の拡張バージョン">v?</span>
         <span class="hdr-mode" title="ユーザーモード — Salesforce 画面上で軽量に SOQL を実行できます">👤 ユーザー</span>
         <button class="hdr-open" id="opn" title="DevToolsNext を新しいタブで全画面起動します (SOQL/Inspector/設計書など全機能)" aria-label="DevToolsNext を全画面で開く">↗ 全画面</button>
         <button class="hdr-close" id="cls" title="ミニパネルを閉じます" aria-label="ミニパネルを閉じる">✕</button>
@@ -244,6 +252,15 @@ function flashToast(text) {
   const panel = $("pnl");
   const closeBtn = $("cls");
   const openFullBtn = $("opn");
+  // v3.41.0: mini-panel ヘッダの versionBadge を manifest から設定 (3 モード versionBadge 完全揃い)
+  const hdrVer = $("hdrVer");
+  if (hdrVer && chrome.runtime && chrome.runtime.getManifest) {
+    try {
+      const v = chrome.runtime.getManifest().version;
+      hdrVer.textContent = "v" + v;
+      hdrVer.title = `現在の拡張バージョン v${v} (popup から ⬆ アップデート可能)`;
+    } catch (e) { /* manifest 取得不可な環境では何もしない */ }
+  }
   const useIdBtn = $("useId");
   const copyCsvBtn = $("copyCsv");
   const dlCsvBtn = $("dlCsv");

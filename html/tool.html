@@ -196,7 +196,7 @@
         <div id="inspectMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
         <div class="inspector-layout">
           <div class="inspector-left">
-            <input id="inspectFilter" placeholder="フィールド絞込み (例 'email' / 'CreatedBy' / 'true' で値検索も可)" title="API 名・ラベル・値の部分一致で絞込み" />
+            <input id="inspectFilter" placeholder="🔎 フィールドを絞り込む… (例: 'email' / 'CreatedBy' / 'true')" title="API 名・ラベル・値の部分一致で絞り込みます" />
             <label class="inspector-opt" title="null や空文字の項目も結果に表示します (既定は非表示)"><input type="checkbox" id="inspectShowNull" /> 空値も表示します</label>
             <label class="inspector-opt" title="システム項目 (Id / CreatedById / LastModifiedDate / SystemModstamp 等) を表示します"><input type="checkbox" id="inspectShowSystem" /> システム項目を表示します</label>
           </div>
@@ -223,7 +223,7 @@
               <button id="btnExSelectNone" class="mini-btn">全解除</button>
               <button id="btnExSelectStandard" class="mini-btn">標準のみ</button>
             </div>
-            <input id="exFieldFilter" placeholder="フィールド名で絞り込めます" />
+            <input id="exFieldFilter" placeholder="🔎 フィールド名で絞り込む… (API 名 / ラベル 部分一致)" title="フィールド一覧を API 名 / ラベルで絞り込みます (部分一致)" />
             <div id="exFieldList" class="export-field-list"><div class="empty-state">👆 上のオブジェクト API 名を入力して<strong>「フィールド読込」</strong>を押すと、利用可能なフィールド一覧がここにチェックボックス形式で表示されます。<br/><br/><strong>💡 ヒント</strong>: 「全選択 / 全解除 / 標準のみ」ボタンで一括操作できます。フィールド名で部分一致絞り込みも可能。</div></div>
           </div>
           <div class="export-right">
