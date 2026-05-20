@@ -17,6 +17,8 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.53.0 (2026-05-20 17:15)** — 🚨 ユーザー要望 Phase 43: inline() XSS サニタイズ確認 + ドキュメント:
+  - **🛡 design-docs.js inline()**: XSS 対策のコメントを明示化。esc() で HTML エンティティを先にエスケープしてから、安全な範囲のみ Markdown 記法を許可 (code/bold/italic のみ、link [text](url) と img ![](url) は意図的に未サポート — 設計書本文に URL 埋め込み経路がないため)。挙動変更なし、XSS リスク評価の証跡として説明コメントを保存
 - **v2.52.0 (2026-05-20 17:10)** — 🚨 ユーザー要望 Phase 42: markdownToHtml テーブル th tooltip + 自動更新仕組み:
   - **🐛 design-docs.js markdownToHtml**: テーブル ヘッダ th に title 属性 (列名 plain text) を付与。長い列見出しが幅で省略されたとき hover で全文が読める a11y 改善。これにより設計書プレビュー内の全 22 種テーブル列名に title が自動付与される
   - **📚 README に「🔄 自動アップデートの仕組み」セクション追加**: alarms API による 30 秒ポーリング、VERSION.txt 比較、notifications による通知表示、chrome.runtime.reload による即時反映の仕組みを解説

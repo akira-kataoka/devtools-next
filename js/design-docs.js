@@ -1916,6 +1916,8 @@ function splitMd(line) {
   return line.trim().replace(/^\||\|$/g, "").split("|").map((s) => s.trim().replace(/^---+$/, ""));
 }
 
+// XSS 対策: esc() で HTML エンティティを先にエスケープしてから、安全な範囲のみ Markdown 記法を許可
+// (code/bold/italic のみ。link [text](url) や img ![](url) は意図的に未サポート — 設計書本文に URL 埋め込みする経路がないため)
 function inline(s) {
   return esc(s)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
