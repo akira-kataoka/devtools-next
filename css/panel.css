@@ -47,11 +47,26 @@ html, body {
 .env-badge {
   display: inline-block; padding: 1px 6px; border-radius: 4px;
   font-size: 10px; font-weight: 700; letter-spacing: 0.5px; margin-right: 4px;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: help;
 }
-.env-badge.env-prod { background: rgba(255,107,107,0.2); color: var(--err); border: 1px solid var(--err); }
+.env-badge.env-prod {
+  background: rgba(255,107,107,0.2); color: var(--err); border: 1px solid var(--err);
+  /* v3.27.0: PROD は誤操作防止のため微かにパルス強調 (UPDATE/DELETE 危険性意識) */
+  animation: envProdPulse 3s ease-in-out infinite;
+}
 .env-badge.env-sbx { background: rgba(46,204,113,0.2); color: var(--ok); border: 1px solid var(--ok); }
 .env-badge.env-dev { background: rgba(243,156,18,0.2); color: var(--warn); border: 1px solid var(--warn); }
-.env-badge { transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease; }
+.env-badge:hover {
+  box-shadow: 0 0 0 3px rgba(255,255,255,0.08);
+}
+@keyframes envProdPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,107,0); }
+  50%      { box-shadow: 0 0 0 4px rgba(255,107,107,0.18); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .env-badge.env-prod { animation: none; }
+}
 
 /* Inspector reference 値の参照先オブジェクト名ラベル (コントラスト改善) */
 .ref-target-label {

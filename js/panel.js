@@ -2555,8 +2555,12 @@ async function reconnect() {
   let envLabel = "PROD", envClass = "env-prod";
   if (/\.sandbox\./.test(h)) { envLabel = "SBX"; envClass = "env-sbx"; }
   else if (/\.develop\./.test(h) || /\.scratch\./.test(h)) { envLabel = "DEV"; envClass = "env-dev"; }
+  const envTitle =
+    envLabel === "SBX" ? "Sandbox 環境です。本番影響なくテスト可能ですが、定期的なリフレッシュで内容が初期化される場合があります" :
+    envLabel === "DEV" ? "Developer / Scratch 組織です。学習・検証用途。共有データではないため自由に操作可能" :
+                         "⚠️ Production (本番組織) です。UPDATE / DELETE / 匿名 Apex の実行は実データに影響します。誤操作にご注意ください";
   document.getElementById("orgInfo").innerHTML =
-    `<span class="env-badge ${envClass}" title="${envLabel === "SBX" ? "Sandbox" : envLabel === "DEV" ? "Developer/Scratch" : "Production (本番)"}">${envLabel}</span> ` +
+    `<span class="env-badge ${envClass}" title="${envTitle}" aria-label="${envTitle}">${envLabel}</span> ` +
     `Org: ${escape(state.orgId)} @ ${escape(state.apiHost)}`;
   unlock();
   // v2.6.0: 接続成功後に sObject 一覧を datalist に流し込み (オブジェクト入力欄の補完用)
