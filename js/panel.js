@@ -43,22 +43,30 @@ const API_OP_INPUTS = {
 // モジュールスクリプトの defer 性質に対応 (popup.js と同じ防御)
 // 重要: init() を queueMicrotask で遅延させ、モジュール body 全 const 初期化完了後に走らせる
 // (v1.99.0: 旧 v1.98.0 では API_OP_INPUTS のみ移動修正、本変更で他の全 const も TDZ 安全に)
-// v2.76.0: モジュール評価到達ログ (panel.js が拡張に読み込まれていることの確認用)
-console.log("[DevToolsNext] panel.js module loaded (v2.76.0)");
+// v2.77.0: 「初期化中のまま」報告対応 — モジュール評価到達と各段階を orgInfo に即記録
+console.log("[DevToolsNext] panel.js module loaded (v2.77.0)");
+// モジュール評価が走ったことを示すため、orgInfo を即時書き換え (queueMicrotask 前)
+try {
+  const _oi = document.getElementById("orgInfo");
+  if (_oi) _oi.textContent = "⏳ JS 評価済み (init 待機中)";
+} catch (_) {}
+// catch ハンドラは escape() に依存しない安全実装 (escape 関数定義より前で評価される可能性を排除)
+function _panelInitFailed(e) {
+  console.error("[DevToolsNext] panel init failed:", e);
+  const orgInfo = document.getElementById("orgInfo");
+  if (orgInfo) {
+    const msg = (e && e.message) || String(e);
+    const stk = (e && e.stack) || String(e);
+    // textContent 使用 (escape 関数依存を回避してエラーパス自身でエラー発生を防ぐ)
+    orgInfo.textContent = "❌ 初期化失敗: " + msg;
+    orgInfo.title = stk;
+    orgInfo.classList.add("init-fail");
+  }
+}
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => queueMicrotask(() =>
-    init().catch((e) => {
-      console.error("[DevToolsNext] panel init failed:", e);
-      const orgInfo = document.getElementById("orgInfo");
-      if (orgInfo) orgInfo.innerHTML = `<span class="pill err" title="${escape((e && e.stack) || String(e))}">初期化失敗: ${escape((e && e.message) || String(e))}</span>`;
-    })
-  ));
+  document.addEventListener("DOMContentLoaded", () => queueMicrotask(() => init().catch(_panelInitFailed)));
 } else {
-  queueMicrotask(() => init().catch((e) => {
-    console.error("[DevToolsNext] panel init failed:", e);
-    const orgInfo = document.getElementById("orgInfo");
-    if (orgInfo) orgInfo.innerHTML = `<span class="pill err" title="${escape((e && e.stack) || String(e))}">初期化失敗: ${escape((e && e.message) || String(e))}</span>`;
-  }));
+  queueMicrotask(() => init().catch(_panelInitFailed));
 }
 
 async function init() {
@@ -377,8 +385,17 @@ function bindNav() {
 }
 
 function bindEvents() {
-  document.getElementById("btnReconnect").addEventListener("click", reconnect);
-  document.getElementById("apiVer").addEventListener("change", (e) => {
+  // v2.77.0: ホームダッシュボードのカード (data-go="<view>") からビュー遷移
+  document.querySelectorAll("[data-go]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const v = el.getAttribute("data-go");
+      if (v) switchToView(v);
+    });
+  });
+  const btnRecon = document.getElementById("btnReconnect");
+  if (btnRecon) btnRecon.addEventListener("click", reconnect);
+  const apiVerEl = document.getElementById("apiVer");
+  if (apiVerEl) apiVerEl.addEventListener("change", (e) => {
     state.apiVersion = e.target.value;
   });
 
@@ -2694,8 +2711,8 @@ async function doRunApex() {
     const cur = meta.innerHTML;
     meta.innerHTML = `${cur} <span class="pill ${pillClass}" title="Debug ログのサイズ${sizeBytes > 1048576 ? ' (1 MB 超のため、スクロールが重くなる可能性があります)' : ''}">${lines.toLocaleString()} 行 / ${sizeLabel}</span>`;
   }
+  // v2.77.0: runBtn は 2618 行で同関数スコープに既に const 宣言済み。再宣言で SyntaxError が出ていたため削除し既存変数を再利用
   // 実行中フラグを解除 (ボタン再有効化)
-  const runBtn = document.getElementById("btnRunApex");
   if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; }
 }
 

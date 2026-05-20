@@ -62,7 +62,7 @@
 <body>
   <header class="hdr" role="banner">
     <span class="brand">🛠️ DevToolsNext</span>
-    <span id="orgInfo" class="org" role="status" aria-live="polite" aria-atomic="true">⏳ 初期化中…</span>
+    <span id="orgInfo" class="org" role="status" aria-live="polite" aria-atomic="true">⏳ 起動準備中… (JS 読込待ち)</span>
     <span class="grow"></span>
     <span class="kbd-hint" title="主要なキーボードショートカット: Ctrl+Enter で実行 / Esc で閉じる / ↑↓ で Picker 移動 / Ctrl+Alt+I で Inspector / Q で SOQL / A で Apex / L で Limits / R で REST / D で 設計書">
       <kbd>Ctrl+Enter</kbd> 実行 / <kbd>Esc</kbd> 閉じる / <kbd>↑↓</kbd> Picker / <kbd>Ctrl+Alt+I/Q/A/L/R/D</kbd> ビュー切替
@@ -77,8 +77,9 @@
     <aside class="side" aria-label="ツール選択サイドバー">
       <button class="side-toggle" id="btnSideToggle" title="サイドメニューの折りたたみ・展開を切り替えます" aria-label="サイドメニューの折りたたみと展開を切り替えます">◀</button>
       <nav class="nav" aria-label="ツール ナビゲーション">
+        <button class="nav-btn nav-home active" data-view="home" data-tooltip="ホーム" title="ホームダッシュボードへ戻ります">🏠 ホーム</button>
         <div class="nav-sep">🗃️ データ操作</div>
-        <button class="nav-btn active" data-view="soql" data-tooltip="SOQL クエリ" title="SOQL クエリを実行します">🔎 SOQL クエリ</button>
+        <button class="nav-btn" data-view="soql" data-tooltip="SOQL クエリ" title="SOQL クエリを実行します">🔎 SOQL クエリ</button>
         <button class="nav-btn" data-view="inspector" data-tooltip="レコード Inspector" title="レコードを項目単位で確認します">🔍 レコード Inspector</button>
         <button class="nav-btn" data-view="dataexport" data-tooltip="データエクスポート" title="オブジェクトのデータを一括取得します">📥 データエクスポート</button>
 
@@ -103,7 +104,68 @@
     </aside>
 
     <section class="main">
-      <div class="view" data-view="soql">
+      <!-- v2.77.0: ホームダッシュボード -->
+      <div class="view" data-view="home">
+        <div class="home-hero">
+          <h1 class="home-title">🚀 DevToolsNext へようこそ</h1>
+          <p class="home-subtitle">Salesforce 開発・運用に必要な機能を 1 つにまとめた拡張機能です。下のカードをクリックして始めてください。</p>
+        </div>
+        <div class="home-grid">
+          <button class="home-card" data-go="soql" title="SOQL クエリ画面を開きます">
+            <div class="home-card-icon">🔎</div>
+            <div class="home-card-title">SOQL クエリ</div>
+            <div class="home-card-desc">レコードを SOQL で検索・CSV エクスポート。Tooling API も対応</div>
+          </button>
+          <button class="home-card" data-go="inspector" title="レコード Inspector を開きます">
+            <div class="home-card-icon">🔍</div>
+            <div class="home-card-title">レコード Inspector</div>
+            <div class="home-card-desc">レコード ID から全項目値を確認・参照辿り・コピー</div>
+          </button>
+          <button class="home-card" data-go="dataexport" title="データエクスポート画面を開きます">
+            <div class="home-card-icon">📥</div>
+            <div class="home-card-title">データエクスポート</div>
+            <div class="home-card-desc">オブジェクトの全項目を選んで Excel/CSV/JSON で一括取得</div>
+          </button>
+          <button class="home-card" data-go="apex" title="匿名 Apex 実行画面を開きます">
+            <div class="home-card-icon">🟧</div>
+            <div class="home-card-title">匿名 Apex 実行</div>
+            <div class="home-card-desc">Developer Console を開かずに Apex コードを実行・Debug ログ取得</div>
+          </button>
+          <button class="home-card" data-go="design" title="設計書ジェネレータを開きます">
+            <div class="home-card-icon">📋</div>
+            <div class="home-card-title">設計書ジェネレータ</div>
+            <div class="home-card-desc">22 種類の設計書を Excel/Markdown/HTML で自動生成 (業務向け凡例付き)</div>
+          </button>
+          <button class="home-card" data-go="limits" title="Limits ダッシュボードを開きます">
+            <div class="home-card-icon">📊</div>
+            <div class="home-card-title">Limits ダッシュボード</div>
+            <div class="home-card-desc">API コール数・Apex 容量・ストレージ等の使用状況を視覚化</div>
+          </button>
+        </div>
+        <div class="home-secondary">
+          <div class="home-secondary-title">他の機能</div>
+          <div class="home-secondary-grid">
+            <button class="home-mini-card" data-go="apiurl" title="REST API URL ビルダー">🔗 API URL ビルダー</button>
+            <button class="home-mini-card" data-go="rest" title="任意 REST API 呼び出し">🌐 REST 探索</button>
+            <button class="home-mini-card" data-go="describe" title="describe 情報表示">📖 Describe</button>
+            <button class="home-mini-card" data-go="metadata" title="メタデータ一覧">📦 メタデータ一覧</button>
+            <button class="home-mini-card" data-go="changeset" title="変更セット / package.xml">🔧 変更セット</button>
+            <button class="home-mini-card" data-go="logs" title="Debug ログ取得">📜 Debug ログ</button>
+            <button class="home-mini-card" data-go="login" title="ログイン履歴">🔐 ログイン履歴</button>
+          </div>
+        </div>
+        <div class="home-tips">
+          <div class="home-tips-title">💡 はじめての方へ</div>
+          <ul class="home-tips-list">
+            <li><kbd>Ctrl+Alt+I/Q/A/L/R/D</kbd> でビューを瞬時に切替できます (Inspector / SOQL / Apex / Limits / REST / 設計書)</li>
+            <li>各画面で <kbd>Ctrl+Enter</kbd> = 実行 / <kbd>Esc</kbd> = 閉じる / <kbd>↑↓</kbd> = 候補移動 が使えます</li>
+            <li>オブジェクト入力欄をクリックすると候補ピッカーが開き、日本語ラベルで検索できます</li>
+            <li>左サイドバー上部の <kbd>🏠 ホーム</kbd> でいつでもこの画面に戻れます</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="view hidden" data-view="soql">
         <div class="toolbar">
           <input id="soqlSavedName" placeholder="名前を付けて保存します..." title="現在の SOQL クエリに名前を付けて保存します" />
           <button id="btnSaveSoql" title="入力した名前で現在の SOQL を保存します">保存</button>

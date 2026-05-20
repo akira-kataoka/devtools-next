@@ -160,7 +160,13 @@ td.cell-nested:hover { background: rgba(27,150,255,0.08); }
 td.cell-nested { word-break: break-word; }
 .grid th, .grid td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .grid td { max-width: 400px; max-height: 80px; overflow: auto; word-break: break-word; }
-.grid th { background: #112042; color: var(--accent); position: sticky; top: 0; z-index: 2; }
+/* v2.77.0: sticky ヘッダがスクロール時に body セルと重なって見えづらかったため、完全不透明背景 + 下境界 + box-shadow で明確化 */
+.grid th {
+  background: #112042; color: var(--accent);
+  position: sticky; top: 0; z-index: 10;
+  border-bottom: 2px solid var(--accent);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
 .grid th.sortable { cursor: pointer; user-select: none; }
 .grid th.sortable:hover { background: #1a2d56; }
 .grid th.sortable[data-sort-dir="asc"]::after { content: " ▲"; font-size: 9px; opacity: 0.8; }
@@ -751,3 +757,96 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .limit-row .limit-pct { font-weight: 700; }
 .limit-row .limit-pct.warn { color: var(--warn); }
 .limit-row .limit-pct.critical { color: var(--err); }
+
+/* =================================================================
+ * v2.77.0: ホームダッシュボード — 初めての方でもすぐ使えるトップ画面
+ * カード型 UI で主要 6 機能を視覚化、補助機能はミニカードに整理
+ * ================================================================= */
+.nav-btn.nav-home {
+  background: linear-gradient(135deg, rgba(27,150,255,0.18), rgba(27,150,255,0.05));
+  border-left: 3px solid var(--accent);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.nav-btn.nav-home:hover { background: linear-gradient(135deg, rgba(27,150,255,0.30), rgba(27,150,255,0.10)); }
+
+.home-hero {
+  padding: 24px 28px 16px;
+  background: linear-gradient(135deg, rgba(27,150,255,0.08) 0%, rgba(12,102,228,0.04) 100%);
+  border-bottom: 1px solid var(--line);
+}
+.home-title {
+  margin: 0 0 6px; font-size: 22px; font-weight: 700;
+  color: var(--accent); letter-spacing: 0.5px;
+}
+.home-subtitle {
+  margin: 0; font-size: 13px; color: var(--fg-dim); line-height: 1.6;
+}
+.home-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  padding: 20px 24px;
+}
+@media (max-width: 900px) { .home-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .home-grid { grid-template-columns: 1fr; } }
+.home-card {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px 18px;
+  cursor: pointer;
+  text-align: left;
+  display: flex; flex-direction: column; gap: 6px;
+  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s, background 0.15s;
+  min-height: 120px;
+}
+.home-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(27,150,255,0.18);
+  background: linear-gradient(135deg, rgba(27,150,255,0.06), var(--bg2));
+}
+.home-card:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.home-card-icon { font-size: 32px; line-height: 1; margin-bottom: 4px; }
+.home-card-title { font-size: 15px; font-weight: 700; color: var(--fg); }
+.home-card-desc { font-size: 11px; color: var(--fg-dim); line-height: 1.55; }
+
+.home-secondary { padding: 8px 24px 18px; }
+.home-secondary-title {
+  font-size: 12px; font-weight: 700; color: var(--fg-dim);
+  margin-bottom: 10px; letter-spacing: 0.6px; text-transform: uppercase;
+}
+.home-secondary-grid {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+.home-mini-card {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--fg);
+  transition: border-color 0.15s, background 0.15s;
+}
+.home-mini-card:hover { border-color: var(--accent); background: rgba(27,150,255,0.08); }
+
+.home-tips {
+  margin: 12px 24px 24px;
+  padding: 14px 18px;
+  background: rgba(27,150,255,0.05);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 8px;
+}
+.home-tips-title { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+.home-tips-list { margin: 0; padding-left: 20px; font-size: 11px; line-height: 1.8; color: var(--fg-dim); }
+.home-tips-list kbd {
+  background: #142447; border: 1px solid var(--line);
+  padding: 1px 5px; border-radius: 3px; font-size: 10px; color: var(--accent);
+  font-family: ui-monospace, Consolas, monospace;
+}
