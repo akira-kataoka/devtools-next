@@ -222,6 +222,48 @@ function setupDesignPicker() {
   refresh();
 }
 
+// v3.64.0: Apex コード整形ヘルパー — { } ベースのインデント (2 スペース) + コメント/文字列保護
+// Apex キーワード自体の大文字化はしない (camelCase 慣習を尊重: String / Integer / if / else)
+function formatApex(input) {
+  if (!input) return "";
+  // 1. 文字列リテラル ('...') と複数行コメント (/* ... */) と行コメント (// ...) を退避
+  const placeholders = [];
+  let working = input
+    // 複数行コメント /* */
+    .replace(/\/\*[\s\S]*?\*\//g, (m) => { placeholders.push(m); return `\x01CMT${placeholders.length - 1}\x01`; })
+    // 行コメント //
+    .replace(/\/\/[^\n]*/g, (m) => { placeholders.push(m); return `\x01CMT${placeholders.length - 1}\x01`; })
+    // 文字列リテラル ('...' with '\'' or '' escape)
+    .replace(/'(?:[^'\\]|\\.|'')*'/g, (m) => { placeholders.push(m); return `\x01STR${placeholders.length - 1}\x01`; });
+  // 2. 改行整形 — {  の後と } の前に改行
+  working = working
+    .replace(/\{\s*/g, "{\n")
+    .replace(/\s*\}/g, "\n}")
+    .replace(/;\s*(?!\s*\n)/g, ";\n"); // セミコロン後に改行
+  // 3. 行ごとにインデント計算
+  const lines = working.split(/\n/);
+  let depth = 0;
+  const formatted = lines.map((rawLine) => {
+    const line = rawLine.trim();
+    if (!line) return "";
+    // 行末が } のみなら先に depth を下げてからインデント計算
+    const startsWithCloseBrace = /^[\}\)]/.test(line);
+    const indentDepth = Math.max(0, depth - (startsWithCloseBrace ? 1 : 0));
+    const indent = "  ".repeat(indentDepth);
+    // この行で開き / 閉じカウント
+    const opens = (line.match(/[\{\(]/g) || []).length;
+    const closes = (line.match(/[\}\)]/g) || []).length;
+    depth = Math.max(0, depth + opens - closes);
+    return indent + line;
+  });
+  working = formatted.filter((l) => l !== undefined).join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  // 4. プレースホルダ復元
+  working = working
+    .replace(/\x01STR(\d+)\x01/g, (_, i) => placeholders[+i])
+    .replace(/\x01CMT(\d+)\x01/g, (_, i) => placeholders[+i]);
+  return working;
+}
+
 // v3.63.0: SOQL 整形ヘルパー — キーワード大文字化 + 主節改行
 // シンプル実装: 文字列リテラル ('...') は退避してから加工、最後に復元
 function formatSoql(input) {
@@ -746,6 +788,24 @@ function bindEvents() {
 
   // Apex
   $on("btnRunApex", "click", doRunApex);
+  // v3.64.0: Apex コード整形ボタン
+  $on("btnApexFormat", "click", () => {
+    const ta = document.getElementById("apexCode");
+    if (!ta) return;
+    const original = ta.value;
+    if (!original.trim()) {
+      panelToast("📭 整形する Apex コードがありません (まずコードを入力してください)", { kind: "warn" });
+      ta.focus();
+      return;
+    }
+    const formatted = formatApex(original);
+    if (formatted === original) {
+      panelToast("✓ 既に整形済みです (変更なし)", { kind: "ok" });
+      return;
+    }
+    ta.value = formatted;
+    panelToast(`🎨 Apex を整形しました (${original.length} 文字 → ${formatted.length} 文字)`, { kind: "ok" });
+  });
   $on("btnSaveApex", "click", saveCurrentApex);
   $on("btnLoadApex", "click", loadSelectedApex);
   $on("btnApexCopy", "click", async () => {

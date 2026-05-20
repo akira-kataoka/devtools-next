@@ -320,6 +320,7 @@
           <button id="btnSaveApex">保存</button>
           <span class="grow"></span>
           <label title="実行後の Debug ログを自動取得します"><input type="checkbox" id="apexFetchLog" checked /> Debug ログを取得</label>
+          <button id="btnApexFormat" title="現在の Apex コードを整形します: { } ベースのインデント (2 スペース) を再構成、コメント・文字列リテラルは保護">🎨 整形</button>
           <button id="btnRunApex" class="primary" title="匿名 Apex を実行します (Ctrl+Enter でも実行できます)">▶ 実行 (Ctrl+Enter)</button>
         </div>
         <textarea id="apexCode" rows="10" spellcheck="false" placeholder="匿名 Apex コードを入力してください&#10;例 1: System.debug(UserInfo.getName());&#10;例 2: DELETE [SELECT Id FROM Account WHERE Name LIKE 'Test%'];&#10;例 3: Database.executeBatch(new MyBatchClass(), 200);&#10;&#10;Ctrl+Enter で実行できます (Debug ログも自動取得)" title="匿名 Apex はトリガ・テストカバレッジを必要としません。本番組織でも実行できますが、UPDATE/DELETE は実データに影響するためご注意ください">// 匿名 Apex
