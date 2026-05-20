@@ -2337,7 +2337,7 @@ async function doGenerateDesign() {
     // 進捗コールバック: design-docs.js から呼ばれる (古い実行の進捗は無視)
     const onProgress = (msg) => {
       if (myId !== designRunId) return;
-      meta.innerHTML = `<span class="pill warn">⏳ 生成中… #${myId}</span> <span class="meta">${escape(msg)}</span>`;
+      meta.innerHTML = `<span class="pill loading">生成中… #${myId}</span> <span class="meta">${escape(msg)}</span>`;
     };
     const result = await generateDesign({ type, host: state.host, sid: state.sid, apiVersion: state.apiVersion, obj, format, onProgress });
     if (myId !== designRunId) { console.log(`[DevToolsNext] discard stale Design result #${myId}`); return; }

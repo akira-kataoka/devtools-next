@@ -293,6 +293,23 @@ td.cell-nested { word-break: break-word; }
 .pill.ok { color: var(--ok); background: rgba(46,204,113,0.15); }
 .pill.err { color: var(--err); background: rgba(255,107,107,0.15); }
 .pill.warn { color: var(--warn); background: rgba(243,156,18,0.15); }
+/* v3.31.0: 統一 loading インジケータ — 各画面の meta 領域で <span class="pill loading">取得中…</span> を使うと一貫した待機表示に */
+.pill.loading { color: var(--accent); background: rgba(27,150,255,0.12); position: relative; padding-left: 22px; }
+.pill.loading::before {
+  content: ""; position: absolute; left: 7px; top: 50%;
+  width: 9px; height: 9px;
+  border: 2px solid rgba(27,150,255,0.3);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  transform: translateY(-50%);
+  animation: pillSpin 0.7s linear infinite;
+}
+@keyframes pillSpin {
+  to { transform: translateY(-50%) rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pill.loading::before { animation: none; border-top-color: rgba(27,150,255,0.3); }
+}
 
 /* v2.82.0: 開発者モードのサイドメニューを 4 チームで工夫
  * Team A (デザイン): カテゴリ別アクセントカラー (左ボーダー色分け)
