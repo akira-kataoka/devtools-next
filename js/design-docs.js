@@ -973,6 +973,7 @@ async function buildProfileDetail({ host, sid, apiVersion, obj, progress = () =>
   ];
 
   const sections = [];
+  sections.push(makeCoverSection({ docTitle: `${targetType}詳細レポート`, target: targetName, orgHost: host, revision: "初版" }));
   sections.push({ heading: "1.サマリ", kvRows: summary });
   if (objRows.length) sections.push({ heading: "2.Object 権限", headers: objHeaders, rows: objRows });
   if (fldRows.length) sections.push({ heading: "3.項目レベルセキュリティ (FLS)", headers: fldHeaders, rows: fldRows });
@@ -1164,6 +1165,7 @@ async function buildAppList({ host, sid, apiVersion }) {
     title: "アプリケーション一覧 (Lightning + Classic)",
     type: "appList",
     sections: [
+      makeCoverSection({ docTitle: "アプリケーション一覧", target: "組織全体 (Lightning + Classic)", orgHost: host, revision: "初版" }),
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. AppDefinition (組織内全アプリ)", headers, rows },
       ...(menuRows.length ? [{ heading: "2. AppMenuItem (App Launcher 表示順)", headers: menuHeaders, rows: menuRows }] : []),
@@ -1274,6 +1276,7 @@ async function buildAccessControl({ host, sid, apiVersion }) {
     title: "アクセスコントロール定義書",
     type: "accessControl",
     sections: [
+      makeCoverSection({ docTitle: "アクセスコントロール定義書", target: "組織全体 (OWD / 共有設定 / ロール階層)", orgHost: host, revision: "初版" }),
       { heading: "0. 凡例 / 略語の説明", headers: legendHeaders, rows: legendRows },
       { heading: "1. 組織共通の既定共有設定 (OWD)", headers: owdHeaders, rows: owdRows },
       { heading: "2. 共有設計上の注意 (非公開 / 親従属)", headers: sharingHeaders, rows: sharingRows },
@@ -1428,6 +1431,7 @@ async function buildFlowDetail({ host, sid, apiVersion, obj }) {
     + (meta.recordCreates || []).length + (meta.recordUpdates || []).length + (meta.recordLookups || []).length + (meta.recordDeletes || []).length
     + (meta.screens || []).length + (meta.loops || []).length + (meta.subflows || []).length + (meta.actionCalls || []).length;
 
+  sections.unshift(makeCoverSection({ docTitle: "フロー設計図", target: `${flow.MasterLabel} (${obj}) v${flow.VersionNumber}`, orgHost: host, revision: "初版" }));
   return {
     title: `フロー設計図: ${flow.MasterLabel} (${obj}) v${flow.VersionNumber}`,
     type: "flowDetail",
@@ -1583,6 +1587,7 @@ async function buildApexDetail({ host, sid, apiVersion, obj }) {
     });
   }
 
+  sections.unshift(makeCoverSection({ docTitle: "Apex 設計図", target: c.Name, orgHost: host, revision: "初版" }));
   return {
     title: `Apex 設計図: ${c.Name}`,
     type: "apexDetail",
@@ -1668,6 +1673,7 @@ async function buildLwcDetail({ host, sid, apiVersion, obj }) {
   ];
 
   const sections = [
+    makeCoverSection({ docTitle: "LWC 設計図", target: `${b.MasterLabel} (${b.DeveloperName})`, orgHost: host, revision: "初版" }),
     { heading: "0. 凡例", kvRows: legend },
     { heading: "1. サマリ", kvRows: summary },
     { heading: "2. バンドル内ファイル", headers: fileHeaders, rows: fileRows },
@@ -1809,6 +1815,7 @@ async function buildFieldPermMatrix({ host, sid, apiVersion, obj, progress = () 
     title: `フィールド権限マトリクス: ${obj}`,
     type: "fieldPermMatrix",
     sections: [
+      makeCoverSection({ docTitle: "フィールド権限マトリクス", target: obj, orgHost: host, revision: "初版" }),
       { heading: "凡例", kvRows: legend },
       { heading: "サマリ", kvRows: [
         ["対象オブジェクト", obj],
@@ -1895,6 +1902,7 @@ async function buildObjectPermMatrix({ host, sid, apiVersion, progress = () => {
     title: "オブジェクト権限マトリクス",
     type: "objectPermMatrix",
     sections: [
+      makeCoverSection({ docTitle: "オブジェクト権限マトリクス", target: "組織全体 (全オブジェクト × プロファイル/権限セット)", orgHost: host, revision: "初版" }),
       { heading: "0. 凡例", kvRows: [
         ["オブジェクト権限とは", "ユーザがオブジェクト全体に対して『作成/参照/更新/削除/全件参照/全件修正』をどこまで許可されているかの設定"],
         ["セル形式", "6 文字で表現。順に C=作成 / R=参照 / U=更新 / D=削除 / V=全件参照 / M=全件修正"],
