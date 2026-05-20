@@ -8,6 +8,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.36.0 (2026-05-20 15:50)** — 🚨 ユーザー要望 Phase 26: API_HELP 19 項目業務拡充 + SOQL/Export meta:
+  - **🐛 panel.js API_HELP 解説 19 オペレーション**: 各オペレーションの説明に「業務用途:」を追加して 2-3 行に拡充 (例: describe → 「新規開発前の項目仕様確認 / 監査時の項目台帳作成」、composite → 「API コール数削減 / トランザクション的に関連処理を実行」、event-log-file → 「監査ログのダウンロード / セキュリティ監視」)
+  - **🐛 panel.js SOQL 結果 meta**: 「N 件 total=M / Tms Tooling」→「取得 N 件 / 合計 M 件 / Tms / Tooling (tooltip 付き)」に業務化
+  - **🐛 panel.js Export プレビュー meta**: 「(実行時は最大 N 件)」→「(実行時は最大 N 件まで取得します)」に
 - **v2.35.0 (2026-05-20 15:45)** — 🚨 ユーザー要望 Phase 25: 変更セット 3 種 列名業務化 + Inspector 戻る tooltip:
   - **🐛 panel.js csListOutbound (送信変更セット一覧)**: 列名を「変更セット名 / 説明 / ステータス / 送信先組織 / ロック / 更新日」に日本語化、Status マッピング (New=未送信 / Uploading=送信中 / Uploaded=送信済 / Failed=失敗)
   - **🐛 panel.js csListInbound (受信変更セット一覧)**: 列名を「変更セット名 / 説明 / ステータス / 送信元組織 / 更新日」に日本語化、Status マッピング (New=新規 / Validated=検証済 / Deployed=デプロイ完了 / Failed=失敗)

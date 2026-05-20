@@ -1058,7 +1058,7 @@ async function exRunPreview() {
     return;
   }
   const recs = (r.data.records || []);
-  meta.innerHTML = `<span class="pill ok">プレビュー ${recs.length} 件</span> ${dt}ms (実行時は最大 ${parseInt(document.getElementById("exLimit").value, 10) || 2000} 件)`;
+  meta.innerHTML = `<span class="pill ok">プレビュー ${recs.length} 件</span> ${dt}ms (実行時は最大 ${parseInt(document.getElementById("exLimit").value, 10) || 2000} 件まで取得します)`;
   preview.innerHTML = recordsTable(recs);
 }
 
@@ -1227,24 +1227,24 @@ function exToExcelXml(objName, fields, records) {
 
 // ====== API URL ビルダー ======
 const API_HELP = {
-  describe: "指定オブジェクトのフィールド・リレーション・レコードタイプを返す。設計書ジェネレータの主要データソース。",
-  describeGlobal: "テナント全体の SObject 一覧を返す。",
-  get: "単一レコード取得 (任意フィールドのみ取りたい場合は ?fields=... を付ける)。",
-  getByExtId: "外部 ID で取得。?externalIdField=<項目名> 形式の固定パス。",
-  create: "POST でレコード作成。ボディは JSON { 項目: 値 }。",
-  update: "PATCH でレコード更新。ボディは JSON。",
-  upsert: "PATCH with extId 値。なければ作成、あれば更新。",
-  delete: "DELETE で物理削除。IsDeleted フラグは立たない。",
-  query: "SOQL クエリ実行。",
-  "tooling-query": "Tooling API (ApexClass / Flow / FieldDefinition 等のメタデータ問合せ)。",
-  search: "SOSL (横断検索)。",
-  composite: "複数 REST 呼び出しを 1 リクエストにまとめる。dependsOn でチェーン可。",
-  "composite-tree": "親子レコードのまとめ作成 (Account + 配下 Contact 等を 1 リクエスト)。",
-  batch: "独立した複数操作の一括実行 (依存無し)。25 件上限。",
-  limits: "API コール上限・データ容量・ストレージ等の使用率取得。",
-  versions: "利用可能 API バージョン一覧。",
-  userinfo: "現在のセッションのユーザー情報 (user_id, organization_id, urls など)。",
-  "event-log-file": "EventLogFile の一覧。LogDate, EventType, LogFile (バイナリ) を持つ。",
+  describe: "指定オブジェクトのフィールド・リレーション・レコードタイプ情報を取得します。設計書ジェネレータの主要データソースとして利用されます。業務用途: 新規開発前の項目仕様確認 / 監査時の項目台帳作成。",
+  describeGlobal: "テナント全体の SObject 一覧を取得します。業務用途: 組織内に存在するオブジェクト総覧の確認 / カスタムオブジェクトの棚卸し。",
+  get: "単一レコードを取得します (任意フィールドのみ取得したい場合は ?fields=API名1,API名2 を付与可能)。業務用途: レコード ID から内容確認 / Inspector の代替。",
+  getByExtId: "外部 ID で単一レコードを取得します (例: Email/foo@bar.com)。業務用途: 内部 ID を知らずに外部システムの ID でレコード参照 / データ連携テスト。",
+  create: "POST で新規レコードを作成します。Body は JSON 形式 { API名: 値 }。業務用途: テストデータ投入 / 一括投入のサンプルリクエスト確認。",
+  update: "PATCH で既存レコードを更新します。Body は JSON 形式。業務用途: 単発の値修正 / 項目バリデーション挙動確認。",
+  upsert: "PATCH with 外部 ID 値で upsert します (該当レコードがなければ作成、あれば更新)。業務用途: データ連携の冪等性確保 / 重複登録防止。",
+  delete: "DELETE で物理削除します (Recycle Bin に入りますが IsDeleted フラグは立ちません)。業務用途: テストデータ削除 / 不要レコードの即時削除。",
+  query: "SOQL クエリを実行します。業務用途: 任意条件のレコード取得 / 件数集計 / 関連項目の確認。",
+  "tooling-query": "Tooling API で ApexClass / Flow / FieldDefinition 等のメタデータを問合せます。業務用途: メタデータ棚卸 / 開発状況の集計 / 設計書生成用データ収集。",
+  search: "SOSL (横断検索) を実行します。業務用途: 複数オブジェクト横断のテキスト検索 / グローバル検索の挙動確認。",
+  composite: "複数 REST 呼び出しを 1 リクエストにまとめます (dependsOn でチェーン可)。業務用途: API コール数削減 / トランザクション的に関連処理を実行。",
+  "composite-tree": "親子レコードをまとめて作成します (例: Account + 配下 Contact を 1 リクエストで)。業務用途: 取引先と関連連絡先の一括投入。",
+  batch: "独立した複数操作を一括実行します (依存無し、最大 25 件)。業務用途: 関連のない複数 GET/POST をまとめて発行。",
+  limits: "API コール上限・データ容量・ストレージ等の現在の使用率を取得します。業務用途: 月初の Limits 確認 / 一括処理前のチェック。",
+  versions: "利用可能な API バージョン一覧を取得します。業務用途: クライアントが利用すべきバージョンの確認。",
+  userinfo: "現在のセッションのユーザ情報 (user_id / organization_id / urls 等) を取得します。業務用途: セッション動作確認 / SSO 動作テスト。",
+  "event-log-file": "EventLogFile (監査ログ) の一覧を取得します。LogDate / EventType / LogFile (バイナリ) を持ちます。業務用途: 監査ログのダウンロード / セキュリティ監視。",
 };
 
 function updateApiInputVisibility() {
@@ -2088,7 +2088,7 @@ async function doSoql() {
   const recs = (r.data && r.data.records) || [];
   state.lastRecords = recs;
   meta.classList.remove("loading-pulse");
-  meta.innerHTML = `<span class="pill ok">${recs.length} 件</span> total=${r.data.totalSize ?? recs.length} / ${dt}ms${tooling ? ' <span class="pill warn">Tooling</span>' : ""}`;
+  meta.innerHTML = `<span class="pill ok">取得 ${recs.length} 件</span> <span class="pill" title="クエリにヒットした総件数">合計 ${r.data.totalSize ?? recs.length} 件</span> ${dt}ms${tooling ? ' <span class="pill warn" title="Tooling API で実行">Tooling</span>' : ""}`;
   document.getElementById("soqlResult").innerHTML = recordsTable(recs);
 }
 
