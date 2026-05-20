@@ -17,6 +17,12 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.56.0 (2026-05-20 17:30)** — 🔍 検証サイクル: Phase 46 既存実装の確認 (修正不要):
+  - **🧪 panel.css field-row-header**: 既に sticky 実装済 (top:0, z-index:2 で長レコードでも先頭が常時可視)
+  - **🧪 popup.css .history-item**: flex + ellipsis truncate で既に最適レイアウト
+  - **🧪 popup.js soqlMeta**: Tooling 利用時に「(Tooling API)」サフィックス表示済
+  - **🧪 panel.js stringify**: object/null/datetime ハンドリング + recordsTable 120 文字 truncate で長文対応済
+  - 改修必要箇所なし。検証完了の証跡として本リリースを記録。バージョン進行で自動更新通知に伝播
 - **v2.55.0 (2026-05-20 17:25)** — 🚨 ユーザー要望 Phase 45: curl sid 注意明示 + splitMd 仕様コメント:
   - **🛡 panel.js renderApiBuild curl 出力**: 「⚠ 注意: 以下の curl コマンドには Salesforce セッション ID (sid) を含めるため、外部共有時はマスクしてください」というセキュリティ注意コメントを curl 出力の冒頭に追加。誤って curl をログ/Slack/メール等に共有しないよう促す
   - **📝 design-docs.js splitMd**: 仕様コメント追加 (Markdown テーブル行 "| a | b | c |" をセル配列に分解、セル値内 `|` リテラルがあると分割される旨を明記、ただし設計書ジェネレータは csvCell で `,` 置換済のため実害なし)
