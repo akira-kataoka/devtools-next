@@ -2167,7 +2167,11 @@ function renderInspectorFields() {
       // 参照項目は編集不可。ジャンプリンクのみ
       const refObj = (f.referenceTo || [])[0] || "";
       const refLabel = refObj ? `<span class="ref-target-label">→ ${escape(refObj)}</span>` : "";
-      valHtml = `<div class="fval ref" data-id="${escape(v)}" data-ref-obj="${escape(refObj)}" title="クリックで ${escape(refObj || "参照先")} のレコードを Inspector で開きます">${escape(v)}${refLabel}</div>`;
+      // v3.65.0: SOQL リレーション名を併記 (例: OwnerId → "Owner.") + クリップボードコピーボタン
+      // 業務担当者が SOQL で Owner.Name 形式の関連項目を取得しやすくする
+      const relName = f.relationshipName || "";
+      const relHint = relName ? `<span class="ref-rel-name" data-rel="${escape(relName)}" title="SOQL リレーション名: ${escape(relName)}. — クリックで「${escape(relName)}.Name」をクリップボードへコピー">${escape(relName)}.</span>` : "";
+      valHtml = `<div class="fval ref" data-id="${escape(v)}" data-ref-obj="${escape(refObj)}" title="クリックで ${escape(refObj || "参照先")} のレコードを Inspector で開きます">${escape(v)}${refLabel}${relHint}</div>`;
     } else if (typeof v === "object") {
       valHtml = `<div class="fval">${escape(JSON.stringify(v))}</div>`;
     } else {
@@ -2212,7 +2216,19 @@ function renderInspectorFields() {
 
   // reference クリックハンドラ — describe で取得した参照先オブジェクト名を確実に使う
   root.querySelectorAll(".fval.ref").forEach((el) => {
-    el.addEventListener("click", () => {
+    el.addEventListener("click", (e) => {
+      // v3.65.0: relName chip クリック時は SOQL 用クリップボードコピー (Inspector ジャンプはしない)
+      const relEl = e.target.closest(".ref-rel-name");
+      if (relEl) {
+        e.stopPropagation();
+        const rel = relEl.dataset.rel;
+        if (!rel) return;
+        const snippet = `${rel}.Name`;
+        navigator.clipboard.writeText(snippet).then(() => {
+          panelToast(`📋 SOQL リレーション「${snippet}」をコピー (SOQL の SELECT 句に貼り付け可能)`, { kind: "ok" });
+        }).catch(() => panelToast("❌ クリップボードへのコピーに失敗しました", { kind: "err" }));
+        return;
+      }
       const id = el.dataset.id;
       const refObj = el.dataset.refObj || "";
       document.getElementById("inspectRef").value = refObj ? `${refObj}:${id}` : id;

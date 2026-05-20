@@ -74,6 +74,21 @@ html, body {
   font-weight: 500; opacity: 0.85;
 }
 .fval.ref:hover .ref-target-label { color: var(--accent); opacity: 1; }
+/* v3.65.0: SOQL リレーション名 chip (OwnerId 横の "Owner." 表示) — クリックで Name 形式コピー */
+.ref-rel-name {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  background: rgba(46,204,113,0.10);
+  color: var(--ok);
+  border: 1px solid rgba(46,204,113,0.3);
+  border-radius: 8px;
+  font: 10px ui-monospace, Consolas, monospace;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.ref-rel-name:hover { background: var(--ok); color: #fff; border-color: var(--ok); }
 .grow { flex: 1; }
 button {
   background: var(--bg3); color: var(--fg); border: 1px solid var(--line);
