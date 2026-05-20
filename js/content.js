@@ -248,6 +248,16 @@ function flashToast(text) {
         </div>
         <!-- v2.86.0 Team K: 直近 SOQL クエリ 3 件をチップ表示 (ワンクリック再実行) -->
         <div class="history-row" id="histRow"></div>
+        <!-- v3.72.0: SOQL テンプレート挿入 (panel/tool と統一、3 モード UX 整合性) -->
+        <div class="row" style="margin-bottom:6px">
+          <select id="qryTemplate" title="よく使う SOQL のサンプルを選んでエディタへ挿入します (上書き)" style="flex:1;background:#0a1224;color:#e6ecf5;border:1px solid #1f2c46;border-radius:4px;padding:4px 6px;font-size:11px">
+            <option value="">📝 サンプル挿入…</option>
+            <option value="recent_accounts">🏢 最近作成された取引先 10 件</option>
+            <option value="active_users">👥 アクティブユーザー一覧</option>
+            <option value="last_modified">🕒 過去 7 日に更新された取引先</option>
+            <option value="my_open_cases">📬 未解決 Case (Owner.Name = '私')</option>
+          </select>
+        </div>
         <textarea id="qry" placeholder="SOQL を入力 (例: SELECT Id, Name FROM Account LIMIT 5) / Ctrl+Enter で実行 / 入力中に候補表示" spellcheck="false" title="軽量 SOQL 実行ツールです。上の『📋 ID をクエリに挿入』で現在レコードの WHERE Id='...' を簡単挿入できます。Tooling API オブジェクトは利用できません — 全機能は ↗ 全画面 (開発者モード) で">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 5</textarea>
         <div class="row">
           <button class="hdr-close" id="useId" title="現在のページのレコード ID を WHERE Id='...' でクエリに挿入します" style="border-color:#1b96ff;color:#1b96ff">📋 ID をクエリに挿入</button>
@@ -287,6 +297,38 @@ function flashToast(text) {
   const meta = $("mta");
   const res = $("res");
   const histRow = $("histRow");
+  const qryTemplate = $("qryTemplate");
+  // mini-panel ではセッション情報からユーザー username を保持 (my_open_cases テンプレ用)
+  // 必要時にのみ取得 (起動時の固定オーバーヘッドを回避)
+  let sessionUser = null;
+
+  // v3.72.0: mini-panel SOQL テンプレート挿入 (panel/tool と統一、4 種類に絞って軽量化)
+  if (qryTemplate) {
+    qryTemplate.addEventListener("change", (e) => {
+      const key = e.target.value;
+      if (!key) return;
+      const TEMPLATES = {
+        recent_accounts: `SELECT Id, Name, Industry, CreatedDate\nFROM Account\nORDER BY CreatedDate DESC\nLIMIT 10`,
+        active_users: `SELECT Id, Name, Email, IsActive\nFROM User\nWHERE IsActive = true\nORDER BY Name\nLIMIT 50`,
+        last_modified: `SELECT Id, Name, LastModifiedDate, LastModifiedBy.Name\nFROM Account\nWHERE LastModifiedDate = LAST_N_DAYS:7\nORDER BY LastModifiedDate DESC\nLIMIT 50`,
+        my_open_cases: `SELECT Id, CaseNumber, Subject, Status, Priority, CreatedDate\nFROM Case\nWHERE Owner.Username = '${(sessionUser && sessionUser.username) || "PASTE_USERNAME"}' AND IsClosed = false\nORDER BY Priority ASC, CreatedDate DESC\nLIMIT 30`,
+      };
+      const code = TEMPLATES[key];
+      if (!code) return;
+      qry.value = code;
+      qry.focus();
+      qry.dispatchEvent(new Event("input", { bubbles: true }));
+      e.target.value = ""; // リセット
+      // toast 代わりに meta 領域に簡易表示
+      if (meta) {
+        if (key === "my_open_cases" && !(sessionUser && sessionUser.username)) {
+          meta.innerHTML = `<span class="err">⚠ Username 未取得。"PASTE_USERNAME" を実 username に書き換えてください</span>`;
+        } else {
+          meta.innerHTML = `<span class="ok">📝 SOQL サンプルを挿入しました</span>`;
+        }
+      }
+    });
+  }
 
   // v3.52.0: mini-panel qry textarea にカーソル位置インジケータ (3 モード統一)
   if (qry && !qry.dataset.cursorPosAttached) {
