@@ -807,6 +807,30 @@ function bindEvents() {
     panelToast(`🎨 Apex を整形しました (${original.length} 文字 → ${formatted.length} 文字)`, { kind: "ok" });
   });
   $on("btnSaveApex", "click", saveCurrentApex);
+  // v3.69.0: Apex テンプレート挿入 — よく使う 6 種の業務 Apex を 1 クリックで textarea へ
+  $on("apexTemplate", "change", (e) => {
+    const key = e.target.value;
+    if (!key) return;
+    const TEMPLATES = {
+      userinfo: `// 👤 現在ユーザー情報を表示\nSystem.debug('Name: ' + UserInfo.getName());\nSystem.debug('Email: ' + UserInfo.getUserEmail());\nSystem.debug('Profile Id: ' + UserInfo.getProfileId());\nSystem.debug('User Id: ' + UserInfo.getUserId());\nSystem.debug('Organization Id: ' + UserInfo.getOrganizationId());`,
+      limits: `// 📊 ガバナ制限の使用状況を確認 (匿名 Apex 自体の使用量)\nSystem.debug('SOQL queries: ' + Limits.getQueries() + ' / ' + Limits.getLimitQueries());\nSystem.debug('DML statements: ' + Limits.getDmlStatements() + ' / ' + Limits.getLimitDmlStatements());\nSystem.debug('CPU time (ms): ' + Limits.getCpuTime() + ' / ' + Limits.getLimitCpuTime());\nSystem.debug('Heap size: ' + Limits.getHeapSize() + ' / ' + Limits.getLimitHeapSize());`,
+      latest_account: `// 🏢 最新の取引先 1 件を取得\nAccount a = [\n  SELECT Id, Name, Industry, CreatedDate\n  FROM Account\n  ORDER BY CreatedDate DESC\n  LIMIT 1\n];\nSystem.debug('Latest Account: ' + JSON.serializePretty(a));`,
+      delete_test: `// 🗑️ Test% 取引先を削除 (要注意: 本番では実行前に必ず確認)\nList<Account> testAccts = [SELECT Id FROM Account WHERE Name LIKE 'Test%' LIMIT 200];\nSystem.debug('削除対象: ' + testAccts.size() + ' 件');\nif (!testAccts.isEmpty()) {\n  DELETE testAccts;\n  System.debug('削除完了');\n}`,
+      batch_run: `// 🔄 バッチ実行のサンプル (MyBatchClass は事前にデプロイ済みであること)\n// Id jobId = Database.executeBatch(new MyBatchClass(), 200);\n// System.debug('バッチジョブ ID: ' + jobId);\n\n// 代替: AsyncApexJob から最近のジョブを確認\nList<AsyncApexJob> jobs = [\n  SELECT Id, ApexClass.Name, Status, JobItemsProcessed, TotalJobItems, CreatedDate\n  FROM AsyncApexJob\n  WHERE JobType = 'BatchApex'\n  ORDER BY CreatedDate DESC\n  LIMIT 5\n];\nfor (AsyncApexJob j : jobs) {\n  System.debug(j.ApexClass.Name + ' | ' + j.Status + ' | ' + j.JobItemsProcessed + '/' + j.TotalJobItems);\n}`,
+      schedule_check: `// ⏰ スケジュール済みジョブを確認\nList<CronTrigger> jobs = [\n  SELECT Id, CronJobDetail.Name, State, NextFireTime, PreviousFireTime, TimesTriggered\n  FROM CronTrigger\n  ORDER BY NextFireTime ASC NULLS LAST\n];\nSystem.debug('スケジュール済みジョブ: ' + jobs.size() + ' 件');\nfor (CronTrigger j : jobs) {\n  System.debug(j.CronJobDetail.Name + ' | ' + j.State + ' | 次回: ' + j.NextFireTime + ' | 累計: ' + j.TimesTriggered);\n}`,
+    };
+    const code = TEMPLATES[key];
+    if (!code) return;
+    const ta = document.getElementById("apexCode");
+    if (ta) {
+      ta.value = code;
+      ta.focus();
+      ta.dispatchEvent(new Event("input", { bubbles: true })); // カーソル位置インジケータ等を更新
+    }
+    e.target.value = ""; // 選択をリセットして「再選択時も発火」できるように
+    const label = e.target.options[e.target.selectedIndex]?.textContent || key;
+    panelToast(`📝 サンプルを挿入しました (元コードは上書きされました)`, { kind: "ok" });
+  });
   $on("btnLoadApex", "click", loadSelectedApex);
   $on("btnApexCopy", "click", async () => {
     const resultEl = document.getElementById("apexResult");

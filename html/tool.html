@@ -320,6 +320,15 @@
 
       <div class="view hidden" data-view="apex">
         <div class="toolbar">
+          <select id="apexTemplate" title="よく使う匿名 Apex のサンプルを選んでエディタへ挿入します (上書きされます — 元のコードは「📋 結果コピー」等で先に控えてから)">
+            <option value="">📝 サンプル挿入…</option>
+            <option value="userinfo">👤 現在ユーザー情報を表示</option>
+            <option value="limits">📊 ガバナ制限の使用状況を確認</option>
+            <option value="latest_account">🏢 最新の取引先 1 件を取得</option>
+            <option value="delete_test">🗑️ Test% 取引先を削除 (要注意)</option>
+            <option value="batch_run">🔄 バッチ実行のサンプル</option>
+            <option value="schedule_check">⏰ スケジュール済みジョブを確認</option>
+          </select>
           <select id="apexSaved"></select>
           <button id="btnLoadApex">読込</button>
           <input id="apexSavedName" placeholder="名前を付けて保存します..." title="現在のコードに名前を付けて保存します" />
