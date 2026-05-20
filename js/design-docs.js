@@ -113,35 +113,50 @@ function fieldTypeJa(type, referenceTo) {
 
 // v2.98.0: 設計書の表紙セクション共通生成 (プロジェクト成果物品質)
 // 全設計書冒頭に挿入する標準セクション
+// v3.37.0: 設計書生成中の組織コンテキスト (orgId / envLabel) — 22 builder への引数追加を避けるため module-level に保持
+let _designCtx = { orgId: null, envLabel: null };
+
 function makeCoverSection(opts) {
   // opts: { docTitle, target, orgHost, userName, version, revision, docId, classification }
   // v3.28.0: 業務文書として管理しやすいよう、文書管理 ID・機密区分・利用目的・配布対象を追加
+  // v3.37.0: 対象組織 表示を改善 — ホスト名 + 環境バッジ + 組織 ID を分けて記載 (_designCtx から自動取得)
   const now = new Date();
   const pad = (n) => String(n).padStart(2, "0");
   const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  // 文書管理 ID: DOC-YYYYMMDD-HHmmss-<orgHost prefix> 形式で自動付番 (プロジェクト管理ツールへ登録時に便利)
+  // ホスト名から組織識別子 (myDomain 部分) を抽出
   const orgPrefix = String(opts.orgHost || "").split(".")[0].replace(/[^a-zA-Z0-9-]/g, "").slice(0, 12) || "ORG";
   const docId = opts.docId || `DOC-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}-${orgPrefix}`;
+  // 環境ラベルから業務日本語表記を導出 (opts > _designCtx の順で取得)
+  const envLabel = opts.envLabel || _designCtx.envLabel;
+  const orgId = opts.orgId || _designCtx.orgId;
+  const envJa = envLabel === "SBX" ? "Sandbox (検証/開発)"
+             : envLabel === "DEV" ? "Developer / Scratch (学習・検証)"
+             : envLabel === "PROD" ? "⚠ Production (本番)"
+             : "(環境不明)";
+  // 対象組織を ホスト + 環境 + 組織 ID で構成
+  const orgInfo = opts.orgHost ? `${opts.orgHost} / 環境: ${envJa}${orgId ? ` / 組織 ID: ${orgId}` : ""}` : "(未接続)";
   return {
     heading: "📄 表紙",
     kvRows: [
       ["文書管理 ID", docId],
       ["設計書名", opts.docTitle || ""],
       ["対象", opts.target || ""],
-      ["対象組織", opts.orgHost || ""],
+      ["対象組織", orgInfo],
       ["機密区分", opts.classification || "社内限定 (Confidential)"],
       ["作成者", opts.userName || "(SOAP 認証ユーザ)"],
       ["作成日時", dateStr],
-      ["拡張機能 Ver", opts.version || "DevToolsNext v3.28+"],
+      ["拡張機能 Ver", opts.version || "DevToolsNext v3.37+"],
       ["改訂履歴", opts.revision || `初版 / ${dateStr} 自動生成`],
       ["注意事項", "本設計書は組織内のメタデータをそのまま反映しています。配布前に機密項目 (個人情報・契約金額等) が含まれていないかご確認ください。"],
     ],
   };
 }
 
-export async function generateDesign({ type, host, sid, apiVersion, obj, format, onProgress }) {
+export async function generateDesign({ type, host, sid, apiVersion, obj, format, onProgress, orgId, envLabel }) {
   let result;
   const progress = onProgress || (() => {});
+  // v3.37.0: 設計書表紙の「対象組織」表示改善のため orgId / envLabel を module-level _designCtx に保持
+  _designCtx = { orgId: orgId || null, envLabel: envLabel || null };
   const ctx = { host, sid, apiVersion, obj, progress };
   switch (type) {
     case "objectDef":          result = await buildObjectDef(ctx); break;

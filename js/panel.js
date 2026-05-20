@@ -2342,7 +2342,11 @@ async function doGenerateDesign() {
       if (myId !== designRunId) return;
       meta.innerHTML = `<span class="pill loading">生成中… #${myId}</span> <span class="meta">${escape(msg)}</span>`;
     };
-    const result = await generateDesign({ type, host: state.host, sid: state.sid, apiVersion: state.apiVersion, obj, format, onProgress });
+    // v3.37.0: 設計書表紙「対象組織」表示改善のため orgId / envLabel を渡す
+    const envLabel = /\.sandbox\./.test(state.apiHost || "") ? "SBX"
+                   : (/\.develop\./.test(state.apiHost || "") || /\.scratch\./.test(state.apiHost || "")) ? "DEV"
+                   : "PROD";
+    const result = await generateDesign({ type, host: state.host, sid: state.sid, apiVersion: state.apiVersion, obj, format, onProgress, orgId: state.orgId, envLabel });
     if (myId !== designRunId) { console.log(`[DevToolsNext] discard stale Design result #${myId}`); return; }
     const dt = Math.round(performance.now() - t0);
     lastDesign = result;
