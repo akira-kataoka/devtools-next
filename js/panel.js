@@ -2105,13 +2105,18 @@ function recordsTable(records) {
   const isLikelyId = (v) => /^[a-zA-Z0-9]{15,18}$/.test(v) && /[a-zA-Z]/.test(v) && /\d/.test(v);
   const rows = records.map((r) =>
     `<tr>${headers.map((h) => {
-      const val = stringify(r[h]);
+      const raw = r[h];
+      const val = stringify(raw);
       const idCell = isLikelyId(val);
-      const classes = "cell-copyable" + (idCell ? " cell-id" : "");
+      const isNested = raw && typeof raw === "object" && raw.attributes;
+      const classes = "cell-copyable" + (idCell ? " cell-id" : "") + (isNested ? " cell-nested" : "");
       const tip = idCell
         ? "Click: Inspector で開く  /  ダブルクリック: コピー"
-        : "ダブルクリックでコピー";
-      return `<td title="${tip}" class="${classes}"${idCell ? ` data-record-id="${escape(val)}"` : ""}>${escape(val)}</td>`;
+        : (isNested ? "ダブルクリックでコピー (raw JSON)" : "ダブルクリックでコピー");
+      // ネストセルは raw JSON を data-raw-value に格納 → dblclick で原データをコピー
+      const dataAttrs = (idCell ? ` data-record-id="${escape(val)}"` : "")
+        + (isNested ? ` data-raw-value="${escape(JSON.stringify(raw))}"` : "");
+      return `<td title="${escape(tip)}" class="${classes}"${dataAttrs}>${escape(val)}</td>`;
     }).join("")}</tr>`
   ).join("");
   // 結果を遅延でセル dblclick + th click ソートリスナーをバインド
@@ -2119,7 +2124,8 @@ function recordsTable(records) {
     document.querySelectorAll("td.cell-copyable:not([data-copy-bound])").forEach((td) => {
       td.dataset.copyBound = "true";
       td.addEventListener("dblclick", () => {
-        const txt = td.textContent;
+        // ネストセルは raw JSON 優先 (平坦化表示の「Name [Id]」より原データが有用)
+        const txt = td.dataset.rawValue || td.textContent;
         navigator.clipboard.writeText(txt).then(() => panelToast(`📋 コピー: ${txt.substring(0, 40)}${txt.length > 40 ? "…" : ""}`, { kind: "ok" }));
       });
     });

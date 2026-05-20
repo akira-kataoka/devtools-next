@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.62.0 (2026-05-20 09:30)** — ネストセル dblclick で raw JSON コピー + 🔗 アイコン:
+  - **🐛 ネストリレーションセル (cell-nested) の dblclick コピーが raw JSON を返す**: 従来 `Akira Kataoka [005xx...]` の表示文字列がコピーされていたが、`data-raw-value` 属性に元の JSON を格納し、dblclick 時はそちらを優先取得。**Salesforce REST API の生レスポンスを正確に取得可能**
+  - **✨ ネストセル視覚マーク (`🔗`)**: `cell-nested` クラスに italic 体 + 🔗 prefix で平坦化セルを識別。`cell-id` (🔍 単独 ID) との視覚分離
+  - **🧪 cell-id 自動検出**: `/^[a-zA-Z0-9]{15,18}$/` で純粋 15/18桁マッチのみ → 平坦化文字列「Name [Id]」(空白+角括弧含む) は false match しないことを regex で保証 (修正不要)
 - **v1.61.0 (2026-05-20 09:25)** — SOQL ネストリレーション値の平坦化表示:
   - **🐛 SOQL ネストリレーション (例 `Account.Owner.Name`) のセル表示改善**: 従来 `{"attributes":{...},"Name":"Akira Kataoka","Id":"005..."}` のような raw JSON 表示 → `Akira Kataoka [005xx0000000abc]` 形式に平坦化。代表項目 (`Name` / `Subject` / `Title` / `DeveloperName` / `MasterLabel` / `FullName`) の順に優先抽出 + Id 併記 (18 桁短縮)
   - **🐛 SOQL サブクエリ (`(SELECT ... FROM Contacts)`) は `[N 件のサブクエリ]` 表示**: 子レコード集合 `{totalSize, done, records:[]}` を件数で表現、ノイズ削減

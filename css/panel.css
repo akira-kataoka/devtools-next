@@ -106,6 +106,8 @@ td.cell-copyable:hover { color: var(--accent); }
 td.cell-id { cursor: pointer; color: var(--accent); }
 td.cell-id::before { content: "🔍 "; font-size: 9px; opacity: 0.7; }
 td.cell-id:hover { background: #1a2d56; text-decoration: underline; }
+td.cell-nested { color: var(--fg); font-style: italic; }
+td.cell-nested::before { content: "🔗 "; font-size: 9px; opacity: 0.7; }
 .grid th, .grid td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .grid td { max-width: 400px; max-height: 80px; overflow: auto; word-break: break-word; }
 .grid th { background: #112042; color: var(--accent); position: sticky; top: 0; z-index: 2; }
