@@ -255,7 +255,7 @@ async function buildApexClassList({ host, sid, apiVersion }) {
     title: "Apex クラス一覧",
     type: "apexClassList",
     sections: [{ heading: "Apex クラス", headers, rows }],
-    note: `合計 ${rows.length} 件 (unmanaged + installedEditable) / コード行数はトリガ Apex Limit (組織あたり 6MB) 試算の目安`,
+    note: `合計 ${rows.length} 件 (unmanaged + installedEditable のみ) / コード行数は Apex Limit (組織あたり 6 MB) の試算目安としてご活用ください`,
   };
 }
 
@@ -299,7 +299,7 @@ async function buildApexTriggerList({ host, sid, apiVersion }) {
       { heading: "0. 凡例 / トリガイベント略号", headers: legendHeaders, rows: legendRows },
       { heading: "1. Apex トリガ一覧", headers, rows },
     ],
-    note: `合計 ${rows.length} 件 / Before/After × Insert/Update/Delete/Undelete の発火タイミング表`,
+    note: `合計 ${rows.length} 件 / Before/After × Insert/Update/Delete/Undelete の発火タイミング表となっています`,
   };
 }
 
@@ -339,7 +339,7 @@ async function buildFlowList({ host, sid, apiVersion }) {
       "No": i + 1, "ラベル": f.MasterLabel, "API 名": f.Definition ? f.Definition.DeveloperName : "",
       "種別": processTypeLabel(f.ProcessType), "状態": f.Status === "Active" ? "アクティブ" : (f.Status || ""), "バージョン": f.VersionNumber,
     }));
-    return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${rows.length} 件 / 種別と状態は業務用語表記` };
+    return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${rows.length} 件 / 種別と状態は業務用語で表記しています` };
   }
   const headers = ["No", "ラベル", "API 名", "種別", "アクティブ", "バージョン", "説明", "更新日"];
   const rows = (r.data.records || []).map((f, i) => ({
@@ -352,7 +352,7 @@ async function buildFlowList({ host, sid, apiVersion }) {
     "説明": f.Description || "",
     "更新日": fmtDate(f.LastModifiedDate),
   }));
-  return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${rows.length} 件 / 種別は業務用語+原文併記、Process Builder は段階的廃止 (Salesforce 公式アナウンス)` };
+  return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${rows.length} 件 / 種別は業務用語と原文を併記しています。Process Builder は Salesforce 公式アナウンスにより段階的に廃止予定です` };
 }
 
 // ============ 入力規則一覧 ============
@@ -449,7 +449,7 @@ async function buildFieldSetList({ host, sid, apiVersion, obj }) {
     title: `フィールドセット一覧: ${obj}`,
     type: "fieldSetList",
     sections: [{ heading: "FieldSet", headers, rows }],
-    note: `合計 ${rows.length} 件`,
+    note: `合計 ${rows.length} 件 / FieldSet は LWC/VF から動的に項目セットを参照するために利用されます`,
   };
 }
 
@@ -550,7 +550,7 @@ async function buildErDiagram({ host, sid, apiVersion, obj }) {
     title: `ER 図: ${d.label} (${d.name}) を起点とした 1-hop`,
     type: "erDiagram",
     sections: [{ heading: "ER 図 (Mermaid)", mermaid }],
-    note: "Mermaid Live Editor (https://mermaid.live) に貼ると可視化されます。線種: ||--o{ = Lookup (任意参照) / ||--|{ = Master-Detail (必須参照・カスケード削除)。",
+    note: "Mermaid Live Editor (https://mermaid.live) に貼り付けると可視化できます。線種: ||--o{ = Lookup (任意参照) / ||--|{ = Master-Detail (必須参照・カスケード削除) です。",
   };
 }
 
@@ -956,7 +956,7 @@ async function buildAccessControl({ host, sid, apiVersion }) {
       { heading: "2. 共有設計上の注意 (非公開 / 親従属)", headers: sharingHeaders, rows: sharingRows },
       { heading: "3. ロール階層 (UserRole)", headers: roleHeaders, rows: roleRows },
     ],
-    note: `OWD ${owdRows.length} 件 / ロール ${roleRows.length} 件。共有ルールの詳細は Metadata API (SharingRules) からのみ取得可能なため、本書では取得していません。`,
+    note: `OWD ${owdRows.length} 件 / ロール ${roleRows.length} 件 / 共有ルールの詳細は Metadata API (SharingRules) からのみ取得可能なため、本設計書には含まれていません`,
   };
 }
 
@@ -1444,7 +1444,7 @@ async function buildFieldPermMatrix({ host, sid, apiVersion, obj, progress = () 
       ]},
       { heading: "マトリクス", headers, rows },
     ],
-    note: `Excel 形式推奨。横列が多いので Excel の「ウィンドウ枠の固定 (B2)」で 左 4列と先頭行を固定すると見やすい。`,
+    note: `Excel 形式での出力を推奨します。横列が多いため、Excel の「ウィンドウ枠の固定 (B2 セル)」で左 4 列と先頭行を固定すると見やすくなります`,
   };
 }
 

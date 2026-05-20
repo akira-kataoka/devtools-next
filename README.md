@@ -8,6 +8,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.40.0 (2026-05-20 16:10)** — 🚨 ユーザー要望 Phase 30: 設計書 note 末尾文言の一貫性統一:
+  - **🐛 design-docs.js 設計書 note 末尾文言 8 箇所**: 体言止め残存を ですます調 詳細化 (例: 「コード行数はトリガ Apex Limit 試算の目安」→「コード行数は Apex Limit (組織あたり 6 MB) の試算目安としてご活用ください」、「Before/After × Insert/Update/Delete/Undelete の発火タイミング表」→「発火タイミング表となっています」、「種別と状態は業務用語表記」→「業務用語で表記しています」、「Process Builder は段階的廃止」→「段階的に廃止予定です」、Mermaid 注意書き→「貼り付けると可視化できます。線種: ... です」、SharingRules 注釈→「含まれていません」、FLS Excel ヒント→「左 4 列と先頭行を固定すると見やすくなります」)
+  - **🐛 design-docs.js FieldSet 一覧 note**: 「合計 N 件」のみだったところを「FieldSet は LWC/VF から動的に項目セットを参照するために利用されます」と業務背景を補足
 - **v2.39.0 (2026-05-20 16:05)** — 🚨 ユーザー要望 Phase 29: displayApiError hint links / 設計書 トップへ / Mermaid:
   - **🐛 panel.js displayApiError hint links (HTTP 401/403/404/400/429/500) 11 個**: ラベルを「動詞 + 業務語」に統一 (「セッション管理を開く」→「🔧 セッション設定を開く」、「Login History」→「📜 ログイン履歴を確認する」、「プロファイル一覧」→「👤 プロファイル一覧を開く」、「OWD 設定」→「🔓 共有設定 (OWD) を開く」、「Describe ビューを開く」→「📖 Describe ビューで項目を確認する」、「Limits ダッシュボード」→「📊 Limits ダッシュボードで使用状況を確認する」、「Status Trust ページ (外部)」→「🌐 Salesforce Trust (障害情報) を確認する」)
   - **🐛 panel.js 設計書プレビュー「▲ トップへ」ボタン**: 「▲ トップへ」→「▲ 先頭へ戻る」、title「プレビューの先頭にスクロール」→「クリックでプレビューの先頭までスクロールします」
