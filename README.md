@@ -4,6 +4,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.70.0 (2026-05-20 10:10)** — 🎉 累計70リリース節目 - z-index 階層整理 + 機能サマリ:
+  - **🐛 設計書プレビューの z-index 階層を修正**: 従来 `h2 z:1 / h3 z:1 / table th z:2` → 修正後 `h2 z:3 / h3 z:2 / table th z:1`。**section header (h2) が常に table th より上に表示** → 長い項目定義テーブルでも `## 2. 項目定義` が画面上端に常時可視
+  - **📖 README に v1.70.0 時点機能サマリ追加**: 70 リリース成果を 8 カテゴリ (データ操作/開発/監視/メタデータ/設計書/UI/UX/A11y/自動更新) で一覧化、累計実装機能を俯瞰可能
 - **v1.69.0 (2026-05-20 10:05)** — popup .result contain + scroll FPS 計測手順:
   - **✨ popup `.result` (SOQL 結果) にも `contain: layout style`**: panel/tool の Apex/REST/design-preview と統一。**popup 460px 幅でも長 SOQL 結果のスクロールが軽量化**
   - **📖 README に「大量結果のスクロール FPS 計測手順」追加 (v1.67.0+ 対応)**: Chrome DevTools の Frame Rendering Stats で 50〜60 fps を維持できているか確認するステップを案内。`contain: none` で比較する手順も併記
@@ -334,6 +337,19 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - **v0.1.0 (2026-05-19)**: 初版。popup 5タブ / DevTools 6ビュー / sf-api.js / アイコン / README / zip 配布
 
 ---
+
+## v1.70.0 時点 機能サマリ 🎉 (累計 70 リリース達成)
+
+| カテゴリ | 機能 | UX |
+|---|---|---|
+| 🗃️ データ操作 | SOQL / Inspector (レコード詳細) / Export (50000件CAP/Excel) | 列クリックソート、ID セル → Inspector ジャンプ、ネスト平坦化、CSV/コピー反映 |
+| 💻 開発ツール | Apex (匿名実行 + Debug Log) / REST API / API URL Builder / Metadata 一覧 / Logs | 結果サイズ pill 色分け、getByExtId 形式チェック、grid 全体に td max-width + sortable |
+| 📊 監視 | Limits ダッシュボード / Login History | 4段階配色 (low/mid/warn/critical) + @600px レスポンシブ、Login Status filter |
+| 📦 メタデータ | ChangeSet / package.xml ビルダー (types ソート済) | SFDX バンドル生成 (retrieve.bat/.sh + sfdx-project.json) |
+| 📋 設計書 | 22 種類 (Excel/Markdown/HTML/CSV/TSV/Mermaid ER) | h2/h3 sticky + ▲ トップへ + 空状態ヒント |
+| 🎨 UI/UX | 4 色 Toast (ok/err/warn/loading) + pulse / 6 ペイン empty-hint / 環境バッジ (PROD/SBX/DEV) / 列クリックソート | Picker 共通 + 検索 + scroll memory + Org 別 recent / focus-visible / KBSC Ctrl+Alt+I/Q/A/L/R/D |
+| ♿ アクセシビリティ | aria-label / role="status" / role="region" / focus-visible 統一 / pulse 通知 | キーボード Tab/Enter/Esc 完全対応 |
+| 🔄 自動アップデート | VERSION.txt 30s ポーリング + chrome.runtime.reload + 🆕 通知 | 環境別バッジで本番組織誤操作予防 |
 
 ## 機能
 

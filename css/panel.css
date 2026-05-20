@@ -259,23 +259,29 @@ td.cell-nested { word-break: break-word; }
   border-bottom: 1px solid var(--line); padding-bottom: 3px;
 }
 .design-preview h1 { font-size: 16px; }
+/* z-index 階層 (design-preview 内 sticky 要素):
+   h2: 3 (最上 / section header は常に table th より上)
+   h3: 2 (h2 直下、3 階層目)
+   table th: 1 (table 列タイトル / h2/h3 が visible のとき下に隠れる)
+   .grid th 等 (designプレビュー外): z=2 (toast の z=99999 とは独立)
+*/
 .design-preview h2 {
   font-size: 14px;
   position: sticky; top: 0;
   background: #0f1830;
   padding-top: 6px;
-  z-index: 1;
+  z-index: 3;
 }
 .design-preview h3 {
   font-size: 12px;
   position: sticky; top: 28px;
   background: #0f1830;
   padding-top: 4px;
-  z-index: 1;
+  z-index: 2;
 }
 .design-preview table { width: 100%; border-collapse: collapse; margin: 6px 0; font-size: 11px; }
 .design-preview th, .design-preview td { padding: 4px 6px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
-.design-preview th { background: #112042; color: var(--accent); position: sticky; top: 0; z-index: 2; cursor: default; }
+.design-preview th { background: #112042; color: var(--accent); position: sticky; top: 0; z-index: 1; cursor: default; }
 .design-preview th:hover { background: #112042; /* sortable と区別: hover で色変化なし */ }
 .design-preview code { background: #0a1224; padding: 1px 4px; border-radius: 3px; font: 11px ui-monospace, Consolas, monospace; color: #d6e0f5; }
 .design-preview pre { background: #0a1224; padding: 8px; border-radius: 5px; overflow: auto; font: 11px ui-monospace, Consolas, monospace; }
