@@ -87,6 +87,7 @@ async function init() {
     loadSavedQueries();
     loadSavedApex();
     loadSharedSoqlHistory();
+    loadInspectHistory();
     // v3.46.0: chrome.storage.local 変更を監視して、別画面/mini-panel での履歴更新を即時反映
     if (chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, area) => {
@@ -2058,7 +2059,22 @@ function apiOpenInBrowser() {
 
 // ====== レコード Inspector ======
 const inspectState = { obj: null, id: null, describe: null, record: null };
-const inspectHistory = []; // 過去訪問した {obj, id} を最大 20 件保持
+// v3.75.0: Inspector 履歴も chrome.storage.local に永続化 (タブ再読込でも履歴復元)
+const INSPECT_HISTORY_KEY = "sfdtInspectHistory";
+let inspectHistory = []; // 過去訪問した {obj, id, scrollTop} を最大 20 件保持
+async function loadInspectHistory() {
+  try {
+    const data = await chrome.storage.local.get(INSPECT_HISTORY_KEY);
+    const arr = Array.isArray(data[INSPECT_HISTORY_KEY]) ? data[INSPECT_HISTORY_KEY] : [];
+    inspectHistory = arr.filter((e) => e && typeof e.obj === "string" && typeof e.id === "string").slice(0, 20);
+    updateInspectBackButton();
+  } catch {}
+}
+async function saveInspectHistory() {
+  try {
+    await chrome.storage.local.set({ [INSPECT_HISTORY_KEY]: inspectHistory.slice(0, 20) });
+  } catch {}
+}
 function updateInspectBackButton() {
   const cnt = inspectHistory.length;
   const btn0 = document.getElementById("btnInspectBack");
@@ -2079,6 +2095,7 @@ function inspectGoBack() {
     doInspect({ skipHistory: true, restoreScrollTop: prev.scrollTop || 0 });
   }
   updateInspectBackButton();
+  saveInspectHistory();
 }
 const SYSTEM_FIELDS = new Set([
   "Id", "IsDeleted", "CreatedById", "CreatedDate", "LastModifiedById", "LastModifiedDate",
@@ -2156,6 +2173,7 @@ async function doInspect(opts = {}) {
       inspectHistory.push({ obj: inspectState.obj, id: inspectState.id, scrollTop });
       if (inspectHistory.length > 20) inspectHistory.shift();
       updateInspectBackButton();
+      saveInspectHistory();
     }
   }
   const myId = ++inspectRunId;
