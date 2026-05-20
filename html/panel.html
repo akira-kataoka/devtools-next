@@ -343,6 +343,7 @@ System.debug('Now: ' + System.now());</textarea>
           <button id="btnRest" class="primary" title="指定したパスとメソッドで REST API を送信します">送信</button>
         </div>
         <textarea id="restBody" rows="6" placeholder="POST / PATCH の場合は JSON ボディを入力してください (GET / DELETE では不要)"></textarea>
+        <div id="restHistRow" class="rest-hist-row" title="最近送信した REST API リクエスト (panel + tool 共通の chrome.storage 保存) — チップクリックで Method/Path/Body を反映"></div>
         <div id="restMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
         <div class="toolbar">
           <button id="btnRestCopy" title="REST API のレスポンスをクリップボードにコピーします">📋 結果コピー</button>

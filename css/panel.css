@@ -759,6 +759,36 @@ td.cell-nested { word-break: break-word; }
 }
 .apex-hist-chip:hover { background: #8e44ad; color: #fff; border-color: #8e44ad; }
 .apex-hist-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* v3.77.0: REST API リクエスト履歴チップ — Method 別に色分け (GET=青 / POST=緑 / PATCH=橙 / DELETE=赤) */
+.rest-hist-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 10px; padding: 2px 0; }
+.rest-hist-row:empty { display: none; }
+.rest-hist-label { color: var(--fg-dim); font-weight: 600; margin-right: 4px; }
+.rest-hist-chip {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  padding: 2px 4px 2px 0; border-radius: 10px;
+  font-size: 10px; cursor: pointer;
+  font-family: ui-monospace, Consolas, monospace;
+  max-width: 380px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.rest-hist-chip:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.rest-hist-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.rest-hist-method {
+  display: inline-block;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 8px 0 0 8px;
+  font-size: 9px;
+  letter-spacing: 0.3px;
+}
+.rest-hist-chip .rest-method-get { background: rgba(27,150,255,0.18); color: #1b96ff; }
+.rest-hist-chip .rest-method-post { background: rgba(46,204,113,0.18); color: var(--ok); }
+.rest-hist-chip .rest-method-patch { background: rgba(241,196,15,0.20); color: #b7791f; }
+.rest-hist-chip .rest-method-delete { background: rgba(231,76,60,0.18); color: var(--err); }
+.rest-hist-chip:hover .rest-hist-method { background: rgba(255,255,255,0.2); color: #fff; }
 /* v3.74.0: 設計書「対象」入力履歴チップ — type 別に chrome.storage 永続化 */
 .design-obj-hist-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 10px; padding: 2px 0; }
 .design-obj-hist-row:empty { display: none; }

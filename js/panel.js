@@ -89,6 +89,7 @@ async function init() {
     loadSharedSoqlHistory();
     loadInspectHistory();
     loadApexHistory();
+    loadRestHistory();
     // v3.46.0: chrome.storage.local 変更を監視して、別画面/mini-panel での履歴更新を即時反映
     if (chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, area) => {
@@ -97,6 +98,9 @@ async function init() {
         }
         if (area === "local" && changes[APEX_HISTORY_KEY]) {
           renderApexHistory(changes[APEX_HISTORY_KEY].newValue || []);
+        }
+        if (area === "local" && changes[REST_HISTORY_KEY]) {
+          renderRestHistory(changes[REST_HISTORY_KEY].newValue || []);
         }
       });
     }
@@ -3654,6 +3658,59 @@ function renderSharedSoqlHistory(list) {
   });
 }
 
+// v3.77.0: REST API リクエスト履歴 (panel + tool 共通) — chrome.storage.local の sfdtRecentRest キー、最大 5 件
+// 保存内容: { method, path, body } — レスポンスは含めない (再現できれば十分、また個人情報を残さない)
+const REST_HISTORY_KEY = "sfdtRecentRest";
+async function loadRestHistory() {
+  try {
+    const data = await chrome.storage.local.get(REST_HISTORY_KEY);
+    const list = Array.isArray(data[REST_HISTORY_KEY]) ? data[REST_HISTORY_KEY] : [];
+    renderRestHistory(list);
+  } catch { renderRestHistory([]); }
+}
+async function pushRestHistory(entry) {
+  const method = String(entry && entry.method || "").trim().toUpperCase();
+  const path = String(entry && entry.path || "").trim();
+  const body = String(entry && entry.body || "").trim();
+  if (!method || !path) return;
+  try {
+    const data = await chrome.storage.local.get(REST_HISTORY_KEY);
+    const list = Array.isArray(data[REST_HISTORY_KEY]) ? data[REST_HISTORY_KEY] : [];
+    const norm = { method, path, body };
+    const isSame = (e) => e && e.method === method && e.path === path && (e.body || "") === body;
+    const next = [norm, ...list.filter((e) => !isSame(e))].slice(0, 5);
+    await chrome.storage.local.set({ [REST_HISTORY_KEY]: next });
+    renderRestHistory(next);
+  } catch {}
+}
+function renderRestHistory(list) {
+  const row = document.getElementById("restHistRow");
+  if (!row) return;
+  if (!list || !list.length) { row.innerHTML = ""; return; }
+  const trunc = (s, n) => (s.length > n ? s.substring(0, n) + "…" : s);
+  row.innerHTML = `<span class="rest-hist-label">最近のリクエスト:</span>`;
+  list.forEach((entry) => {
+    const chip = document.createElement("button");
+    chip.className = "rest-hist-chip";
+    chip.dataset.method = entry.method || "";
+    // method ごとに色分け (GET=青/POST=緑/PATCH=橙/DELETE=赤) は CSS の data-method 属性セレクタで
+    chip.innerHTML = `<span class="rest-hist-method rest-method-${escape((entry.method || "GET").toLowerCase())}">${escape(entry.method || "?")}</span> ${escape(trunc(entry.path || "", 50))}`;
+    const bodyPreview = entry.body ? `\nBody: ${entry.body.length > 200 ? entry.body.substring(0, 200) + "…" : entry.body}` : "";
+    chip.title = `クリックで Method/Path/Body をフォームに反映 (実行はせず、確認してから「送信」を押してください):\n${entry.method} ${entry.path}${bodyPreview}`;
+    chip.addEventListener("click", () => {
+      const m = document.getElementById("restMethod");
+      const p = document.getElementById("restPath");
+      const b = document.getElementById("restBody");
+      if (m) m.value = entry.method || "GET";
+      if (p) p.value = entry.path || "";
+      if (b) b.value = entry.body || "";
+      if (p) p.focus();
+      panelToast("📥 履歴の REST リクエストをフォームに反映しました (送信は「送信」ボタンで)", { kind: "ok" });
+    });
+    row.appendChild(chip);
+  });
+}
+
 // v3.76.0: Apex 実行履歴 (panel + tool 共通) — chrome.storage.local の sfdtRecentApex キー、最大 5 件
 const APEX_HISTORY_KEY = "sfdtRecentApex";
 async function loadApexHistory() {
@@ -3808,6 +3865,8 @@ async function doRest() {
     meta.innerHTML = `<span class="pill ok">HTTP ${r.status}</span> ${dt}ms`;
   }
   document.getElementById("restResult").textContent = JSON.stringify(r.data, null, 2);
+  // v3.77.0: 履歴に push (HTTP ステータスに関わらず — 失敗 URL の再試行も業務上有用)
+  pushRestHistory({ method, path, body });
 }
 
 async function doMetadataList() {
