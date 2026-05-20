@@ -35,7 +35,8 @@ async function init() {
     bindEvents();
     renderLinks();
     await refreshSession();
-    await renderHistory();
+    // v3.86.0: renderHistory() は v2.78.0 で popup から SOQL タブを撤去したため、id="soqlHistory" が存在せず常に早期 return する
+    // dead な chrome.storage.local.get 呼出を init から削除 (popup 起動の毎回 1 回ぶん I/O 削減)
     await renderLoginAsHistory();
   } catch (e) {
     console.error("popup init error:", e);
@@ -47,10 +48,13 @@ async function init() {
 // v3.85.0: Phase 175 — ⚙ 設定ダイアログを部分クリアに進化 (履歴 / draft / UI 状態 / 保存 / 全削除 を選択可能)
 // Phase 174 では all-or-nothing しか選べなかったため、業務で「履歴だけ消したい」「draft は残したい」等のニーズに対応できなかった
 // カテゴリ別に粒度を持たせ、目的に応じた最小限のクリアを可能にする
+// v3.86.0: Phase 176 — 見えない不具合修正: RESET_CATEGORIES に Login as User 履歴 2 種を追加
+// Phase 175 リリース時点で sfdtLoginAsHistory / sfdtLoginAsRecentUsers が「履歴系」カテゴリに含まれず、
+// 部分クリア「履歴系」を選んでも Login as User の検索履歴・最近ログインユーザが消えない不具合があった
 const RESET_CATEGORIES = {
   history: {
-    label: "履歴系 (SOQL/Apex/REST 履歴・Inspector 履歴・設計書「対象」履歴)",
-    keys: ["sfdtRecentSoql", "sfdtRecentApex", "sfdtRecentRest", "sfdtInspectHistory", "sfdtDesignObjHist"],
+    label: "履歴系 (SOQL/Apex/REST 履歴・Inspector 履歴・設計書「対象」履歴・Login as User 履歴)",
+    keys: ["sfdtRecentSoql", "sfdtRecentApex", "sfdtRecentRest", "sfdtInspectHistory", "sfdtDesignObjHist", "sfdtLoginAsHistory", "sfdtLoginAsRecentUsers"],
   },
   drafts: {
     label: "draft 系 (SOQL/Apex/REST body の入力中バックアップ)",
@@ -70,7 +74,9 @@ async function showSettingsDialog() {
   try {
     const all = await chrome.storage.local.get(null);
     const allKeys = Object.keys(all);
-    const sfdtKeys = allKeys.filter((k) => k.startsWith("sfdt") || k === "savedQueries" || k === "savedApex" || k === "sideCollapsed" || k === "whatsNewCollapsed");
+    // v3.86.0: 拡張機能所有キーの判定 — sfdt* プレフィックス + 既知の非プレフィックスキー + レガシーキー (soqlHistory: v3.46.0 以前の popup 専用 SOQL 履歴で現在は dead code 経由でのみ書込まれる可能性あり)
+    const OWNED_NON_SFDT = new Set(["savedQueries", "savedApex", "sideCollapsed", "whatsNewCollapsed", "soqlHistory"]);
+    const sfdtKeys = allKeys.filter((k) => k.startsWith("sfdt") || OWNED_NON_SFDT.has(k));
     let bytes = 0;
     for (const k of sfdtKeys) {
       try { bytes += new Blob([JSON.stringify(all[k] ?? null)]).size; } catch {}
