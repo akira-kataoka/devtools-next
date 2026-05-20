@@ -8,6 +8,19 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.14.0 (2026-05-20 13:50)** — 🚨 ユーザー要望 Phase 4: Flow / Apex 設計書業務用語化:
+  - **🐛 buildFlowList**: ProcessType を業務用語の日本語+原文併記マップ追加 (12 種類):
+    - `AutoLaunchedFlow` → `自動起動フロー (Autolaunched)`、`Flow` → `画面フロー (Screen)`、`Workflow` → `ワークフロー (Workflow Rule)`、`InvocableProcess` → `プロセスビルダー (Invocable Process)` 等
+    - 列名業務用語化: `API名` → `API 名`、`Version` → `バージョン`、`Status` → `状態`、`有効` → `アクティブ`
+    - note に「Process Builder は段階的廃止 (Salesforce 公式アナウンス)」追記
+    - title: `Flow 一覧 (Active)` → `フロー一覧 (アクティブのみ)`
+  - **🐛 buildApexClassList**:
+    - `Status` 値を日本語化: Active → 有効、Inactive → 無効、Deleted → 削除済
+    - 列名: `APIVer` → `API バージョン`、`Namespace` → `ネームスペース`、`行数(コメント除)` → `コード行数 (コメント除く)`
+    - ネームスペース空欄 → `(なし)` 明示
+  - **🐛 buildApexTriggerList**:
+    - 凡例セクション (section 0) を追加: BI/AI/BU/AU/BD/AD/AUD の業務向け説明
+    - title: `Apex トリガ一覧` のまま、セクション構造を `0. 凡例` + `1. 一覧` に分離
 - **v2.13.0 (2026-05-20 13:45)** — 🚨 ユーザー要望 Phase 3: ER 図リレーション種別区別 + picker 日本語:
   - **🐛 ER 図 (Mermaid) で Master-Detail と Lookup の線種を区別**:
     - Lookup (任意参照): `親 ||--o{ 子` (従来通り)

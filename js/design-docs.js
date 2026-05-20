@@ -209,21 +209,23 @@ async function buildApexClassList({ host, sid, apiVersion }) {
     soql: `SELECT Id, Name, ApiVersion, Status, NamespacePrefix, LengthWithoutComments, CreatedDate, LastModifiedDate FROM ApexClass WHERE ManageableState='unmanaged' OR ManageableState='installedEditable' ORDER BY Name LIMIT 500`,
   });
   if (!r.ok) throw apiError("ApexClass 取得", r);
-  const headers = ["No", "クラス名", "Namespace", "APIVer", "ステータス", "行数(コメント除)", "更新日"];
+  // v2.14.0: ステータス + 列名を業務用語化
+  const statusLabel = (s) => ({ "Active": "有効", "Inactive": "無効", "Deleted": "削除済" }[s] || s);
+  const headers = ["No", "クラス名", "ネームスペース", "API バージョン", "ステータス", "コード行数 (コメント除く)", "更新日"];
   const rows = (r.data.records || []).map((p, i) => ({
     "No": i + 1,
     "クラス名": p.Name,
-    "Namespace": p.NamespacePrefix || "",
-    "APIVer": p.ApiVersion,
-    "ステータス": p.Status,
-    "行数(コメント除)": p.LengthWithoutComments,
+    "ネームスペース": p.NamespacePrefix || "(なし)",
+    "API バージョン": p.ApiVersion,
+    "ステータス": statusLabel(p.Status),
+    "コード行数 (コメント除く)": p.LengthWithoutComments,
     "更新日": fmtDate(p.LastModifiedDate),
   }));
   return {
     title: "Apex クラス一覧",
     type: "apexClassList",
-    sections: [{ heading: "ApexClass", headers, rows }],
-    note: `合計 ${rows.length} 件 (unmanaged + installedEditable)`,
+    sections: [{ heading: "Apex クラス", headers, rows }],
+    note: `合計 ${rows.length} 件 (unmanaged + installedEditable) / コード行数はトリガ Apex Limit (組織あたり 6MB) 試算の目安`,
   };
 }
 
@@ -249,11 +251,25 @@ async function buildApexTriggerList({ host, sid, apiVersion }) {
     "ステータス": p.Status,
     "更新日": fmtDate(p.LastModifiedDate),
   }));
+  // v2.14.0: 凡例セクションを別途追加 (業務担当向け)
+  const legendHeaders = ["略号", "意味"];
+  const legendRows = [
+    { "略号": "BI", "意味": "Before Insert (挿入前)" },
+    { "略号": "AI", "意味": "After Insert (挿入後)" },
+    { "略号": "BU", "意味": "Before Update (更新前)" },
+    { "略号": "AU", "意味": "After Update (更新後)" },
+    { "略号": "BD", "意味": "Before Delete (削除前)" },
+    { "略号": "AD", "意味": "After Delete (削除後)" },
+    { "略号": "AUD", "意味": "After Undelete (復元後)" },
+  ];
   return {
     title: "Apex トリガ一覧",
     type: "apexTriggerList",
-    sections: [{ heading: "ApexTrigger", headers, rows }],
-    note: `BI=Before Insert / AI=After Insert / BU=Before Update / AU=After Update / BD=Before Delete / AD=After Delete / AUD=After Undelete  合計 ${rows.length} 件`,
+    sections: [
+      { heading: "0. 凡例 / トリガイベント略号", headers: legendHeaders, rows: legendRows },
+      { heading: "1. Apex トリガ一覧", headers, rows },
+    ],
+    note: `合計 ${rows.length} 件 / Before/After × Insert/Update/Delete/Undelete の発火タイミング表`,
   };
 }
 
@@ -263,6 +279,24 @@ async function buildFlowList({ host, sid, apiVersion }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, MasterLabel, DeveloperName, ProcessType, IsActive, VersionNumber, Description, LastModifiedDate FROM FlowDefinitionView WHERE IsActive=true ORDER BY MasterLabel LIMIT 500`,
   });
+  // v2.14.0: ProcessType を業務用語の日本語+原文併記
+  const processTypeLabel = (t) => {
+    const m = {
+      "AutoLaunchedFlow": "自動起動フロー (Autolaunched)",
+      "Flow": "画面フロー (Screen)",
+      "Workflow": "ワークフロー (Workflow Rule)",
+      "CustomEvent": "カスタムイベントトリガ",
+      "InvocableProcess": "プロセスビルダー (Invocable Process)",
+      "LoginFlow": "ログインフロー",
+      "ContactRequestFlow": "問い合わせリクエストフロー",
+      "FieldServiceMobile": "Field Service モバイル",
+      "FieldServiceWeb": "Field Service Web",
+      "Survey": "アンケート (Survey)",
+      "ActionPlan": "アクションプラン",
+      "CheckoutFlow": "チェックアウトフロー",
+    };
+    return t ? (m[t] || t) : "";
+  };
   if (!r.ok) {
     // FlowDefinitionView が無い org 向けに Flow へフォールバック
     const r2 = await runSoql({
@@ -270,25 +304,25 @@ async function buildFlowList({ host, sid, apiVersion }) {
       soql: `SELECT Id, MasterLabel, ProcessType, Status, VersionNumber, Definition.DeveloperName FROM Flow WHERE Status='Active' ORDER BY MasterLabel LIMIT 500`,
     });
     if (!r2.ok) throw apiError("Flow 取得 (fallback)", r2);
-    const headers = ["No", "ラベル", "API名", "ProcessType", "Status", "Version"];
+    const headers = ["No", "ラベル", "API 名", "種別", "状態", "バージョン"];
     const rows = (r2.data.records || []).map((f, i) => ({
-      "No": i + 1, "ラベル": f.MasterLabel, "API名": f.Definition ? f.Definition.DeveloperName : "",
-      "ProcessType": f.ProcessType, "Status": f.Status, "Version": f.VersionNumber,
+      "No": i + 1, "ラベル": f.MasterLabel, "API 名": f.Definition ? f.Definition.DeveloperName : "",
+      "種別": processTypeLabel(f.ProcessType), "状態": f.Status === "Active" ? "アクティブ" : (f.Status || ""), "バージョン": f.VersionNumber,
     }));
-    return { title: "Flow 一覧 (Active)", type: "flowList", sections: [{ heading: "Flow", headers, rows }], note: `合計 ${rows.length} 件` };
+    return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${rows.length} 件 / 種別と状態は業務用語表記` };
   }
-  const headers = ["No", "ラベル", "API名", "ProcessType", "有効", "Version", "説明", "更新日"];
+  const headers = ["No", "ラベル", "API 名", "種別", "アクティブ", "バージョン", "説明", "更新日"];
   const rows = (r.data.records || []).map((f, i) => ({
     "No": i + 1,
     "ラベル": f.MasterLabel,
-    "API名": f.DeveloperName,
-    "ProcessType": f.ProcessType,
-    "有効": f.IsActive ? "○" : "",
-    "Version": f.VersionNumber,
+    "API 名": f.DeveloperName,
+    "種別": processTypeLabel(f.ProcessType),
+    "アクティブ": f.IsActive ? "○" : "",
+    "バージョン": f.VersionNumber,
     "説明": f.Description || "",
     "更新日": fmtDate(f.LastModifiedDate),
   }));
-  return { title: "Flow 一覧 (Active)", type: "flowList", sections: [{ heading: "Flow", headers, rows }], note: `合計 ${rows.length} 件` };
+  return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${rows.length} 件 / 種別は業務用語+原文併記、Process Builder は段階的廃止 (Salesforce 公式アナウンス)` };
 }
 
 // ============ 入力規則一覧 ============
