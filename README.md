@@ -4,6 +4,12 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.89.0 (2026-05-20 11:45)** — Limits / Inspector export にも統一 toast:
+  - **✨ `exportLimitsCsv()` 完了 toast**: `📥 Limits CSV ダウンロード (35 項目 / 3.4 KB)` 形式
+  - **🛡 `exportLimitsCsv()` 未取得時警告**: `📭 Limits 未取得 (先に「取得」をクリック)`
+  - **✨ `exportInspect()` 完了 toast**: `📥 Account:001xx を JSON ダウンロード (12.5 KB)` 形式 (JSON / CSV 両方対応)
+  - **🛡 `exportInspect()` 未取得時警告**: `📭 まだレコードが未取得です`
+  - **全 7 種類の download (SOQL CSV / 設計書 / package.xml / SFDX bundle / Inspector JSON+CSV / Limits CSV / popup CSV) に toast + 未取得警告完備**
 - **v1.88.0 (2026-05-20 11:40)** — ChangeSet package.xml / SFDX バンドル download にも toast:
   - **✨ `csDownloadXml()` 完了 toast**: `📥 package.xml ダウンロード (4.2 KB)` 形式
   - **🛡 `csDownloadXml()` 未生成時警告**: `📭 package.xml が未生成です (先に「package.xml 生成」をクリック)` (従来 silent return)

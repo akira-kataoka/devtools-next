@@ -1603,7 +1603,7 @@ function openInspectedInOrg() {
 }
 
 function exportInspect(fmt) {
-  if (!inspectState.record) return;
+  if (!inspectState.record) { panelToast("📭 まだレコードが未取得です", { kind: "warn" }); return; }
   let body, mime, ext;
   if (fmt === "json") {
     body = JSON.stringify(inspectState.record, null, 2);
@@ -1627,6 +1627,9 @@ function exportInspect(fmt) {
   a.download = `${inspectState.obj}_${inspectState.id}.${ext}`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
+  const sz = body.length;
+  const label = sz < 1024 ? `${sz} B` : `${(sz / 1024).toFixed(1)} KB`;
+  panelToast(`📥 ${inspectState.obj}:${inspectState.id} を ${ext.toUpperCase()} ダウンロード (${label})`, { kind: "ok" });
 }
 
 // ====== Limits ダッシュボード (置換実装) ======
@@ -1696,7 +1699,7 @@ function renderLimitsList() {
 }
 
 function exportLimitsCsv() {
-  if (!lastLimitsData) return;
+  if (!lastLimitsData) { panelToast("📭 Limits 未取得 (先に「取得」をクリック)", { kind: "warn" }); return; }
   // すべての列をダブルクォートで包む (Excel/Numbers/Google Sheets でロケール差や %/カンマ含む値を安全に)
   const lines = [`"項目","使用","残量","上限","使用率"`];
   Object.entries(lastLimitsData).forEach(([k, v]) => {
@@ -1707,11 +1710,15 @@ function exportLimitsCsv() {
     const esc = (s) => `"${String(s).replace(/"/g, '""')}"`;
     lines.push([k, used, rem, max, `${pct}%`].map(esc).join(","));
   });
-  const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+  const csv = "﻿" + lines.join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = `limits-${tsForFilename()}.csv`; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
+  const sz = csv.length;
+  const label = sz < 1024 ? `${sz} B` : `${(sz / 1024).toFixed(1)} KB`;
+  panelToast(`📥 Limits CSV ダウンロード (${lines.length - 1} 項目 / ${label})`, { kind: "ok" });
 }
 
 // ====== 設計書ジェネレータ ======
