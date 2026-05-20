@@ -2072,8 +2072,15 @@ async function doSoql() {
   const soql = document.getElementById("soqlText").value.trim();
   const tooling = document.getElementById("useTooling").checked;
   const meta = document.getElementById("soqlMeta");
-  meta.textContent = `⏳ 実行中… #${myId}`;
+  const runBtn = document.getElementById("btnRunSoql");
+  if (!soql) {
+    meta.innerHTML = `<span class="pill warn">⚠ SOQL クエリを入力してください</span>`;
+    return;
+  }
+  meta.textContent = `⏳ SOQL を実行しています… #${myId}`;
   meta.classList.add("loading-pulse");
+  // 実行中はボタン無効化 (二重クリック防止)
+  if (runBtn) { runBtn.disabled = true; runBtn.style.opacity = "0.6"; }
   const t0 = performance.now();
   const r = await runSoql({ host: state.host, sid: state.sid, soql, apiVersion: state.apiVersion, tooling });
   const dt = Math.round(performance.now() - t0);
@@ -2082,6 +2089,7 @@ async function doSoql() {
     console.log(`[DevToolsNext] discard stale SOQL result #${myId} (latest=${soqlRunId})`);
     return;
   }
+  if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; }
   if (!r.ok) {
     displayApiError(meta, r.status, r.data, "SOQL 実行");
     document.getElementById("soqlResult").innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;

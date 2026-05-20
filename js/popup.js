@@ -302,13 +302,16 @@ async function doSoql() {
   if (!state.sid) { toast("⚠ 先に Salesforce タブへ接続してください", { kind: "warn" }); return; }
   const soql = document.getElementById("soqlText").value.trim();
   const tooling = document.getElementById("soqlTooling").checked;
+  const runBtn = document.getElementById("btnRunSoql");
   if (!soql) { toast("⚠ クエリを入力してください", { kind: "warn" }); return; }
   setStatus("⏳ SOQL を実行しています…");
+  if (runBtn) { runBtn.disabled = true; runBtn.style.opacity = "0.6"; }
   const t0 = performance.now();
   const r = await runSoql({ host: state.host, sid: state.sid, soql, apiVersion: state.apiVersion, tooling });
   const dt = Math.round(performance.now() - t0);
+  if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; }
   if (!r.ok) {
-    document.getElementById("soqlMeta").textContent = `❌ HTTP ${r.status} — ${formatError(r.data)}`;
+    document.getElementById("soqlMeta").textContent = `❌ クエリ実行に失敗しました (HTTP ${r.status}) — ${formatError(r.data)}`;
     document.getElementById("soqlResult").innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;
     setStatus("❌ 実行に失敗しました");
     state.lastRecords = null;
@@ -318,9 +321,9 @@ async function doSoql() {
   const recs = (r.data && r.data.records) || [];
   state.lastRecords = recs;
   document.getElementById("soqlMeta").textContent =
-    `✅ ${recs.length} 件 / total=${r.data.totalSize ?? recs.length} / ${dt}ms${tooling ? " (Tooling)" : ""}`;
+    `✅ 取得 ${recs.length} 件 / 合計 ${r.data.totalSize ?? recs.length} 件 / ${dt}ms${tooling ? " (Tooling API)" : ""}`;
   document.getElementById("soqlResult").innerHTML = recordsToTableHtml(recs);
-  setStatus("OK");
+  setStatus("✓ 成功しました");
   await pushHistory({ soql, tooling, ok: true, count: recs.length, ms: dt, status: r.status });
 }
 
