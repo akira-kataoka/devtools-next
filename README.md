@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.56.0 (2026-05-20 09:00)** — Login as 0件ヒント + 設計書 th 視覚分離 + 検証完了:
+  - **✨ popup Login as 検索結果 0 件時に詳細ヒント**: 検索語ありの時は `検索条件「<term>」に一致するユーザーがいません 💡 別のキーワード (Username の一部、Alias、姓名) で再検索してください`、無しの時は `権限不足の可能性 (Modify All Data / View All Users)` を案内。**従来「該当ユーザーなし」だけだったエラーが原因+対処を明示**
+  - **✨ 設計書 markdown プレビュー内 th を非ソート可能と明示**: `.design-preview th { cursor: default }` + hover 時に背景色変化なし。**.grid th (sortable, cursor:pointer + hover 濃色) との視覚差別化** で「クリックできそうだけどできない」混乱を解消
+  - **🧪 検証完了**: design-docs.js の markdownToHtml は plain `<th>` を生成 (sortable class なし) → markdown table はソート対象外 (修正不要)
 - **v1.55.0 (2026-05-20 08:55)** — popup SOQL 結果テーブルも列ソート可能化 + 検証完了:
   - **✨ popup SOQL 結果テーブルにも列クリックソート対応**: `recordsToTableHtml` の th に `.sortable` クラス + sortTableByTh ハンドラ。panel/tool と同じ asc/desc/unsort トグル + ▲/▼ 矢印 (popup 用に font-size: 8px 縮小)。**popup でも 460px 幅で SOQL 結果を即ソート可能**
   - **🧪 検証完了 (3 件すべて修正不要)**:

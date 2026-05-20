@@ -438,7 +438,10 @@ async function searchUsersForLogin() {
   }
   const users = r.data.records || [];
   if (!users.length) {
-    result.innerHTML = `<div class="meta">該当ユーザーなし</div>`;
+    const hint = term
+      ? `検索条件「${escape(term)}」に一致するユーザーがいません。<br/>💡 別のキーワード (Username の一部、Alias、姓名) で再検索してください`
+      : `Active なユーザーが見つかりません。<br/>💡 権限不足の可能性 (Modify All Data / View All Users)`;
+    result.innerHTML = `<div class="meta" style="padding:16px;text-align:center;line-height:1.7">📭 ${hint}</div>`;
     return;
   }
 
