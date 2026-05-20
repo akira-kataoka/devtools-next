@@ -70,13 +70,109 @@ const RESET_CATEGORIES = {
   },
 };
 
+// v3.88.0: Phase 178 — エクスポート (JSON ダウンロード) + インポート (JSON 読込) で別 PC への設定移行を可能に
+const SETTINGS_FORMAT = "DevToolsNext-settings-v1";
+
+function ownedKeysFrom(all) {
+  const OWNED_NON_SFDT = new Set(["savedQueries", "savedApex", "sideCollapsed", "whatsNewCollapsed", "soqlHistory"]);
+  return Object.keys(all).filter((k) => k.startsWith("sfdt") || OWNED_NON_SFDT.has(k));
+}
+
+async function exportSettings() {
+  try {
+    const all = await chrome.storage.local.get(null);
+    const keys = ownedKeysFrom(all);
+    if (!keys.length) {
+      toast("📭 エクスポートする設定がありません (保存データが空)", { kind: "warn" });
+      return;
+    }
+    const data = {};
+    for (const k of keys) data[k] = all[k];
+    const payload = {
+      _format: SETTINGS_FORMAT,
+      _exportedAt: new Date().toISOString(),
+      _version: chrome.runtime.getManifest().version,
+      _keyCount: keys.length,
+      data,
+    };
+    const json = JSON.stringify(payload, null, 2);
+    const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const now = new Date();
+    const stamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}${String(now.getSeconds()).padStart(2, "0")}`;
+    const filename = `devtoolsnext-settings-${stamp}.json`;
+    // popup 内で <a download> クリック — chrome.downloads 権限不要
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.style.display = "none";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1000);
+    toast(`✓ ${keys.length} キーを ${filename} にエクスポートしました`, { kind: "ok" });
+  } catch (e) {
+    toast(`❌ エクスポートに失敗しました: ${e.message || e}`, { kind: "err" });
+  }
+}
+
+async function importSettings() {
+  try {
+    // 動的に <input type="file"> を生成 (popup.html を汚さない)
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json,application/json";
+    input.style.display = "none";
+    document.body.appendChild(input);
+    const file = await new Promise((resolve) => {
+      input.addEventListener("change", () => resolve(input.files && input.files[0]), { once: true });
+      input.click();
+    });
+    input.remove();
+    if (!file) { toast("🚫 ファイルが選択されませんでした", { kind: "warn" }); return; }
+    const text = await file.text();
+    let payload;
+    try { payload = JSON.parse(text); }
+    catch (parseErr) { toast(`❌ JSON 解析に失敗しました: ${parseErr.message}`, { kind: "err" }); return; }
+    if (!payload || payload._format !== SETTINGS_FORMAT) {
+      toast(`❌ 不正なファイル形式です (_format が "${SETTINGS_FORMAT}" ではありません)`, { kind: "err" });
+      return;
+    }
+    if (!payload.data || typeof payload.data !== "object") {
+      toast(`❌ data フィールドが欠落しています`, { kind: "err" });
+      return;
+    }
+    const importKeys = Object.keys(payload.data);
+    // 拡張機能所有キーのみ許可 (任意キーの上書きを防止)
+    const OWNED_NON_SFDT = new Set(["savedQueries", "savedApex", "sideCollapsed", "whatsNewCollapsed", "soqlHistory"]);
+    const allowed = importKeys.filter((k) => k.startsWith("sfdt") || OWNED_NON_SFDT.has(k));
+    const rejected = importKeys.filter((k) => !(k.startsWith("sfdt") || OWNED_NON_SFDT.has(k)));
+    if (!allowed.length) {
+      toast(`❌ 取込可能なキーがありません (DevToolsNext が所有しないキーのみ)`, { kind: "err" });
+      return;
+    }
+    const confirmed = window.confirm(
+      `📥 設定インポート確認\n\n` +
+      `ファイル: ${file.name}\n` +
+      `エクスポート時刻: ${payload._exportedAt || "不明"}\n` +
+      `エクスポート時バージョン: ${payload._version || "不明"}\n` +
+      `取込キー数: ${allowed.length} 件\n` +
+      (rejected.length ? `⚠ 拒否キー (拡張機能所有外): ${rejected.length} 件\n` : "") +
+      `\n⚠ 既存の同名キーは上書きされます。続行しますか?`
+    );
+    if (!confirmed) { toast("🚫 インポートをキャンセルしました", { kind: "warn" }); return; }
+    const toSet = {};
+    for (const k of allowed) toSet[k] = payload.data[k];
+    await chrome.storage.local.set(toSet);
+    toast(`✓ ${allowed.length} キーをインポートしました${rejected.length ? ` (${rejected.length} キー拒否)` : ""}`, { kind: "ok" });
+  } catch (e) {
+    toast(`❌ インポートに失敗しました: ${e.message || e}`, { kind: "err" });
+  }
+}
+
 async function showSettingsDialog() {
   try {
     const all = await chrome.storage.local.get(null);
-    const allKeys = Object.keys(all);
-    // v3.86.0: 拡張機能所有キーの判定 — sfdt* プレフィックス + 既知の非プレフィックスキー + レガシーキー (soqlHistory: v3.46.0 以前の popup 専用 SOQL 履歴で現在は dead code 経由でのみ書込まれる可能性あり)
-    const OWNED_NON_SFDT = new Set(["savedQueries", "savedApex", "sideCollapsed", "whatsNewCollapsed", "soqlHistory"]);
-    const sfdtKeys = allKeys.filter((k) => k.startsWith("sfdt") || OWNED_NON_SFDT.has(k));
+    const sfdtKeys = ownedKeysFrom(all);
     let bytes = 0;
     for (const k of sfdtKeys) {
       try { bytes += new Blob([JSON.stringify(all[k] ?? null)]).size; } catch {}
@@ -85,16 +181,20 @@ async function showSettingsDialog() {
 
     const countFor = (cat) => RESET_CATEGORIES[cat].keys.filter((k) => k in all).length;
     const choice = window.prompt(
-      `🛠 DevToolsNext 設定リセット\n\n` +
+      `🛠 DevToolsNext 設定\n\n` +
       `現在の保存データ: ${sfdtKeys.length} キー / 約 ${sizeLabel}\n\n` +
-      `クリアする範囲を番号で選んでください:\n\n` +
+      `操作を番号で選んでください:\n\n` +
+      `■ クリア\n` +
       `1. 履歴系 (${countFor("history")} キー保存中) — ${RESET_CATEGORIES.history.label}\n` +
       `2. draft 系 (${countFor("drafts")} キー保存中) — ${RESET_CATEGORIES.drafts.label}\n` +
       `3. UI 状態系 (${countFor("uistate")} キー保存中) — ${RESET_CATEGORIES.uistate.label}\n` +
       `4. 保存系 (${countFor("saved")} キー保存中) — ${RESET_CATEGORIES.saved.label}\n` +
       `5. 全削除 (${sfdtKeys.length} キーすべて、約 ${sizeLabel})\n` +
+      `■ 移行 (v3.88.0 新機能)\n` +
+      `6. 📤 エクスポート (現在の設定を JSON ファイルでダウンロード — 別 PC への移行用)\n` +
+      `7. 📥 インポート (JSON ファイルから設定を取込 — 既存キーは上書き)\n` +
       `0. キャンセル\n\n` +
-      `番号 (0-5) を入力してください:`,
+      `番号 (0-7) を入力してください:`,
       "5"
     );
     if (choice === null || choice.trim() === "" || choice.trim() === "0") {
@@ -102,6 +202,9 @@ async function showSettingsDialog() {
       return;
     }
     const num = parseInt(choice.trim(), 10);
+    if (num === 6) { await exportSettings(); return; }
+    if (num === 7) { await importSettings(); return; }
+
     let targetKeys, scopeLabel;
     if (num === 5) {
       targetKeys = sfdtKeys;
@@ -111,7 +214,7 @@ async function showSettingsDialog() {
       targetKeys = RESET_CATEGORIES[cat].keys.filter((k) => k in all);
       scopeLabel = RESET_CATEGORIES[cat].label;
     } else {
-      toast(`⚠ 不正な番号です: "${choice}" (0-5 で入力してください)`, { kind: "warn" });
+      toast(`⚠ 不正な番号です: "${choice}" (0-7 で入力してください)`, { kind: "warn" });
       return;
     }
     if (targetKeys.length === 0) {
@@ -123,6 +226,7 @@ async function showSettingsDialog() {
       `${scopeLabel}\n` +
       `対象キー: ${targetKeys.length} 件\n` +
       `(${targetKeys.join(", ")})\n\n` +
+      `💡 不安な場合は先に「6. エクスポート」でバックアップを取ってください\n\n` +
       `続行しますか?`
     );
     if (!confirmed) {
@@ -132,7 +236,7 @@ async function showSettingsDialog() {
     await chrome.storage.local.remove(targetKeys);
     toast(`✓ ${targetKeys.length} キーをクリアしました — ${scopeLabel}`, { kind: "ok" });
   } catch (e) {
-    toast(`❌ 設定リセットに失敗しました: ${e.message || e}`, { kind: "err" });
+    toast(`❌ 設定操作に失敗しました: ${e.message || e}`, { kind: "err" });
   }
 }
 
