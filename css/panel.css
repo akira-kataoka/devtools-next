@@ -96,6 +96,8 @@ textarea {
 }
 /* Apex 実行結果など長文の場合は折返し許容 */
 #apexResult.code, #restResult.code { white-space: pre-wrap; word-break: break-word; }
+/* 大量テキスト表示時のスクロール最適化: contain で再描画範囲を制限 */
+#apexResult.code, #restResult.code { contain: layout style; }
 .grid {
   flex: 1; overflow: auto; min-height: 100px;
   background: #0a1224; border: 1px solid var(--line); border-radius: 6px;
