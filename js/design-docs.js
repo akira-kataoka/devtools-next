@@ -838,7 +838,19 @@ async function buildFlsReport({ host, sid, apiVersion, obj, progress = () => {} 
       ]},
       { heading: "1. FLS 一覧", headers, rows },
     ],
-    note: "Excel 形式推奨 (セルの折り返し有効)。改行入りセルがあるため A4 縦 で印刷する場合は行高さ自動調整を推奨。",
+    note: (() => {
+      // サマリ集計: 編集可・参照のみ・アクセス無しのフィールド数
+      const editAnyCount = rows.filter((r) => Number(String(r["編集可 (Edit) 件数"]).replace(/,/g, "")) > 0).length;
+      const readOnlyCount = rows.filter((r) =>
+        Number(String(r["編集可 (Edit) 件数"]).replace(/,/g, "")) === 0 &&
+        Number(String(r["参照のみ (Read) 件数"]).replace(/,/g, "")) > 0
+      ).length;
+      const noAccessCount = rows.filter((r) =>
+        Number(String(r["編集可 (Edit) 件数"]).replace(/,/g, "")) === 0 &&
+        Number(String(r["参照のみ (Read) 件数"]).replace(/,/g, "")) === 0
+      ).length;
+      return `対象 ${fmtNum(rows.length)} 項目 / 編集可 ${fmtNum(editAnyCount)} 項目 (${fmtPercent(editAnyCount / Math.max(rows.length, 1))}) / 参照のみ ${fmtNum(readOnlyCount)} 項目 (${fmtPercent(readOnlyCount / Math.max(rows.length, 1))}) / アクセス無し ${fmtNum(noAccessCount)} 項目 (${fmtPercent(noAccessCount / Math.max(rows.length, 1))}) / Excel 形式推奨 (セル折り返し有効)`;
+    })(),
   };
 }
 
