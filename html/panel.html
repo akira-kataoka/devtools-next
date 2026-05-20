@@ -11,6 +11,7 @@
 <body>
   <header class="hdr" role="banner">
     <span class="brand" title="クリックで SOQL クエリ画面に戻ります">DevToolsNext</span>
+    <span class="mode-badge mode-dev" title="開発者モード — SOQL / Apex / Inspector / 設計書ジェネレータ等の高度な開発機能">💻 開発者</span>
     <span id="orgInfo" class="org" role="status" aria-live="polite" aria-atomic="true">⏳ 起動準備中… (JS 読込待ち)</span>
     <span class="grow"></span>
     <span class="kbd-hint" title="主要なキーボードショートカット: Ctrl+Enter で実行 / Esc で閉じる / ↑↓ で Picker 移動 / Ctrl+Alt+I で Inspector / Q で SOQL / A で Apex / L で Limits / R で REST / D で 設計書">
@@ -187,7 +188,7 @@
             <div class="export-pane-label">エクスポート</div>
             <div class="row">
               <button id="btnExDlCsv" title="クエリ結果を CSV ファイルとしてダウンロードします">CSV ダウンロード</button>
-              <button id="btnExDlExcel" title="クエリ結果を Excel (SpreadsheetML XML / .xml) でダウンロードします — Excel で直接開け、警告も出ません">Excel (.xml) ダウンロード</button>
+              <button id="btnExDlExcel" title="クエリ結果を Excel (SpreadsheetML XML / .xls) でダウンロードします。初回 Excel が形式警告を出したら「はい」で開けます">Excel (.xls) ダウンロード</button>
               <button id="btnExDlJson" title="クエリ結果を JSON ファイルとしてダウンロードします">JSON ダウンロード</button>
               <span id="exProgress" class="meta" role="status" aria-live="polite" aria-atomic="true"></span>
             </div>

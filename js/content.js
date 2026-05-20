@@ -70,7 +70,14 @@ function flashToast(text) {
         background: linear-gradient(180deg, #112042 0%, #0b1220 100%);
         border-bottom: 1px solid #1f2c46;
       }
-      .hdr-title { color: #1b96ff; font-weight: 700; font-size: 13px; flex: 1; }
+      .hdr-title { color: #1b96ff; font-weight: 700; font-size: 13px; }
+      .hdr-mode {
+        flex: 1;
+        font-size: 10px; font-weight: 700; letter-spacing: 0.4px;
+        padding: 2px 8px; border-radius: 10px;
+        background: rgba(46,204,113,0.18); color: #2ecc71;
+        border: 1px solid rgba(46,204,113,0.4);
+      }
       .hdr-close, .hdr-open {
         background: transparent; border: 1px solid #1f2c46;
         color: #9fb0c9; padding: 3px 10px; border-radius: 4px;
@@ -117,7 +124,8 @@ function flashToast(text) {
     <button class="launcher" id="lnch" title="DevToolsNext のミニパネルを開く (Salesforce 上で簡易 SOQL を実行できます)" aria-label="DevToolsNext ミニパネルを開く">🛠</button>
     <div class="panel" id="pnl" role="dialog" aria-label="DevToolsNext ミニパネル">
       <div class="hdr">
-        <span class="hdr-title">🛠 DevToolsNext ミニパネル</span>
+        <span class="hdr-title">🛠 DevToolsNext</span>
+        <span class="hdr-mode" title="ユーザーモード — Salesforce 画面上で軽量に SOQL を実行できます">👤 ユーザー</span>
         <button class="hdr-open" id="opn" title="DevToolsNext を新しいタブで全画面起動します (SOQL/Inspector/設計書など全機能)" aria-label="DevToolsNext を全画面で開く">↗ 全画面</button>
         <button class="hdr-close" id="cls" title="ミニパネルを閉じます" aria-label="ミニパネルを閉じる">✕</button>
       </div>

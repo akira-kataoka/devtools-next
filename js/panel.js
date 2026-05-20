@@ -1130,7 +1130,7 @@ function cancelExDownload() {
 function setExportButtonsLabel(running) {
   const map = {
     btnExDlCsv: { running: "⏸ 取消 (CSV)", idle: "CSV ダウンロード" },
-    btnExDlExcel: { running: "⏸ 取消 (Excel)", idle: "Excel (.xml) ダウンロード" },
+    btnExDlExcel: { running: "⏸ 取消 (Excel)", idle: "Excel (.xls) ダウンロード" },
     btnExDlJson: { running: "⏸ 取消 (JSON)", idle: "JSON ダウンロード" },
   };
   for (const [id, labels] of Object.entries(map)) {
@@ -1919,7 +1919,7 @@ async function doGenerateDesign() {
     } else if (format === "html") {
       preview.innerHTML = result.source;
     } else if (format === "excel" || format === "xls") {
-      preview.innerHTML = `<h2>${escape(result.title)}</h2><p>Excel 形式 (SpreadsheetML XML / .xml) を生成しました。</p><p><b>ダウンロード</b> ボタンで保存 → ダブルクリックで Excel が直接開きます。<br/>Excel で開いた後、より高機能な <b>.xlsx</b> 形式で再保存するとブック保護等が使えます。</p><pre><code>${escape(result.source.substring(0, 800))}…</code></pre>`;
+      preview.innerHTML = `<h2>${escape(result.title)}</h2><p>Excel 形式 (SpreadsheetML XML / .xls) を生成しました。</p><p><b>ダウンロード</b> ボタンで保存 → ダブルクリックで Excel が開きます。<br/>※ 初回に Excel が「ファイル形式と拡張子が一致しません」と聞いてきたら <b>「はい (Y)」</b> をクリックしてください (中身は正しい XML スプレッドシートです)。開いた後 <b>.xlsx</b> 形式で再保存すると以降は警告なしで開けます。</p><pre><code>${escape(result.source.substring(0, 800))}…</code></pre>`;
     } else {
       preview.innerHTML = `<pre><code>${escape(result.source)}</code></pre>`;
     }
@@ -2005,18 +2005,18 @@ async function copyDesignSource() {
 function downloadDesignSource() {
   if (!lastDesign) { panelToast("📭 まだ設計書が未生成です", { kind: "warn" }); return; }
   const fmt = lastDesign.format || "markdown";
-  // v2.80.0: Excel 形式は SpreadsheetML XML (Excel 2003 XML) のため、拡張子を .xls → .xml に変更。
-  // .xls だと Excel が「ファイル形式と拡張子が一致しません」警告を出していた事象を解消。
-  // Excel は .xml を「XML Spreadsheet」として自動認識し、警告なしで開く。
-  const extMap = { markdown: "md", html: "html", csv: "csv", tsv: "tsv", excel: "xml", xls: "xml" };
+  // v2.81.0 緊急 ROLLBACK: 拡張子を .xls に戻す (ユーザー報告「Excel で出力できなくなりました」)
+  // v2.80.0 で .xml に変更したが、Windows が .xml を Excel で関連付けしておらず、
+  // ダブルクリックで Excel が起動しなかった。Excel が「形式と拡張子が一致しない」警告を出すのは
+  // SpreadsheetML XML を .xls で出す業界慣例的な仕様で、「はい」で開ける。業務利用上問題なし
+  const extMap = { markdown: "md", html: "html", csv: "csv", tsv: "tsv", excel: "xls", xls: "xls" };
   const mimeMap = {
     markdown: "text/markdown;charset=utf-8",
     html: "text/html;charset=utf-8",
     csv: "text/csv;charset=utf-8",
     tsv: "text/tab-separated-values;charset=utf-8",
-    // SpreadsheetML XML の正式 MIME。Excel が直接開ける
-    excel: "application/xml;charset=utf-8",
-    xls: "application/xml;charset=utf-8",
+    excel: "application/vnd.ms-excel;charset=utf-8",
+    xls: "application/vnd.ms-excel;charset=utf-8",
   };
   const ext = extMap[fmt] || "txt";
   const mime = mimeMap[fmt] || "text/plain;charset=utf-8";
@@ -2024,7 +2024,7 @@ function downloadDesignSource() {
   const ts = tsForFilename();
 
   // CSV/TSV/HTML は UTF-8 BOM を付ける (Excel が文字化けしないように)
-  // Excel SpreadsheetML XML は宣言で encoding を指定済なので BOM 不要 (むしろ XML パーサが壊れる可能性)
+  // Excel SpreadsheetML XML は宣言で encoding を指定済なので BOM 不要 (XML パーサが壊れる)
   let body = lastDesign.source;
   if (fmt === "csv" || fmt === "tsv" || fmt === "html") {
     body = "﻿" + body;
