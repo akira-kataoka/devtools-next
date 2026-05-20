@@ -205,6 +205,7 @@ td.cell-nested { word-break: break-word; }
   background: #0f1830; border: 1px solid var(--line); border-radius: 6px;
   padding: 12px; color: var(--fg); font-size: 12px; line-height: 1.6;
   position: relative;
+  contain: layout style;
 }
 .design-preview .design-top-btn {
   position: sticky; bottom: 8px; left: 100%; transform: translateX(-100%);
@@ -641,6 +642,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   font-size: 11px;
 }
 .limit-row.header { background: #112042; color: var(--accent); font-weight: 700; position: sticky; top: 0; }
+/* Limits 結果テーブル: 幅 600px 未満 (popup や狭幅 panel) で 1 行 縦並びに退化 */
+@media (max-width: 600px) {
+  .limit-row { grid-template-columns: 1fr; gap: 2px; padding: 6px 8px; }
+  .limit-row > div:nth-child(1) { font-weight: 700; }
+  .limit-row > div:nth-child(2)::before { content: "used: "; color: var(--fg-dim); }
+  .limit-row > div:nth-child(3)::before { content: "remaining: "; color: var(--fg-dim); }
+  .limit-row > div:nth-child(4)::before { content: "max: "; color: var(--fg-dim); }
+}
 .limit-row:hover:not(.header) { background: #112042; }
 .limit-row .limit-name { color: var(--fg); font-weight: 600; }
 .limit-row .limit-bar-wrap { background: #1f2c46; border-radius: 8px; height: 10px; overflow: hidden; position: relative; }

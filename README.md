@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.68.0 (2026-05-20 10:00)** — design-preview contain + Limits レスポンシブ:
+  - **✨ `.design-preview` に `contain: layout style`**: 大設計書 (1000+ 行 ObjectDef) のスクロール時、ブラウザに再描画範囲を制限ヒント。**Apex/REST と同じ CSS Containment パターンで統一**
+  - **✨ Limits 結果テーブル `@media (max-width: 600px)` レスポンシブ**: popup や狭幅 panel で grid-template-columns を `1fr` 縦並びに退化、`used: / remaining: / max:` ラベル prefix で識別性確保。**iPad mini / popup 460px でも数値が画面外に出ない**
+  - **🧪 tool.html `#orgInfo` 同一 ID 構造で env-badge 正常表示** (panel/tool/popup の 3 HTML で同じ orgInfo に PROD/SBX/DEV バッジが描画される)
 - **v1.67.0 (2026-05-20 09:55)** — Inspector フィルタ拡充 + Apex/REST pre 描画最適化:
   - **✨ Inspector フィールド絞込みのプレースホルダ・title 拡充**: `例 'email' / 'CreatedBy' / 'true' で値検索も可` + title で「API 名・ラベル・値の部分一致で絞込み」を案内
   - **✨ `#apexResult` / `#restResult` の `pre.code` に `contain: layout style`**: ブラウザに再描画範囲を制限ヒント → **1MB 超の debug log でもスクロールが軽くなる** (CSS Containment、再フローを抑制)
