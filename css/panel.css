@@ -733,7 +733,24 @@ td.cell-nested { word-break: break-word; }
 #apiBuildHelp { line-height: 1.7; }
 #apiBuildHelp p { margin: 6px 0; }
 #apiBuildHelp blockquote { margin: 8px 0; }
-.design-preview blockquote { border-left: 3px solid var(--accent); margin: 6px 0; padding: 4px 8px; color: var(--fg-dim); background: #0a1224; }
+/* v3.34.0: 設計書 note (blockquote) を業務文書らしい体裁に — 「📝 サマリ・備考」ラベル付き */
+.design-preview blockquote {
+  position: relative;
+  border-left: 4px solid var(--accent);
+  margin: 8px 0 14px;
+  padding: 10px 14px 10px 36px;
+  color: var(--fg);
+  background: linear-gradient(90deg, rgba(27,150,255,0.05), transparent 60%);
+  border-radius: 0 4px 4px 0;
+  font-size: 11px;
+  line-height: 1.6;
+}
+.design-preview blockquote::before {
+  content: "📝";
+  position: absolute; left: 10px; top: 8px;
+  font-size: 14px;
+}
+.design-preview blockquote strong { color: var(--accent); }
 .design-preview hr { border: none; border-top: 1px solid var(--line); margin: 10px 0; }
 .design-preview .badge-required { background: rgba(255,107,107,0.2); color: var(--err); padding: 1px 5px; border-radius: 8px; font-size: 9px; }
 .design-preview .badge-unique { background: rgba(243,156,18,0.2); color: var(--warn); padding: 1px 5px; border-radius: 8px; font-size: 9px; }

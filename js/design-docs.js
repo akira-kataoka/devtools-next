@@ -2172,7 +2172,11 @@ function md(v) {
 
 function toHtml(result) {
   const parts = [`<h1>${esc(result.title)}</h1>`];
-  if (result.note) parts.push(`<blockquote>${esc(result.note)}</blockquote>`);
+  if (result.note) {
+    // v3.34.0: note 内の **bold** マークダウンを <strong> に変換 (業務担当者向け note で多用される強調)
+    const noteHtml = esc(result.note).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+    parts.push(`<blockquote>${noteHtml}</blockquote>`);
+  }
   for (const s of result.sections) {
     // v3.33.0: 凡例セクションには .design-legend クラスを付けて CSS で視覚的に区別
     const isLegend = s.heading && /^(\d+\.\s*)?凡例/.test(s.heading);
