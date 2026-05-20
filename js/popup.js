@@ -119,12 +119,14 @@ function bindEvents() {
   document.getElementById("btnExportCsv").addEventListener("click", exportCsv);
   document.getElementById("btnClearHistory").addEventListener("click", clearHistory);
   document.getElementById("soqlText").addEventListener("keydown", (e) => {
+    if (e.isComposing || e.keyCode === 229) return; // IME 確定中はスキップ
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") doSoql();
   });
 
   // クイックログイン (Login as User)
   document.getElementById("btnLoginAsSearch").addEventListener("click", searchUsersForLogin);
   document.getElementById("loginAsSearch").addEventListener("keydown", (e) => {
+    if (e.isComposing || e.keyCode === 229) return; // IME 確定中はスキップ
     if (e.key === "Enter") searchUsersForLogin();
   });
 

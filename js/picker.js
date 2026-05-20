@@ -350,6 +350,9 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
 
     $input.addEventListener("input", () => render());
     $input.addEventListener("keydown", (e) => {
+      // IME 入力中 (日本語等の変換中) は ↑↓/Enter/Esc 等の特殊キーをスキップ
+      // → IME の候補選択キー (Space, Enter, ↑↓) と Picker のナビゲーションキーが競合しないよう
+      if (e.isComposing || e.keyCode === 229) return;
       const rows = $list.querySelectorAll(".picker-row:not(.header)");
       const lastIdx = rows.length - 1;
       const scrollToSelected = () => {

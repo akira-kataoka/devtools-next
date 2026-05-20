@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.79.0 (2026-05-20 10:55)** — popup / Picker にも IME 確定保護波及:
+  - **🐛 popup `#soqlText` Ctrl+Enter (doSoql) / `#loginAsSearch` Enter (searchUsersForLogin) に IME 確定保護**: panel と同じ `e.isComposing || keyCode === 229` ガード追加
+  - **🐛 picker.js 検索 input の keydown 全体に IME 確定保護**: 「あい」変換中の Enter / ↑↓ で Picker のナビゲーションが意図せず動作する問題を解消。IME 候補選択キー (Space/Enter/↑↓) と Picker キーボード操作が競合しなくなる
+  - **panel + popup + picker の 3 環境で IME 動作を完全統一**
 - **v1.78.0 (2026-05-20 10:50)** — SOQL/Apex/Inspector Enter キーに IME 確定保護:
   - **🐛 全 keydown ハンドラに `e.isComposing || e.keyCode === 229` ガード追加 (4 箇所)**:
     - `#soqlText` Ctrl+Enter → doSoql
