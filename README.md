@@ -4,6 +4,13 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.63.0 (2026-05-20 09:35)** — KBSC contenteditable 除外 + cell-nested hover/word-break:
+  - **🐛 KBSC `Ctrl+Alt+I/Q/A/L/R/D` の発火条件に `isContentEditable` 除外を追加**: 従来 INPUT/TEXTAREA/SELECT のみ除外 → contenteditable 要素 (将来追加されうるリッチエディタ) でも誤発火しないよう保護
+  - **✨ `.cell-nested` に hover 背景色 + word-break**: 長い JSON が折り返されるよう `word-break: break-word`、hover で `rgba(27,150,255,0.08)` の薄背景。**cell-id (accent 濃色) との視覚分離**
+  - **🧪 検証完了**:
+    - Account.OwnerId 単体 → primitive ID → `cell-id` 化 (regex `/^[a-zA-Z0-9]{15,18}$/` マッチ)
+    - Account.Owner.Id ネスト → object → `cell-nested` 化 (Id [005xx] 形式)
+    - 設計書 markdown table の th/td には class が付かないため cell-id 判定対象外
 - **v1.62.0 (2026-05-20 09:30)** — ネストセル dblclick で raw JSON コピー + 🔗 アイコン:
   - **🐛 ネストリレーションセル (cell-nested) の dblclick コピーが raw JSON を返す**: 従来 `Akira Kataoka [005xx...]` の表示文字列がコピーされていたが、`data-raw-value` 属性に元の JSON を格納し、dblclick 時はそちらを優先取得。**Salesforce REST API の生レスポンスを正確に取得可能**
   - **✨ ネストセル視覚マーク (`🔗`)**: `cell-nested` クラスに italic 体 + 🔗 prefix で平坦化セルを識別。`cell-id` (🔍 単独 ID) との視覚分離

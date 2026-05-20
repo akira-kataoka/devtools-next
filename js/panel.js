@@ -301,8 +301,11 @@ function bindEvents() {
   // Ctrl+Alt+I → Inspector ビュー / Ctrl+Alt+Q → SOQL / Ctrl+Alt+A → Apex / Ctrl+Alt+L → Limits
   document.addEventListener("keydown", (e) => {
     if (!(e.ctrlKey && e.altKey)) return;
-    const tag = (e.target && e.target.tagName || "").toUpperCase();
+    const t = e.target;
+    const tag = (t && t.tagName || "").toUpperCase();
     if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+    // contenteditable 要素も入力フィールド扱い (Mermaid Live Editor 風コードエディタ等)
+    if (t && t.isContentEditable) return;
     const map = { "i": "inspector", "q": "soql", "a": "apex", "l": "limits", "r": "rest", "d": "design" };
     const view = map[e.key.toLowerCase()];
     if (view) {
