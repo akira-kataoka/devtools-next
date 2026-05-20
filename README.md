@@ -17,6 +17,12 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.76.0 (2026-05-20 20:35)** — 🚨 Phase 67: ユーザー報告「未接続のまま」リグレッション切り分け診断機能:
+  - **🚨 ユーザー報告 (2026-05-20 20:30 頃)**: DevTools パネルで「未接続」表示のまま動かない事象。直近 v2.71-75 のリグレッション可能性を切り分けるため診断ログ + 段階表示を追加
+  - **🐛 panel.js init**: 起動進行を orgInfo に段階表示 (`⏳ 初期化中… (nav 構築)` → `(event 登録)` → `(セッション取得)` → `セッションを再取得しています…` → `Org: ...`)。どの段階で止まったか視覚的に判別可能に
+  - **🐛 panel.js モジュール評価ログ**: `console.log("[DevToolsNext] panel.js module loaded (v2.76.0)")` を最上部に追加。Chrome DevTools コンソールでスクリプト読込確認可能に
+  - **🐛 panel.js catch ブロック強化**: 初期化エラー時に orgInfo へエラーメッセージを赤 pill 表示、`title` 属性にスタックトレース全文を埋め込み (ホバーで確認可能)
+  - **🐛 panel.html / tool.html orgInfo 初期値**: 「未接続」→「⏳ 初期化中…」に変更。init 未到達なら「⏳ 初期化中…」のまま固まることで判別容易に。「未接続」のままなら拡張がリロードされていない or HTML が古い
 - **v2.75.0 (2026-05-20 20:28)** — 🚨 Phase 66: ChangeSet lockBtn + Picker aria-busy + popup タップターゲット拡大:
   - **🐛 panel.js csOnModeChange**: ChangeSet ロードボタンを `lockBtn("btnCsLoad")` + try/finally で確実に解除、Tooling SOQL 実行中の二重クリック・モード切替を防止
   - **♿ picker.js aria-busy**: 初回ロード時と「再取得」ボタン押下時の両方で `$list.setAttribute("aria-busy", "true")` を設定し、終了時に "false" に戻す — スクリーンリーダーで「読み込み中」状態が伝達される

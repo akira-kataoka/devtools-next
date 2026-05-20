@@ -43,19 +43,39 @@ const API_OP_INPUTS = {
 // モジュールスクリプトの defer 性質に対応 (popup.js と同じ防御)
 // 重要: init() を queueMicrotask で遅延させ、モジュール body 全 const 初期化完了後に走らせる
 // (v1.99.0: 旧 v1.98.0 では API_OP_INPUTS のみ移動修正、本変更で他の全 const も TDZ 安全に)
+// v2.76.0: モジュール評価到達ログ (panel.js が拡張に読み込まれていることの確認用)
+console.log("[DevToolsNext] panel.js module loaded (v2.76.0)");
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => queueMicrotask(() =>
-    init().catch((e) => console.error("[DevToolsNext] panel init failed:", e))
+    init().catch((e) => {
+      console.error("[DevToolsNext] panel init failed:", e);
+      const orgInfo = document.getElementById("orgInfo");
+      if (orgInfo) orgInfo.innerHTML = `<span class="pill err" title="${escape((e && e.stack) || String(e))}">初期化失敗: ${escape((e && e.message) || String(e))}</span>`;
+    })
   ));
 } else {
-  queueMicrotask(() => init().catch((e) => console.error("[DevToolsNext] panel init failed:", e)));
+  queueMicrotask(() => init().catch((e) => {
+    console.error("[DevToolsNext] panel init failed:", e);
+    const orgInfo = document.getElementById("orgInfo");
+    if (orgInfo) orgInfo.innerHTML = `<span class="pill err" title="${escape((e && e.stack) || String(e))}">初期化失敗: ${escape((e && e.message) || String(e))}</span>`;
+  }));
 }
 
 async function init() {
+  // v2.76.0: init 進行状況を orgInfo に逐次表示 (ユーザー報告「未接続のまま」のリグレッション切り分け用)
+  const orgInfo = document.getElementById("orgInfo");
+  const setStep = (msg) => { if (orgInfo) orgInfo.textContent = msg; };
   try {
+    setStep("⏳ 初期化中… (nav 構築)");
+    console.log("[DevToolsNext] init: bindNav");
     bindNav();
+    setStep("⏳ 初期化中… (event 登録)");
+    console.log("[DevToolsNext] init: bindEvents");
     bindEvents();
+    setStep("⏳ 初期化中… (セッション取得)");
+    console.log("[DevToolsNext] init: reconnect");
     await reconnect();
+    console.log("[DevToolsNext] init: post-reconnect (saved queries / pickers)");
     loadSavedQueries();
     loadSavedApex();
     initHeader();
@@ -63,10 +83,10 @@ async function init() {
     setupDesignPicker();
     // 検索系入力欄に ✕ クリア共通化
     ["inspectFilter", "exFieldFilter", "csFilter", "exObj", "descObj", "apiObj", "inspectRef"].forEach(attachClearButton);
+    console.log("[DevToolsNext] init: complete");
   } catch (e) {
     console.error("[DevToolsNext] init error:", e);
-    const orgInfo = document.getElementById("orgInfo");
-    if (orgInfo) orgInfo.textContent = "初期化失敗: " + (e && e.message || e);
+    if (orgInfo) orgInfo.innerHTML = `<span class="pill err" title="${escape((e && e.stack) || String(e))}">初期化失敗: ${escape((e && e.message) || String(e))}</span>`;
   }
 }
 
