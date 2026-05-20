@@ -44,43 +44,87 @@ async function init() {
   }
 }
 
-// v3.84.0: Phase 174 — chrome.storage 14 種を一括クリアできる「設定リセット」機能
-// 従来 ⚙ ボタンは「未実装」toast を出すだけだった (5 大指針 ② 「使えない機能改修」違反)
-// 業務シナリオ: 共用 PC で他人の SOQL/Apex draft が残らないようにしたい / デモ前に画面を初期化したい / 14 種の蓄積データを一気に整理したい
+// v3.85.0: Phase 175 — ⚙ 設定ダイアログを部分クリアに進化 (履歴 / draft / UI 状態 / 保存 / 全削除 を選択可能)
+// Phase 174 では all-or-nothing しか選べなかったため、業務で「履歴だけ消したい」「draft は残したい」等のニーズに対応できなかった
+// カテゴリ別に粒度を持たせ、目的に応じた最小限のクリアを可能にする
+const RESET_CATEGORIES = {
+  history: {
+    label: "履歴系 (SOQL/Apex/REST 履歴・Inspector 履歴・設計書「対象」履歴)",
+    keys: ["sfdtRecentSoql", "sfdtRecentApex", "sfdtRecentRest", "sfdtInspectHistory", "sfdtDesignObjHist"],
+  },
+  drafts: {
+    label: "draft 系 (SOQL/Apex/REST body の入力中バックアップ)",
+    keys: ["sfdtSoqlDraft", "sfdtApexDraft", "sfdtRestBodyDraft"],
+  },
+  uistate: {
+    label: "UI 状態系 (Limits ピン・各種チェック・サイドバー折りたたみ・最後の view 等)",
+    keys: ["sfdtLastView", "sfdtLimitsPinned", "sfdtLimitsSort", "sfdtMdType", "sfdtSoqlTooling", "sfdtApexFetchLog", "sfdtNavCollapsedCats", "sideCollapsed", "whatsNewCollapsed"],
+  },
+  saved: {
+    label: "保存系 (savedQueries / savedApex — 手動命名保存した SOQL・Apex)",
+    keys: ["savedQueries", "savedApex"],
+  },
+};
+
 async function showSettingsDialog() {
   try {
     const all = await chrome.storage.local.get(null);
-    const keys = Object.keys(all);
-    const sfdtKeys = keys.filter((k) => k.startsWith("sfdt") || k === "savedQueries" || k === "savedApex" || k === "sideCollapsed" || k === "whatsNewCollapsed");
-    // バイト数概算 (JSON.stringify サイズ — クォータ計算には不正確だが目安として十分)
+    const allKeys = Object.keys(all);
+    const sfdtKeys = allKeys.filter((k) => k.startsWith("sfdt") || k === "savedQueries" || k === "savedApex" || k === "sideCollapsed" || k === "whatsNewCollapsed");
     let bytes = 0;
     for (const k of sfdtKeys) {
       try { bytes += new Blob([JSON.stringify(all[k] ?? null)]).size; } catch {}
     }
     const sizeLabel = bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1048576).toFixed(2)} MB`;
-    const ok = window.confirm(
+
+    const countFor = (cat) => RESET_CATEGORIES[cat].keys.filter((k) => k in all).length;
+    const choice = window.prompt(
       `🛠 DevToolsNext 設定リセット\n\n` +
-      `保存されているデータ: ${sfdtKeys.length} キー / 約 ${sizeLabel}\n\n` +
-      `以下を一括クリアします:\n` +
-      `・SOQL/Apex/REST 履歴 (3 種)\n` +
-      `・SOQL/Apex/REST body draft (3 種)\n` +
-      `・Inspector レコード履歴\n` +
-      `・設計書「対象」入力履歴\n` +
-      `・Limits ピン / メタデータ type / SOQL Tooling チェック / Apex Debug ログチェック\n` +
-      `・保存クエリ (savedQueries) / 保存 Apex (savedApex)\n` +
-      `・UI 状態 (サイドバー折りたたみ, 最後に開いた view 等)\n\n` +
-      `⚠ この操作は取り消せません。続行しますか?`
+      `現在の保存データ: ${sfdtKeys.length} キー / 約 ${sizeLabel}\n\n` +
+      `クリアする範囲を番号で選んでください:\n\n` +
+      `1. 履歴系 (${countFor("history")} キー保存中) — ${RESET_CATEGORIES.history.label}\n` +
+      `2. draft 系 (${countFor("drafts")} キー保存中) — ${RESET_CATEGORIES.drafts.label}\n` +
+      `3. UI 状態系 (${countFor("uistate")} キー保存中) — ${RESET_CATEGORIES.uistate.label}\n` +
+      `4. 保存系 (${countFor("saved")} キー保存中) — ${RESET_CATEGORIES.saved.label}\n` +
+      `5. 全削除 (${sfdtKeys.length} キーすべて、約 ${sizeLabel})\n` +
+      `0. キャンセル\n\n` +
+      `番号 (0-5) を入力してください:`,
+      "5"
     );
-    if (!ok) {
+    if (choice === null || choice.trim() === "" || choice.trim() === "0") {
       toast("🚫 キャンセルしました (データはそのまま)", { kind: "warn" });
       return;
     }
-    if (sfdtKeys.length === 0) {
-      toast("✓ クリアするデータがありません", { kind: "ok" });
+    const num = parseInt(choice.trim(), 10);
+    let targetKeys, scopeLabel;
+    if (num === 5) {
+      targetKeys = sfdtKeys;
+      scopeLabel = `全削除 (${sfdtKeys.length} キー、約 ${sizeLabel})`;
+    } else if (num >= 1 && num <= 4) {
+      const cat = ["history", "drafts", "uistate", "saved"][num - 1];
+      targetKeys = RESET_CATEGORIES[cat].keys.filter((k) => k in all);
+      scopeLabel = RESET_CATEGORIES[cat].label;
+    } else {
+      toast(`⚠ 不正な番号です: "${choice}" (0-5 で入力してください)`, { kind: "warn" });
       return;
     }
-    await chrome.storage.local.remove(sfdtKeys);
-    toast(`✓ ${sfdtKeys.length} キー (約 ${sizeLabel}) をクリアしました — 履歴 / draft / UI 状態すべてリセット`, { kind: "ok" });
+    if (targetKeys.length === 0) {
+      toast(`✓ ${scopeLabel} はすでに空です (クリアするキーがありません)`, { kind: "ok" });
+      return;
+    }
+    const confirmed = window.confirm(
+      `⚠ 以下をクリアします (取り消せません):\n\n` +
+      `${scopeLabel}\n` +
+      `対象キー: ${targetKeys.length} 件\n` +
+      `(${targetKeys.join(", ")})\n\n` +
+      `続行しますか?`
+    );
+    if (!confirmed) {
+      toast("🚫 キャンセルしました (データはそのまま)", { kind: "warn" });
+      return;
+    }
+    await chrome.storage.local.remove(targetKeys);
+    toast(`✓ ${targetKeys.length} キーをクリアしました — ${scopeLabel}`, { kind: "ok" });
   } catch (e) {
     toast(`❌ 設定リセットに失敗しました: ${e.message || e}`, { kind: "err" });
   }
