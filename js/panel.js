@@ -90,6 +90,7 @@ async function init() {
     loadInspectHistory();
     loadApexHistory();
     loadRestHistory();
+    loadMdType();
     // v3.46.0: chrome.storage.local 変更を監視して、別画面/mini-panel での履歴更新を即時反映
     if (chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, area) => {
@@ -867,6 +868,8 @@ function bindEvents() {
   $on("btnDescribe", "click", doDescribe);
   $on("btnRest", "click", doRest);
   $on("btnMetadata", "click", doMetadataList);
+  // v3.78.0: メタデータ型を変えた瞬間に永続化 (一覧取得を押さなくても次回起動時に復元される)
+  $on("mdType", "change", (e) => { saveMdType(e.target.value); });
   $on("btnFetchLogs", "click", doFetchLogs);
   $on("btnEnableDebug", "click", doEnableDebug);
   $on("btnLimits", "click", doLimits);
@@ -3869,10 +3872,30 @@ async function doRest() {
   pushRestHistory({ method, path, body });
 }
 
+// v3.78.0: メタデータ一覧の選択 type を chrome.storage に保存し、次回起動時に復元 (9 種達成)
+const MD_TYPE_KEY = "sfdtMdType";
+async function loadMdType() {
+  try {
+    const data = await chrome.storage.local.get(MD_TYPE_KEY);
+    const saved = data[MD_TYPE_KEY];
+    if (!saved || typeof saved !== "string") return;
+    const sel = document.getElementById("mdType");
+    if (!sel) return;
+    // 保存値が <option> に存在する場合のみ復元 (将来 option が削除されてもクラッシュしない)
+    const opts = Array.from(sel.options).map((o) => o.value || o.textContent);
+    if (opts.includes(saved)) sel.value = saved;
+  } catch {}
+}
+async function saveMdType(type) {
+  if (!type) return;
+  try { await chrome.storage.local.set({ [MD_TYPE_KEY]: type }); } catch {}
+}
+
 async function doMetadataList() {
   if (!state.sid) return;
   const unlock = lockBtn("btnMetadata");
   const type = document.getElementById("mdType").value;
+  saveMdType(type);
   // v3.32.0: loading 表示を統一スピナーに
   const mdResult = document.getElementById("metadataResult");
   if (mdResult) mdResult.innerHTML = `<div class="empty-state"><span class="pill loading">${escape(type)} 一覧を取得しています…</span></div>`;
