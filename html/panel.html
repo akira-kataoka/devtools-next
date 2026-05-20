@@ -361,7 +361,7 @@ System.debug('Now: ' + System.now());</textarea>
           <button id="btnLoginEvidence" title="現在のログイン履歴を Markdown 形式のエビデンスとしてダウンロードします (テスト工程の証跡用)">📸 エビデンス</button>
         </div>
         <div id="loginMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
-        <div id="loginResult" class="grid"></div>
+        <div id="loginResult" class="grid"><div class="empty-state" style="padding:24px 16px;color:var(--muted);font-size:13px;line-height:1.7;">👆 取得件数とステータスを選んで「取得」を押してください。<br/>取得後はテーブル内で列ソート・絞り込み・📸 エビデンス保存ができます。<br/><br/><strong>💡 ヒント</strong>: 「失敗のみ」を選ぶと、パスワード誤りや IP 制限などの認証失敗を素早く確認できます。CSV/エビデンス保存はセキュリティ監査の証跡としてご活用ください。</div></div>
       </div>
 
       <div class="view hidden" data-view="limits">
@@ -378,7 +378,7 @@ System.debug('Now: ' + System.now());</textarea>
           <button id="btnLimitsEvidence" title="現在の Limits 使用状況を Markdown 形式のエビデンスとしてダウンロードします (テスト工程の証跡用)">📸 エビデンス</button>
         </div>
         <div id="limitsSummary" class="limits-summary"></div>
-        <div id="limitsResult" class="limits-grid"></div>
+        <div id="limitsResult" class="limits-grid"><div class="empty-state" style="padding:24px 16px;color:var(--muted);font-size:13px;line-height:1.7;">👆 「取得 / 更新」を押すと、API コール数・Apex 実行回数・ストレージ等 30 種類以上の組織制限が表示されます。<br/>各行はクリックでピン止め (お気に入り)、列ヘッダクリックでソートできます。<br/><br/><strong>💡 ヒント</strong>: 業務日中に定期取得 → 📸 エビデンス保存しておくと、ガバナ制限ヒット時の原因分析や次年度のライセンス見積りに活用できます。</div></div>
       </div>
 
       <div class="view hidden" data-view="design">
