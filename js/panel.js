@@ -617,6 +617,16 @@ function bindEvents() {
   $on("btnDesignGen", "click", doGenerateDesign);
   $on("btnDesignCopy", "click", copyDesignSource);
   $on("btnDesignDownload", "click", downloadDesignSource);
+  // v3.29.0: 現在 SF タブのオブジェクト名を designObj に自動補完
+  $on("btnDesignFromTab", "click", async () => {
+    const href = await getInspectedHref();
+    if (!href) { panelToast("⚠ SF タブが見つかりません。Salesforce のレコード詳細ページを開いてから再試行してください", { kind: "warn" }); return; }
+    const m = href.match(/\/lightning\/r\/([^/]+)\//) || href.match(/\/lightning\/o\/([^/]+)\//);
+    if (!m) { panelToast("⚠ 現在タブからオブジェクト名を取得できませんでした。Lightning レコード/タブのページで再試行してください", { kind: "warn" }); return; }
+    const objEl = document.getElementById("designObj");
+    if (objEl) { objEl.value = m[1]; objEl.focus(); }
+    panelToast(`📍 対象を「${m[1]}」に設定しました`, { kind: "ok" });
+  });
 
   // Inspector
   $on("btnInspect", "click", () => doInspect());

@@ -525,6 +525,14 @@ td.cell-nested { word-break: break-word; }
 .design-split { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; min-height: 0; }
 .design-pane { display: flex; flex-direction: column; min-height: 200px; }
 .design-pane-label { color: var(--accent); font-size: 10px; padding: 4px 6px; }
+/* v3.29.0: 設計書ビューでツールバーを sticky に — 大量行の設計書でスクロールしても種類/対象/形式を変更可能 */
+.view[data-view="design"] > .toolbar {
+  position: sticky; top: 0; z-index: 4;
+  background: var(--bg);
+  padding-top: 2px; padding-bottom: 4px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
 .design-preview {
   flex: 1; overflow: auto;
   background: #0f1830; border: 1px solid var(--line); border-radius: 6px;
