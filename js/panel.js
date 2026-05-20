@@ -2353,7 +2353,6 @@ let designRunId = 0;
 
 async function doGenerateDesign() {
   if (!state.sid) { document.getElementById("designMeta").innerHTML = `<span class="pill err">Salesforce 未接続</span> Salesforce タブで再接続してください`; return; }
-  const unlock = lockBtn("btnDesignGen");
   const type = document.getElementById("designType").value;
   const obj = document.getElementById("designObj").value.trim();
   const format = document.getElementById("designFormat").value;
@@ -2361,6 +2360,29 @@ async function doGenerateDesign() {
   const preview = document.getElementById("designPreview");
   const source = document.getElementById("designSource");
 
+  // v3.47.0: 「対象」必須タイプで空入力なら API 呼び出し前に早期失敗 → 時間とネットワーク節約 + 業務担当者に即フィードバック
+  const TYPE_REQUIRES_OBJ = new Set([
+    "objectDef", "profileDetail", "flsReport", "fieldPermMatrix",
+    "erDiagram", "flowDetail", "apexDetail", "lwcDetail",
+  ]);
+  if (TYPE_REQUIRES_OBJ.has(type) && !obj) {
+    const label = {
+      objectDef: "オブジェクト API 名 (例: Account)",
+      profileDetail: "プロファイル名 (例: 営業ユーザー) または '@PermSet_API名'",
+      flsReport: "オブジェクト API 名 (例: Account)",
+      fieldPermMatrix: "オブジェクト API 名 (例: Account)",
+      erDiagram: "オブジェクト API 名 (例: Account)",
+      flowDetail: "Flow DeveloperName",
+      apexDetail: "Apex クラス名",
+      lwcDetail: "LWC バンドル DeveloperName",
+    }[type] || "対象";
+    meta.innerHTML = `<span class="pill warn">入力が必要</span> 設計書「${escape(type)}」は「対象」が必須です。<span class="meta">入力例: ${escape(label)}</span>`;
+    const designObjEl = document.getElementById("designObj");
+    if (designObjEl) designObjEl.focus();
+    return;
+  }
+
+  const unlock = lockBtn("btnDesignGen");
   const myId = ++designRunId;
   meta.textContent = `⏳ 設計書を生成しています… #${myId}`;
   preview.innerHTML = "";
