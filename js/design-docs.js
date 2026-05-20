@@ -1094,7 +1094,7 @@ async function buildFlsReport({ host, sid, apiVersion, obj, progress = () => {} 
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. FLS マトリクス (項目 × 権限主体)", headers, rows },
     ],
-    note: `対象 ${fmtNum(rows.length)} 項目 / 列 ${fmtNum(allCols.length)} (プロファイル ${fmtNum(profileCols.length)} + 権限セット ${fmtNum(permsetCols.length)}) / 編集可 (RW あり) ${fmtNum(editAnyCount)} 項目 (${fmtPercent(editAnyCount / Math.max(rows.length, 1))}) / 参照のみ ${fmtNum(readOnlyCount)} 項目 (${fmtPercent(readOnlyCount / Math.max(rows.length, 1))}) / アクセス無し ${fmtNum(noAccessCount)} 項目 (${fmtPercent(noAccessCount / Math.max(rows.length, 1))}) / **Excel 推奨**: ウィンドウ枠固定 (B2) で左 5 列 + 先頭行を固定`,
+    note: `対象 ${fmtNum(rows.length)} 項目 / 列 ${fmtNum(allCols.length)} (プロファイル ${fmtNum(profileCols.length)} + 権限セット ${fmtNum(permsetCols.length)}) / 編集可 (RW あり) ${fmtNum(editAnyCount)} 項目 (${fmtPercent(editAnyCount / Math.max(rows.length, 1))}) / 参照のみ ${fmtNum(readOnlyCount)} 項目 (${fmtPercent(readOnlyCount / Math.max(rows.length, 1))}) / アクセス無し ${fmtNum(noAccessCount)} 項目 (${fmtPercent(noAccessCount / Math.max(rows.length, 1))})。**業務担当者向け**: 項目レベルセキュリティ (FLS) は「誰がどの項目を見られる/編集できるか」を制御する仕組みです。本マトリクスは項目 × 権限主体 (プロファイル/権限セット) で参照可・編集可・アクセス無しを一目把握可能。**用途**: 機微情報 (個人情報/契約金額/評価) の参照権限棚卸し、年次セキュリティ監査、新規ユーザー権限申請時の影響範囲確認、ProfileReader 等の他ツールとの比較資料 (同等フォーマット採用)。**Excel 推奨**: ウィンドウ枠固定 (B2) で左 5 列 + 先頭行を固定。`,
   };
 }
 
