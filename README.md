@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.30.0 (2026-05-20 15:20)** — 🚨 ユーザー要望 Phase 20: Apex 実行結果 pill + displayApiError ヒント文 + 設定 toast:
+  - **🐛 panel.js Apex 実行結果 pill**: 「Success」→「✓ 成功 (Success)」、「Runtime Error」→「⚠ 実行時エラー (Runtime Error)」、「Compile Error」→「❌ コンパイルエラー (Compile Error)」と絵文字+日本語+原文併記、「line X:Y」→「エラー位置: X 行目 / Y 列目」に
+  - **🐛 panel.js Apex 詳細**: 「Compile:」→「コンパイルエラー内容:」、「Exception:」→「例外メッセージ:」、stackTrace に「スタックトレース:」ラベル付与
+  - **🐛 panel.js displayApiError 6 ヒント文 (401/403/404/400/429/500)**: 全文を ですます調 + 業務用語拡充 (例: 「現在のユーザに権限がありません」「OWD (組織既定の共有設定)」「指定された名前 / Id が見つかりません」「API コール数の上限に達しました」「しばらくお待ちいただいた後、再度お試しください」)
+  - **🐛 popup.js 設定アイコン未実装 toast**: 「⚠ 設定画面はまだ実装されていません」→「⚠ 設定画面は今後のバージョンで実装予定です (現在は未実装)」
 - **v2.29.0 (2026-05-20 15:15)** — 🚨 ユーザー要望 Phase 19: Inspector 履歴/inspectRef / 各タブ pill エラー文言:
   - **🐛 panel.js Inspector 履歴戻る toast**: 「⏪ 戻る: Account:001…」→「⏪ 前のレコード (Account:001…) に戻りました」に詳細化
   - **🐛 panel.js Inspector pill エラー**: 「未接続」→「Salesforce 未接続」、「有効な ID ではありません」→「有効な Salesforce ID ではありません (15 桁または 18 桁の英数字を入力してください)」、「KeyPrefix='X' のオブジェクトが見つかりません」→「Key Prefix 'X' のオブジェクトが見つかりませんでした」、「レコード取得失敗」→「レコードの取得に失敗しました」、「⏳ 取得中…」→「⏳ レコードを取得しています…」

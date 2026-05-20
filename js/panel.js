@@ -2341,7 +2341,7 @@ function displayApiError(elem, status, data, ctx = "") {
   let hint = null;
   if (status === 401) {
     hint = {
-      text: "Salesforce にログインし直してから popup の ⟳ で再接続してください。Lightning ドメインの sid は REST に使えないことがあります。",
+      text: "セッションの有効期限が切れています。Salesforce へログインし直し、ポップアップの ⟳ ボタンで再接続してください (Lightning ドメインの sid は REST から使えない場合があります)。",
       links: [
         { label: "セッション管理を開く", path: "/lightning/setup/SecuritySession/home" },
         { label: "Login History", action: "navView", view: "login" },
@@ -2349,7 +2349,7 @@ function displayApiError(elem, status, data, ctx = "") {
     };
   } else if (status === 403) {
     hint = {
-      text: "現在のユーザーに権限がありません。プロファイル/権限セット または OWD で対象オブジェクトのアクセスを確認してください。",
+      text: "現在のユーザに権限がありません。プロファイル / 権限セットまたは OWD (組織既定の共有設定) で対象オブジェクトのアクセス権をご確認ください。",
       links: [
         { label: "プロファイル一覧", path: "/lightning/setup/EnhancedProfiles/home" },
         { label: "権限セット一覧", path: "/lightning/setup/PermSets/home" },
@@ -2358,28 +2358,28 @@ function displayApiError(elem, status, data, ctx = "") {
     };
   } else if (status === 404) {
     hint = {
-      text: "指定した名前 / Id が存在しません。タイプミスがないか、🔍 候補リストから選択してください。",
+      text: "指定された名前 / Id が見つかりません。タイプミスがないかを確認するか、🔍 候補リストから選択してください。",
       links: [
         { label: "オブジェクトマネージャ", path: "/lightning/setup/ObjectManager/home" },
       ],
     };
   } else if (status === 400) {
     hint = {
-      text: "リクエストが不正です。SOQL の構文、フィールド名、参照可能性を確認してください。Describe ビューで対象オブジェクトの項目を確認可能。",
+      text: "リクエストの内容が不正です。SOQL の構文・項目名・参照可能性をご確認ください (Describe ビューから対象オブジェクトの項目を確認できます)。",
       links: [
         { label: "Describe ビューを開く", action: "navView", view: "describe" },
       ],
     };
   } else if (status === 429) {
     hint = {
-      text: "API 上限に達しました。Limits ビューで現状を確認してください。",
+      text: "API コール数の上限に達しました。Limits ビューから現在の使用状況をご確認ください。",
       links: [
         { label: "Limits ダッシュボード", action: "navView", view: "limits" },
       ],
     };
   } else if (status === 500 || status === 503) {
     hint = {
-      text: "Salesforce サーバ側の問題です。少し待って再試行してください。",
+      text: "Salesforce サーバ側で問題が発生しています。しばらくお待ちいただいた後、再度お試しください。",
       links: [
         { label: "Status Trust ページ (外部)", url: "https://status.salesforce.com/" },
       ],
@@ -2456,14 +2456,14 @@ async function doRunApex() {
   const compiled = d.compiled === true;
   const success = d.success === true;
   const statusClass = success ? "ok" : (compiled ? "warn" : "err");
-  const statusLabel = success ? "Success" : (compiled ? "Runtime Error" : "Compile Error");
+  const statusLabel = success ? "✓ 成功 (Success)" : (compiled ? "⚠ 実行時エラー (Runtime Error)" : "❌ コンパイルエラー (Compile Error)");
   let summary = `<span class="pill ${statusClass}">${statusLabel}</span> ${dt}ms`;
   if (d.line >= 0 && d.column >= 0 && !success) {
-    summary += ` <span class="pill warn">line ${d.line}:${d.column}</span>`;
+    summary += ` <span class="pill warn">エラー位置: ${d.line} 行目 / ${d.column} 列目</span>`;
   }
-  if (d.compileProblem) summary += `<br/>Compile: ${escape(d.compileProblem)}`;
-  if (d.exceptionMessage) summary += `<br/>Exception: ${escape(d.exceptionMessage)}`;
-  if (d.exceptionStackTrace) summary += `<br/><span class="meta">${escape(d.exceptionStackTrace)}</span>`;
+  if (d.compileProblem) summary += `<br/><b>コンパイルエラー内容:</b> ${escape(d.compileProblem)}`;
+  if (d.exceptionMessage) summary += `<br/><b>例外メッセージ:</b> ${escape(d.exceptionMessage)}`;
+  if (d.exceptionStackTrace) summary += `<br/><span class="meta">スタックトレース: ${escape(d.exceptionStackTrace)}</span>`;
   meta.innerHTML = summary;
 
   // Debug Log 取得 (実行直後の自分の最新 ApexLog 1件)

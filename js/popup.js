@@ -57,7 +57,7 @@ function bindTabs() {
 function bindEvents() {
   document.getElementById("btnRefresh").addEventListener("click", refreshSession);
   document.getElementById("btnSettings").addEventListener("click", () => {
-    chrome.runtime.openOptionsPage ? chrome.runtime.openOptionsPage() : toast("⚠ 設定画面はまだ実装されていません", { kind: "warn" });
+    chrome.runtime.openOptionsPage ? chrome.runtime.openOptionsPage() : toast("⚠ 設定画面は今後のバージョンで実装予定です (現在は未実装)", { kind: "warn" });
   });
   // バージョン表示 + 自動アップデート
   const verEl = document.getElementById("versionBadge");
