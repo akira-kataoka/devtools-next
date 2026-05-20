@@ -10,10 +10,13 @@
 </head>
 <body>
   <header class="hdr">
-    <span class="brand">DevToolsNext</span>
+    <span class="brand" title="クリックで SOQL クエリ画面に戻ります">DevToolsNext</span>
     <span id="orgInfo" class="org">未接続</span>
     <span class="grow"></span>
-    <select id="apiVer">
+    <span class="kbd-hint" title="主要なキーボードショートカット: Ctrl+Enter で実行 / Esc で閉じる / ↑↓ で Picker 移動 / Ctrl+Alt+I で Inspector / Q で SOQL / A で Apex / L で Limits / R で REST / D で 設計書">
+      <kbd>Ctrl+Enter</kbd> 実行 / <kbd>Esc</kbd> 閉じる / <kbd>Ctrl+Alt+I/Q/A/L/R/D</kbd> ビュー切替
+    </span>
+    <select id="apiVer" title="Salesforce REST API バージョンを選択します">
       <option>62.0</option><option>61.0</option><option>60.0</option>
     </select>
     <button id="btnReconnect" title="現在のタブの Salesforce セッションを再取得します">⟳ 再接続</button>

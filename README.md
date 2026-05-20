@@ -17,6 +17,10 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.50.0 (2026-05-20 17:00)** — 🎊 マイルストーン: 累計 50 minor リリース達成 / Phase 1-39 完了 + panel.html kbd-hint:
+  - **🎊 v2.50.0 マイルストーンサマリを README に追加**: Phase 1〜39 (158 サイクル) の業務向け改修まとめ (設計書 22 種凡例 / 文言 400+ 箇所統一 / 全 16+ ボタン disabled / 業務情報拡充 / エラー処理改善 / 日本語化統一 / アクセシビリティ)
+  - **🐛 html/panel.html ヘッダ kbd-hint**: tool.html と統一して「Ctrl+Enter 実行 / Esc 閉じる / Ctrl+Alt+I/Q/A/L/R/D ビュー切替」を表示、tooltip で全ショートカット詳細、brand クリック動作の hint 追加、apiVer select に title 追加
+  - **🐛 css/panel.css**: .kbd-hint スタイル追加 (font-size 10px / opacity 0.7 / .kbd 共通スタイル) + @media (max-width: 900px) でモバイル非表示
 - **v2.49.0 (2026-05-20 16:55)** — 🚨 ユーザー要望 Phase 39: キーボードショートカット表示 + README 目次:
   - **🐛 html/tool.html ヘッダの kbd-hint**: 表示を「Ctrl+Enter 実行 / Esc 閉じる / ↑↓ Picker 移動」から「Ctrl+Enter 実行 / Esc 閉じる / ↑↓ Picker / Ctrl+Alt+I/Q/A/L/R/D ビュー切替」に拡充、tooltip で全ショートカットの意味を詳細説明
   - **📚 README.md 目次セクション追加**: 「更新履歴」「設計書 22 種類 業務向け詳細解説」「設計書ジェネレータ手動テストガイド」「機能」「デプロイ方法」「既知の前提・制約」へのアンカーリンクを冒頭に追加
@@ -735,6 +739,20 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - **v0.1.0 (2026-05-19)**: 初版。popup 5タブ / DevTools 6ビュー / sf-api.js / アイコン / README / zip 配布
 
 ---
+
+## v2.50.0 マイルストーン 🎊 (累計 158 サイクル / Phase 1-39 改善完了)
+
+2026-05-20 のユーザーフィードバック「日本語がおかしかったり、設計書もつかいづらいのがおおいです」を受け、Phase 1〜39 にわたる連続的な業務向け品質改善を実施。
+
+| カテゴリ | 達成内容 |
+|---|---|
+| 📚 設計書 22 種類 | 全種類に **業務向け凡例セクション** を追加 (Apex は @AuraEnabled/@InvocableMethod/@TestVisible 等を解説、Flow は ProcessType 12 種を日本語+原文、ER 図は MD/Lookup 線種区別、FLS/オブジェクト権限は CRUDVM/RW/R-/-- 記号を業務語で説明)、列名・ステータス値を業務語マッピングに統一 |
+| 💬 文言統一 | HTML / JS / CSS で 約 **400+ 箇所** を ですます調 + 業務用語に統一。英語短縮 (「FLS 取得」「Apex 実行」「Limits 未取得」等) を撲滅 |
+| 🎮 UX 改善 | 全主要 **16+ ボタン** の実行中 disabled (二重クリック防止) + ローディング表示、ID 入力 250ms デバウンス自動解析、ビュー切替時スクロールリセット、recordsTable 長文セル 120 文字 truncate + tooltip プレビュー、Inspector 絞込み件数表示、popup 履歴件数サマリ |
+| 🔗 業務情報拡充 | API_HELP 19 オペレーション全てに「業務用途:」を追記、displayApiError 6 hint (401/403/404/400/429/500) に絵文字+業務語付き Setup リンク、popup 便利リンク 18 項目を日本語業務名 |
+| 🛡 エラー処理 | sfFetch / picker / design-docs / panel の throw new Error 文字列をすべて ですます調 詳細化、HTTP ステータス別 hint で対処方法と Setup ナビゲーションを表示 |
+| 🇯🇵 日本語化 | LWC バンドル→LWC コンポーネント、ユーザー→ユーザ、Login → ログイン、Setup→設定、describe(X)→オブジェクト 'X' の describe 取得に失敗しました 等、用語を業務通用語に統一 |
+| ⌨ アクセシビリティ | popup ID 入力に pattern + maxlength 属性追加、tool.html/panel.html に Ctrl+Alt+I/Q/A/L/R/D ショートカット可視化、各ナビボタン 13 個に絵文字プレフィックス統一 |
 
 ## v1.70.0 時点 機能サマリ 🎉 (累計 70 リリース達成)
 
