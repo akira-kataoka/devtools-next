@@ -71,7 +71,7 @@ export async function generateDesign({ type, host, sid, apiVersion, obj, format,
 async function buildObjectDef({ host, sid, apiVersion, obj }) {
   requireInput(obj, "オブジェクト API 名 (例: Account)");
   const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
-  if (!r.ok) throw apiError(`describe(${obj})`, r);
+  if (!r.ok) throw apiError(`オブジェクト '${obj}' の describe 取得に失敗しました`, r);
   const d = r.data;
   const fields = d.fields || [];
 
@@ -430,7 +430,7 @@ async function buildRecordTypeList({ host, sid, apiVersion, obj }) {
 async function buildFieldSetList({ host, sid, apiVersion, obj }) {
   requireInput(obj, "オブジェクト API 名 (例: Account)");
   const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
-  if (!r.ok) throw apiError(`describe(${obj})`, r);
+  if (!r.ok) throw apiError(`オブジェクト '${obj}' の describe 取得に失敗しました`, r);
   const sets = (r.data.namedLayoutInfos || r.data.fieldSets) ? (r.data.fieldSets || []) : [];
   // describe レスポンスに FieldSet は無いため、Tooling FieldSet を引く
   const tr = await runSoql({
@@ -494,7 +494,7 @@ async function buildErDiagram({ host, sid, apiVersion, obj }) {
   requireInput(obj, "基点となるオブジェクト API 名 (例: Account)");
   // 起点 + 直接の参照先を 1 hop 取る
   const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
-  if (!r.ok) throw apiError(`describe(${obj})`, r);
+  if (!r.ok) throw apiError(`オブジェクト '${obj}' の describe 取得に失敗しました`, r);
   const d = r.data;
   const lines = ["erDiagram"];
   const seen = new Set([d.name]);
@@ -736,7 +736,7 @@ async function buildFlsReport({ host, sid, apiVersion, obj, progress = () => {} 
   requireInput(obj, "オブジェクト API 名 (例: Account)");
   progress("describe 取得中...");
   const dr = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
-  if (!dr.ok) throw apiError(`describe(${obj})`, dr);
+  if (!dr.ok) throw apiError(`オブジェクト '${obj}' の describe 取得に失敗しました`, dr);
   progress("FieldPermissions 取得中...");
   const allFields = (dr.data.fields || [])
     .filter((f) => !f.calculated && f.type !== "id")
@@ -1335,7 +1335,7 @@ async function buildFieldPermMatrix({ host, sid, apiVersion, obj, progress = () 
   progress("describe 取得中...");
   // 1. オブジェクトの全 fields を describe で取得 (順序維持用)
   const dr = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
-  if (!dr.ok) throw apiError(`describe(${obj})`, dr);
+  if (!dr.ok) throw apiError(`オブジェクト '${obj}' の describe 取得に失敗しました`, dr);
   const allFields = (dr.data.fields || [])
     .filter((f) => !f.calculated && f.type !== "id") // 計算項目と Id は権限対象外
     .map((f) => ({ name: f.name, label: f.label, type: f.type, required: !f.nillable && !f.defaultedOnCreate && f.createable }));

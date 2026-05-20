@@ -38,7 +38,7 @@
         <ul class="whats-new-list" style="margin-top:8px">
           <li>🔍 レコード Inspector / 📥 データエクスポート / Apex 実行</li>
           <li>🔗 API URL ビルダー / 📦 変更セット (package.xml)</li>
-          <li>📊 Limits ダッシュボード / 設計書ジェネレータ 20種</li>
+          <li>📊 Limits ダッシュボード / 設計書ジェネレータ 22 種類 (業務向け凡例付き)</li>
         </ul>
         <div style="font-size:10px;color:var(--fg-dim);margin-top:6px;padding:4px 6px;background:rgba(27,150,255,0.05);border:1px solid var(--line);border-radius:4px">
           ⌨️ <b>キーボード操作:</b> <kbd>Ctrl+Enter</kbd> 実行 / <kbd>Esc</kbd> 閉じる / <kbd>↑↓</kbd> Picker 移動
@@ -68,12 +68,12 @@
     <section class="card">
       <h2>クイックアクション</h2>
       <div class="grid2">
-        <button data-act="openSetup">Setup を開く</button>
-        <button data-act="openDevConsole">Developer Console</button>
-        <button data-act="openObjectMgr">オブジェクトマネージャ</button>
-        <button data-act="openProfile">マイプロフィール</button>
-        <button data-act="openOrgInfo">組織情報</button>
-        <button data-act="logoutUI">ログアウト</button>
+        <button data-act="openSetup" title="Setup 画面を新しいタブで開きます">Setup を開く</button>
+        <button data-act="openDevConsole" title="Developer Console を新しいタブで開きます">Developer Console</button>
+        <button data-act="openObjectMgr" title="オブジェクトマネージャを開きます">オブジェクトマネージャ</button>
+        <button data-act="openProfile" title="自分のユーザプロフィールを開きます">マイプロフィール</button>
+        <button data-act="openOrgInfo" title="組織情報 (Company Information) を開きます">組織情報</button>
+        <button data-act="logoutUI" title="この組織からログアウトします">ログアウト</button>
       </div>
     </section>
 
@@ -88,7 +88,7 @@
 
     <section class="card">
       <h2>🔢 Salesforce ID 解析</h2>
-      <input type="text" id="idInput" placeholder="15 桁 または 18 桁の Salesforce ID を貼り付けてください" aria-label="Salesforce ID 入力欄" />
+      <input type="text" id="idInput" placeholder="15 桁 または 18 桁の Salesforce ID を貼り付けてください" aria-label="Salesforce ID 入力欄" pattern="[a-zA-Z0-9]{15,18}" maxlength="18" title="英数字 15 桁または 18 桁の Salesforce ID を入力してください" />
       <div class="row">
         <button id="btnParseId" class="primary" aria-label="ID を解析">解析</button>
         <button id="btnOpenId" aria-label="ID のレコードを開く">レコードを開く</button>
@@ -100,11 +100,11 @@
   <main class="panel hidden" id="panel-soql">
     <section class="card">
       <h2>SOQL クエリ</h2>
-      <textarea id="soqlText" rows="6" spellcheck="false">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 20</textarea>
+      <textarea id="soqlText" rows="6" spellcheck="false" placeholder="SOQL クエリを入力してください">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 20</textarea>
       <div class="row">
-        <label><input type="checkbox" id="soqlTooling" /> Tooling API</label>
-        <button id="btnRunSoql" class="primary">実行</button>
-        <button id="btnExportCsv">CSV</button>
+        <label title="Tooling API を使う場合はチェックしてください (ApexClass / ValidationRule 等)"><input type="checkbox" id="soqlTooling" /> Tooling API を使用</label>
+        <button id="btnRunSoql" class="primary" title="SOQL クエリを実行します">実行</button>
+        <button id="btnExportCsv" title="クエリ結果を CSV ファイルとしてダウンロードします">CSV</button>
         <button id="btnClearHistory" class="mini" title="SOQL 履歴をすべて削除します (ピン留め項目も削除されます)">履歴クリア</button>
       </div>
       <div id="soqlMeta" class="meta"></div>
@@ -123,13 +123,13 @@
         <select id="apiMethod">
           <option>GET</option><option>POST</option><option>PATCH</option><option>DELETE</option>
         </select>
-        <input id="apiPath" placeholder="/services/data/v62.0/sobjects/Account/describe" />
+        <input id="apiPath" placeholder="REST API パスを入力してください (例: /services/data/v62.0/sobjects/Account/describe)" title="先頭の / から指定します" />
       </div>
-      <textarea id="apiBody" rows="4" placeholder='POST/PATCH の JSON ボディ (任意項目)'></textarea>
+      <textarea id="apiBody" rows="4" placeholder='POST / PATCH の場合は JSON ボディを入力してください (GET / DELETE では不要)'></textarea>
       <div class="row">
-        <button id="btnApiSend" class="primary">送信</button>
-        <button id="btnApiLimits">/limits</button>
-        <button id="btnApiVersions">/versions</button>
+        <button id="btnApiSend" class="primary" title="指定したパスとメソッドで REST API を送信します">送信</button>
+        <button id="btnApiLimits" title="/limits エンドポイントに GET します">/limits</button>
+        <button id="btnApiVersions" title="/services/data エンドポイントで利用可能な API バージョン一覧を取得します">/versions</button>
       </div>
       <div id="apiMeta" class="meta"></div>
       <pre id="apiResult" class="code"></pre>
@@ -144,7 +144,7 @@
   </main>
 
   <footer class="ftr">
-    <span id="statusMsg">Ready</span>
+    <span id="statusMsg">準備完了</span>
     <a href="#" id="openDevtools" title="DevToolsNext を新しいタブで全画面起動します">🛠️ ツールを開く</a>
   </footer>
 

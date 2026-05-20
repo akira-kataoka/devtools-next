@@ -8,6 +8,14 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.26.0 (2026-05-20 15:00)** — 🚨 ユーザー要望 Phase 16: describe error 統一 + popup クイックアクション/SOQL/API/Whats New:
+  - **🐛 design-docs.js**: 残った 5 箇所の `apiError(\`describe(${obj})\`, ...)` を `apiError(\`オブジェクト '${obj}' の describe 取得に失敗しました\`, ...)` に統一 (英語短縮残存撲滅)
+  - **🐛 popup.html Whats New**: 「設計書ジェネレータ 20 種」→「設計書ジェネレータ 22 種類 (業務向け凡例付き)」に最新化
+  - **🐛 popup.html クイックアクション**: 全 6 ボタン (Setup を開く / Developer Console / オブジェクトマネージャ / マイプロフィール / 組織情報 / ログアウト) に機能説明 title 追加
+  - **🐛 popup.html SOQL タブ**: textarea に placeholder「SOQL クエリを入力してください」追加、Tooling API ラベルに title、実行/CSV ボタンに title
+  - **🐛 popup.html API タブ**: apiPath placeholder を ですます調 詳細化、apiBody placeholder を「POST / PATCH の場合は JSON ボディを入力してください」に、送信/limits/versions ボタンに title 追加
+  - **🐛 popup.html ID 入力**: pattern="[a-zA-Z0-9]{15,18}" maxlength=18 + title でブラウザネイティブバリデーション追加
+  - **🐛 popup.html フッタ**: statusMsg の "Ready" → "準備完了" (英語残存撲滅)
 - **v2.25.0 (2026-05-20 14:55)** — 🚨 ユーザー要望 Phase 15: CSS empty-state テキスト + alert / Limits モバイル列ラベル:
   - **🐛 css/panel.css empty-state 6 箇所 (SOQL / Apex / REST / Limits / describe / LoginHistory)**: 「XXX 未実行/未取得」→「XXX はまだ実行/取得されていません」、「上の「取得」ボタンで認証履歴を読込」→「「取得」ボタンをクリックして認証履歴を読み込んでください」に統一
   - **🐛 css/popup.css**: ポップアップの SOQL 結果空状態を同様に ですます調 詳細化
