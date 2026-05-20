@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.64.0 (2026-05-20 09:40)** — popup SOQL でもネストリレーション平坦化 (panel と統一):
+  - **🐛 popup の `stringify()` も panel と同じネストリレーション平坦化ロジックに統一**: 従来 popup は `JSON.stringify(v)` で raw 表示だった → panel と同じ `Akira Kataoka [005xx...]` 形式に。サブクエリは `[N 件のサブクエリ]` 表示。**popup 460px 幅で SELECT Owner.Name FROM Account 等のリレーション結果が読みやすく**
+  - **🧪 Inspector reference 列**: 個別 `renderInspectorFields()` 内で raw v (ID string) を直接使用、`stringify()` 経由しないため平坦化の影響なし (修正不要)
+  - **🧪 Limits 0 件時 (使用率 70%超なし)**: `<div class="limit-card"><div class="title">健全</div><div class="val">✓ OK</div>...</div>` で既に明示的表示 (修正不要)
 - **v1.63.0 (2026-05-20 09:35)** — KBSC contenteditable 除外 + cell-nested hover/word-break:
   - **🐛 KBSC `Ctrl+Alt+I/Q/A/L/R/D` の発火条件に `isContentEditable` 除外を追加**: 従来 INPUT/TEXTAREA/SELECT のみ除外 → contenteditable 要素 (将来追加されうるリッチエディタ) でも誤発火しないよう保護
   - **✨ `.cell-nested` に hover 背景色 + word-break**: 長い JSON が折り返されるよう `word-break: break-word`、hover で `rgba(27,150,255,0.08)` の薄背景。**cell-id (accent 濃色) との視覚分離**

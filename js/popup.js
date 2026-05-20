@@ -546,7 +546,26 @@ function sortTableByTh(th) {
 
 function stringify(v) {
   if (v == null) return "";
-  if (typeof v === "object") return JSON.stringify(v);
+  if (typeof v === "object") {
+    // SF ネストリレーション (例 Account.Owner) は { attributes:{...}, Name:"...", ... } で来る
+    // attributes を除いた代表項目を Name / Subject / Id 優先で平坦化 (panel と統一)
+    if (v.attributes && typeof v.attributes === "object") {
+      const fields = Object.keys(v).filter((k) => k !== "attributes");
+      if (v.records && Array.isArray(v.records)) {
+        return `[${v.records.length} 件のサブクエリ]`;
+      }
+      const prefer = ["Name", "Subject", "Title", "DeveloperName", "MasterLabel", "FullName"];
+      for (const p of prefer) {
+        if (fields.includes(p) && v[p] != null) {
+          const id = fields.includes("Id") && v.Id ? ` [${String(v.Id).substring(0, 18)}]` : "";
+          return `${stringify(v[p])}${id}`;
+        }
+      }
+      if (fields.length) return `${fields[0]}=${stringify(v[fields[0]])}`;
+      return "{}";
+    }
+    return JSON.stringify(v);
+  }
   return String(v);
 }
 function escape(s) {
