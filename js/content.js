@@ -476,8 +476,28 @@ function flashToast(text) {
     if (panel.classList.contains("open")) {
       updateQuickInfo();
       setTimeout(() => qry.focus(), 30);
+      // v3.73.0: 初回オープン時に sessionUser を lazy fetch (Phase 162 で導入した my_open_cases テンプレート用)
+      if (!sessionUser) fetchSessionUser();
     }
   });
+
+  // v3.73.0: sessionUser (username) を Chatter /users/me から取得して保持
+  // Phase 162 の sessionUser は declare のみで populate されておらず "PASTE_USERNAME" 警告が常に出ていた問題を修正
+  async function fetchSessionUser() {
+    try {
+      const host = location.hostname;
+      const sess = await chrome.runtime.sendMessage({ type: "sfdt:getSession", host });
+      if (!sess || !sess.ok || !sess.session) return;
+      const r = await chrome.runtime.sendMessage({
+        type: "sfdt:fetch",
+        payload: { host, sid: sess.session.sid, path: `/services/data/v62.0/chatter/users/me`, method: "GET" },
+      });
+      if (r && r.ok && r.data && r.data.username) {
+        sessionUser = { id: r.data.id, username: r.data.username, name: r.data.displayName };
+        console.log("[DevToolsNext] mini-panel sessionUser loaded:", sessionUser.username);
+      }
+    } catch (e) { console.log("[DevToolsNext] mini-panel sessionUser fetch failed (ignored):", e); }
+  }
   closeBtn.addEventListener("click", () => panel.classList.remove("open"));
   openFullBtn.addEventListener("click", () => {
     chrome.runtime.sendMessage({ type: "sfdt:openTool" }, () => {});
