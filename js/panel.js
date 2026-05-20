@@ -92,6 +92,7 @@ async function init() {
     loadRestHistory();
     loadMdType();
     loadSoqlTooling();
+    loadApexFetchLog();
     // v3.46.0: chrome.storage.local 変更を監視して、別画面/mini-panel での履歴更新を即時反映
     if (chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, area) => {
@@ -875,6 +876,8 @@ function bindEvents() {
   $on("mdType", "change", (e) => { saveMdType(e.target.value); });
   // v3.79.0: Tooling API チェック状態を変えた瞬間に永続化 (10 種達成)
   $on("useTooling", "change", (e) => { saveSoqlTooling(e.target.checked); });
+  // v3.80.0: Apex Debug ログ取得チェック状態を変えた瞬間に永続化 (11 種)
+  $on("apexFetchLog", "change", (e) => { saveApexFetchLog(e.target.checked); });
   $on("btnFetchLogs", "click", doFetchLogs);
   $on("btnEnableDebug", "click", doEnableDebug);
   $on("btnLimits", "click", doLimits);
@@ -3875,6 +3878,22 @@ async function doRest() {
   document.getElementById("restResult").textContent = JSON.stringify(r.data, null, 2);
   // v3.77.0: 履歴に push (HTTP ステータスに関わらず — 失敗 URL の再試行も業務上有用)
   pushRestHistory({ method, path, body });
+}
+
+// v3.80.0: Apex Debug ログ取得チェック状態を chrome.storage に保存し、次回起動時に復元 (11 種)
+// 業務担当者で Debug ログ参照権限が無い人は「毎回 OFF にする」運用が発生 → 起動時復元で 1 クリック削減
+const APEX_FETCH_LOG_KEY = "sfdtApexFetchLog";
+async function loadApexFetchLog() {
+  try {
+    const data = await chrome.storage.local.get(APEX_FETCH_LOG_KEY);
+    const saved = data[APEX_FETCH_LOG_KEY];
+    if (typeof saved !== "boolean") return;
+    const cb = document.getElementById("apexFetchLog");
+    if (cb) cb.checked = saved;
+  } catch {}
+}
+async function saveApexFetchLog(checked) {
+  try { await chrome.storage.local.set({ [APEX_FETCH_LOG_KEY]: !!checked }); } catch {}
 }
 
 // v3.79.0: SOQL Tooling API チェック状態を chrome.storage に保存し、次回起動時に復元 (10 種達成・大台)
