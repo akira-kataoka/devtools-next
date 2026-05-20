@@ -8,6 +8,12 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.1.0 (2026-05-20 12:45)** — README に popup SOQL 履歴仕様明記 + 動作検証 3 件:
+  - **📖 README に「popup SOQL 履歴の仕様」セクション追加**: `HISTORY_MAX = 10` (popup.js:317) は非ピン留めのみ適用、ピン留めは件数制限なし。同一クエリ重複防止 + ピン状態維持の挙動も明記
+  - **🧪 動作検証 3 件 (修正不要)**:
+    - Apex Ctrl+Enter 連打耐性: `apexRunId` レースガード (panel.js:2381) で古い結果を捨てる実装済
+    - SOQL 履歴 10 件超: 非ピン free のみ slice(0, 10) → ピン留めは無制限保持
+    - chrome.notifications click ハンドラ: 未実装 (新機能扱いのため凍結ルール厳守、現状 silent)
 - **v2.0.0 (2026-05-20 12:40)** — 🎊 メジャーバージョン化 (v1.0.0 から 100 minor リリース達成):
   - **🎉 v2.0.0 セマンティック節目**: 自律改善ループ 109 サイクルの集大成。新機能凍結 (`feedback_no_new_features` 厳守) のまま、起動時 TDZ 構造的解決 / 全 CSV 整形統一 / 16 download toast 完備 / IME 3 環境保護 / アクセシビリティ AAA を達成
   - **📖 README 先頭ヘッダーを v2.0.0 milestone 表記に更新**: 旧 v1.91.0 (100 サイクル) も注記として残し継続性可視化
@@ -773,6 +779,17 @@ Picker モーダルのアクセシビリティ確認:
 2. `document.body.classList.remove("picker-open")`
 3. `focusReturnTarget` に focus 戻し (DOM 接続確認、v1.74.0)
 4. `resolve(val)` で `await showPicker()` を解決
+
+### 📋 popup SOQL 履歴の仕様 (v2.1.0 で明記)
+
+popup の SOQL 実行履歴 (`soqlHistory` in chrome.storage.local) の保持ルール:
+
+- **非ピン留め項目**: 最大 10 件まで自動保持 (古いものから削除)
+- **ピン留め項目**: 件数制限なし (📌 アイコンで明示、長押しで toggle)
+- **同一クエリの重複防止**: 既存の同 SOQL がある場合、削除して先頭に再挿入 (ピン状態は維持)
+- **`HISTORY_MAX = 10` 定数**: `popup.js:317` で定義
+
+ピン留めを 20 件にすれば履歴一覧は 20+10=30 件まで肥大化しうる (UI スクロールで対応)。
 
 ### 📥 全 Download / Copy 一覧 (v1.90.0 時点)
 
