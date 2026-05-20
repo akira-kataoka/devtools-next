@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.5.0 (2026-05-20 13:05)** — ✨ ユーザー要望: サイドメニュー折りたたみ機能:
+  - **✨ サイドナビ ◀ トグルで 38px に折りたたみ / ▶ で 180px に展開**: `chrome.storage.local.sideCollapsed` で状態保存、リロード後も維持。**panel.html / tool.html の両方に適用**
+  - **折りたたみ時の表現**: nav-btn の文字を非表示 (font-size:0) し ::first-letter で絵文字のみ表示、nav-sep は `—` プレースホルダで区切り維持。**画面横幅を最大化したいときに有効**
+  - **トグルボタン**: 右上にコンパクト配置、hover 時 accent 色、回転アニメ (180deg) で展開/折りたたみ状態を示す
+  - **🔜 次サイクル予定**: Salesforce ページ上での mini-panel オーバーレイ (content.js 拡張) — 別タブを開かず SF 画面内で SOQL/Inspector が使えるように
 - **v2.4.0 (2026-05-20 13:00)** — empty-hint vs 該当データなし の競合検証:
   - **🧪 SOQL 結果 0 件時の表示挙動確認**: `recordsTable()` (panel.js:2148) が `📭 該当データなし` div を返す → soqlResult.innerHTML が非空となり `:empty::before` (panel.css) は発火せず → recordsTable のメッセージのみ表示。**競合なし、現状で正しい挙動**
 - **v2.3.0 (2026-05-20 12:55)** — copy 後の focus 戻しなしを明文化 + 検証 3 件:

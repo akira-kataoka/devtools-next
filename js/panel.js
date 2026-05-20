@@ -323,6 +323,20 @@ function bindNav() {
     btn.addEventListener("click", () => switchToView(btn.dataset.view));
   });
   renderRecentNav();
+  // サイドメニュー折りたたみトグル (v2.5.0)
+  const sideToggle = document.getElementById("btnSideToggle");
+  const side = document.querySelector(".cols .side");
+  if (sideToggle && side) {
+    // 起動時に保存状態を復元
+    chrome.storage.local.get("sideCollapsed").then((d) => {
+      if (d && d.sideCollapsed) side.classList.add("collapsed");
+    }).catch(() => {});
+    sideToggle.addEventListener("click", () => {
+      const collapsed = side.classList.toggle("collapsed");
+      chrome.storage.local.set({ sideCollapsed: collapsed });
+      panelToast(collapsed ? "◀ メニュー折りたたみ" : "▶ メニュー展開", { kind: "ok" });
+    });
+  }
 }
 
 function bindEvents() {

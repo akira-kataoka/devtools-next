@@ -72,8 +72,27 @@ input, select, textarea {
 input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 
 .cols { display: flex; height: calc(100% - 38px); }
-.side { width: 180px; background: var(--bg2); border-right: 1px solid var(--line); }
-.nav { display: flex; flex-direction: column; padding: 8px; gap: 4px; }
+.side {
+  width: 180px; background: var(--bg2); border-right: 1px solid var(--line);
+  transition: width 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+.side.collapsed { width: 38px; }
+.side.collapsed .nav-btn { padding: 8px 4px; font-size: 0; white-space: nowrap; overflow: hidden; }
+.side.collapsed .nav-btn::first-letter { font-size: 16px; } /* hint: 絵文字残し */
+.side.collapsed .nav-sep { font-size: 0; padding: 4px 0; }
+.side.collapsed .nav-sep::before { content: "—"; color: var(--fg-dim); font-size: 14px; }
+.side-toggle {
+  position: absolute; top: 4px; right: 4px;
+  background: transparent; border: 1px solid var(--line);
+  color: var(--fg-dim); width: 28px; height: 24px; border-radius: 4px;
+  cursor: pointer; font-size: 11px; padding: 0;
+  transition: transform 0.18s ease;
+}
+.side-toggle:hover { background: var(--bg3); color: var(--accent); border-color: var(--accent); }
+.side.collapsed .side-toggle { transform: rotate(180deg); }
+.nav { display: flex; flex-direction: column; padding: 8px; gap: 4px; padding-top: 32px; }
 .nav-btn {
   text-align: left; background: transparent; border: 1px solid transparent;
   color: var(--fg-dim); padding: 8px 10px; border-radius: 6px;
