@@ -94,6 +94,7 @@ async function init() {
     loadSoqlTooling();
     loadApexFetchLog();
     loadSoqlDraft();
+    loadApexDraft();
     // v3.46.0: chrome.storage.local 変更を監視して、別画面/mini-panel での履歴更新を即時反映
     if (chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, area) => {
@@ -982,6 +983,8 @@ function bindEvents() {
   });
   const apexCodeEl = document.getElementById("apexCode");
   if (apexCodeEl) enableTabToSpaces(apexCodeEl);
+  // v3.82.0: Apex textarea の入力中 draft 自動保存 (Phase 171 SOQL と同パターン)
+  if (apexCodeEl) apexCodeEl.addEventListener("input", () => scheduleSaveApexDraft(apexCodeEl.value));
   const soqlTextEl = document.getElementById("soqlText");
   if (soqlTextEl) enableTabToSpaces(soqlTextEl);
   // v3.81.0: SOQL textarea の入力中 draft 自動保存 (300ms debounce)
@@ -3881,6 +3884,32 @@ async function doRest() {
   document.getElementById("restResult").textContent = JSON.stringify(r.data, null, 2);
   // v3.77.0: 履歴に push (HTTP ステータスに関わらず — 失敗 URL の再試行も業務上有用)
   pushRestHistory({ method, path, body });
+}
+
+// v3.82.0: Apex コード textarea の入力中バックアップ (Phase 171 SOQL と同パターン、13 種)
+// 業務シナリオ: 長い匿名 Apex (バッチ起動、Test% 削除確認等) を組み立て中にタブが落ちる → 復元したい
+const APEX_DRAFT_KEY = "sfdtApexDraft";
+let _apexDraftTimer = null;
+async function loadApexDraft() {
+  try {
+    const data = await chrome.storage.local.get(APEX_DRAFT_KEY);
+    const saved = data[APEX_DRAFT_KEY];
+    if (typeof saved !== "string" || !saved.trim()) return;
+    const ta = document.getElementById("apexCode");
+    if (!ta) return;
+    if (ta.value === saved) return;
+    ta.value = saved;
+    panelToast("📝 編集中だった匿名 Apex コードを復元しました", { kind: "ok" });
+  } catch {}
+}
+function scheduleSaveApexDraft(text) {
+  if (_apexDraftTimer) clearTimeout(_apexDraftTimer);
+  _apexDraftTimer = setTimeout(async () => {
+    try {
+      if (!text || !text.trim()) await chrome.storage.local.remove(APEX_DRAFT_KEY);
+      else await chrome.storage.local.set({ [APEX_DRAFT_KEY]: text });
+    } catch {}
+  }, 300);
 }
 
 // v3.81.0: SOQL クエリ textarea の入力中バックアップ (300ms debounce で chrome.storage に draft 保存) (12 種)
