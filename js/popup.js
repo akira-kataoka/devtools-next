@@ -439,6 +439,10 @@ async function searchUsersForLogin() {
   if (!state.sid) { toast("⚠ 先に Salesforce タブへ接続してください", { kind: "warn" }); return; }
   const term = document.getElementById("loginAsSearch").value.trim();
   const result = document.getElementById("loginAsResult");
+  // v2.73.0: 検索ボタンを実行中無効化 (二重実行防止 + ユーザに状態を可視化)
+  const searchBtn = document.getElementById("btnLoginAsSearch");
+  const origBtnText = searchBtn ? searchBtn.textContent : "";
+  if (searchBtn) { searchBtn.disabled = true; searchBtn.style.opacity = "0.6"; searchBtn.textContent = "⏳ 検索中…"; }
   result.innerHTML = `<div class="meta">⏳ ユーザを検索しています…</div>`;
 
   // SOQL escape
@@ -453,12 +457,18 @@ async function searchUsersForLogin() {
   const soql = `SELECT Id, Name, Username, Email, Alias, Profile.Name, UserType FROM User WHERE ${where} ORDER BY LastLoginDate DESC NULLS LAST LIMIT 30`;
 
   const r = await runSoql({ host: state.host, sid: state.sid, soql, apiVersion: state.apiVersion });
+  // 検索ボタン復元 (成功/失敗いずれの場合も)
+  const restoreBtn = () => {
+    if (searchBtn) { searchBtn.disabled = false; searchBtn.style.opacity = ""; searchBtn.textContent = origBtnText || "検索"; }
+  };
   if (!r.ok) {
+    restoreBtn();
     result.innerHTML = `<div class="meta">❌ ユーザ検索に失敗しました (HTTP ${r.status}): ${escape(formatError(r.data))}</div>`;
     return;
   }
   const users = r.data.records || [];
   if (!users.length) {
+    restoreBtn();
     const hint = term
       ? `検索条件「${escape(term)}」に一致するユーザは見つかりませんでした。<br/>💡 別のキーワード (Username の一部 / Alias / 姓名) で再度お試しください`
       : `有効なユーザが見つかりませんでした。<br/>💡 権限不足の可能性があります (「すべてのデータの編集 (Modify All Data)」または「すべてのユーザの参照 (View All Users)」が必要です)`;
@@ -466,7 +476,12 @@ async function searchUsersForLogin() {
     return;
   }
 
-  result.innerHTML = "";
+  // v2.73.0: 結果ヘッダで件数サマリを表示 (ユーザに「30 件上限あり」を伝える)
+  const summaryText = term
+    ? `✓ 「${escape(term)}」で ${users.length} 件ヒット (有効ユーザのみ・最終ログイン日時降順・最大 30 件まで)`
+    : `✓ 全有効ユーザ ${users.length} 件 (最終ログイン日時降順・最大 30 件まで)`;
+  result.innerHTML = `<div class="meta" style="padding:6px 8px;background:rgba(27,150,255,0.05);border-radius:4px;margin-bottom:6px">${summaryText}</div>`;
+  restoreBtn();
   users.forEach((u) => {
     // イニシャル円アイコン: 名前の頭文字 (姓・名の先頭) + 一意のアクセント色 (Id から色決定)
     const initials = ((u.Name || u.Username || "?").trim().match(/[A-Za-z一-鿿぀-ゟ゠-ヿ]{1,2}/g) || ["?"])

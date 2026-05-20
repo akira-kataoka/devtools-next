@@ -17,6 +17,11 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.73.0 (2026-05-20 20:14)** — 🚨 Phase 64: popup Login as User UX + 残 3 設計書 note サマリ:
+  - **🐛 popup.js searchUsersForLogin**: 検索ボタンを実行中無効化 (二重実行防止)、ボタンラベルを「⏳ 検索中…」に動的変更、検索結果ヘッダに「✓ N 件ヒット (有効ユーザのみ・最終ログイン日時降順・最大 30 件まで)」サマリ + 検索条件入力時はキーワードも表示。成功/失敗いずれの場合もボタン状態を確実に復元
+  - **🐛 buildProfileList note**: 「合計 N 件 / 内部ユーザ向け X 件 / 外部 (コミュニティ/Experience Cloud) ユーザ向け Y 件 / ライセンス別: Salesforce A 件 / Salesforce Platform B 件 / ...」と内部/外部別とライセンス別を集計
+  - **🐛 buildPermSetList note**: 「カスタム X 件・標準/パッケージ Y 件 / 自組織 A 件・パッケージ由来 B 件 / ライセンス別」と組織内/パッケージ由来と種別を集計
+  - **🐛 buildApexClassList note**: 既存の総コードサイズに加えて「ステータス: 有効 X 件・無効 Y 件・削除済 Z 件 / ネームスペース: 自組織 A 件・パッケージ由来 B 件」を追加
 - **v2.72.0 (2026-05-20 20:08)** — 🚨 Phase 63: picker.js ARIA listbox 化 + 残設計書 note サマリ拡充:
   - **♿ picker.js**: 検索 input に `role="combobox"` + `aria-controls` + `aria-autocomplete="list"` + `aria-expanded="true"`、`.picker-list` に `role="listbox"` + `aria-label`、各 `.picker-row` に `role="option"` + `aria-selected` + ユニーク id、ヘッダ行は `role="presentation"`、選択行 id を `aria-activedescendant` でスクリーンリーダーに伝達、件数カウンタを `role="status" aria-live="polite"` 化 — 9 種類すべての Picker (sobject / field / profile / permset / apexClass / flow / user / lwc / changeset 等) で a11y 大幅改善
   - **🐛 buildApexTriggerList note**: 「対象オブジェクト N 種類 / 有効 X 件・無効 Y 件・削除済 Z 件 / 総コードサイズ M / イベント発火件数 BI/AI/BU/AU/BD/AD/AUD」と詳細サマリ

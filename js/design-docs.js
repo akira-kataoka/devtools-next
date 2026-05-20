@@ -206,8 +206,9 @@ async function buildProfileList({ host, sid, apiVersion }) {
     "CspLitePortal": "サービスクラウドポータル (CspLitePortal)",
     "SelfService": "セルフサービス (SelfService)",
   };
+  const records = r.data.records || [];
   const headers = ["No", "プロファイル名", "ライセンス", "ユーザ種別", "説明", "作成日", "更新日"];
-  const rows = (r.data.records || []).map((p, i) => ({
+  const rows = records.map((p, i) => ({
     "No": i + 1,
     "プロファイル名": p.Name,
     "ライセンス": p.UserLicense ? p.UserLicense.Name : "(なし)",
@@ -222,6 +223,17 @@ async function buildProfileList({ host, sid, apiVersion }) {
     ["ユーザ種別", "標準 = 内部ユーザ、Power〇〇 / Customer〇〇 = 外部 (Experience Cloud / コミュニティ) ユーザ"],
     ["設計指針", "近年は『最小プロファイル + 権限セットで加算』が推奨 (Spring '26 でプロファイル機能の一部廃止予定)"],
   ];
+  // v2.73.0: note サマリ - ライセンス別件数 + 内部/外部ユーザ別件数
+  const licCounts = {};
+  records.forEach((p) => {
+    const k = p.UserLicense ? p.UserLicense.Name : "(なし)";
+    licCounts[k] = (licCounts[k] || 0) + 1;
+  });
+  const licBreakdown = Object.keys(licCounts).sort()
+    .map((k) => `${k} ${fmtNum(licCounts[k])} 件`).join(" / ");
+  const externalTypes = new Set(["PowerPartner", "PowerCustomerSuccess", "CustomerSuccess", "Guest", "CSPLitePortal", "CspLitePortal", "SelfService"]);
+  const externalCount = records.filter((p) => externalTypes.has(p.UserType)).length;
+  const internalCount = records.length - externalCount;
   return {
     title: "プロファイル一覧",
     type: "profileList",
@@ -229,7 +241,7 @@ async function buildProfileList({ host, sid, apiVersion }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. プロファイル", headers, rows },
     ],
-    note: `合計 ${fmtNum(rows.length)} 件 / ユーザ種別が外部ユーザのものはコミュニティ/Experience Cloud 用`,
+    note: `合計 ${fmtNum(records.length)} 件 / 内部ユーザ向け ${fmtNum(internalCount)} 件 / 外部 (コミュニティ/Experience Cloud) ユーザ向け ${fmtNum(externalCount)} 件 / ライセンス別: ${licBreakdown}`,
   };
 }
 
@@ -240,8 +252,9 @@ async function buildPermSetList({ host, sid, apiVersion }) {
     soql: `SELECT Id, Name, Label, License.Name, IsCustom, NamespacePrefix, Description, LastModifiedDate FROM PermissionSet WHERE IsOwnedByProfile=false ORDER BY Name LIMIT 500`,
   });
   if (!r.ok) throw apiError("権限セットの取得に失敗しました", r);
+  const records = r.data.records || [];
   const headers = ["No", "API 名", "ラベル (画面表示名)", "ライセンス", "ネームスペース", "種別", "説明", "更新日"];
-  const rows = (r.data.records || []).map((p, i) => ({
+  const rows = records.map((p, i) => ({
     "No": i + 1,
     "API 名": p.Name,
     "ラベル (画面表示名)": p.Label,
@@ -258,6 +271,18 @@ async function buildPermSetList({ host, sid, apiVersion }) {
     ["種別", "カスタム = 管理者が作成・編集可、標準/パッケージ = Salesforce 標準またはパッケージ提供で編集制限あり"],
     ["除外条件", "IsOwnedByProfile=false (プロファイルに付随する内部 PermissionSet は本一覧から除外)"],
   ];
+  // v2.73.0: note サマリ - カスタム/標準別 + ライセンス別 + ネームスペース (組織独自/パッケージ) 別件数
+  const customCount = records.filter((p) => p.IsCustom).length;
+  const packagedCount = records.length - customCount;
+  const localCount = records.filter((p) => !p.NamespacePrefix).length;
+  const externalNsCount = records.length - localCount;
+  const psLicCounts = {};
+  records.forEach((p) => {
+    const k = p.License ? p.License.Name : "(なし: 機能限定)";
+    psLicCounts[k] = (psLicCounts[k] || 0) + 1;
+  });
+  const psLicBreakdown = Object.keys(psLicCounts).sort()
+    .map((k) => `${k} ${fmtNum(psLicCounts[k])} 件`).join(" / ");
   return {
     title: "権限セット一覧",
     type: "permsetList",
@@ -265,7 +290,7 @@ async function buildPermSetList({ host, sid, apiVersion }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. PermissionSet", headers, rows },
     ],
-    note: `合計 ${fmtNum(rows.length)} 件 (プロファイル付随を除外) / 権限セットグループの中身は別途確認が必要`,
+    note: `合計 ${fmtNum(records.length)} 件 (プロファイル付随を除外) / カスタム ${fmtNum(customCount)} 件・標準/パッケージ ${fmtNum(packagedCount)} 件 / 自組織 ${fmtNum(localCount)} 件・パッケージ由来 ${fmtNum(externalNsCount)} 件 / ライセンス別: ${psLicBreakdown} — 権限セットグループの中身は別途確認が必要`,
   };
 }
 
@@ -292,11 +317,17 @@ async function buildApexClassList({ host, sid, apiVersion }) {
     "作成日": fmtDate(p.CreatedDate),
     "更新日": fmtDate(p.LastModifiedDate),
   }));
+  // v2.73.0: ステータス別件数 + ネームスペース別件数も集計
+  const activeCount = records.filter((p) => p.Status === "Active").length;
+  const inactiveCount = records.filter((p) => p.Status === "Inactive").length;
+  const deletedCount = records.filter((p) => p.Status === "Deleted").length;
+  const acLocalCount = records.filter((p) => !p.NamespacePrefix).length;
+  const acExtCount = records.length - acLocalCount;
   return {
     title: "Apex クラス一覧",
     type: "apexClassList",
     sections: [{ heading: "Apex クラス", headers, rows }],
-    note: `合計 ${fmtNum(rows.length)} 件 (unmanaged + installedEditable のみ) / 総コードサイズ: ${fmtBytes(totalLength)} (Apex Limit 6 MB に対する使用率: 約 ${fmtPercent(totalLength / (6 * 1024 * 1024))})`,
+    note: `合計 ${fmtNum(records.length)} 件 (unmanaged + installedEditable のみ) / ステータス: 有効 ${fmtNum(activeCount)} 件・無効 ${fmtNum(inactiveCount)} 件・削除済 ${fmtNum(deletedCount)} 件 / ネームスペース: 自組織 ${fmtNum(acLocalCount)} 件・パッケージ由来 ${fmtNum(acExtCount)} 件 / 総コードサイズ: ${fmtBytes(totalLength)} (Apex Limit 6 MB に対する使用率: 約 ${fmtPercent(totalLength / (6 * 1024 * 1024))})`,
   };
 }
 
