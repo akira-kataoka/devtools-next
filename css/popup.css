@@ -104,6 +104,10 @@ textarea, input[type=text], select {
   resize: vertical;
 }
 textarea:focus, input:focus, select:focus { border-color: var(--accent); }
+/* a11y: キーボード移動時の focus-visible (マウスクリックでは出ない) */
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+}
 select { font-family: inherit; }
 
 .row { display: flex; gap: 6px; align-items: center; margin-top: 6px; flex-wrap: wrap; }

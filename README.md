@@ -17,6 +17,9 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.51.0 (2026-05-20 17:05)** — 🚨 ユーザー要望 Phase 41: popup focus-visible スタイル統一:
+  - **🐛 css/popup.css**: button / a / input / select / textarea の focus-visible に 2px outline (accent 色) を追加。これによりキーボードナビゲーション時のフォーカス位置が明確に。panel.css と同等の a11y 品質に統一
+  - **🐛 design-docs ヘッダ tooltip 統一**: markdownToHtml 経由のため広範な改修が必要であり、本サイクルでは popup focus-visible に絞って完了 (Phase 42 以降で検討)
 - **v2.50.0 (2026-05-20 17:00)** — 🎊 マイルストーン: 累計 50 minor リリース達成 / Phase 1-39 完了 + panel.html kbd-hint:
   - **🎊 v2.50.0 マイルストーンサマリを README に追加**: Phase 1〜39 (158 サイクル) の業務向け改修まとめ (設計書 22 種凡例 / 文言 400+ 箇所統一 / 全 16+ ボタン disabled / 業務情報拡充 / エラー処理改善 / 日本語化統一 / アクセシビリティ)
   - **🐛 html/panel.html ヘッダ kbd-hint**: tool.html と統一して「Ctrl+Enter 実行 / Esc 閉じる / Ctrl+Alt+I/Q/A/L/R/D ビュー切替」を表示、tooltip で全ショートカット詳細、brand クリック動作の hint 追加、apiVer select に title 追加
