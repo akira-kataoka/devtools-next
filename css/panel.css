@@ -558,6 +558,15 @@ td.cell-nested { word-break: break-word; }
   color: var(--accent); margin: 12px 0 6px;
   border-bottom: 1px solid var(--line); padding-bottom: 3px;
 }
+/* v3.6.0: 表紙セクション (h2: 📄 表紙) は特別に強調 (上余白厚め+アクセント太線で目立たせる) */
+.design-preview h2:first-of-type {
+  background: linear-gradient(90deg, rgba(27,150,255,0.12), transparent);
+  padding: 8px 12px !important;
+  border-left: 3px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  font-size: 15px;
+  margin-top: 8px;
+}
 .design-preview h1 { font-size: 16px; }
 /* z-index 階層 (design-preview 内 sticky 要素):
    h2: 3 (最上 / section header は常に table th より上)
