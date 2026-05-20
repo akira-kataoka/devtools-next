@@ -16,6 +16,30 @@ const state = {
   lastLoginRecords: null,
 };
 
+// op ごとに必要な input の表示制御 (apiObj / apiId)
+// 注意: init() が bindEvents 経由で updateApiInputVisibility() を呼ぶため、
+//       const は init 呼出より上で初期化される必要がある (v1.98.0 で TDZ バグ修正)
+const API_OP_INPUTS = {
+  describe: { obj: true, id: false },
+  describeGlobal: { obj: false, id: false },
+  get: { obj: true, id: true },
+  getByExtId: { obj: true, id: true },
+  create: { obj: true, id: false },
+  update: { obj: true, id: true },
+  upsert: { obj: true, id: true },
+  delete: { obj: true, id: true },
+  query: { obj: false, id: false },
+  "tooling-query": { obj: false, id: false },
+  search: { obj: false, id: false },
+  composite: { obj: false, id: false },
+  "composite-tree": { obj: true, id: false },
+  batch: { obj: false, id: false },
+  limits: { obj: false, id: false },
+  versions: { obj: false, id: false },
+  userinfo: { obj: false, id: false },
+  "event-log-file": { obj: false, id: true },
+};
+
 // モジュールスクリプトの defer 性質に対応 (popup.js と同じ防御)
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", init);
@@ -1165,28 +1189,6 @@ const API_HELP = {
   versions: "利用可能 API バージョン一覧。",
   userinfo: "現在のセッションのユーザー情報 (user_id, organization_id, urls など)。",
   "event-log-file": "EventLogFile の一覧。LogDate, EventType, LogFile (バイナリ) を持つ。",
-};
-
-// op ごとに必要な input の表示制御 (apiObj / apiId)
-const API_OP_INPUTS = {
-  describe: { obj: true, id: false },
-  describeGlobal: { obj: false, id: false },
-  get: { obj: true, id: true },
-  getByExtId: { obj: true, id: true },
-  create: { obj: true, id: false },
-  update: { obj: true, id: true },
-  upsert: { obj: true, id: true },
-  delete: { obj: true, id: true },
-  query: { obj: false, id: false },
-  "tooling-query": { obj: false, id: false },
-  search: { obj: false, id: false },
-  composite: { obj: false, id: false },
-  "composite-tree": { obj: true, id: false },
-  batch: { obj: false, id: false },
-  limits: { obj: false, id: false },
-  versions: { obj: false, id: false },
-  userinfo: { obj: false, id: false },
-  "event-log-file": { obj: false, id: true },
 };
 
 function updateApiInputVisibility() {

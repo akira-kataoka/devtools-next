@@ -7,6 +7,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.98.0 (2026-05-20 12:30)** — 🚨 起動時 TDZ バグ修正 (API_OP_INPUTS):
+  - **🐛 `init() → bindEvents() → updateApiInputVisibility()` が起動時に `const API_OP_INPUTS` を参照していたが、`init()` 呼出 (line 23) より const 宣言 (line 1171) が後にあったため `Cannot access 'API_OP_INPUTS' before initialization` で初期化失敗していた**
+  - **修正**: `API_OP_INPUTS` 定義を init 呼出より上 (line 19 直前) に移動 + コメントで Why を明示。**v1.52.0 で追加されてから本不具合のまま動作していたが、ローカル環境/ユーザー報告により発覚 → 即時修正**
+  - **影響範囲**: panel/tool.html の初期描画 (org info / nav 等) が止まる致命的バグ → 全機能復旧
 - **v1.97.0 (2026-05-20 12:25)** — Excel セル 32,767 文字上限切詰 + 検証 3 件:
   - **🛡 設計書 Excel セルが 32,767 文字超のときに末尾切詰**: `EXCEL_CELL_LIMIT = 32767` 定数化、超過時 `… (Excel 上限切詰)` マーカー付き truncate。**従来は超過時に Excel が開けない/破損する可能性があった**
   - **🧪 検証 3 件すべて修正不要**:
