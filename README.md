@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.72.0 (2026-05-20 10:20)** — nav-btn focus-visible 強化 + Picker focus 戻り確認:
+  - **♿ `.nav-btn:focus-visible` を 3px アウトライン + offset -1px + 背景 `#1a2d56`**: 通常 button focus-visible (2px + offset 1px) より太く、active タブの border-left との視覚干渉を回避。**キーボード Tab 移動時にナビボタンの選択位置が明確**
+  - **🧪 Picker close 後の focusReturnTarget**: `picker.js` 共通モジュールで両環境 (panel/tool.html) で同じ動作 → keyboard ユーザーが Picker 閉じても呼び元 input/button に戻れる (修正不要)
+  - **🧪 KBSC 発火範囲**: F12 devtools panel (DevTools 内 iframe) でも `panel.js` 読込済 → グローバル `keydown` リスナーが発火 (修正不要)
 - **v1.71.0 (2026-05-20 10:15)** — z-index 階層 panel.css 先頭ドキュメント化 + KBSC tool.html 動作確認:
   - **📖 panel.css の先頭に z-index 階層コメントブロック追加**: table th (1) → design h3 (2) → design h2 (3) → Picker/Toast (99999) の昇順スタッキングを明示。**将来の sticky 要素追加時の判断基準として参照可能**
   - **🧪 KBSC が tool.html (フルページ) でも動作確認**: `tool.html:473 / panel.html:408` で同じ `panel.js` を `type="module"` 読込 → `document.addEventListener("keydown")` がフルページとパネルの両環境で発火 (修正不要)

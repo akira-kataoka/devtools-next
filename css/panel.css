@@ -524,6 +524,12 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+/* nav-btn は left-border が active 表示と被るので outline を 3px に拡張 + offset 縮小 */
+.nav-btn:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -1px;
+  background: #1a2d56;
+}
 .picker-toolbar {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 14px;
