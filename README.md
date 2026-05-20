@@ -8,6 +8,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.23.0 (2026-05-20 14:45)** — 🚨 ユーザー要望 Phase 13: throw new Error / panelToast 文言総点検:
+  - **🐛 design-docs.js**: "unknown design type: ..." → "未対応の設計書タイプです: ..." (英語残存を撲滅)
+  - **🐛 picker.js**: "親オブジェクトが必要です" → "項目を取得するには、先に親オブジェクトを指定してください"、"LWC 取得失敗" → "LWC コンポーネントの取得に失敗しました"、"User 取得失敗" → "ユーザ一覧の取得に失敗しました"
+  - **🐛 panel.js panelToast 統一**: サイドメニュー折りたたみ・展開を「折りたたみました/展開しました」に、コピー失敗系を「クリップボードへのコピーに失敗しました」に、Mermaid Live Editor 通知を「新しいタブで開きました。コードを貼り付けてください」に、Login History 未取得を「ログイン履歴が未取得です。先に「取得」ボタンをクリックしてください」に、package.xml 未生成を丁寧に
 - **v2.22.0 (2026-05-20 14:40)** — 🚨 ユーザー要望 Phase 12: SOQL/Inspector/LoginHistory/Limits/Logs タブ title 業務化:
   - **🐛 SOQL タブ (panel/tool)**: 保存名 placeholder + title, 保存/読込/Tooling/CSV/実行ボタン全てに title 追加 + ですます調 ("Tooling API" → "Tooling API を使用"), soqlText placeholder を「SOQL クエリを入力してください」に
   - **🐛 Inspector タブ**: 現在タブから取得・取得・JSON/CSV エクスポート・レコードを開くボタンに機能説明 title、「空値も表示」→「空値も表示します」、「System 項目を表示」→「システム項目を表示します」+ 機能説明 title

@@ -60,7 +60,7 @@ export async function generateDesign({ type, host, sid, apiVersion, obj, format,
     case "flowDetail":         result = await buildFlowDetail(ctx); break;
     case "apexDetail":         result = await buildApexDetail(ctx); break;
     case "lwcDetail":          result = await buildLwcDetail(ctx); break;
-    default: throw new Error("unknown design type: " + type);
+    default: throw new Error("未対応の設計書タイプです: " + type);
   }
   result.format = format;
   result.source = formatOutput(result, format);

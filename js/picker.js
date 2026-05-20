@@ -62,7 +62,7 @@ const PICKER_DEFS = {
     placeholder: "項目 API 名 / 表示名で検索",
     columns: ["API 名", "ラベル", "型", "必須"],
     async load({ host, sid, apiVersion, parentObject }) {
-      if (!parentObject) throw new Error("親オブジェクトが必要です");
+      if (!parentObject) throw new Error("項目を取得するには、先に親オブジェクトを指定してください");
       const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(parentObject)}/describe` });
       if (!r.ok) throw new Error(`項目定義 (describe) の取得に失敗しました (HTTP ${r.status})`);
       return (r.data.fields || []).map((f) => ({
@@ -164,7 +164,7 @@ const PICKER_DEFS = {
     async load({ host, sid, apiVersion }) {
       const r = await runSoql({ host, sid, apiVersion, tooling: true,
         soql: `SELECT DeveloperName, MasterLabel, IsExposed FROM LightningComponentBundle ORDER BY DeveloperName LIMIT 500` });
-      if (!r.ok) throw new Error(`LWC 取得失敗`);
+      if (!r.ok) throw new Error(`LWC コンポーネントの取得に失敗しました`);
       return (r.data.records || []).map((b) => ({
         value: b.DeveloperName,
         row: [b.DeveloperName, b.MasterLabel || "", b.IsExposed ? "○" : ""],
@@ -179,7 +179,7 @@ const PICKER_DEFS = {
     async load({ host, sid, apiVersion }) {
       const r = await runSoql({ host, sid, apiVersion,
         soql: `SELECT Id, Name, Username, Email, Profile.Name FROM User WHERE IsActive=true ORDER BY LastLoginDate DESC NULLS LAST LIMIT 200` });
-      if (!r.ok) throw new Error(`User 取得失敗`);
+      if (!r.ok) throw new Error(`ユーザ一覧の取得に失敗しました`);
       return (r.data.records || []).map((u) => ({
         value: u.Id,
         row: [u.Name, u.Username, u.Profile ? u.Profile.Name : ""],

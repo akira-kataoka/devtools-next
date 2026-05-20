@@ -334,7 +334,7 @@ function bindNav() {
     sideToggle.addEventListener("click", () => {
       const collapsed = side.classList.toggle("collapsed");
       chrome.storage.local.set({ sideCollapsed: collapsed });
-      panelToast(collapsed ? "◀ メニュー折りたたみ" : "▶ メニュー展開", { kind: "ok" });
+      panelToast(collapsed ? "◀ サイドメニューを折りたたみました" : "▶ サイドメニューを展開しました", { kind: "ok" });
     });
   }
 }
@@ -397,7 +397,7 @@ function bindEvents() {
       await navigator.clipboard.writeText(txt);
       panelToast(`📋 Apex の実行結果をコピーしました (${txt.length.toLocaleString()} 文字)`, { kind: "ok" });
     } catch (e) {
-      panelToast("❌ コピー失敗: " + (e.message || e), { kind: "err" });
+      panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
     }
   });
   document.getElementById("btnRestCopy").addEventListener("click", async () => {
@@ -407,7 +407,7 @@ function bindEvents() {
       await navigator.clipboard.writeText(txt);
       panelToast(`📋 REST のレスポンスをコピーしました (${txt.length.toLocaleString()} 文字)`, { kind: "ok" });
     } catch (e) {
-      panelToast("❌ コピー失敗: " + (e.message || e), { kind: "err" });
+      panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
     }
   });
   enableTabToSpaces(document.getElementById("apexCode"));
@@ -440,7 +440,7 @@ function bindEvents() {
       panelToast(`📋 ID を貼付けました: ${id}${expanded}`, { kind: "ok" });
       doInspect();
     } catch (e) {
-      panelToast("❌ クリップボード読取失敗: " + (e.message || e), { kind: "err" });
+      panelToast("❌ クリップボードからの読み取りに失敗しました: " + (e.message || e), { kind: "err" });
     }
   });
   const btnBack = document.getElementById("btnInspectBack");
@@ -454,7 +454,7 @@ function bindEvents() {
     try {
       await navigator.clipboard.writeText(JSON.stringify(inspectState.record, null, 2));
       panelToast(`📋 ${inspectState.obj}:${inspectState.id} の JSON をコピーしました`, { kind: "ok" });
-    } catch (e) { panelToast("⚠ コピー失敗: " + (e.message || e), { kind: "err" }); }
+    } catch (e) { panelToast("⚠ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" }); }
   });
   document.getElementById("inspectFilter").addEventListener("input", renderInspectorFields);
   document.getElementById("inspectShowNull").addEventListener("change", renderInspectorFields);
@@ -826,7 +826,7 @@ async function csCopyXml() {
 
 function csDownloadXml() {
   const t = document.getElementById("csXml").textContent;
-  if (!t) { panelToast("📭 package.xml が未生成です (先に「package.xml 生成」をクリック)", { kind: "warn" }); return; }
+  if (!t) { panelToast("📭 package.xml がまだ生成されていません。先に「package.xml 生成」ボタンをクリックしてください", { kind: "warn" }); return; }
   const blob = new Blob([t], { type: "application/xml;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -1823,7 +1823,7 @@ async function doGenerateDesign() {
           chrome.tabs.create({ url: `https://mermaid.live/edit#base64:${enc}` });
         } catch (e) {
           chrome.tabs.create({ url: "https://mermaid.live/" });
-          panelToast("Mermaid Live Editor を開きました (コードをペーストしてください)", { kind: "warn" });
+          panelToast("Mermaid Live Editor を新しいタブで開きました。コードを貼り付けてください", { kind: "warn" });
         }
       });
       preview.appendChild(liveBtn);
@@ -1871,7 +1871,7 @@ async function copyDesignSource() {
     else label = `${(sz / 1048576).toFixed(1)} MB`;
     panelToast(`📋 設計書ソースをコピー (${label})`, { kind: "ok" });
   } catch (e) {
-    panelToast("⚠ コピー失敗: " + String(e), { kind: "err" });
+    panelToast("⚠ クリップボードへのコピーに失敗しました: " + String(e), { kind: "err" });
   }
 }
 
@@ -2602,7 +2602,7 @@ function loginHistoryTable(rows) {
 }
 
 function exportLoginCsv() {
-  if (!state.lastLoginRecords || !state.lastLoginRecords.length) { panelToast("📭 Login History 未取得 (先に「取得」をクリック)", { kind: "warn" }); return; }
+  if (!state.lastLoginRecords || !state.lastLoginRecords.length) { panelToast("📭 ログイン履歴が未取得です。先に「取得」ボタンをクリックしてください", { kind: "warn" }); return; }
   // LoginTime を YYYY-MM-DD HH:mm 整形 (Excel で読みやすく)
   const formatted = state.lastLoginRecords.map((r) => {
     const out = { ...r };
