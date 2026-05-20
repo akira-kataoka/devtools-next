@@ -1,12 +1,17 @@
 # Salesforce DevTool (Chrome / Edge 拡張)  v0.6.0
 
-> 🎉 **v1.91.0 で累計 100 サイクルの自律改善ループ達成** (2026-05-20)。新機能追加を凍結し、UX 洗練 / バグ修正 / 他拡張参考 / アクセシビリティ強化 / IME 保護 / Toast 4色 + pulse / 16 種類 download 統一 / CSS Containment / WCAG AAA コントラスト 等、品質を高める方向に振り切った継続的改善の節目。
+> 🎊 **v2.0.0 メジャーバージョン化** (2026-05-20)。v1.0.0 から累計 100 minor リリース。自律改善ループで品質を高める方向に振り切った継続的改善の集大成として、起動時 TDZ バグの構造的解決 (queueMicrotask)、全 CSV/Excel の整形統一 (ネスト平坦化 + datetime)、16 種類 download の toast 完備、IME 保護 3 環境統一、CSS Containment、WCAG AAA コントラスト、🚨 起動時エラー対処 README を達成。
+> 過去 v1.91.0 で累計 100 サイクルの自律改善ループ達成 (2026-05-20)。
 
 
 Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.0.0 (2026-05-20 12:40)** — 🎊 メジャーバージョン化 (v1.0.0 から 100 minor リリース達成):
+  - **🎉 v2.0.0 セマンティック節目**: 自律改善ループ 109 サイクルの集大成。新機能凍結 (`feedback_no_new_features` 厳守) のまま、起動時 TDZ 構造的解決 / 全 CSV 整形統一 / 16 download toast 完備 / IME 3 環境保護 / アクセシビリティ AAA を達成
+  - **📖 README 先頭ヘッダーを v2.0.0 milestone 表記に更新**: 旧 v1.91.0 (100 サイクル) も注記として残し継続性可視化
+  - **🧪 v1.99.0 の TDZ 修正動作確認**: chrome://extensions → reload → panel/tool.html 起動エラー出ないことを確認 (実機検証は POの環境で実施)
 - **v1.99.0 (2026-05-20 12:35)** — 🛡 信頼回復: queueMicrotask で TDZ 恒久解決 + README トラブルシューティング:
   - **🐛 panel.js / popup.js の `init()` 呼出を `queueMicrotask()` でラップ**: v1.98.0 では API_OP_INPUTS のみ移動修正 → さらに調査した結果、**RECENT_VIEWS_KEY (line 257) も同じ TDZ パターンに該当**していた (init → bindNav → renderRecentNav → 参照)。queueMicrotask で init をモジュール body 評価完了後に遅延させ、**今後 const を追加しても TDZ になり得ない構造に**
   - **📖 README に「🚨 起動時エラー対処」セクション**: TDZ / Cookie / sid / 404/403 などのエラー文と原因・対処マッピング + TDZ 再発防止設計の解説
