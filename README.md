@@ -8,6 +8,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.41.0 (2026-05-20 16:15)** — 🚨 ユーザー要望 Phase 31: ビュー切替スクロールリセット + ID 自動解析:
+  - **🐛 panel.js switchToView**: ビュー切替時にメイン領域のスクロール位置を最上部にリセット (`.main` 要素の scrollTop = 0)。前ビューでスクロールしていた状態が残る UX 問題を解消
+  - **🐛 popup.js ID 入力**: 15 桁または 18 桁の英数字 ID が入力されたら 250ms デバウンス後に自動解析 (UX 改善 — 「解析」ボタンを毎回押さなくて良い)、Enter キーでも即時解析
 - **v2.40.0 (2026-05-20 16:10)** — 🚨 ユーザー要望 Phase 30: 設計書 note 末尾文言の一貫性統一:
   - **🐛 design-docs.js 設計書 note 末尾文言 8 箇所**: 体言止め残存を ですます調 詳細化 (例: 「コード行数はトリガ Apex Limit 試算の目安」→「コード行数は Apex Limit (組織あたり 6 MB) の試算目安としてご活用ください」、「Before/After × Insert/Update/Delete/Undelete の発火タイミング表」→「発火タイミング表となっています」、「種別と状態は業務用語表記」→「業務用語で表記しています」、「Process Builder は段階的廃止」→「段階的に廃止予定です」、Mermaid 注意書き→「貼り付けると可視化できます。線種: ... です」、SharingRules 注釈→「含まれていません」、FLS Excel ヒント→「左 4 列と先頭行を固定すると見やすくなります」)
   - **🐛 design-docs.js FieldSet 一覧 note**: 「合計 N 件」のみだったところを「FieldSet は LWC/VF から動的に項目セットを参照するために利用されます」と業務背景を補足

@@ -308,6 +308,9 @@ function switchToView(v) {
   document.querySelectorAll(".view").forEach((p) => {
     p.classList.toggle("hidden", p.dataset.view !== v);
   });
+  // ビュー切替時にメイン領域のスクロール位置を最上部にリセット (前ビューでスクロールしていた状態が残る UX 問題を解消)
+  const mainEl = document.querySelector(".main");
+  if (mainEl) mainEl.scrollTop = 0;
   // ラベルを記録 (recent ボタンからの遷移時は元のメインボタンを基準に)
   const btn = document.querySelector('.nav-btn[data-view="' + v + '"]:not(.recent)');
   if (btn) {

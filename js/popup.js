@@ -133,6 +133,18 @@ function bindEvents() {
 
   document.getElementById("btnParseId").addEventListener("click", doParseId);
   document.getElementById("btnOpenId").addEventListener("click", openIdInOrg);
+  // 入力時に 15 桁または 18 桁の英数字なら自動解析 (debounce 250ms)
+  let _idTimer = null;
+  document.getElementById("idInput").addEventListener("input", (e) => {
+    if (_idTimer) clearTimeout(_idTimer);
+    const v = e.target.value.trim();
+    if (/^[a-zA-Z0-9]{15}$/.test(v) || /^[a-zA-Z0-9]{18}$/.test(v)) {
+      _idTimer = setTimeout(() => doParseId(), 250);
+    }
+  });
+  document.getElementById("idInput").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); doParseId(); }
+  });
 
   document.getElementById("btnApiSend").addEventListener("click", doApiCall);
   document.getElementById("btnApiLimits").addEventListener("click", () => {
