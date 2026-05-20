@@ -93,6 +93,7 @@ async function init() {
     loadMdType();
     loadSoqlTooling();
     loadApexFetchLog();
+    loadSoqlDraft();
     // v3.46.0: chrome.storage.local 変更を監視して、別画面/mini-panel での履歴更新を即時反映
     if (chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, area) => {
@@ -983,6 +984,8 @@ function bindEvents() {
   if (apexCodeEl) enableTabToSpaces(apexCodeEl);
   const soqlTextEl = document.getElementById("soqlText");
   if (soqlTextEl) enableTabToSpaces(soqlTextEl);
+  // v3.81.0: SOQL textarea の入力中 draft 自動保存 (300ms debounce)
+  if (soqlTextEl) soqlTextEl.addEventListener("input", () => scheduleSaveSoqlDraft(soqlTextEl.value));
   $on("apexCode", "keydown", (e) => {
     if (e.isComposing || e.keyCode === 229) return;
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") doRunApex();
@@ -3878,6 +3881,37 @@ async function doRest() {
   document.getElementById("restResult").textContent = JSON.stringify(r.data, null, 2);
   // v3.77.0: 履歴に push (HTTP ステータスに関わらず — 失敗 URL の再試行も業務上有用)
   pushRestHistory({ method, path, body });
+}
+
+// v3.81.0: SOQL クエリ textarea の入力中バックアップ (300ms debounce で chrome.storage に draft 保存) (12 種)
+// 業務シナリオ: 長い SOQL を組み立て中にタブを誤って閉じる / DevTools をリロードする → 復元したい
+// savedQueries (手動命名保存) や sfdtRecentSoql (実行済み履歴) ではカバーできない「未実行 draft」を救済
+const SOQL_DRAFT_KEY = "sfdtSoqlDraft";
+let _soqlDraftTimer = null;
+async function loadSoqlDraft() {
+  try {
+    const data = await chrome.storage.local.get(SOQL_DRAFT_KEY);
+    const saved = data[SOQL_DRAFT_KEY];
+    if (typeof saved !== "string" || !saved.trim()) return;
+    const ta = document.getElementById("soqlText");
+    if (!ta) return;
+    // HTML の初期値 (Account のサンプル) より draft を優先 — ユーザーが直前まで編集していたクエリを復元
+    // 既に draft と同一なら何もしない (input イベント発火による無限ループ防止)
+    if (ta.value === saved) return;
+    ta.value = saved;
+    // 控えめな toast — UX 上、無音で書き換わると混乱するため
+    panelToast("📝 編集中だった SOQL クエリを復元しました", { kind: "ok" });
+  } catch {}
+}
+function scheduleSaveSoqlDraft(text) {
+  if (_soqlDraftTimer) clearTimeout(_soqlDraftTimer);
+  _soqlDraftTimer = setTimeout(async () => {
+    try {
+      // 空文字 (もしくは空白のみ) なら storage からキー自体を削除 (容量節約)
+      if (!text || !text.trim()) await chrome.storage.local.remove(SOQL_DRAFT_KEY);
+      else await chrome.storage.local.set({ [SOQL_DRAFT_KEY]: text });
+    } catch {}
+  }, 300);
 }
 
 // v3.80.0: Apex Debug ログ取得チェック状態を chrome.storage に保存し、次回起動時に復元 (11 種)
