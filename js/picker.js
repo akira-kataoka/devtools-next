@@ -225,7 +225,7 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
         </div>
         <div class="picker-toolbar">
           <div class="picker-search-wrap">
-            <input class="picker-search" placeholder="${escape(def.placeholder)}" autofocus aria-label="候補検索" />
+            <input class="picker-search" placeholder="${escape(def.placeholder)}" autofocus aria-label="候補検索" maxlength="200" />
             <button class="picker-clear" type="button" title="クリア" aria-label="検索をクリア">✕</button>
           </div>
           <span class="picker-count meta">読み込み中…</span>

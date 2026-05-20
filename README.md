@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.85.0 (2026-05-20 11:25)** — Picker 検索 maxlength + VERSION 整合性チェック手順:
+  - **✨ Picker 検索 input に `maxlength="200"`**: 異常長クエリで render() の filter() が遅くなる潜在問題を予防 (200 文字は実用上十分)
+  - **📖 README に「VERSION 整合性チェック手順」追加**: PowerShell + Bash の両方で VERSION.txt / manifest.json / README "更新履歴" 先頭行の 3 ファイル version 一致を確認する手順 + `✅ 整合 OK` / `❌ 不一致` 判定。**リリース漏れ予防**
+  - **🧪 設計書プレビュー empty-hint**: `preview.innerHTML = ...` で毎回全消去されるため empty-hint は自然に消える (修正不要)
 - **v1.84.0 (2026-05-20 11:20)** — README に Picker close 経路 5 パターン表追加:
   - **📖 Picker close 経路一覧テーブル**: 行クリック / Enter / Esc / ✕ / 背景クリックの 5 経路、各経路の close 値・伝播ガード・後処理 (scrollMemory 保存・focus 戻し・resolve) を整理。**v1.74.0/1.82.0/1.83.0 で追加された防御コードの根拠が一覧で参照可能**
   - **🧪 Picker 矢印キー / 行クリック / 背景クリック の伝播**: 現状の実装で問題なし (Arrow は preventDefault のみで OK、行クリックは overlay click と `e.target === overlay` 判定で区別) → 修正不要
@@ -703,6 +707,30 @@ Picker モーダルのアクセシビリティ確認:
 2. `document.body.classList.remove("picker-open")`
 3. `focusReturnTarget` に focus 戻し (DOM 接続確認、v1.74.0)
 4. `resolve(val)` で `await showPicker()` を解決
+
+### 🧪 VERSION 整合性チェック手順 (v1.85.0+)
+
+リリース時に `VERSION.txt` / `manifest.json` の `version` フィールド / `README.md` の "更新履歴" 先頭行が一致しているか確認:
+
+```powershell
+# PowerShell
+$v = Get-Content VERSION.txt
+$m = (Get-Content manifest.json | ConvertFrom-Json).version
+$r = (Select-String -Path README.md -Pattern '^- \*\*v(\d+\.\d+\.\d+)' | Select-Object -First 1).Matches.Groups[1].Value
+"VERSION.txt:  $v"; "manifest:     $m"; "README:       $r"
+if ($v -eq $m -and $m -eq $r) { "✅ 整合 OK" } else { "❌ 不一致 - 修正必要" }
+```
+
+```bash
+# Bash
+v=$(cat VERSION.txt)
+m=$(grep -oP '"version":\s*"\K[\d.]+' manifest.json)
+r=$(grep -oP '^\- \*\*v\K[\d.]+' README.md | head -1)
+echo "VERSION.txt: $v / manifest: $m / README: $r"
+[ "$v" = "$m" ] && [ "$m" = "$r" ] && echo "✅ 整合 OK" || echo "❌ 不一致"
+```
+
+3 ファイルの version が完全一致しないと自動アップデート (background.js の VERSION.txt ポーリング) で `chrome.runtime.reload()` が空振りする恐れあり。
 
 ### 🧪 401 INVALID_SESSION_ID テスト手順
 
