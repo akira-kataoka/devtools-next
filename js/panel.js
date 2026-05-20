@@ -91,6 +91,7 @@ async function init() {
     loadApexHistory();
     loadRestHistory();
     loadMdType();
+    loadSoqlTooling();
     // v3.46.0: chrome.storage.local 変更を監視して、別画面/mini-panel での履歴更新を即時反映
     if (chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, area) => {
@@ -814,6 +815,8 @@ function bindEvents() {
     if (toolingCb) {
       if (key === "apex_classes" || key === "custom_fields") toolingCb.checked = true;
       else toolingCb.checked = false;
+      // v3.79.0: テンプレート起因の auto-toggle も永続化対象 (次回も同じ状態で起動)
+      saveSoqlTooling(toolingCb.checked);
     }
     e.target.value = "";
     // v3.71.0: user_id 自動補完の状態を toast で明示
@@ -870,6 +873,8 @@ function bindEvents() {
   $on("btnMetadata", "click", doMetadataList);
   // v3.78.0: メタデータ型を変えた瞬間に永続化 (一覧取得を押さなくても次回起動時に復元される)
   $on("mdType", "change", (e) => { saveMdType(e.target.value); });
+  // v3.79.0: Tooling API チェック状態を変えた瞬間に永続化 (10 種達成)
+  $on("useTooling", "change", (e) => { saveSoqlTooling(e.target.checked); });
   $on("btnFetchLogs", "click", doFetchLogs);
   $on("btnEnableDebug", "click", doEnableDebug);
   $on("btnLimits", "click", doLimits);
@@ -3870,6 +3875,21 @@ async function doRest() {
   document.getElementById("restResult").textContent = JSON.stringify(r.data, null, 2);
   // v3.77.0: 履歴に push (HTTP ステータスに関わらず — 失敗 URL の再試行も業務上有用)
   pushRestHistory({ method, path, body });
+}
+
+// v3.79.0: SOQL Tooling API チェック状態を chrome.storage に保存し、次回起動時に復元 (10 種達成・大台)
+const SOQL_TOOLING_KEY = "sfdtSoqlTooling";
+async function loadSoqlTooling() {
+  try {
+    const data = await chrome.storage.local.get(SOQL_TOOLING_KEY);
+    const saved = data[SOQL_TOOLING_KEY];
+    if (typeof saved !== "boolean") return;
+    const cb = document.getElementById("useTooling");
+    if (cb) cb.checked = saved;
+  } catch {}
+}
+async function saveSoqlTooling(checked) {
+  try { await chrome.storage.local.set({ [SOQL_TOOLING_KEY]: !!checked }); } catch {}
 }
 
 // v3.78.0: メタデータ一覧の選択 type を chrome.storage に保存し、次回起動時に復元 (9 種達成)
