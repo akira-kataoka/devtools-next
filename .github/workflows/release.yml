@@ -1,0 +1,34 @@
+name: Build & Release zip
+# v3.56.0 (Phase 146): タグ push 時に .zip を自動ビルドして GitHub Release に添付
+# 利用: `git tag v3.56.0 && git push --tags` で発動
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 拡張機能フォルダを zip 化
+        run: |
+          set -e
+          # .git / .github / tests など配布に含めないものを除外
+          zip -r "devtoolsnext-${{ github.ref_name }}.zip" . \
+            -x '.git/*' \
+            -x '.github/*' \
+            -x 'tests/*' \
+            -x '*.zip' \
+            -x 'GITHUB_SETUP.md'
+          ls -la devtoolsnext-*.zip
+
+      - name: GitHub Release に .zip を添付
+        uses: softprops/action-gh-release@v2
+        with:
+          files: devtoolsnext-*.zip
+          generate_release_notes: true
