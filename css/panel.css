@@ -406,6 +406,50 @@ td.cell-nested { word-break: break-word; }
   font-size: 11px;
   color: var(--fg-dim);
 }
+
+/* v2.87.0: SOQL オートコンプリート ドロップダウン (Phase 78) */
+.soql-autocomplete {
+  position: fixed;
+  z-index: 9999;
+  min-width: 280px;
+  max-width: 520px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: var(--bg2);
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  padding: 4px;
+  font-size: 12px;
+}
+.soql-autocomplete .ac-item {
+  display: flex; align-items: center; gap: 6px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--fg);
+}
+.soql-autocomplete .ac-item:hover,
+.soql-autocomplete .ac-item.selected {
+  background: rgba(27,150,255,0.18);
+  color: #fff;
+}
+.soql-autocomplete .ac-ico { font-size: 14px; flex-shrink: 0; }
+.soql-autocomplete .ac-val {
+  font-family: ui-monospace, Consolas, monospace;
+  font-weight: 600;
+  color: var(--accent);
+}
+.soql-autocomplete .ac-item.selected .ac-val { color: #fff; }
+.soql-autocomplete .ac-lbl {
+  margin-left: auto;
+  color: var(--fg-dim);
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
 .nav-btn.recent {
   font-size: 11px;
   color: var(--fg-dim);

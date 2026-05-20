@@ -511,6 +511,9 @@ function bindEvents() {
   if (btnCopyCsv) btnCopyCsv.addEventListener("click", copyCsvToClipboard);
   document.getElementById("btnSaveSoql").addEventListener("click", saveCurrentQuery);
   document.getElementById("btnLoadSoql").addEventListener("click", loadSelectedQuery);
+  // v2.87.0: SOQL オートコンプリート初期化 (Phase 78)
+  setupSoqlAutocomplete();
+
   document.getElementById("soqlText").addEventListener("keydown", (e) => {
     if (e.isComposing || e.keyCode === 229) return; // IME 確定中はスキップ
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") doSoql();
@@ -2225,6 +2228,171 @@ async function reconnect() {
   unlock();
   // v2.6.0: 接続成功後に sObject 一覧を datalist に流し込み (オブジェクト入力欄の補完用)
   refreshSObjectDatalist();
+}
+
+// =====================================================================
+// v2.87.0: SOQL オートコンプリート (Phase 78 / ユーザー要望対応)
+// 「SOQL 書くときは途中まで書けば候補が出てくるようにしてほしい」(2026-05-20)
+// 仕様:
+//   - textarea#soqlText の入力イベントでカーソル直前の文脈を解析
+//   - FROM ＋空白の直後 → describe global のオブジェクト候補
+//   - SELECT / カンマ / WHERE / AND / OR の直後 → 現在の FROM オブジェクトの項目候補
+//   - ドロップダウン (絶対位置 div) で表示、↑↓ で移動 / Enter or Tab で挿入 / Esc で閉じる
+// =====================================================================
+const _soqlAutocomplete = {
+  fieldsCache: new Map(), // objName -> [{ name, label, type }]
+  popup: null,
+  selectedIdx: 0,
+  candidates: [],
+  wordStart: 0, // 補完対象ワードの開始位置
+  active: false,
+};
+
+function setupSoqlAutocomplete() {
+  const textarea = document.getElementById("soqlText");
+  if (!textarea) return;
+  // ポップアップ DOM を一度だけ作成
+  if (!_soqlAutocomplete.popup) {
+    const pop = document.createElement("div");
+    pop.className = "soql-autocomplete";
+    pop.style.display = "none";
+    document.body.appendChild(pop);
+    _soqlAutocomplete.popup = pop;
+  }
+  textarea.addEventListener("input", () => updateSoqlAutocomplete(textarea));
+  textarea.addEventListener("keydown", (e) => onSoqlAutocompleteKey(e, textarea), true);
+  textarea.addEventListener("blur", () => {
+    // クリック選択を許容するため少し遅延して閉じる
+    setTimeout(() => hideSoqlAutocomplete(), 150);
+  });
+}
+
+function hideSoqlAutocomplete() {
+  if (_soqlAutocomplete.popup) _soqlAutocomplete.popup.style.display = "none";
+  _soqlAutocomplete.active = false;
+}
+
+function getFromObjectFromSoql(text) {
+  // SOQL 文字列から FROM のすぐ後のオブジェクト名を抽出 (最初の 1 つだけ対応)
+  const m = text.match(/\bFROM\s+([A-Za-z0-9_]+)/i);
+  return m ? m[1] : null;
+}
+
+async function getObjectFields(objName) {
+  if (!objName || !state.sid) return [];
+  if (_soqlAutocomplete.fieldsCache.has(objName)) return _soqlAutocomplete.fieldsCache.get(objName);
+  try {
+    const r = await sfFetch({ host: state.host, sid: state.sid,
+      path: `/services/data/v${state.apiVersion}/sobjects/${encodeURIComponent(objName)}/describe` });
+    if (!r.ok || !r.data || !Array.isArray(r.data.fields)) return [];
+    const fields = r.data.fields.map((f) => ({ name: f.name, label: f.label || "", type: f.type || "" }));
+    _soqlAutocomplete.fieldsCache.set(objName, fields);
+    return fields;
+  } catch { return []; }
+}
+
+async function updateSoqlAutocomplete(textarea) {
+  const text = textarea.value;
+  const pos = textarea.selectionStart;
+  // カーソル位置の手前ワードを取得
+  const before = text.substring(0, pos);
+  const wordMatch = before.match(/([A-Za-z0-9_]*)$/);
+  const currentWord = wordMatch ? wordMatch[1] : "";
+  _soqlAutocomplete.wordStart = pos - currentWord.length;
+  // 直前のキーワードを判定 (FROM / SELECT / WHERE / AND / OR / , )
+  // 直前ワードの前にあるキーワード/区切り文字
+  const beforeWord = before.substring(0, pos - currentWord.length).trimEnd();
+  const lastKeywordMatch = beforeWord.match(/\b(FROM|SELECT|WHERE|AND|OR|ORDER\s+BY|GROUP\s+BY)\b[^A-Za-z_]*$/i)
+    || beforeWord.match(/(,)\s*$/);
+  const lastKw = lastKeywordMatch ? lastKeywordMatch[1].toUpperCase().replace(/\s+/g, " ") : null;
+
+  let candidates = [];
+  const q = currentWord.toLowerCase();
+  if (lastKw === "FROM") {
+    // オブジェクト候補
+    if (_datalistObjsCached) {
+      candidates = _datalistObjsCached
+        .filter((s) => !q || s.name.toLowerCase().startsWith(q) || (s.label || "").toLowerCase().includes(q))
+        .slice(0, 20)
+        .map((s) => ({ value: s.name, label: s.label || "", type: "object" }));
+    }
+  } else if (lastKw === "SELECT" || lastKw === "," || lastKw === "WHERE" || lastKw === "AND" || lastKw === "OR" || lastKw === "ORDER BY" || lastKw === "GROUP BY") {
+    // 項目候補 (FROM オブジェクトから)
+    const objName = getFromObjectFromSoql(text);
+    if (objName) {
+      const fields = await getObjectFields(objName);
+      candidates = fields
+        .filter((f) => !q || f.name.toLowerCase().startsWith(q) || (f.label || "").toLowerCase().includes(q))
+        .slice(0, 20)
+        .map((f) => ({ value: f.name, label: `${f.label || ""} (${f.type || ""})`, type: "field" }));
+    }
+  }
+  if (!candidates.length) { hideSoqlAutocomplete(); return; }
+  _soqlAutocomplete.candidates = candidates;
+  _soqlAutocomplete.selectedIdx = 0;
+  _soqlAutocomplete.active = true;
+  renderSoqlAutocomplete(textarea);
+}
+
+function renderSoqlAutocomplete(textarea) {
+  const pop = _soqlAutocomplete.popup;
+  if (!pop) return;
+  // 位置調整: textarea の境界 + カーソル概算位置 (簡易: textarea の下に出す)
+  const rect = textarea.getBoundingClientRect();
+  pop.style.left = (rect.left + 8) + "px";
+  pop.style.top = (rect.bottom + 2) + "px";
+  pop.style.display = "block";
+  pop.innerHTML = _soqlAutocomplete.candidates
+    .map((c, i) => {
+      const icon = c.type === "object" ? "📦" : "🔹";
+      return `<div class="ac-item${i === _soqlAutocomplete.selectedIdx ? " selected" : ""}" data-idx="${i}">` +
+        `<span class="ac-ico">${icon}</span><span class="ac-val">${escape(c.value)}</span>` +
+        (c.label ? `<span class="ac-lbl">${escape(c.label)}</span>` : "") + `</div>`;
+    }).join("");
+  // クリックで挿入
+  pop.querySelectorAll(".ac-item").forEach((el) => {
+    el.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      const idx = Number(el.dataset.idx);
+      insertSoqlCandidate(textarea, _soqlAutocomplete.candidates[idx]);
+    });
+  });
+}
+
+function insertSoqlCandidate(textarea, cand) {
+  if (!cand) return;
+  const text = textarea.value;
+  const pos = textarea.selectionStart;
+  const before = text.substring(0, _soqlAutocomplete.wordStart);
+  const after = text.substring(pos);
+  const inserted = cand.value;
+  textarea.value = before + inserted + after;
+  const newPos = before.length + inserted.length;
+  textarea.setSelectionRange(newPos, newPos);
+  textarea.focus();
+  hideSoqlAutocomplete();
+  // 挿入後に再評価 (次の候補表示)
+  setTimeout(() => updateSoqlAutocomplete(textarea), 30);
+}
+
+function onSoqlAutocompleteKey(e, textarea) {
+  if (!_soqlAutocomplete.active || !_soqlAutocomplete.candidates.length) return;
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    _soqlAutocomplete.selectedIdx = Math.min(_soqlAutocomplete.selectedIdx + 1, _soqlAutocomplete.candidates.length - 1);
+    renderSoqlAutocomplete(textarea);
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    _soqlAutocomplete.selectedIdx = Math.max(_soqlAutocomplete.selectedIdx - 1, 0);
+    renderSoqlAutocomplete(textarea);
+  } else if (e.key === "Enter" || e.key === "Tab") {
+    e.preventDefault();
+    e.stopPropagation();
+    insertSoqlCandidate(textarea, _soqlAutocomplete.candidates[_soqlAutocomplete.selectedIdx]);
+  } else if (e.key === "Escape") {
+    e.preventDefault();
+    hideSoqlAutocomplete();
+  }
 }
 
 // v2.6.0: 全オブジェクト入力欄 (#exObj, #apiObj, #descObj, #designObj) で list="dl-sobjects" を参照
