@@ -743,6 +743,26 @@ td.cell-nested { word-break: break-word; }
   .design-preview tr { page-break-inside: avoid; page-break-after: auto; }
   /* 罫線をはっきりさせる (グレースケール印刷でも識別可能に) */
   .design-preview th, .design-preview td { border: 1px solid #555 !important; }
+  /* v3.40.0: 章番号 chip を印刷でも表示 (Chrome 既定で背景印刷オフ) */
+  .design-preview .design-chap-no {
+    background: #1b96ff !important; color: #fff !important;
+    border: 1px solid #1b96ff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  /* note (blockquote) も印刷時は背景を明示 (グラデは控えめに) */
+  .design-preview blockquote {
+    background: #f0f7ff !important; color: #000 !important;
+    border-left: 4px solid #1b96ff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  /* 凡例も背景を残す */
+  .design-preview h2.design-legend, .design-preview table.design-legend {
+    background: #f5f5f5 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   /* 用紙設定 (Chrome / Firefox 対応): A4 縦、ヘッダ/フッタは余白控えめ */
   @page { size: A4; margin: 14mm 12mm; }
 }
