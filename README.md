@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.81.0 (2026-05-20 11:05)** — README に macOS キーボード対応 + Picker z-index 検証:
+  - **📖 README に macOS キーボード対応セクション追加**: SOQL/Apex `Cmd+Enter` (⌘ Return)、ビュー切替 `Ctrl+Alt+I/Q/A/L/R/D` (Mac でも Ctrl)、IME 確定 `Enter` 2 回パターンを表形式で整理。実装根拠ファイル位置も明示
+  - **🧪 Mac Cmd+Enter は既対応**: panel/popup の keydown 全てで `e.ctrlKey || e.metaKey` 判定 (panel.js:329/371, popup.js:123) → 修正不要
+  - **🧪 Picker overlay z:99999 が tool.html ヘッダ (z 未設定) より確実に最前面**: panel.css は `.hdr` に z-index 設定なし、popup.css は `.hdr { z-index: 5 }` → 修正不要
 - **v1.80.0 (2026-05-20 11:00)** — 🎉 累計80リリース節目 - .code に user-select: text 明示:
   - **✨ `.code` (panel + popup) に `user-select: text` 明示**: 親要素で `user-select: none` が継承されても pre/code 内のテキストは選択可能。**Ctrl+A で要素内全選択 + コピーが確実に動作**
   - **🎉 累計 80 リリース達成**: IME 確定保護 (Tab + Enter) 5 箇所 / Picker キーボード 7 操作 / 4 色 Toast + pulse / grid sort / cell-id+nested / Lightning Setup URL 抽出 / env バッジ など、UX 完全度が高いレベルに到達
@@ -644,6 +648,20 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 4. 結果 pre / div 内をマウスホイールで上下スクロール
 5. FPS 表示が 50〜60 fps を維持していれば最適化 OK (10〜30 fps だと再描画ボトルネック)
 6. 比較したい場合は DevTools Console で `document.getElementById("apexResult").style.contain = "none"` → スクロール → 戻す
+
+### 🧪 macOS キーボード対応 (v1.81.0 で正式記載)
+
+すべての KBSC は Mac の `Cmd` (⌘) と Windows の `Ctrl` を両対応:
+
+| 操作 | Win/Linux | Mac |
+|---|---|---|
+| SOQL 実行 | `Ctrl+Enter` | `Cmd+Enter` (⌘ Return) |
+| Apex 実行 | `Ctrl+Enter` | `Cmd+Enter` |
+| Inspector / SOQL / Apex 等ビュー切替 | `Ctrl+Alt+I/Q/A/L/R/D` | `Ctrl+Alt+I/Q/A/L/R/D` (Mac でも Ctrl のまま) |
+| Picker close | `Esc` | `Esc` |
+| Tab → 2 spaces (Apex/SOQL コードエリア) | `Tab` | `Tab` |
+
+実装: `e.ctrlKey || e.metaKey` で両キーをハンドリング (`panel.js:329 / 371` + `popup.js:123`)。IME 変換中の Enter は確定キーとして扱い、確定後の 2 回目で実行 (`e.isComposing || keyCode === 229` ガード)。
 
 ### 🧪 Picker キーボード操作 & focus 戻りテスト手順 (v1.74.0+)
 
