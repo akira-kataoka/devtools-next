@@ -117,7 +117,7 @@ select { font-family: inherit; }
   contain: layout style;
 }
 .result:empty::before {
-  content: "📊 SOQL 未実行  /  上にクエリを入力して「実行」をクリック";
+  content: "📊 SOQL はまだ実行されていません  /  上のエリアにクエリを入力し「実行」をクリックしてください";
   display: block; text-align: center; padding: 20px 8px;
   color: var(--accent); font-size: 11px; line-height: 1.7;
 }

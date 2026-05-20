@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.25.0 (2026-05-20 14:55)** — 🚨 ユーザー要望 Phase 15: CSS empty-state テキスト + alert / Limits モバイル列ラベル:
+  - **🐛 css/panel.css empty-state 6 箇所 (SOQL / Apex / REST / Limits / describe / LoginHistory)**: 「XXX 未実行/未取得」→「XXX はまだ実行/取得されていません」、「上の「取得」ボタンで認証履歴を読込」→「「取得」ボタンをクリックして認証履歴を読み込んでください」に統一
+  - **🐛 css/popup.css**: ポップアップの SOQL 結果空状態を同様に ですます調 詳細化
+  - **🐛 css/panel.css Limits モバイル列ラベル**: 英語残存「used: / remaining: / max:」を「使用: / 残り: / 上限:」に日本語化
+  - **🐛 panel.js Debug ログサンプル alert**: 「DebugLevel/TraceFlag の作成はサンプル実装です。Setup → Debug Logs で手動設定もできます。」を「Setup → Debug Logs から手動で設定することもできます」に微修正
 - **v2.24.0 (2026-05-20 14:50)** — 🚨 ユーザー要望 Phase 14: popup setStatus / toast / sf-api userinfo error 文言:
   - **🐛 popup.js setStatus**: 「セッション取得中…」→「セッション情報を取得しています…」、「SOQL 実行中…」→「⏳ SOQL を実行しています…」、「API 呼び出し中…」→「⏳ API を呼び出しています…」、「OK/失敗」→「✓ 成功しました/❌ 失敗しました」、SF タブ未検出・sid Cookie 不在のヘルプ文を ですます調 詳細化
   - **🐛 popup.js toast**: 「ピンを外しました」も絵文字付きに、「ピン留め N 件を残してクリア」→「ピン留め N 件を残し、その他の履歴を削除しました」、「先に SF に接続してください」「SF タブが必要です」→「Salesforce のタブで実行してください」等

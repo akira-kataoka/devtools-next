@@ -2178,7 +2178,7 @@ async function doEnableDebug() {
   if (!state.sid) return;
   // ユーザー自身の TraceFlag を 60 分有効化（最低限の実装）
   const userId = state.orgId; // フォールバック。実際は userinfo を引きたいが今は orgId 表示用なので注意
-  alert("DebugLevel/TraceFlag の作成はサンプル実装です。Setup → Debug Logs で手動設定もできます。");
+  alert("DebugLevel / TraceFlag の作成はサンプル実装です。Setup → Debug Logs から手動で設定することもできます。");
 }
 
 // (旧 doLimits は新ダッシュボード版に置換済 — 下部参照)

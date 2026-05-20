@@ -258,32 +258,32 @@ td.cell-nested { word-break: break-word; }
 
 /* 各結果ペインの空状態ヒント (空のとき自動表示、内容が入ると消える) */
 #soqlResult:empty::before {
-  content: "📊 SOQL 未実行  /  上のクエリエリアにクエリを入力して「実行」をクリック";
+  content: "📊 SOQL はまだ実行されていません  /  上のクエリエリアにクエリを入力し「実行」をクリックしてください";
   display: block; text-align: center; padding: 32px 16px;
   color: var(--accent); font-size: 13px; line-height: 1.8;
 }
 #apexResult:empty::before {
-  content: "⚡ Apex 未実行  /  上のコードエリアに匿名 Apex を入力して「▶ 実行」をクリック";
+  content: "⚡ Apex はまだ実行されていません  /  上のコードエリアに匿名 Apex を入力し「▶ 実行」をクリックしてください";
   display: block; text-align: center; padding: 32px 16px;
   color: var(--accent); font-size: 13px; line-height: 1.8;
 }
 #restResult:empty::before {
-  content: "📡 REST 未送信  /  上の URL バーで Method/Path を指定して「送信」をクリック";
+  content: "📡 REST はまだ送信されていません  /  上の URL バーで Method と Path を指定し「送信」をクリックしてください";
   display: block; text-align: center; padding: 32px 16px;
   color: var(--accent); font-size: 13px; line-height: 1.8;
 }
 #limitsResult:empty::before {
-  content: "📊 Limits 未取得  /  上の「取得」ボタンで現在の上限使用状況を読込";
+  content: "📊 Limits 情報がまだ取得されていません  /  上の「取得」ボタンをクリックして現在の使用状況を読み込んでください";
   display: block; text-align: center; padding: 32px 16px;
   color: var(--accent); font-size: 13px; line-height: 1.8;
 }
 #describeResult:empty::before {
-  content: "🔍 describe 未取得  /  オブジェクト API 名を入力して「取得」をクリック";
+  content: "🔍 describe 情報がまだ取得されていません  /  オブジェクトの API 名を入力し「取得」をクリックしてください";
   display: block; text-align: center; padding: 32px 16px;
   color: var(--accent); font-size: 13px; line-height: 1.8;
 }
 #loginResult:empty::before {
-  content: "👤 Login History 未取得  /  上の「取得」ボタンで認証履歴を読込";
+  content: "👤 ログイン履歴がまだ取得されていません  /  上の「取得」ボタンをクリックして認証履歴を読み込んでください";
   display: block; text-align: center; padding: 32px 16px;
   color: var(--accent); font-size: 13px; line-height: 1.8;
 }
@@ -695,9 +695,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (max-width: 600px) {
   .limit-row { grid-template-columns: 1fr; gap: 2px; padding: 6px 8px; }
   .limit-row > div:nth-child(1) { font-weight: 700; }
-  .limit-row > div:nth-child(2)::before { content: "used: "; color: var(--fg-dim); }
-  .limit-row > div:nth-child(3)::before { content: "remaining: "; color: var(--fg-dim); }
-  .limit-row > div:nth-child(4)::before { content: "max: "; color: var(--fg-dim); }
+  .limit-row > div:nth-child(2)::before { content: "使用: "; color: var(--fg-dim); }
+  .limit-row > div:nth-child(3)::before { content: "残り: "; color: var(--fg-dim); }
+  .limit-row > div:nth-child(4)::before { content: "上限: "; color: var(--fg-dim); }
 }
 .limit-row:hover:not(.header) { background: #112042; }
 .limit-row .limit-name { color: var(--fg); font-weight: 600; }
