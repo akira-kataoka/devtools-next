@@ -289,7 +289,7 @@ System.debug('Now: ' + System.now());</textarea>
             <option value="deployStatus">デプロイ状況 (最近10件)</option>
           </select>
           <span class="grow"></span>
-          <button id="btnCsLoad" class="primary">▶ ロード / 切替</button>
+          <button id="btnCsLoad" class="primary" title="選択したモードのデータを読み込みます">▶ ロード / 切替</button>
         </div>
 
         <div id="csBuilderArea" class="changeset-layout">
@@ -324,16 +324,16 @@ System.debug('Now: ' + System.now());</textarea>
                 <option value="GlobalValueSet">GlobalValueSet</option>
                 <option value="CustomMetadata">CustomMetadata</option>
               </select>
-              <button id="btnCsListType">候補をロード</button>
+              <button id="btnCsListType" title="選択した型のメタデータ候補を取得します">候補をロード</button>
             </div>
-            <input id="csFilter" placeholder="絞込み (名前/ラベル)" />
+            <input id="csFilter" placeholder="名前またはラベルで絞り込めます" title="API 名・ラベルの部分一致で候補リストを絞り込みます" />
             <div id="csCandidates" class="changeset-list"></div>
           </div>
 
           <div class="changeset-right">
             <div class="export-pane-label">
               選択済み (<span id="csSelectedCount">0</span> 件)
-              <button id="btnCsClear" class="mini-btn">全クリア</button>
+              <button id="btnCsClear" class="mini-btn" title="選択済みのメタデータをすべてクリアします">全クリア</button>
             </div>
             <div id="csSelectedList" class="changeset-list"></div>
 
@@ -341,10 +341,10 @@ System.debug('Now: ' + System.now());</textarea>
               <label class="export-row" style="flex:1">API バージョン
                 <input id="csApiVer" value="62.0" style="width:80px" />
               </label>
-              <button id="btnCsBuildXml" class="primary">package.xml 生成</button>
-              <button id="btnCsCopyXml">コピー</button>
-              <button id="btnCsDlXml">ダウンロード</button>
-              <button id="btnCsDlBundle">SFDX バンドル</button>
+              <button id="btnCsBuildXml" class="primary" title="選択済みメタデータから package.xml を生成します">package.xml 生成</button>
+              <button id="btnCsCopyXml" title="生成した package.xml をクリップボードにコピーします">コピー</button>
+              <button id="btnCsDlXml" title="package.xml をファイルとしてダウンロードします">ダウンロード</button>
+              <button id="btnCsDlBundle" title="SFDX 形式 (manifest/ ディレクトリ構造) でバンドルダウンロードします">SFDX バンドル</button>
             </div>
             <div id="csMeta" class="meta"></div>
             <pre id="csXml" class="code" style="min-height:200px"></pre>

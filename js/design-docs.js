@@ -31,7 +31,7 @@ function apiError(ctx, response) {
 // 統一: 入力必須チェック
 function requireInput(value, hint) {
   if (!value || !String(value).trim()) {
-    throw new Error(`入力必須: ${hint}`);
+    throw new Error(`${hint} を入力してください`);
   }
 }
 
@@ -491,7 +491,7 @@ async function buildCustomSettingList({ host, sid, apiVersion }) {
 
 // ============ ER 図 (Mermaid) ============
 async function buildErDiagram({ host, sid, apiVersion, obj }) {
-  requireInput(obj, "基点オブジェクト API 名 (例: Account)");
+  requireInput(obj, "基点となるオブジェクト API 名 (例: Account)");
   // 起点 + 直接の参照先を 1 hop 取る
   const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
   if (!r.ok) throw apiError(`describe(${obj})`, r);
@@ -564,7 +564,7 @@ function sanitizeType(t) {
 // 引数 obj には Profile 名 or PermissionSet API 名 を入れる。
 // 「<プロファイル名>」または「@<PermissionSet API名>」(@ プレフィックスで権限セット)
 async function buildProfileDetail({ host, sid, apiVersion, obj, progress = () => {} }) {
-  requireInput(obj, "プロファイル名 (例: 営業ユーザー) または '@PermSet_API名'");
+  requireInput(obj, "プロファイル名 (例: 営業ユーザー) または『@PermSet_API名』形式");
   progress("対象 PermissionSet を検索中...");
 
   const isPermSet = obj.startsWith("@");
@@ -962,7 +962,7 @@ async function buildAccessControl({ host, sid, apiVersion }) {
 
 // ============ フロー設計図 (1 Flow 詳細) ============
 async function buildFlowDetail({ host, sid, apiVersion, obj }) {
-  requireInput(obj, "Flow DeveloperName (例: My_Flow)");
+  requireInput(obj, "Flow の DeveloperName (例: My_Flow)");
 
   // Active version を引く
   const r = await runSoql({
@@ -1237,7 +1237,7 @@ async function buildApexDetail({ host, sid, apiVersion, obj }) {
 
 // ============ LWC 設計図 (1 LightningComponentBundle 詳細) ============
 async function buildLwcDetail({ host, sid, apiVersion, obj }) {
-  requireInput(obj, "LWC バンドル DeveloperName");
+  requireInput(obj, "LWC コンポーネントの DeveloperName (例: myComponent)");
 
   const bR = await runSoql({
     host, sid, apiVersion, tooling: true,

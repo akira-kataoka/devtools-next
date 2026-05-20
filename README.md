@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.20.0 (2026-05-20 14:30)** — 🚨 ユーザー要望 Phase 10: requireInput / 自動更新通知 / ChangeSet UI:
+  - **🐛 design-docs.js requireInput()**: 入力必須エラーを「入力必須: XXX」から「XXX を入力してください」形式に統一。すべての設計書入力欄でエラー文が ですます調 に。requireInput のヒント文も自然化 (例: "基点オブジェクト" → "基点となるオブジェクト"、"プロファイル名 ... '@PermSet_API名'" → "プロファイル名 ... 『@PermSet_API名』形式"、"LWC バンドル DeveloperName" → "LWC コンポーネントの DeveloperName (例: myComponent)")
+  - **🐛 background.js 自動更新通知**: chrome.notifications のタイトル/メッセージを ですます調 + 自然化 ("DevToolsNext 自動更新" → "DevToolsNext を自動更新しました")
+  - **🐛 html/panel.html ChangeSet**: 6 つのボタン (ロード/切替、候補をロード、全クリア、package.xml 生成、コピー、ダウンロード、SFDX バンドル)、絞込み input の title/placeholder を ですます調 + 機能説明付きに
+  - **🐛 html/tool.html ChangeSet**: 同じ 6 ボタンを panel.html と統一
 - **v2.19.0 (2026-05-20 14:25)** — 🚨 ユーザー要望 Phase 9: html/*.html title・placeholder 総点検 + apiError ですます調統一:
   - **🐛 html/popup.html**: 9 箇所の title/placeholder/aria-label を ですます調 に統一 (例: "現在のバージョン" → "現在のバージョン番号です"、"再取得" → "セッション情報を再取得します"、"アップデート確認・自動再ロード" → "アップデートを確認し、新しいバージョンがあれば自動で再読み込みします")
   - **🐛 html/panel.html**: 10 箇所の title/placeholder を ですます調 に (例: "セッションを再取得" → "現在のタブの Salesforce セッションを再取得します"、"全項目を JSON でクリップボードへ" → "全項目を JSON 形式でクリップボードにコピーします")
