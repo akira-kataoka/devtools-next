@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.9.0 (2026-05-20 13:25)** — mini-panel 結果テーブルの ID セルクリックで深掘り検索:
+  - **✨ mini-panel の結果テーブル ID セル (15/18桁) を click で `SELECT FIELDS(STANDARD) FROM <Object> WHERE Id = '<id>'` 自動実行**: panel/tool の cell-id → Inspector ジャンプと同じ UX を mini-panel にも適用
+  - 元クエリの `FROM` から Object 名を継承、なければ `Account` フォールバック
+  - 結果テーブルが連鎖して掘り下げ可能 (リレーション辿り)
+  - meta に `🔍 Object:Id → 全標準フィールド検索` で操作を可視化
 - **v2.8.0 (2026-05-20 13:20)** — mini-panel に「📋 ID 挿入」ボタン:
   - **✨ 現在ページの URL から sObject + RecordId を自動抽出して SOQL に挿入**: `extractRecordContext()` で `/lightning/r/Object/Id/view` / `?address=%2F<Id>` / pathname の 3 段階フォールバック (Inspector「現在タブから取得」と同パターン)
   - **「📋 ID 挿入」クリック → `SELECT Id, Name FROM <Object> WHERE Id = '<id>' LIMIT 1` を textarea にセット**: SF 画面内で「このレコードのフィールド全部見たい」が 1 クリックで実現

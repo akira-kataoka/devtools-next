@@ -226,17 +226,36 @@ function flashToast(text) {
     records.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
     const headers = Array.from(cols);
     const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const isLikelyId = (v) => /^[a-zA-Z0-9]{15,18}$/.test(v) && /[a-zA-Z]/.test(v) && /\d/.test(v);
     const head = `<tr>${headers.map((h) => `<th>${esc(h)}</th>`).join("")}</tr>`;
     const rows = records.map((r) => `<tr>${headers.map((h) => {
       let v = r[h];
       if (v && typeof v === "object" && v.attributes) {
-        // ネスト attributes → Name [Id] 平坦化
         const flds = Object.keys(v).filter((k) => k !== "attributes");
         const pref = ["Name", "Subject", "Title"].find((p) => flds.includes(p) && v[p]);
         v = pref ? `${v[pref]}${v.Id ? ` [${v.Id.substring(0,18)}]` : ""}` : JSON.stringify(v);
       }
-      return `<td>${esc(typeof v === "object" ? JSON.stringify(v) : v)}</td>`;
+      const display = typeof v === "object" ? JSON.stringify(v) : (v == null ? "" : v);
+      // v2.9.0: ID セルは click で 全フィールド SOQL ループ
+      if (isLikelyId(display)) {
+        return `<td class="cell-id" data-id="${esc(display)}" title="Click で全フィールド表示" style="cursor:pointer;color:#1b96ff;text-decoration:underline">${esc(display)}</td>`;
+      }
+      return `<td>${esc(display)}</td>`;
     }).join("")}</tr>`).join("");
+    setTimeout(() => {
+      res.querySelectorAll("td.cell-id").forEach((td) => {
+        td.addEventListener("click", () => {
+          const id = td.dataset.id;
+          if (!id) return;
+          // 既存 query の FROM 部分を取得して同じオブジェクトで再検索
+          const fromMatch = qry.value.match(/FROM\s+(\w+)/i);
+          const obj = fromMatch ? fromMatch[1] : "Account";
+          qry.value = `SELECT FIELDS(STANDARD) FROM ${obj} WHERE Id = '${id}' LIMIT 1`;
+          meta.innerHTML = `<span class="ok">🔍 ${obj}:${id} → 全標準フィールド検索</span>`;
+          runBtn.click();
+        });
+      });
+    }, 0);
     return `<table>${head}${rows}</table>`;
   }
 })();
