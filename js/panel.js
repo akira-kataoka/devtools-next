@@ -542,7 +542,18 @@ async function csListOutbound() {
       `<div class="meta">⚠ OutboundChangeSet オブジェクトはこの組織で API 公開されていない可能性があります。Setup → Deploy → 送信変更セット の UI を直接利用してください。</div>`;
     return;
   }
-  document.getElementById("csListArea").innerHTML = recordsTable(r.data.records || []);
+  // 列名業務化
+  const csStatusMap = { "New": "未送信", "Uploading": "送信中", "Uploaded": "送信済", "Failed": "失敗" };
+  const records = (r.data.records || []).map((rec) => ({
+    "Id": rec.Id,
+    "変更セット名": rec.Name,
+    "説明": rec.Description || "",
+    "ステータス": csStatusMap[rec.Status] || rec.Status || "",
+    "送信先組織": rec.SourceOrganization || "",
+    "ロック": rec.IsLocked ? "○ ロック中" : "",
+    "更新日": rec.LastModifiedDate,
+  }));
+  document.getElementById("csListArea").innerHTML = recordsTable(records);
 }
 
 async function csListInbound() {
@@ -556,7 +567,17 @@ async function csListInbound() {
       `<div class="meta">⚠ InboundChangeSet オブジェクトはこの組織で API 公開されていない可能性があります。</div>`;
     return;
   }
-  document.getElementById("csListArea").innerHTML = recordsTable(r.data.records || []);
+  // 列名業務化
+  const csStatusMap = { "New": "新規", "Validated": "検証済", "Deployed": "デプロイ完了", "Failed": "失敗" };
+  const records = (r.data.records || []).map((rec) => ({
+    "Id": rec.Id,
+    "変更セット名": rec.Name,
+    "説明": rec.Description || "",
+    "ステータス": csStatusMap[rec.Status] || rec.Status || "",
+    "送信元組織": rec.SourceOrganization || "",
+    "更新日": rec.LastModifiedDate,
+  }));
+  document.getElementById("csListArea").innerHTML = recordsTable(records);
 }
 
 async function csListDeployStatus() {
@@ -569,7 +590,20 @@ async function csListDeployStatus() {
     document.getElementById("csListArea").innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;
     return;
   }
-  document.getElementById("csListArea").innerHTML = recordsTable(r.data.records || []);
+  // 列名業務化 + ステータス絵文字
+  const deployStatusMap = { "Pending": "⏳ 待機中", "InProgress": "🔄 実行中", "Succeeded": "✓ 成功", "SucceededPartial": "△ 部分成功", "Failed": "✗ 失敗", "Canceling": "⏸ 取消中", "Canceled": "⏹ 取消済" };
+  const records = (r.data.records || []).map((rec) => ({
+    "Id": rec.Id,
+    "ステータス": deployStatusMap[rec.Status] || rec.Status || "",
+    "コンポーネント": `${rec.NumberComponentsDeployed || 0} / ${rec.NumberComponentsTotal || 0}${rec.NumberComponentErrors ? ` (✗ ${rec.NumberComponentErrors})` : ""}`,
+    "テスト": `${rec.NumberTestsCompleted || 0} / ${rec.NumberTestsTotal || 0}${rec.NumberTestErrors ? ` (✗ ${rec.NumberTestErrors})` : ""}`,
+    "検証のみ": rec.CheckOnly ? "○" : "",
+    "テスト実行": rec.RunTestsEnabled ? "○" : "",
+    "実行者": rec.CreatedBy ? rec.CreatedBy.Name : "",
+    "開始日時": rec.CreatedDate,
+    "完了日時": rec.CompletedDate || "(未完了)",
+  }));
+  document.getElementById("csListArea").innerHTML = recordsTable(records);
 }
 
 async function csListCandidates() {
@@ -1363,6 +1397,13 @@ function apiOpenInBrowser() {
 const inspectState = { obj: null, id: null, describe: null, record: null };
 const inspectHistory = []; // 過去訪問した {obj, id} を最大 20 件保持
 function updateInspectBackButton() {
+  const cnt = inspectHistory.length;
+  const btn0 = document.getElementById("btnInspectBack");
+  if (btn0) {
+    btn0.title = cnt > 0
+      ? `一つ前のレコードに戻ります (履歴 ${cnt} 件)`
+      : "履歴がまだありません (一度別レコードを取得すると有効化されます)";
+  }
   const btn = document.getElementById("btnInspectBack");
   if (btn) btn.disabled = inspectHistory.length === 0;
 }
