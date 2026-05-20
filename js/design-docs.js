@@ -63,6 +63,14 @@ function fmtTrunc(s, max = 200) {
   return str.substring(0, max) + ` … [+${fmtNum(str.length - max)} 文字省略]`;
 }
 
+// パーセント表示 (0.123 → "12.3%" / 0.456 → "45.6%")。null/undefined は空文字
+function fmtPercent(ratio, decimals = 1) {
+  if (ratio == null || ratio === "") return "";
+  const v = typeof ratio === "number" ? ratio : Number(ratio);
+  if (!Number.isFinite(v)) return String(ratio);
+  return `${(v * 100).toFixed(decimals)}%`;
+}
+
 export async function generateDesign({ type, host, sid, apiVersion, obj, format, onProgress }) {
   let result;
   const progress = onProgress || (() => {});
@@ -288,7 +296,7 @@ async function buildApexClassList({ host, sid, apiVersion }) {
     title: "Apex クラス一覧",
     type: "apexClassList",
     sections: [{ heading: "Apex クラス", headers, rows }],
-    note: `合計 ${fmtNum(rows.length)} 件 (unmanaged + installedEditable のみ) / 総コードサイズ: ${fmtBytes(totalLength)} (Apex Limit 6 MB に対する使用率: 約 ${((totalLength / (6 * 1024 * 1024)) * 100).toFixed(1)}%)`,
+    note: `合計 ${fmtNum(rows.length)} 件 (unmanaged + installedEditable のみ) / 総コードサイズ: ${fmtBytes(totalLength)} (Apex Limit 6 MB に対する使用率: 約 ${fmtPercent(totalLength / (6 * 1024 * 1024))})`,
   };
 }
 
@@ -1123,11 +1131,32 @@ async function buildFlowDetail({ host, sid, apiVersion, obj }) {
     (x) => ({ "API 名": x.name, "ラベル": x.label || "", "アクション名": x.actionName, "アクション種別": x.actionType }),
     "14. アクション呼び出し (actionCalls)");
 
+  // 要素種別ごとの件数集計を note に追加 (フロー全体の規模感を一目で把握)
+  const counts = [
+    ["変数", (meta.variables || []).length],
+    ["定数", (meta.constants || []).length],
+    ["計算式", (meta.formulas || []).length],
+    ["分岐", (meta.decisions || []).length],
+    ["代入", (meta.assignments || []).length],
+    ["レコード作成", (meta.recordCreates || []).length],
+    ["レコード更新", (meta.recordUpdates || []).length],
+    ["レコード取得", (meta.recordLookups || []).length],
+    ["レコード削除", (meta.recordDeletes || []).length],
+    ["画面", (meta.screens || []).length],
+    ["ループ", (meta.loops || []).length],
+    ["サブフロー", (meta.subflows || []).length],
+    ["アクション", (meta.actionCalls || []).length],
+  ].filter(([_, n]) => n > 0).map(([label, n]) => `${label} ${fmtNum(n)} 件`).join(" / ");
+  const totalElements = (meta.variables || []).length + (meta.constants || []).length + (meta.formulas || []).length
+    + (meta.decisions || []).length + (meta.assignments || []).length
+    + (meta.recordCreates || []).length + (meta.recordUpdates || []).length + (meta.recordLookups || []).length + (meta.recordDeletes || []).length
+    + (meta.screens || []).length + (meta.loops || []).length + (meta.subflows || []).length + (meta.actionCalls || []).length;
+
   return {
     title: `フロー設計図: ${flow.MasterLabel} (${obj}) v${flow.VersionNumber}`,
     type: "flowDetail",
     sections,
-    note: `Salesforce Flow metadata から各要素を抽出 / 要素 0 件のセクションは省略 / Status=Draft の場合は最新の保存版を表示`,
+    note: `要素総数: ${fmtNum(totalElements)} 件${counts ? ` (内訳: ${counts})` : ""} / Salesforce Flow metadata から各要素を抽出 / 要素 0 件のセクションは省略 / Status=Draft の場合は最新の保存版を表示`,
   };
 }
 

@@ -17,6 +17,11 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.66.0 (2026-05-20 20:03)** — 🚨 ユーザー要望 Phase 57: FlowDetail 要素種別件数集計 + fmtPercent ヘルパー:
+  - **🐛 buildFlowDetail note**: 「要素総数: N 件 (内訳: 変数 X 件 / 分岐 Y 件 / 画面 Z 件 / ...)」と全要素 13 種類の件数を集計表示。フロー全体の規模感が一目で把握可能
+  - **📐 fmtPercent ヘルパー追加**: 比率を「12.3%」形式に統一 (引数 decimals で小数桁数指定可)
+  - **🐛 buildApexClassList note**: Apex Limit 使用率の表記を fmtPercent に統一 (旧: 直接 toFixed)
+  - 設計書ヘルパーは fmtNum/fmtBytes/fmtTrunc/fmtDate/fmtPercent の **5 種類** に拡充
 - **v2.65.0 (2026-05-20 19:59)** — 🚨 ユーザー要望 Phase 56: ApexTrigger コードサイズ + LWC バンドル並び順 + Inspector pill 改善:
   - **🐛 buildApexTriggerList**: SOQL に LengthWithoutComments 追加、ステータスを絵文字付き (○ 有効 / − 無効 / ✗ 削除済)、新規列「コードサイズ」(fmtBytes 自動単位) 追加
   - **🐛 buildLwcDetail バンドル内ファイル並び順**: html → js → xml → css → svg → json → 他 の優先順でソート (LWC 開発時の自然な閲覧順)
@@ -817,6 +822,7 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 | `fmtBytes(n)` | バイト数を人間可読サイズに自動切替 | `12345` → `"12.1 KB"` / `1234567` → `"1.18 MB"` |
 | `fmtTrunc(s, max=200)` | 長文を切り詰めて末尾に省略マーカー | `"長文..."` → `"長文 … [+1,234 文字省略]"` |
 | `fmtDate(s)` | ISO datetime を `YYYY-MM-DD HH:mm` 形式に | `"2026-05-20T13:30:00Z"` → `"2026-05-20 13:30"` |
+| `fmtPercent(r, d=1)` | 比率を `XX.X%` 形式に | `0.123` → `"12.3%"` / `0.4567, 2` → `"45.67%"` |
 
 設計書の note・列値はすべてこれらのヘルパーで整形されます。
 
