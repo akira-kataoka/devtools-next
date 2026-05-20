@@ -4,6 +4,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.77.0 (2026-05-20 10:45)** — IME 入力中の Tab キー無効化 + verBadge title 拡充:
+  - **🐛 enableTabToSpaces() に IME 確定キー保護**: `e.isComposing || e.keyCode === 229` 時は preventDefault を呼ばずブラウザに委譲。**日本語/中国語/韓国語の IME 変換中 Tab で「次の候補選択」が動作するように** (従来 spaces 変換が割り込んで IME 機能を奪っていた)
+  - **✨ verBadge title 拡充**: `現在のバージョン v1.77.0 (VERSION.txt 30秒ポーリングで自動更新)` で詳細な仕組みを案内
 - **v1.76.0 (2026-05-20 10:40)** — Picker ✕ クリア時に selectedIdx + scrollTop もリセット:
   - **🐛 Picker 検索 ✕ ボタンクリック時に `selectedIdx = 0` + `$list.scrollTop = 0`**: 従来は input.value="" + input.focus() のみ → ハイライト位置とリスト scroll が前検索結果のままで違和感。**reload (⟳) と同等の完全リセット動作に統一**
   - **🧪 picker-clear aria-label, version badge 同期 (chrome.runtime.getManifest), Tab→spaces (enableTabToSpaces) はすべて既存実装で OK** (修正不要)

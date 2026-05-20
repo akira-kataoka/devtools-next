@@ -131,6 +131,8 @@ function enableTabToSpaces(el) {
   el.dataset.tabHandled = "true";
   el.addEventListener("keydown", (e) => {
     if (e.key !== "Tab" || e.altKey || e.ctrlKey || e.metaKey) return;
+    // IME 入力中 (日本語変換中) は Tab を奪わない: ブラウザの IME 確定キーとして使用させる
+    if (e.isComposing || e.keyCode === 229) return;
     e.preventDefault();
     const start = el.selectionStart, end = el.selectionEnd;
     const indent = "  ";
@@ -197,7 +199,7 @@ function initHeader() {
     const badge = document.createElement("span");
     badge.id = "verBadge";
     badge.className = "org";
-    badge.title = "現在のバージョン (VERSION.txt 監視で自動更新)";
+    badge.title = `現在のバージョン v${v} (VERSION.txt 30秒ポーリングで自動更新)`;
     badge.style.cssText = "background:rgba(27,150,255,0.15);color:#1b96ff;font-weight:700";
     badge.textContent = "v" + v;
     // brand の隣に挿入
