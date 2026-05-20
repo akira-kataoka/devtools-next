@@ -275,16 +275,20 @@ function initHeader() {
     brand.title = "クリックで SOQL クエリ画面に戻ります";
     brand.addEventListener("click", () => switchToView("soql"));
   }
-  // 既存に version badge が無ければ追加
-  if (!document.getElementById("verBadge")) {
-    const v = chrome.runtime.getManifest().version;
+  // v3.38.0: HTML 側で <span id="versionBadge"> を持つようになったため、まずそれを更新。無ければ verBadge を動的生成 (後方互換)
+  const v = chrome.runtime.getManifest().version;
+  const versionBadge = document.getElementById("versionBadge");
+  if (versionBadge) {
+    versionBadge.textContent = "v" + v;
+    versionBadge.title = `現在の拡張バージョン v${v} (popup の ⬆ アップデートボタンで最新版に更新可能)`;
+    versionBadge.style.cssText = "background:rgba(27,150,255,0.15);color:#1b96ff;font-weight:700;cursor:help";
+  } else if (!document.getElementById("verBadge")) {
     const badge = document.createElement("span");
     badge.id = "verBadge";
     badge.className = "org";
     badge.title = `現在のバージョン v${v} (VERSION.txt 30秒ポーリングで自動更新)`;
     badge.style.cssText = "background:rgba(27,150,255,0.15);color:#1b96ff;font-weight:700";
     badge.textContent = "v" + v;
-    // brand の隣に挿入
     const brand = hdr.querySelector(".brand");
     if (brand && brand.nextSibling) hdr.insertBefore(badge, brand.nextSibling);
     else hdr.appendChild(badge);
