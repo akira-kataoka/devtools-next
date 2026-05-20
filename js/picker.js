@@ -388,6 +388,9 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
         const sel = $list.querySelector(".picker-row.selected");
         if (sel) sel.click();
       } else if (e.key === "Escape") {
+        // 背景の view やグローバル keydown に Esc が流出しないようガード
+        e.preventDefault();
+        e.stopPropagation();
         close(null);
       }
     });

@@ -126,11 +126,15 @@ function tsForFilename() {
 }
 
 // textarea で Tab キーを 2 spaces に変換 (focus 移動を防ぐ)
+// 修飾キー時はブラウザ標準挙動に委譲:
+//   - Shift+Tab: 逆方向 focus 移動 (アクセシビリティ標準)
+//   - Ctrl/Cmd+Tab: ブラウザのタブ切替
+//   - Alt+Tab (Win) / Option+Tab (Mac): OS のウィンドウ切替 / Mac の特殊文字入力
 function enableTabToSpaces(el) {
   if (!el || el.dataset.tabHandled === "true") return;
   el.dataset.tabHandled = "true";
   el.addEventListener("keydown", (e) => {
-    if (e.key !== "Tab" || e.altKey || e.ctrlKey || e.metaKey) return;
+    if (e.key !== "Tab" || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
     // IME 入力中 (日本語変換中) は Tab を奪わない: ブラウザの IME 確定キーとして使用させる
     if (e.isComposing || e.keyCode === 229) return;
     e.preventDefault();

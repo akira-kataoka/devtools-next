@@ -4,6 +4,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.82.0 (2026-05-20 11:10)** — Picker Esc 伝播ガード + Tab Shift キー除外:
+  - **🐛 Picker Esc に `preventDefault()` + `stopPropagation()`**: 背景の view やグローバル keydown (Ctrl+Alt+I 等) に Esc が流出しないようガード。**Picker close 後に意図しないグローバル KBSC が発火しない**
+  - **🐛 enableTabToSpaces に `shiftKey` 除外追加**: 従来 `altKey/ctrlKey/metaKey` のみ除外 → Shift+Tab を奪っていた → **アクセシビリティ標準の Shift+Tab 逆方向 focus 移動が正しく動作**。コメントに「修飾キー時はブラウザ標準挙動に委譲」を明記
 - **v1.81.0 (2026-05-20 11:05)** — README に macOS キーボード対応 + Picker z-index 検証:
   - **📖 README に macOS キーボード対応セクション追加**: SOQL/Apex `Cmd+Enter` (⌘ Return)、ビュー切替 `Ctrl+Alt+I/Q/A/L/R/D` (Mac でも Ctrl)、IME 確定 `Enter` 2 回パターンを表形式で整理。実装根拠ファイル位置も明示
   - **🧪 Mac Cmd+Enter は既対応**: panel/popup の keydown 全てで `e.ctrlKey || e.metaKey` 判定 (panel.js:329/371, popup.js:123) → 修正不要
