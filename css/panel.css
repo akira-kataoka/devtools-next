@@ -573,14 +573,32 @@ td.cell-nested { word-break: break-word; }
   color: var(--accent); margin: 12px 0 6px;
   border-bottom: 1px solid var(--line); padding-bottom: 3px;
 }
-/* v3.6.0: 表紙セクション (h2: 📄 表紙) は特別に強調 (上余白厚め+アクセント太線で目立たせる) */
+/* v3.21.0: 表紙セクション (h2: 📄 表紙) を文書らしい体裁に拡張 — 上下余白厚め + センター寄せの段組み感 */
 .design-preview h2:first-of-type {
-  background: linear-gradient(90deg, rgba(27,150,255,0.12), transparent);
-  padding: 8px 12px !important;
-  border-left: 3px solid var(--accent);
+  background: linear-gradient(135deg, rgba(27,150,255,0.18) 0%, rgba(27,150,255,0.04) 100%);
+  padding: 14px 18px !important;
+  border-left: 4px solid var(--accent);
   border-bottom: 2px solid var(--accent);
-  font-size: 15px;
-  margin-top: 8px;
+  border-radius: 4px 4px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin-top: 12px;
+  margin-bottom: 4px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+}
+/* 表紙直後の kvRows テーブル (作成日時/対象組織/改訂履歴) を文書らしい体裁に */
+.design-preview h2:first-of-type + table {
+  border: 1px solid var(--line);
+  border-radius: 0 0 4px 4px;
+  margin-bottom: 16px;
+  background: rgba(27,150,255,0.02);
+}
+.design-preview h2:first-of-type + table td:first-child {
+  font-weight: 600;
+  color: var(--accent);
+  width: 30%;
+  background: rgba(27,150,255,0.05);
 }
 .design-preview h1 { font-size: 16px; }
 /* z-index 階層 (design-preview 内 sticky 要素):

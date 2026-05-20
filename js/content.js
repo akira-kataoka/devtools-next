@@ -55,15 +55,26 @@ function flashToast(text) {
       }
       .launcher:hover { transform: scale(1.08); box-shadow: 0 6px 18px rgba(27,150,255,0.5); }
       .launcher:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+      /* v3.21.0: 開閉アニメーション磨き — display:none 廃止し opacity+transform で fade-in-up */
       .panel {
         position: fixed; right: 16px; bottom: 70px;
-        width: 480px; max-height: 60vh; display: none; flex-direction: column;
+        width: 480px; max-height: 60vh; display: flex; flex-direction: column;
         background: #0b1220; color: #e6ecf5;
         border: 1px solid #1f2c46; border-radius: 10px;
         box-shadow: 0 8px 32px rgba(0,0,0,0.6);
         overflow: hidden;
+        opacity: 0; transform: translateY(8px) scale(0.98);
+        pointer-events: none;
+        transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
       }
-      .panel.open { display: flex; }
+      .panel.open {
+        opacity: 1; transform: translateY(0) scale(1);
+        pointer-events: auto;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .panel { transition: none; }
+        .launcher { transition: none; }
+      }
       .hdr {
         display: flex; align-items: center; gap: 8px;
         padding: 8px 12px;
