@@ -118,32 +118,32 @@
           <button class="home-card" data-go="soql" role="listitem" aria-label="SOQL クエリ" title="SOQL を書いてレコードを検索 / CSV エクスポート (Tooling API 対応)">
             <div class="home-card-icon" aria-hidden="true">🔎</div>
             <div class="home-card-title">SOQL クエリ</div>
-            <div class="home-card-desc">SOQL を書いてレコードを検索 / CSV エクスポート (Tooling API 対応)</div>
+            <div class="home-card-desc">SOQL でレコード検索・CSV 出力</div>
           </button>
           <button class="home-card" data-go="inspector" role="listitem" aria-label="レコード詳細" title="レコード ID を指定して全項目の値を表示 / 参照辿り / 値コピー">
             <div class="home-card-icon" aria-hidden="true">🔍</div>
             <div class="home-card-title">レコード詳細</div>
-            <div class="home-card-desc">レコード ID を指定して全項目の値を表示 / 参照辿り / 値コピー</div>
+            <div class="home-card-desc">レコード ID から全項目を確認</div>
           </button>
           <button class="home-card" data-go="dataexport" role="listitem" aria-label="一括エクスポート" title="オブジェクトの全項目を Excel / CSV / JSON で一括ダウンロード">
             <div class="home-card-icon" aria-hidden="true">📥</div>
             <div class="home-card-title">一括エクスポート</div>
-            <div class="home-card-desc">オブジェクトの全項目を Excel / CSV / JSON で一括ダウンロード</div>
+            <div class="home-card-desc">全項目を Excel/CSV/JSON で一括取得</div>
           </button>
           <button class="home-card" data-go="apex" role="listitem" aria-label="Apex 実行" title="匿名 Apex (Developer Console と同じ) を実行・Debug ログ取得">
             <div class="home-card-icon" aria-hidden="true">🟧</div>
             <div class="home-card-title">Apex 実行</div>
-            <div class="home-card-desc">匿名 Apex (Developer Console と同じ) を実行・Debug ログ取得</div>
+            <div class="home-card-desc">匿名 Apex を実行・Debug ログ取得</div>
           </button>
           <button class="home-card" data-go="design" role="listitem" aria-label="設計書作成" title="オブジェクト定義書・プロファイル詳細・ER 図・FLS マトリクス等 22 種類の設計書を Excel で自動生成 (プロジェクト成果物として活用可)">
             <div class="home-card-icon" aria-hidden="true">📋</div>
             <div class="home-card-title">設計書作成</div>
-            <div class="home-card-desc">オブジェクト定義書 / プロファイル詳細 / ER 図 / FLS マトリクス / Apex 詳細など 22 種類の設計書を Excel で自動生成 (プロジェクト成果物として活用可)</div>
+            <div class="home-card-desc">22 種類の設計書を Excel で自動生成</div>
           </button>
           <button class="home-card" data-go="limits" role="listitem" aria-label="使用状況" title="API コール数・Apex 容量・ストレージ等の使用状況を視覚化">
             <div class="home-card-icon" aria-hidden="true">📊</div>
             <div class="home-card-title">使用状況</div>
-            <div class="home-card-desc">API コール数・Apex 容量・ストレージ等の使用状況を視覚化</div>
+            <div class="home-card-desc">API・容量・ストレージの使用率</div>
           </button>
         </div>
         <div class="home-secondary">
@@ -155,14 +155,8 @@
             <button class="home-mini-card" data-go="login" title="ユーザのログイン履歴を取得">🔐 ログイン履歴</button>
           </div>
         </div>
-        <div class="home-tips">
-          <div class="home-tips-title">💡 はじめての方へ</div>
-          <ul class="home-tips-list">
-            <li><kbd>Ctrl+Alt+I/Q/A/L/R/D</kbd> でビューを瞬時に切替できます (Inspector / SOQL / Apex / Limits / REST / 設計書)</li>
-            <li>各画面で <kbd>Ctrl+Enter</kbd> = 実行 / <kbd>Esc</kbd> = 閉じる / <kbd>↑↓</kbd> = 候補移動 が使えます</li>
-            <li>オブジェクト入力欄をクリックすると候補ピッカーが開き、日本語ラベルで検索できます</li>
-            <li>左サイドバー上部の <kbd>🏠 ホーム</kbd> でいつでもこの画面に戻れます</li>
-          </ul>
+        <div class="home-tips" title="キーボードショートカット: Ctrl+Alt+Q=SOQL / I=Inspector / A=Apex / L=Limits / R=REST / D=設計書 ／ Ctrl+Enter=実行 ／ Esc=閉じる ／ ↑↓=候補移動 ／ オブジェクト入力欄クリックで日本語ラベル付き候補ピッカー">
+          <span style="font-size: 11px; color: var(--fg-dim)">💡 <kbd>Ctrl+Enter</kbd> 実行 ／ <kbd>Esc</kbd> 閉じる ／ <kbd>Ctrl+Alt+Q/I/A/L/R/D</kbd> ビュー切替 (詳細はマウスホバー)</span>
         </div>
       </div>
 
