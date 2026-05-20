@@ -1393,7 +1393,7 @@ function toExcelXml(result) {
       parts.push(`<Row><Cell ss:StyleID="header"><Data ss:Type="String">項目</Data></Cell><Cell ss:StyleID="header"><Data ss:Type="String">値</Data></Cell></Row>`);
       (sh.section.kvRows || []).forEach((kv, i) => {
         const cs = i % 2 ? "cellAlt" : "cell";
-        parts.push(`<Row><Cell ss:StyleID="key"><Data ss:Type="String">${xmlText(kv[0])}</Data></Cell><Cell ss:StyleID="${cs}"><Data ss:Type="String">${xmlText(kv[1])}</Data></Cell></Row>`);
+        parts.push(`<Row><Cell ss:StyleID="key"><Data ss:Type="String">${xmlText(kv[0])}</Data></Cell><Cell ss:StyleID="${cs}"><Data ss:Type="String">${xmlText(formatExcelValue(kv[1]))}</Data></Cell></Row>`);
       });
       parts.push(`</Table>`);
     } else if (sh.type === "table") {
@@ -1415,7 +1415,7 @@ function toExcelXml(result) {
           const v = r[h];
           const isNum = typeof v === "number" && Number.isFinite(v);
           const type = isNum ? "Number" : "String";
-          const text = isNum ? String(v) : xmlText(v == null ? "" : String(v));
+          const text = isNum ? String(v) : xmlText(formatExcelValue(v));
           return `<Cell ss:StyleID="${cs}"><Data ss:Type="${type}">${text}</Data></Cell>`;
         }).join("") + `</Row>`);
       });
@@ -1432,6 +1432,30 @@ function toExcelXml(result) {
   return parts.join("\n");
 }
 
+// v1.96.0+: Excel 出力でもネスト平坦化 + datetime 整形 (csvCell/recordsToCsv と同パターン)
+function formatExcelValue(v) {
+  if (v == null) return "";
+  if (typeof v === "object") {
+    if (v.attributes && typeof v.attributes === "object") {
+      const fields = Object.keys(v).filter((k) => k !== "attributes");
+      if (v.records && Array.isArray(v.records)) return `[${v.records.length} 件のサブクエリ]`;
+      const prefer = ["Name", "Subject", "Title", "DeveloperName", "MasterLabel", "FullName"];
+      for (const p of prefer) {
+        if (fields.includes(p) && v[p] != null) {
+          const id = fields.includes("Id") && v.Id ? ` [${String(v.Id).substring(0, 18)}]` : "";
+          return `${formatExcelValue(v[p])}${id}`;
+        }
+      }
+      if (fields.length) return `${fields[0]}=${formatExcelValue(v[fields[0]])}`;
+      return "{}";
+    }
+    return JSON.stringify(v);
+  }
+  const s = String(v);
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/);
+  if (m) return `${m[1]} ${m[2]}`;
+  return s;
+}
 function xmlText(s) {
   if (s == null) return "";
   return String(s)

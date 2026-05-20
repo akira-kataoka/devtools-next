@@ -7,6 +7,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.96.0 (2026-05-20 12:20)** — 設計書 Excel + Inspector record エラーの UX 改善:
+  - **🐛 設計書 Excel (SpreadsheetML) に formatExcelValue() 追加**: kvRows + rows 両方の値が ネスト object → `Name [Id]` / ISO datetime → `YYYY-MM-DD HH:mm` 整形。**全 6 出力形式 (Markdown/HTML/CSV/TSV/Excel/JSON) で整形が完全統一**
+  - **🐛 Inspector record 取得失敗時のエラーメッセージ改善**: 404 → `見つかりません (削除済 / 別組織の Id / 権限不足の可能性)`, 403 → `アクセス権限不足 (オブジェクト/レコードの共有設定を確認)` + サブメッセージ `describe (Object) は成功、レコード本体のみ失敗`。**describe 成功 + record 失敗のハーフ取得状態が明示的に伝わる**
 - **v1.95.0 (2026-05-20 12:15)** — 設計書 CSV/TSV にもネスト平坦化 + datetime 整形:
   - **🐛 `design-docs.js csvCell()` に整形ロジック追加**: 設計書 CSV/TSV は複数セクション形式で recordsToCsv と構造が異なるため、csvCell 内に inline で同等ロジック (attributes 持ち object → `Name [Id]` / ISO datetime → `YYYY-MM-DD HH:mm`) を実装。**全 CSV 系出力 (SOQL/Inspector/Login/設計書) で整形ロジックが統一**
   - **🧪 設計書 Excel (SpreadsheetML XML)**: 内部の値整形は別ロジックだが、設計書データは schema metadata 中心で datetime/ネストはほぼ含まれない → 影響なし (修正不要)

@@ -1473,7 +1473,13 @@ async function doInspect(opts = {}) {
   if (!descR.ok) { meta.classList.remove("loading-pulse"); displayApiError(meta, descR.status, descR.data, `Inspector describe(${objName})`); return; }
   if (!recR.ok) {
     meta.classList.remove("loading-pulse");
-    meta.innerHTML = `<span class="pill err">レコード取得失敗 HTTP ${recR.status}</span> ${escape(JSON.stringify(recR.data).substring(0, 200))}`;
+    const hint = recR.status === 404
+      ? `見つかりません (削除済 / 別組織の Id / 権限不足の可能性)`
+      : recR.status === 403
+      ? `アクセス権限不足 (オブジェクト/レコードの共有設定を確認)`
+      : `HTTP ${recR.status}`;
+    meta.innerHTML = `<span class="pill err">レコード取得失敗: ${escape(hint)}</span> ` +
+      `<span class="meta">describe (${escape(objName)}) は成功、レコード本体のみ失敗</span>`;
     return;
   }
   meta.classList.remove("loading-pulse");
