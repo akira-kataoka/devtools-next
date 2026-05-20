@@ -1750,7 +1750,7 @@ async function doInspect(opts = {}) {
   const myId = ++inspectRunId;
   const meta = document.getElementById("inspectMeta");
   const runBtn = document.getElementById("btnInspect");
-  meta.textContent = `⏳ レコードを取得しています… #${myId}`;
+  meta.innerHTML = `<span class="pill loading">レコードを取得しています… #${myId}</span>`;
   meta.classList.add("loading-pulse");
   if (runBtn) { runBtn.disabled = true; runBtn.style.opacity = "0.6"; }
 
@@ -2188,6 +2188,9 @@ async function doLimits() {
   if (!state.sid) return;
   await loadLimitsSettings();
   const unlock = lockBtn("btnLimits");
+  // v3.32.0: loading 表示を統一スピナーに
+  const limitsResultEl = document.getElementById("limitsResult");
+  if (limitsResultEl) limitsResultEl.innerHTML = `<div class="empty-state"><span class="pill loading">組織制限を取得しています…</span></div>`;
   const r = await sfFetch({ host: state.host, sid: state.sid, path: `/services/data/v${state.apiVersion}/limits` });
   unlock();
   if (!r.ok) {
@@ -3033,7 +3036,7 @@ async function doSoql() {
     meta.innerHTML = `<span class="pill warn">⚠ SOQL クエリを入力してください</span>`;
     return;
   }
-  meta.textContent = `⏳ SOQL を実行しています… #${myId}`;
+  meta.innerHTML = `<span class="pill loading">SOQL を実行しています… #${myId}</span>`;
   meta.classList.add("loading-pulse");
   // 実行中はボタン無効化 (二重クリック防止)
   if (runBtn) { runBtn.disabled = true; runBtn.style.opacity = "0.6"; }
@@ -3168,6 +3171,9 @@ async function doMetadataList() {
   if (!state.sid) return;
   const unlock = lockBtn("btnMetadata");
   const type = document.getElementById("mdType").value;
+  // v3.32.0: loading 表示を統一スピナーに
+  const mdResult = document.getElementById("metadataResult");
+  if (mdResult) mdResult.innerHTML = `<div class="empty-state"><span class="pill loading">${escape(type)} 一覧を取得しています…</span></div>`;
   // v2.86.0 バグ修正: Tooling API の各テーブルは持つフィールドが違うため type 別に SOQL を切り替える
   // 旧実装は `SELECT Id, Name, ... FROM ${type}` 固定だったため Flow / FlowDefinition 等で「INVALID_FIELD: Name」エラー
   // ユーザー報告「Flow のメタデータ一覧を取得しようとするとダメでした」(2026-05-20)
@@ -3608,7 +3614,7 @@ async function doRunApex() {
     return;
   }
   const myId = ++apexRunId;
-  meta.innerHTML = `<span class="pill" style="background:var(--bg3)">⚡ 匿名 Apex を実行しています… #${myId}</span>`;
+  meta.innerHTML = `<span class="pill loading">匿名 Apex を実行しています… #${myId}</span>`;
   out.textContent = "";
   // 実行中はボタンを無効化 (二重クリック防止)
   if (runBtn) { runBtn.disabled = true; runBtn.style.opacity = "0.6"; }
@@ -3728,7 +3734,7 @@ async function doFetchLoginHistory() {
   const limit = parseInt(document.getElementById("loginLimit").value, 10) || 50;
   const statusFilter = document.getElementById("loginStatus").value;
   const meta = document.getElementById("loginMeta");
-  meta.textContent = "⏳ ログイン履歴を取得しています…";
+  meta.innerHTML = `<span class="pill loading">ログイン履歴を取得しています…</span>`;
   meta.classList.add("loading-pulse");
 
   // v2.93.0 バグ修正: Salesforce LoginHistory は Status フィールドが filterable=false のため
