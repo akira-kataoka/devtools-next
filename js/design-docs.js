@@ -1911,8 +1911,10 @@ export function markdownToHtml(md) {
   return out.join("\n");
 }
 
+// Markdown テーブル行 ("| a | b | c |") を セル配列 ["a", "b", "c"] に分解。
+// 注意: セル値内に `|` リテラルがある場合 (例: "ApexClass|ApexTrigger") は分割される。
+// 設計書ジェネレータの列値には `|` を含めない実装ポリシー (csvCell で `,` 区切りに置換済) のため現状は問題なし。
 function splitMd(line) {
-  // | a | b | c | → ["a", "b", "c"]  (両端の | を取り除いて split)
   return line.trim().replace(/^\||\|$/g, "").split("|").map((s) => s.trim().replace(/^---+$/, ""));
 }
 

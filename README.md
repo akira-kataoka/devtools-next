@@ -17,6 +17,9 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.55.0 (2026-05-20 17:25)** — 🚨 ユーザー要望 Phase 45: curl sid 注意明示 + splitMd 仕様コメント:
+  - **🛡 panel.js renderApiBuild curl 出力**: 「⚠ 注意: 以下の curl コマンドには Salesforce セッション ID (sid) を含めるため、外部共有時はマスクしてください」というセキュリティ注意コメントを curl 出力の冒頭に追加。誤って curl をログ/Slack/メール等に共有しないよう促す
+  - **📝 design-docs.js splitMd**: 仕様コメント追加 (Markdown テーブル行 "| a | b | c |" をセル配列に分解、セル値内 `|` リテラルがあると分割される旨を明記、ただし設計書ジェネレータは csvCell で `,` 置換済のため実害なし)
 - **v2.54.0 (2026-05-20 17:20)** — 🚨 ユーザー要望 Phase 44: CSS カラーパレット ドキュメント化:
   - **🎨 css/panel.css :root 変数ブロック**: 各 CSS 変数 (--bg/bg2/bg3 / --fg/fg-dim / --accent/accent-2 / --ok/warn/err / --line) の役割を 7 行コメントで明示
   - **🎨 css/popup.css :root 変数ブロック**: panel.css と同期した同様の役割コメント追加 (色定義の意図が後から参照可能)

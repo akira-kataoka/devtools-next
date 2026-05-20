@@ -1370,7 +1370,7 @@ function apiBuildUrl() {
   "${fullUrl}"`;
 
   if (state.sid) {
-    curl = `# 環境変数 SID にはポップアップ > セッション情報 > コピー で取得した値を設定してください\nexport SID="${state.sid.substring(0, 20)}..."   # 実際は完全な sid を使用してください\n\n${curl}`;
+    curl = `# ⚠ 注意: 以下の curl コマンドには Salesforce セッション ID (sid) を含めるため、外部共有時はマスクしてください\n# 環境変数 SID にはポップアップ > セッション情報 > コピー で取得した値を設定してください\nexport SID="${state.sid.substring(0, 20)}..."   # 実際は完全な sid を使用してください\n\n${curl}`;
   }
 
   document.getElementById("apiBuildUrl").textContent = fullUrl;
