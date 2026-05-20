@@ -654,14 +654,17 @@ async function doApiCall() {
   const method = document.getElementById("apiMethod").value;
   const path = document.getElementById("apiPath").value.trim();
   const body = document.getElementById("apiBody").value.trim();
-  if (!path) { toast("⚠ パスを入力してください", { kind: "warn" }); return; }
+  const sendBtn = document.getElementById("btnApiSend");
+  if (!path) { toast("⚠ REST API パスを入力してください", { kind: "warn" }); return; }
   setStatus("⏳ API を呼び出しています…");
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = "0.6"; }
   const t0 = performance.now();
   const r = await sfFetch({
     host: state.host, sid: state.sid, path, method,
     body: body ? body : null,
   });
   const dt = Math.round(performance.now() - t0);
+  if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = ""; }
   document.getElementById("apiMeta").textContent = `${r.ok ? "✅" : "❌"} HTTP ${r.status} / ${dt}ms`;
   document.getElementById("apiResult").textContent = JSON.stringify(r.data, null, 2);
   setStatus(r.ok ? "✓ 成功しました" : "❌ 失敗しました");

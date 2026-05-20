@@ -1048,13 +1048,16 @@ async function exRunPreview() {
   const tooling = document.getElementById("exTooling").checked;
   const preview = document.getElementById("exPreview");
   const meta = document.getElementById("exMeta");
+  const runBtn = document.getElementById("btnExRun");
   const myId = ++exPreviewRunId;
-  meta.textContent = `実行中 (プレビュー先頭 200 件)… #${myId}`;
+  meta.textContent = `⏳ プレビュー (先頭 200 件) を取得しています… #${myId}`;
+  if (runBtn) { runBtn.disabled = true; runBtn.style.opacity = "0.6"; }
   const t0 = performance.now();
   const previewSoql = soql.replace(/LIMIT\s+\d+/i, "LIMIT 200");
   const r = await runSoql({ host: state.host, sid: state.sid, soql: previewSoql, apiVersion: state.apiVersion, tooling });
   const dt = Math.round(performance.now() - t0);
   if (myId !== exPreviewRunId) { console.log(`[DevToolsNext] discard stale Export preview #${myId}`); return; }
+  if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; }
   if (!r.ok) {
     displayApiError(meta, r.status, r.data, "データエクスポート プレビュー");
     preview.innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;
@@ -1494,8 +1497,10 @@ async function doInspect(opts = {}) {
   }
   const myId = ++inspectRunId;
   const meta = document.getElementById("inspectMeta");
+  const runBtn = document.getElementById("btnInspect");
   meta.textContent = `⏳ レコードを取得しています… #${myId}`;
   meta.classList.add("loading-pulse");
+  if (runBtn) { runBtn.disabled = true; runBtn.style.opacity = "0.6"; }
 
   let objName = null, id = null;
   if (raw.includes(":")) {
@@ -1505,6 +1510,7 @@ async function doInspect(opts = {}) {
   }
   if (!/^[a-zA-Z0-9]{15,18}$/.test(id)) {
     meta.classList.remove("loading-pulse");
+    if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; }
     meta.innerHTML = `<span class="pill err">有効な Salesforce ID ではありません (15 桁または 18 桁の英数字を入力してください)</span>`;
     return;
   }
@@ -1521,6 +1527,7 @@ async function doInspect(opts = {}) {
     }
     if (!objName) {
       meta.classList.remove("loading-pulse");
+      if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; }
       meta.innerHTML = `<span class="pill err">Key Prefix '${escape(prefix)}' のオブジェクトが見つかりませんでした</span>。『&lt;Object&gt;:&lt;Id&gt;』形式 (例: Account:001...) で指定してください`;
       return;
     }
@@ -1538,19 +1545,21 @@ async function doInspect(opts = {}) {
     return;
   }
 
-  if (!descR.ok) { meta.classList.remove("loading-pulse"); displayApiError(meta, descR.status, descR.data, `Inspector describe(${objName})`); return; }
+  if (!descR.ok) { meta.classList.remove("loading-pulse"); if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; } displayApiError(meta, descR.status, descR.data, `Inspector describe(${objName})`); return; }
   if (!recR.ok) {
     meta.classList.remove("loading-pulse");
+    if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; }
     const hint = recR.status === 404
-      ? `見つかりません (削除済 / 別組織の Id / 権限不足の可能性)`
+      ? `見つかりません (削除済 / 別組織の Id / 権限不足の可能性があります)`
       : recR.status === 403
-      ? `アクセス権限不足 (オブジェクト/レコードの共有設定を確認)`
+      ? `アクセス権限が不足しています (オブジェクト・レコードの共有設定をご確認ください)`
       : `HTTP ${recR.status}`;
     meta.innerHTML = `<span class="pill err">レコードの取得に失敗しました: ${escape(hint)}</span> ` +
-      `<span class="meta">describe (${escape(objName)}) は成功、レコード本体のみ失敗</span>`;
+      `<span class="meta">describe (${escape(objName)}) は成功しましたが、レコード本体のみ失敗しました</span>`;
     return;
   }
   meta.classList.remove("loading-pulse");
+  if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; }
   inspectState.obj = objName;
   inspectState.id = id;
   inspectState.describe = descR.data;
@@ -2156,11 +2165,17 @@ async function copyCsvToClipboard() {
 async function doDescribe() {
   if (!state.sid) return;
   const obj = document.getElementById("descObj").value.trim();
-  if (!obj) return;
+  const runBtn = document.getElementById("btnDescribe");
+  if (!obj) {
+    document.getElementById("describeResult").innerHTML = `<div class="meta" style="padding:8px"><span class="pill warn">⚠ オブジェクトの API 名を入力してください</span></div>`;
+    return;
+  }
+  if (runBtn) { runBtn.disabled = true; runBtn.style.opacity = "0.6"; }
   const r = await sfFetch({
     host: state.host, sid: state.sid,
     path: `/services/data/v${state.apiVersion}/sobjects/${encodeURIComponent(obj)}/describe`,
   });
+  if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; }
   if (!r.ok) {
     let errArea = document.getElementById("describeResult");
     const errMeta = document.createElement("div");

@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.44.0 (2026-05-20 16:30)** — 🚨 ユーザー要望 Phase 34: 全主要ボタンの実行中 disabled 統一:
+  - **🐛 panel.js doInspect (btnInspect)**: 実行中ボタン無効化 + opacity (二重クリック防止)、全分岐 (KeyPrefix エラー / describe エラー / record エラー / 成功) で再有効化、record エラーヒント ですます調 詳細化
+  - **🐛 panel.js doDescribe (btnDescribe)**: 実行中ボタン無効化、空入力時に「⚠ オブジェクトの API 名を入力してください」 pill 表示
+  - **🐛 panel.js exRunPreview (btnExRun)**: 実行中ボタン無効化、ローディングメッセージ「実行中 (プレビュー先頭 200 件)…」→「⏳ プレビュー (先頭 200 件) を取得しています…」
+  - **🐛 popup.js doApiCall (btnApiSend)**: 実行中ボタン無効化、「⚠ パスを入力してください」→「⚠ REST API パスを入力してください」
 - **v2.43.0 (2026-05-20 16:25)** — 🚨 ユーザー要望 Phase 33: SOQL 実行 ボタン disabled + HTML メタタグ:
   - **🐛 panel.js doSoql**: 実行中はボタン無効化 + opacity 0.6 (二重クリック防止)、空クエリ時に「⚠ SOQL クエリを入力してください」 pill 表示、ローディング表示「⏳ 実行中…」→「⏳ SOQL を実行しています…」、終了/エラー時に再有効化
   - **🐛 popup.js doSoql**: 同様に実行中ボタン無効化、エラーメッセージ「❌ HTTP N」→「❌ クエリ実行に失敗しました (HTTP N)」、成功時 meta「✅ N 件 / total=M / Tms (Tooling)」→「✅ 取得 N 件 / 合計 M 件 / Tms (Tooling API)」、setStatus「OK」→「✓ 成功しました」
