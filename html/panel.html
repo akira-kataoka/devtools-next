@@ -130,7 +130,7 @@
       <div class="view hidden" data-view="inspector">
         <div class="toolbar">
           <button id="btnInspectBack" title="一つ前のレコードに戻ります (履歴)" disabled>← 戻る</button>
-          <input id="inspectRef" placeholder="レコード ID または '<Object>:<Id>' 形式で入力します (例: 0011x00000abcde / Account:001...)" style="flex:1" />
+          <input id="inspectRef" placeholder="レコード ID (15/18桁) または 『オブジェクト名:ID』 形式 (例: 0011x00000abcdeAAA / Account:001xx000003DGbY)" title="レコード ID 単独でも取得できますが、カスタムオブジェクトや権限制約がある場合は『Account:0011x...』のようにオブジェクト名を明示すると確実です。15桁/18桁どちらも対応。クリップボードの ID は『📋 貼付』、現在のタブから取得は『現在タブから取得』ボタンで自動入力できます" style="flex:1" />
           <button id="btnInspectPasteId" title="クリップボードの ID を貼り付けてレコードを取得します">📋 貼付</button>
           <button id="btnInspectFromTab" title="現在のタブが Salesforce レコードページなら、その ID とオブジェクトを自動取得します">現在タブから取得</button>
           <button id="btnInspect" class="primary" title="指定したレコードを取得します (Enter キーでも実行できます)">▶ 取得 (Enter)</button>
@@ -332,7 +332,7 @@ System.debug('Now: ' + System.now());</textarea>
           <button id="btnMetadata" class="primary" title="選択したメタデータ型の一覧を Tooling API から取得します">一覧取得</button>
           <button id="btnMetadataEvidence" title="現在のメタデータ一覧を Markdown 形式のエビデンスとしてダウンロードします">📸 エビデンス</button>
         </div>
-        <div id="metadataResult" class="grid"></div>
+        <div id="metadataResult" class="grid"><div class="empty-state" style="padding:24px 16px;color:var(--muted);font-size:13px;line-height:1.7;">👆 上のセレクトでメタデータ型を選択して「一覧取得」を押してください。<br/>取得後はテーブル内で並び替え・絞り込み・📸 エビデンス保存ができます。<br/><br/><strong>💡 ヒント</strong>: <code>ApexClass</code>/<code>ApexTrigger</code> は API バージョン棚卸し、<code>Flow</code> は ProcessType 確認、<code>Profile</code>/<code>PermissionSet</code> は権限調査、<code>ValidationRule</code> は入力規則棚卸しに便利です。</div></div>
       </div>
 
       <div class="view hidden" data-view="logs">
