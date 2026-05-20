@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.42.0 (2026-05-20 16:20)** — 🚨 ユーザー要望 Phase 32: Apex 実行ローディング + recordsTable 長文 truncate:
+  - **🐛 panel.js doRunApex**: 実行中はボタンを無効化 (opacity 0.6) して二重クリック防止、実行中メッセージを「⚡ 匿名 Apex を実行しています… #N」に丁寧化、コード空時にエラー pill 表示、終了/エラー時にボタン再有効化
+  - **🐛 panel.js recordsTable セル長文 truncate**: 120 文字超のセル値を先頭 120 文字 + 「…」インジケータで表示、ホバーすると tooltip で先頭 280 文字をプレビュー、ダブルクリックで全文コピー
+  - **🐛 panel.js tooltip ですます調**: 「dblclick で raw JSON コピー」→「ダブルクリックで raw JSON をコピーできます」、「ダブルクリックでコピー」→「ダブルクリックでコピーできます」、コピー toast「📋 コピー: X」→「📋 クリップボードにコピーしました: X」
+  - **🐛 panel.js Debug ログサイズ tooltip**: 「(1MB 超: スクロール重い可能性)」→「(1 MB 超のため、スクロールが重くなる可能性があります)」 ですます調
 - **v2.41.0 (2026-05-20 16:15)** — 🚨 ユーザー要望 Phase 31: ビュー切替スクロールリセット + ID 自動解析:
   - **🐛 panel.js switchToView**: ビュー切替時にメイン領域のスクロール位置を最上部にリセット (`.main` 要素の scrollTop = 0)。前ビューでスクロールしていた状態が残る UX 問題を解消
   - **🐛 popup.js ID 入力**: 15 桁または 18 桁の英数字 ID が入力されたら 250ms デバウンス後に自動解析 (UX 改善 — 「解析」ボタンを毎回押さなくて良い)、Enter キーでも即時解析

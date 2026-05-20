@@ -2275,13 +2275,23 @@ function recordsTable(records) {
       if (idCell) tip = "クリックで Inspector に表示します  /  ダブルクリックでクリップボードにコピーします";
       else if (isNested) {
         const pretty = JSON.stringify(raw, null, 2);
-        const preview = pretty.length > 280 ? pretty.substring(0, 280) + "\n…(切詰)" : pretty;
-        tip = `dblclick で raw JSON コピー:\n${preview}`;
-      } else tip = "ダブルクリックでコピー";
+        const preview = pretty.length > 280 ? pretty.substring(0, 280) + "\n…(以降省略)" : pretty;
+        tip = `ダブルクリックで raw JSON をコピーできます:\n${preview}`;
+      } else {
+        // 通常セル: 長文 (80 文字超) なら値の先頭 280 文字を tooltip に表示
+        if (val && val.length > 80) {
+          const preview = val.length > 280 ? val.substring(0, 280) + "\n…(以降省略)" : val;
+          tip = `ダブルクリックで全文をコピーできます:\n${preview}`;
+        } else {
+          tip = "ダブルクリックでコピーできます";
+        }
+      }
       // ネストセルは raw JSON を data-raw-value に格納 → dblclick で原データをコピー
       const dataAttrs = (idCell ? ` data-record-id="${escape(val)}"` : "")
         + (isNested ? ` data-raw-value="${escape(JSON.stringify(raw))}"` : "");
-      return `<td title="${escape(tip)}" class="${classes}"${dataAttrs}>${escape(val)}</td>`;
+      // 長文セルは truncate + 視覚的な切詰インジケータ「…」付き表示 (CSS max-width で省略)
+      const cellContent = (val && val.length > 120) ? escape(val.substring(0, 120)) + '<span style="opacity:0.5">…</span>' : escape(val);
+      return `<td title="${escape(tip)}" class="${classes}"${dataAttrs}>${cellContent}</td>`;
     }).join("")}</tr>`
   ).join("");
   // 結果を遅延でセル dblclick + th click ソートリスナーをバインド
@@ -2291,7 +2301,7 @@ function recordsTable(records) {
       td.addEventListener("dblclick", () => {
         // ネストセルは raw JSON 優先 (平坦化表示の「Name [Id]」より原データが有用)
         const txt = td.dataset.rawValue || td.textContent;
-        navigator.clipboard.writeText(txt).then(() => panelToast(`📋 コピー: ${txt.substring(0, 40)}${txt.length > 40 ? "…" : ""}`, { kind: "ok" }));
+        navigator.clipboard.writeText(txt).then(() => panelToast(`📋 クリップボードにコピーしました: ${txt.substring(0, 40)}${txt.length > 40 ? "…" : ""}`, { kind: "ok" }));
       });
     });
     // ID セルを single-click で Inspector ジャンプ (dblclick と競合しないよう遅延判定)
@@ -2498,10 +2508,16 @@ async function doRunApex() {
   const fetchLog = document.getElementById("apexFetchLog").checked;
   const meta = document.getElementById("apexMeta");
   const out = document.getElementById("apexResult");
-  if (!code.trim()) return;
+  const runBtn = document.getElementById("btnRunApex");
+  if (!code.trim()) {
+    meta.innerHTML = `<span class="pill warn">⚠ Apex コードを入力してください</span>`;
+    return;
+  }
   const myId = ++apexRunId;
-  meta.textContent = `⚡ 実行中… #${myId}`;
+  meta.innerHTML = `<span class="pill" style="background:var(--bg3)">⚡ 匿名 Apex を実行しています… #${myId}</span>`;
   out.textContent = "";
+  // 実行中はボタンを無効化 (二重クリック防止)
+  if (runBtn) { runBtn.disabled = true; runBtn.style.opacity = "0.6"; }
 
   const t0 = performance.now();
   // Tooling: GET /tooling/executeAnonymous/?anonymousBody=...
@@ -2517,6 +2533,7 @@ async function doRunApex() {
   if (!r.ok) {
     displayApiError(meta, r.status, r.data, "Apex 実行");
     out.textContent = JSON.stringify(r.data, null, 2);
+    if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; }
     return;
   }
 
@@ -2576,8 +2593,11 @@ async function doRunApex() {
     else if (sizeKb < 1024) { sizeLabel = `${sizeKb.toFixed(1)} KB`; pillClass = sizeKb >= 500 ? "warn" : ""; }
     else { sizeLabel = `${(sizeKb / 1024).toFixed(1)} MB`; pillClass = "err"; }
     const cur = meta.innerHTML;
-    meta.innerHTML = `${cur} <span class="pill ${pillClass}" title="Debug Log サイズ${sizeBytes > 1048576 ? ' (1MB 超: スクロール重い可能性)' : ''}">${lines.toLocaleString()} 行 / ${sizeLabel}</span>`;
+    meta.innerHTML = `${cur} <span class="pill ${pillClass}" title="Debug ログのサイズ${sizeBytes > 1048576 ? ' (1 MB 超のため、スクロールが重くなる可能性があります)' : ''}">${lines.toLocaleString()} 行 / ${sizeLabel}</span>`;
   }
+  // 実行中フラグを解除 (ボタン再有効化)
+  const runBtn = document.getElementById("btnRunApex");
+  if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; }
 }
 
 async function loadSavedApex() {
