@@ -35,6 +35,25 @@ function requireInput(value, hint) {
   }
 }
 
+// 数値を 3 桁区切りで整形 ("12345" → "12,345")。null/undefined は空文字に
+function fmtNum(n) {
+  if (n == null || n === "") return "";
+  const num = typeof n === "number" ? n : Number(n);
+  if (!Number.isFinite(num)) return String(n);
+  return num.toLocaleString("ja-JP");
+}
+
+// バイト数を人間可読サイズに整形 (1023 → "1,023 B" / 12345 → "12.1 KB" / 1234567 → "1.18 MB")
+function fmtBytes(n) {
+  if (n == null || n === "") return "";
+  const v = typeof n === "number" ? n : Number(n);
+  if (!Number.isFinite(v)) return String(n);
+  if (v < 1024) return `${fmtNum(v)} B`;
+  if (v < 1024 * 1024) return `${(v / 1024).toFixed(1)} KB`;
+  if (v < 1024 * 1024 * 1024) return `${(v / 1024 / 1024).toFixed(2)} MB`;
+  return `${(v / 1024 / 1024 / 1024).toFixed(2)} GB`;
+}
+
 export async function generateDesign({ type, host, sid, apiVersion, obj, format, onProgress }) {
   let result;
   const progress = onProgress || (() => {});
@@ -77,12 +96,12 @@ async function buildObjectDef({ host, sid, apiVersion, obj }) {
 
   // フィールド表 (業務テンプレ準拠: v2.11.0 で 「作成可」「更新可」「暗号化」「ヘルプテキスト」を追加分離)
   const headers = [
-    "No", "API名", "表示名", "データ型", "桁/精度", "必須", "一意", "外部ID", "計算項目",
+    "No", "API 名", "表示名", "データ型", "桁/精度", "必須", "一意", "外部ID", "計算項目",
     "作成可", "更新可", "暗号化", "参照先", "選択リスト値", "既定値", "ヘルプテキスト", "説明",
   ];
   const rows = fields.map((f, i) => ({
     "No": i + 1,
-    "API名": f.name,
+    "API 名": f.name,
     "表示名": f.label,
     "データ型": f.type,
     "桁/精度": f.type === "string" || f.type === "textarea" || f.type === "email" || f.type === "phone" || f.type === "url"
@@ -104,7 +123,7 @@ async function buildObjectDef({ host, sid, apiVersion, obj }) {
 
   // メタ情報
   const meta = [
-    ["API名", d.name],
+    ["API 名", d.name],
     ["ラベル", d.label],
     ["カスタム", d.custom ? "Yes" : "No"],
     ["キー Prefix", d.keyPrefix || ""],
@@ -132,7 +151,7 @@ async function buildObjectDef({ host, sid, apiVersion, obj }) {
   // レコードタイプ
   const rts = (d.recordTypeInfos || []).filter((r) => !r.master).map((r, i) => ({
     "No": i + 1,
-    "API名": r.developerName,
+    "API 名": r.developerName,
     "ラベル": r.name,
     "ID": r.recordTypeId,
     "有効": r.available ? "○" : "",
@@ -170,13 +189,14 @@ async function buildProfileList({ host, sid, apiVersion }) {
     "CspLitePortal": "サービスクラウドポータル (CspLitePortal)",
     "SelfService": "セルフサービス (SelfService)",
   };
-  const headers = ["No", "プロファイル名", "ライセンス", "ユーザ種別", "説明", "更新日"];
+  const headers = ["No", "プロファイル名", "ライセンス", "ユーザ種別", "説明", "作成日", "更新日"];
   const rows = (r.data.records || []).map((p, i) => ({
     "No": i + 1,
     "プロファイル名": p.Name,
-    "ライセンス": p.UserLicense ? p.UserLicense.Name : "",
+    "ライセンス": p.UserLicense ? p.UserLicense.Name : "(なし)",
     "ユーザ種別": userTypeMap[p.UserType] || p.UserType || "",
     "説明": p.Description || "",
+    "作成日": fmtDate(p.CreatedDate),
     "更新日": fmtDate(p.LastModifiedDate),
   }));
   const legend = [
@@ -192,7 +212,7 @@ async function buildProfileList({ host, sid, apiVersion }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. プロファイル", headers, rows },
     ],
-    note: `合計 ${rows.length} 件 / ユーザ種別が外部ユーザのものはコミュニティ/Experience Cloud 用`,
+    note: `合計 ${fmtNum(rows.length)} 件 / ユーザ種別が外部ユーザのものはコミュニティ/Experience Cloud 用`,
   };
 }
 
@@ -203,10 +223,10 @@ async function buildPermSetList({ host, sid, apiVersion }) {
     soql: `SELECT Id, Name, Label, License.Name, IsCustom, NamespacePrefix, Description, LastModifiedDate FROM PermissionSet WHERE IsOwnedByProfile=false ORDER BY Name LIMIT 500`,
   });
   if (!r.ok) throw apiError("権限セットの取得に失敗しました", r);
-  const headers = ["No", "API名", "ラベル (画面表示名)", "ライセンス", "ネームスペース", "種別", "説明", "更新日"];
+  const headers = ["No", "API 名", "ラベル (画面表示名)", "ライセンス", "ネームスペース", "種別", "説明", "更新日"];
   const rows = (r.data.records || []).map((p, i) => ({
     "No": i + 1,
-    "API名": p.Name,
+    "API 名": p.Name,
     "ラベル (画面表示名)": p.Label,
     "ライセンス": p.License ? p.License.Name : "(なし: 機能限定)",
     "ネームスペース": p.NamespacePrefix || "(なし: カスタム)",
@@ -228,7 +248,7 @@ async function buildPermSetList({ host, sid, apiVersion }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. PermissionSet", headers, rows },
     ],
-    note: `合計 ${rows.length} 件 (プロファイル付随を除外) / 権限セットグループの中身は別途確認が必要`,
+    note: `合計 ${fmtNum(rows.length)} 件 (プロファイル付随を除外) / 権限セットグループの中身は別途確認が必要`,
   };
 }
 
@@ -240,22 +260,26 @@ async function buildApexClassList({ host, sid, apiVersion }) {
   });
   if (!r.ok) throw apiError("Apex クラス一覧の取得に失敗しました", r);
   // v2.14.0: ステータス + 列名を業務用語化
-  const statusLabel = (s) => ({ "Active": "有効", "Inactive": "無効", "Deleted": "削除済" }[s] || s);
-  const headers = ["No", "クラス名", "ネームスペース", "API バージョン", "ステータス", "コード行数 (コメント除く)", "更新日"];
-  const rows = (r.data.records || []).map((p, i) => ({
+  const statusLabel = (s) => ({ "Active": "○ 有効", "Inactive": "− 無効", "Deleted": "✗ 削除済" }[s] || s);
+  const records = r.data.records || [];
+  // コード行数の合計を算出 (組織全体のサイズ把握用)
+  const totalLength = records.reduce((sum, p) => sum + (Number(p.LengthWithoutComments) || 0), 0);
+  const headers = ["No", "クラス名", "ネームスペース", "API バージョン", "ステータス", "コード行数 (コメント除く)", "作成日", "更新日"];
+  const rows = records.map((p, i) => ({
     "No": i + 1,
     "クラス名": p.Name,
     "ネームスペース": p.NamespacePrefix || "(なし)",
-    "API バージョン": p.ApiVersion,
+    "API バージョン": p.ApiVersion != null ? `v${p.ApiVersion}` : "",
     "ステータス": statusLabel(p.Status),
-    "コード行数 (コメント除く)": p.LengthWithoutComments,
+    "コード行数 (コメント除く)": fmtNum(p.LengthWithoutComments),
+    "作成日": fmtDate(p.CreatedDate),
     "更新日": fmtDate(p.LastModifiedDate),
   }));
   return {
     title: "Apex クラス一覧",
     type: "apexClassList",
     sections: [{ heading: "Apex クラス", headers, rows }],
-    note: `合計 ${rows.length} 件 (unmanaged + installedEditable のみ) / コード行数は Apex Limit (組織あたり 6 MB) の試算目安としてご活用ください`,
+    note: `合計 ${fmtNum(rows.length)} 件 (unmanaged + installedEditable のみ) / 総コード行数: ${fmtNum(totalLength)} 行 / コード行数は Apex Limit (組織あたり 6 MB) の試算目安としてご活用ください`,
   };
 }
 
@@ -299,7 +323,7 @@ async function buildApexTriggerList({ host, sid, apiVersion }) {
       { heading: "0. 凡例 / トリガイベント略号", headers: legendHeaders, rows: legendRows },
       { heading: "1. Apex トリガ一覧", headers, rows },
     ],
-    note: `合計 ${rows.length} 件 / Before/After × Insert/Update/Delete/Undelete の発火タイミング表となっています`,
+    note: `合計 ${fmtNum(rows.length)} 件 / Before/After × Insert/Update/Delete/Undelete の発火タイミング表となっています`,
   };
 }
 
@@ -339,7 +363,7 @@ async function buildFlowList({ host, sid, apiVersion }) {
       "No": i + 1, "ラベル": f.MasterLabel, "API 名": f.Definition ? f.Definition.DeveloperName : "",
       "種別": processTypeLabel(f.ProcessType), "状態": f.Status === "Active" ? "アクティブ" : (f.Status || ""), "バージョン": f.VersionNumber,
     }));
-    return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${rows.length} 件 / 種別と状態は業務用語で表記しています` };
+    return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${fmtNum(rows.length)} 件 / 種別と状態は業務用語で表記しています` };
   }
   const headers = ["No", "ラベル", "API 名", "種別", "アクティブ", "バージョン", "説明", "更新日"];
   const rows = (r.data.records || []).map((f, i) => ({
@@ -352,7 +376,7 @@ async function buildFlowList({ host, sid, apiVersion }) {
     "説明": f.Description || "",
     "更新日": fmtDate(f.LastModifiedDate),
   }));
-  return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${rows.length} 件 / 種別は業務用語と原文を併記しています。Process Builder は Salesforce 公式アナウンスにより段階的に廃止予定です` };
+  return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${fmtNum(rows.length)} 件 / 種別は業務用語と原文を併記しています。Process Builder は Salesforce 公式アナウンスにより段階的に廃止予定です` };
 }
 
 // ============ 入力規則一覧 ============
@@ -387,7 +411,7 @@ async function buildValidationRuleList({ host, sid, apiVersion, obj }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. ValidationRule", headers, rows },
     ],
-    note: `合計 ${rows.length} 件 / 無効ルールも本一覧には含まれます (Setup では既定で非表示)`,
+    note: `合計 ${fmtNum(rows.length)} 件 / 無効ルールも本一覧には含まれます (Setup では既定で非表示)`,
   };
 }
 
@@ -422,7 +446,7 @@ async function buildRecordTypeList({ host, sid, apiVersion, obj }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. RecordType", headers, rows },
     ],
-    note: `合計 ${rows.length} 件 / 無効レコードタイプも本一覧には含まれます`,
+    note: `合計 ${fmtNum(rows.length)} 件 / 無効レコードタイプも本一覧には含まれます`,
   };
 }
 
@@ -438,10 +462,10 @@ async function buildFieldSetList({ host, sid, apiVersion, obj }) {
     soql: `SELECT Id, DeveloperName, MasterLabel, Description, EntityDefinition.QualifiedApiName FROM FieldSet WHERE EntityDefinition.QualifiedApiName='${obj.replace(/'/g, "\\'")}' ORDER BY DeveloperName LIMIT 200`,
   });
   if (!tr.ok) throw apiError("フィールドセットの取得に失敗しました", tr);
-  const headers = ["No", "API名", "ラベル", "説明"];
+  const headers = ["No", "API 名", "ラベル", "説明"];
   const rows = (tr.data.records || []).map((fs, i) => ({
     "No": i + 1,
-    "API名": fs.DeveloperName,
+    "API 名": fs.DeveloperName,
     "ラベル": fs.MasterLabel,
     "説明": fs.Description || "",
   }));
@@ -449,7 +473,7 @@ async function buildFieldSetList({ host, sid, apiVersion, obj }) {
     title: `フィールドセット一覧: ${obj}`,
     type: "fieldSetList",
     sections: [{ heading: "FieldSet", headers, rows }],
-    note: `合計 ${rows.length} 件 / FieldSet は LWC/VF から動的に項目セットを参照するために利用されます`,
+    note: `合計 ${fmtNum(rows.length)} 件 / FieldSet は LWC/VF から動的に項目セットを参照するために利用されます`,
   };
 }
 
@@ -464,10 +488,10 @@ async function buildCustomSettingList({ host, sid, apiVersion }) {
     "List": "List 型 (組織共通の定数表)",
     "Hierarchy": "Hierarchy 型 (組織/プロファイル/ユーザ毎に上書き可)",
   };
-  const headers = ["No", "API名", "ラベル", "種別", "説明"];
+  const headers = ["No", "API 名", "ラベル", "種別", "説明"];
   const rows = (r.data.records || []).map((c, i) => ({
     "No": i + 1,
-    "API名": c.DeveloperName + "__c",
+    "API 名": c.DeveloperName + "__c",
     "ラベル": c.MasterLabel,
     "種別": typeMap[c.CustomSettingsType] || c.CustomSettingsType,
     "説明": c.Description || "",
@@ -485,7 +509,7 @@ async function buildCustomSettingList({ host, sid, apiVersion }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. CustomSetting", headers, rows },
     ],
-    note: `合計 ${rows.length} 件 / Salesforce は新規実装にカスタムメタデータ型を推奨 (本一覧は既存資産確認用)`,
+    note: `合計 ${fmtNum(rows.length)} 件 / Salesforce は新規実装にカスタムメタデータ型を推奨 (本一覧は既存資産確認用)`,
   };
 }
 
@@ -864,7 +888,7 @@ async function buildAppList({ host, sid, apiVersion }) {
       { heading: "1. AppDefinition (組織内全アプリ)", headers, rows },
       ...(menuRows.length ? [{ heading: "2. AppMenuItem (App Launcher 表示順)", headers: menuHeaders, rows: menuRows }] : []),
     ],
-    note: `合計 ${rows.length} アプリ / AppMenuItem の「並び順」はプロファイル単位で別途上書き可能`,
+    note: `合計 ${fmtNum(rows.length)} アプリ / AppMenuItem の「並び順」はプロファイル単位で別途上書き可能`,
   };
 }
 
@@ -1272,7 +1296,7 @@ async function buildLwcDetail({ host, sid, apiVersion, obj }) {
     soql: `SELECT Id, FilePath, Format, Source FROM LightningComponentResource WHERE LightningComponentBundleId='${b.Id}' ORDER BY FilePath LIMIT 100`,
   });
   const resources = rR.ok ? (rR.data.records || []) : [];
-  const fileHeaders = ["No", "ファイル名", "形式", "サイズ", "先頭 80 文字 (プレビュー)"];
+  const fileHeaders = ["No", "ファイル名", "形式", "文字数", "サイズ", "先頭 80 文字 (プレビュー)"];
   const fileRows = resources.map((res, i) => {
     const filename = (res.FilePath || "").split("/").pop();
     const src = res.Source || "";
@@ -1281,7 +1305,8 @@ async function buildLwcDetail({ host, sid, apiVersion, obj }) {
       "No": i + 1,
       "ファイル名": filename,
       "形式": formatMap[fmt] || res.Format || "",
-      "サイズ": src.length.toLocaleString() + " 文字",
+      "文字数": fmtNum(src.length),
+      "サイズ": fmtBytes(new Blob([src]).size),
       "先頭 80 文字 (プレビュー)": src.substring(0, 80).replace(/\n/g, " "),
     };
   });
@@ -1402,11 +1427,11 @@ async function buildFieldPermMatrix({ host, sid, apiVersion, obj, progress = () 
   }
 
   // 5. 行データ生成 (allFields 順、describe にあって FieldPermissions に無い欄は空)
-  const headers = ["No", "API名", "ラベル", "型", "必須", ...cols.map((c) => (c.isProfile ? "👤 " : "🔑 ") + c.label)];
+  const headers = ["No", "API 名", "ラベル", "型", "必須", ...cols.map((c) => (c.isProfile ? "👤 " : "🔑 ") + c.label)];
   const rows = allFields.map((f, i) => {
     const row = {
       "No": i + 1,
-      "API名": f.name,
+      "API 名": f.name,
       "ラベル": f.label,
       "型": f.type,
       "必須": f.required ? "○" : "",

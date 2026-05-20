@@ -17,6 +17,13 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.59.0 (2026-05-20 19:35)** — 🚨 ユーザー要望 Phase 50 (待機解除): 設計書のカラム名・値・桁数を改善:
+  - **🔢 design-docs.js fmtNum / fmtBytes ヘルパー追加**: 数値 3 桁区切り (12,345) / バイトサイズ自動切替 (1,023 B → 12.1 KB → 1.18 MB → 2.50 GB) 共通関数を導入
+  - **🐛 buildApexClassList**: コード行数を 3 桁区切り表示 (12345 → "12,345")、API バージョンを "v62.0" 表記、Status を絵文字付き (○ 有効 / − 無効 / ✗ 削除済)、「作成日」列追加、note に **総コード行数の集計** 「総コード行数: 1,234,567 行」を追加 (Apex Limit 試算用)
+  - **🐛 buildLwcDetail バンドル内ファイル**: 「サイズ」を「文字数」 + 「サイズ」 (バイト自動単位) の 2 列に分離、文字数は 3 桁区切り、サイズは KB/MB 自動切替
+  - **🐛 buildProfileList**: 「ライセンス」空欄を「(なし)」明示、「作成日」列追加 (4 列 → 5 列に拡張)
+  - **📐 カラム名統一**: 全設計書の "API名" → "API 名" (半角スペース統一) — buildObjectDef / buildFieldSetList / buildCustomSettingList / buildFieldPermMatrix 等
+  - **📊 note の件数表示統一**: 全 11 箇所の `合計 N 件` を `合計 ${fmtNum(N)} 件` に変更し、3 桁区切りに統一
 - **v2.58.0 (2026-05-20 17:40)** — 🚨 Phase 48: panel.html kbd-hint に Picker 操作追加 + 全 apiError 英語残存ゼロ確認:
   - **🐛 html/panel.html ヘッダ kbd-hint**: 「Ctrl+Enter 実行 / Esc 閉じる / Ctrl+Alt+I/Q/A/L/R/D ビュー切替」→「Ctrl+Enter 実行 / Esc 閉じる / ↑↓ Picker / Ctrl+Alt+I/Q/A/L/R/D ビュー切替」(tool.html と完全一致)
   - **🧪 design-docs.js apiError 22 箇所全点検**: 全て ですます調 + 業務語統一済を確認 (英語残存ゼロ)。代表例: 「プロファイル/権限セット/Apex クラス/フロー/入力規則/レコードタイプ/フィールドセット/カスタム設定/オブジェクト権限/項目権限 の取得に失敗しました」
