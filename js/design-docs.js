@@ -924,66 +924,75 @@ async function buildFlsReport({ host, sid, apiVersion, obj, progress = () => {} 
     soql: `SELECT Field, PermissionsRead, PermissionsEdit, Parent.Name, Parent.IsOwnedByProfile, Parent.Profile.Name, Parent.Label FROM FieldPermissions WHERE SobjectType='${obj.replace(/'/g, "\\'")}'`,
   });
 
-  // フィールドごとに Profile/PermSet 一覧を集計
-  const map = new Map(); // field -> { read: [], edit: [], noAccess: [] }
+  // v2.89.0: profileReader 互換のマトリクス形式 (項目 × プロファイル/権限セット)
+  // 行 = 項目、列 = 各プロファイル + 各権限セット、セル = RW / R / -- 表示
+  // 元実装は「件数 + 内訳文字列」だったが、ユーザー要望「権限セット・プロファイル × 項目への権限で表現」に対応
+  const profileSet = new Set(); // プロファイル名のセット
+  const permsetSet = new Set(); // 権限セット名のセット
+  const grid = new Map(); // fieldName -> { [parentLabel]: "RW"|"R"|"--" }
   for (const rec of (fpR.records || [])) {
     if (!rec.Parent) continue;
     const isP = !!rec.Parent.IsOwnedByProfile;
-    const name = (isP ? "👤 " : "🔑 ") + (isP ? ((rec.Parent.Profile && rec.Parent.Profile.Name) || rec.Parent.Name) : (rec.Parent.Label || rec.Parent.Name));
+    // プロファイル名は Parent.Profile.Name (PermissionSet で IsOwnedByProfile=true の場合) を優先
+    const rawName = isP ? ((rec.Parent.Profile && rec.Parent.Profile.Name) || rec.Parent.Name) : (rec.Parent.Label || rec.Parent.Name);
+    const col = (isP ? "👤 " : "🔑 ") + rawName;
+    if (isP) profileSet.add(col); else permsetSet.add(col);
     const fld = (rec.Field || "").replace(/^[^.]+\./, "");
-    if (!map.has(fld)) map.set(fld, { read: [], edit: [], noAccess: [] });
-    const m = map.get(fld);
-    if (rec.PermissionsEdit) m.edit.push(name);
-    else if (rec.PermissionsRead) m.read.push(name);
-    else m.noAccess.push(name);
+    if (!grid.has(fld)) grid.set(fld, {});
+    const cell = rec.PermissionsEdit ? "RW" : (rec.PermissionsRead ? "R" : "--");
+    grid.get(fld)[col] = cell;
   }
+  // 列順: プロファイル (ソート) → 権限セット (ソート)
+  const profileCols = Array.from(profileSet).sort();
+  const permsetCols = Array.from(permsetSet).sort();
+  const allCols = [...profileCols, ...permsetCols];
 
-  const headers = ["No", "API 名", "ラベル", "型", "必須", "編集可 (Edit) 件数", "編集可 (Edit) 内訳", "参照のみ (Read) 件数", "参照のみ (Read) 内訳", "アクセス無し 件数"];
+  const headers = ["No", "項目 API 名", "ラベル", "型", "必須", ...allCols];
   const rows = allFields.map((f, i) => {
-    const m = map.get(f.name) || { read: [], edit: [], noAccess: [] };
-    return {
+    const g = grid.get(f.name) || {};
+    const row = {
       "No": i + 1,
-      "API 名": f.name,
+      "項目 API 名": f.name,
       "ラベル": f.label,
       "型": f.type,
       "必須": f.required ? "○" : "",
-      "編集可 (Edit) 件数": fmtNum(m.edit.length),
-      "編集可 (Edit) 内訳": m.edit.sort().join("\n"),
-      "参照のみ (Read) 件数": fmtNum(m.read.length),
-      "参照のみ (Read) 内訳": m.read.sort().join("\n"),
-      "アクセス無し 件数": fmtNum(m.noAccess.length),
     };
+    // 各列のセルを設定。レコードが無い場合は "--" (アクセス無し)
+    for (const col of allCols) row[col] = g[col] || "--";
+    return row;
   });
 
+  // サマリ集計 (note 用): 編集可 (RW あり) / 参照のみ (R のみ) / アクセス無し (-- のみ)
+  let editAnyCount = 0, readOnlyCount = 0, noAccessCount = 0;
+  for (const row of rows) {
+    const cellVals = allCols.map((c) => row[c]);
+    if (cellVals.includes("RW")) editAnyCount++;
+    else if (cellVals.includes("R")) readOnlyCount++;
+    else noAccessCount++;
+  }
+
+  // 凡例セクションを業務向けに拡充
+  const legend = [
+    ["FLS とは", "項目レベルセキュリティ。ユーザがレコード内の個別項目を『編集できる/参照のみ/見えない』を制御する仕組み"],
+    ["👤 列", "プロファイル (ユーザに 1 つ適用される基礎権限)"],
+    ["🔑 列", "権限セット (複数加算可・カスタム拡張)"],
+    ["RW", "Read+Write — 値を画面・API で書き換え可能"],
+    ["R", "Read のみ — 読み取り専用表示 / 書き換え不可"],
+    ["--", "アクセス無し — 画面で項目が非表示 / API でも参照不可"],
+    ["必須", "○ = 入力必須項目。FLS で参照のみでも保存時に値が必要"],
+    ["除外項目", "計算項目 (formula) と Id 項目は FLS 制御対象外のため一覧から除外"],
+    ["列順", "プロファイル → 権限セットの順。同種内はアルファベット順"],
+    ["Excel 使い方", "B2 セルでウィンドウ枠固定 → 左 5 列 (No / 項目 / ラベル / 型 / 必須) と先頭行を固定して全列を横スクロール可"],
+  ];
+
   return {
-    title: `項目レベルセキュリティ (FLS) レポート: ${obj}`,
+    title: `項目レベルセキュリティ (FLS) レポート: ${obj} (権限セット × プロファイル マトリクス)`,
     type: "flsReport",
     sections: [
-      { heading: "0. 凡例", kvRows: [
-        ["FLS とは", "項目レベルセキュリティ。ユーザがレコード内の個別項目を『編集できる/参照のみ/見えない』を制御する仕組み"],
-        ["👤 名前", "プロファイル (ユーザに 1 つ適用)"],
-        ["🔑 名前", "権限セット (複数加算可)"],
-        ["編集可 (Edit)", "PermissionsEdit=true / 値を画面・API で書き換え可能"],
-        ["参照のみ (Read)", "PermissionsRead=true, PermissionsEdit=false / 読み取り専用表示"],
-        ["アクセス無し (--)", "PermissionsRead=false または FieldPermissions レコードなし / 画面で項目が非表示"],
-        ["必須", "○ = 入力必須項目 (nillable=false かつ defaultedOnCreate=false)。FLS で参照のみでもバックエンドでは値必要"],
-        ["除外項目", "計算項目 (formula) と Id 項目は FLS 制御対象外のため一覧から除外"],
-      ]},
-      { heading: "1. FLS 一覧", headers, rows },
+      { heading: "0. 凡例", kvRows: legend },
+      { heading: "1. FLS マトリクス (項目 × 権限主体)", headers, rows },
     ],
-    note: (() => {
-      // サマリ集計: 編集可・参照のみ・アクセス無しのフィールド数
-      const editAnyCount = rows.filter((r) => Number(String(r["編集可 (Edit) 件数"]).replace(/,/g, "")) > 0).length;
-      const readOnlyCount = rows.filter((r) =>
-        Number(String(r["編集可 (Edit) 件数"]).replace(/,/g, "")) === 0 &&
-        Number(String(r["参照のみ (Read) 件数"]).replace(/,/g, "")) > 0
-      ).length;
-      const noAccessCount = rows.filter((r) =>
-        Number(String(r["編集可 (Edit) 件数"]).replace(/,/g, "")) === 0 &&
-        Number(String(r["参照のみ (Read) 件数"]).replace(/,/g, "")) === 0
-      ).length;
-      return `対象 ${fmtNum(rows.length)} 項目 / 編集可 ${fmtNum(editAnyCount)} 項目 (${fmtPercent(editAnyCount / Math.max(rows.length, 1))}) / 参照のみ ${fmtNum(readOnlyCount)} 項目 (${fmtPercent(readOnlyCount / Math.max(rows.length, 1))}) / アクセス無し ${fmtNum(noAccessCount)} 項目 (${fmtPercent(noAccessCount / Math.max(rows.length, 1))}) / Excel 形式推奨 (セル折り返し有効)`;
-    })(),
+    note: `対象 ${fmtNum(rows.length)} 項目 / 列 ${fmtNum(allCols.length)} (プロファイル ${fmtNum(profileCols.length)} + 権限セット ${fmtNum(permsetCols.length)}) / 編集可 (RW あり) ${fmtNum(editAnyCount)} 項目 (${fmtPercent(editAnyCount / Math.max(rows.length, 1))}) / 参照のみ ${fmtNum(readOnlyCount)} 項目 (${fmtPercent(readOnlyCount / Math.max(rows.length, 1))}) / アクセス無し ${fmtNum(noAccessCount)} 項目 (${fmtPercent(noAccessCount / Math.max(rows.length, 1))}) / **Excel 推奨**: ウィンドウ枠固定 (B2) で左 5 列 + 先頭行を固定`,
   };
 }
 
