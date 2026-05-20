@@ -7,6 +7,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.94.0 (2026-05-20 12:10)** — Inspector CSV を recordsToCsv 経由に統一:
+  - **🐛 `exportInspect("csv")` を recordsToCsv 経由にリファクタ**: 従来 fields ループで直接 CSV 生成していたため v1.93.0 のネスト平坦化 + datetime 整形が **未適用** だった → describe.fields の順で `ordered` レコードを作成 → `recordsToCsv([ordered])` で生成。**Inspector CSV にも Excel フレンドリーな整形が波及**
+  - **🧪 popup exportCsv は既に recordsToCsv 経由** で v1.93.0 整形が適用済 (修正不要)
 - **v1.93.0 (2026-05-20 12:05)** — recordsToCsv ネスト平坦化 + datetime ISO 整形:
   - **🐛 `recordsToCsv()` でネストリレーション (例 `Account.Owner`) を平坦化**: 従来 `"{"attributes":{...},"Name":"Akira"}" ` raw JSON 文字列が CSV セルに入って Excel で表示崩れ → `Akira Kataoka [005xx0000000abc]` 形式 (画面表示と統一、panel.js stringify と同パターン)
   - **🐛 datetime ISO 文字列 `2026-05-20T03:45:00.000+0000` を `2026-05-20 03:45` に整形**: regex `^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}` 判定 → Excel で日時として認識可能 (Login History v1.91 と同パターンを全 CSV download に波及)

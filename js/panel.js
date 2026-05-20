@@ -1609,15 +1609,11 @@ function exportInspect(fmt) {
     body = JSON.stringify(inspectState.record, null, 2);
     mime = "application/json;charset=utf-8"; ext = "json";
   } else {
+    // describe.fields の順を維持しつつ単一レコード CSV (recordsToCsv 経由でネスト平坦化 + datetime 整形を享受)
     const fields = (inspectState.describe.fields || []).map((f) => f.name);
-    const headers = fields.join(",");
-    const values = fields.map((n) => {
-      const v = inspectState.record[n];
-      if (v == null) return "";
-      const s = typeof v === "object" ? JSON.stringify(v) : String(v);
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    }).join(",");
-    body = "﻿" + headers + "\n" + values;
+    const ordered = {};
+    for (const n of fields) ordered[n] = inspectState.record[n];
+    body = "﻿" + recordsToCsv([ordered]);
     mime = "text/csv;charset=utf-8"; ext = "csv";
   }
   const blob = new Blob([body], { type: mime });
