@@ -1540,7 +1540,7 @@ function renderInspectorFields() {
   // header
   const html = [];
   html.push(`<div class="field-row field-row-header">
-    <div>API 名</div><div>型</div><div>値</div><div style="text-align:right">フラグ</div>
+    <div>API 名</div><div>型</div><div>値</div><div style="text-align:right">属性フラグ</div>
   </div>`);
 
   let shown = 0;
@@ -1577,7 +1577,7 @@ function renderInspectorFields() {
       // 参照先オブジェクト名を describe から取得 (KeyPrefix 逆引きに頼らない確実な方法)
       const refObj = (f.referenceTo || [])[0] || "";
       const refLabel = refObj ? `<span class="ref-target-label">→ ${escape(refObj)}</span>` : "";
-      valHtml = `<div class="fval ref" data-id="${escape(v)}" data-ref-obj="${escape(refObj)}" title="クリックで ${escape(refObj || "参照先")} レコードを開く">${escape(v)}${refLabel}</div>`;
+      valHtml = `<div class="fval ref" data-id="${escape(v)}" data-ref-obj="${escape(refObj)}" title="クリックで ${escape(refObj || "参照先")} のレコードを Inspector で開きます">${escape(v)}${refLabel}</div>`;
     } else if (typeof v === "object") {
       valHtml = `<div class="fval">${escape(JSON.stringify(v))}</div>`;
     } else {

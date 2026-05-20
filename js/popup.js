@@ -421,7 +421,7 @@ async function searchUsersForLogin() {
   if (!state.sid) { toast("⚠ 先に Salesforce タブへ接続してください", { kind: "warn" }); return; }
   const term = document.getElementById("loginAsSearch").value.trim();
   const result = document.getElementById("loginAsResult");
-  result.innerHTML = `<div class="meta">検索中…</div>`;
+  result.innerHTML = `<div class="meta">⏳ ユーザを検索しています…</div>`;
 
   // SOQL escape
   const esc = (s) => s.replace(/'/g, "\\'");
@@ -436,14 +436,14 @@ async function searchUsersForLogin() {
 
   const r = await runSoql({ host: state.host, sid: state.sid, soql, apiVersion: state.apiVersion });
   if (!r.ok) {
-    result.innerHTML = `<div class="meta">❌ HTTP ${r.status}: ${escape(formatError(r.data))}</div>`;
+    result.innerHTML = `<div class="meta">❌ ユーザ検索に失敗しました (HTTP ${r.status}): ${escape(formatError(r.data))}</div>`;
     return;
   }
   const users = r.data.records || [];
   if (!users.length) {
     const hint = term
-      ? `検索条件「${escape(term)}」に一致するユーザーがいません。<br/>💡 別のキーワード (Username の一部、Alias、姓名) で再検索してください`
-      : `Active なユーザーが見つかりません。<br/>💡 権限不足の可能性 (Modify All Data / View All Users)`;
+      ? `検索条件「${escape(term)}」に一致するユーザは見つかりませんでした。<br/>💡 別のキーワード (Username の一部 / Alias / 姓名) で再度お試しください`
+      : `有効なユーザが見つかりませんでした。<br/>💡 権限不足の可能性があります (「すべてのデータの編集 (Modify All Data)」または「すべてのユーザの参照 (View All Users)」が必要です)`;
     result.innerHTML = `<div class="meta" style="padding:16px;text-align:center;line-height:1.7">📭 ${hint}</div>`;
     return;
   }
@@ -466,7 +466,7 @@ async function searchUsersForLogin() {
         <div class="user-name">${escape(u.Name)} <span style="font-weight:400;color:var(--fg-dim)">(${escape(u.Alias || "")})</span></div>
         <div class="user-sub">${escape(u.Username)} / ${escape(u.Profile ? u.Profile.Name : "-")} / ${escape(u.UserType || "")}</div>
       </div>
-      <span class="user-action">Login</span>
+      <span class="user-action" title="このユーザとしてログインします">ログイン</span>
     `;
     el.addEventListener("click", () => loginAsUser(u));
     result.appendChild(el);
@@ -474,7 +474,7 @@ async function searchUsersForLogin() {
 }
 
 function loginAsUser(u) {
-  if (!state.host || !state.orgId) { toast("⚠ セッション情報がありません", { kind: "warn" }); return; }
+  if (!state.host || !state.orgId) { toast("⚠ セッション情報が取得できていません。先に Salesforce タブで再接続してください", { kind: "warn" }); return; }
   // Salesforce Login As の URL: /servlet/servlet.su?oid=<OrgId15>&suorgadminid=<UserId15>&retURL=/lightning/&targetURL=/
   const orgId = state.orgId.substring(0, 15);
   const userId = (u.Id || "").substring(0, 15);

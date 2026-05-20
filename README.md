@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.31.0 (2026-05-20 15:25)** — 🚨 ユーザー要望 Phase 21: loginAs / Inspector 表示細部 ですます調:
+  - **🐛 popup.js loginAs 検索**: 「検索中…」→「⏳ ユーザを検索しています…」、エラー文「❌ HTTP N: ...」→「❌ ユーザ検索に失敗しました (HTTP N): ...」、空結果ヒント「ユーザーがいません」→「ユーザは見つかりませんでした」+ 補足を ですます調 詳細化、「Modify All Data / View All Users」を業務語注釈付きに、「Active なユーザー」→「有効なユーザ」
+  - **🐛 popup.js user-action**: 英語「Login」→「ログイン」+ tooltip「このユーザとしてログインします」追加
+  - **🐛 popup.js loginAsUser**: セッション情報なし toast を「セッション情報が取得できていません。先に Salesforce タブで再接続してください」に詳細化
+  - **🐛 panel.js Inspector フィールド行**: ヘッダ「フラグ」→「属性フラグ」、参照項目セルの tooltip「クリックで X レコードを開く」→「クリックで X のレコードを Inspector で開きます」
 - **v2.30.0 (2026-05-20 15:20)** — 🚨 ユーザー要望 Phase 20: Apex 実行結果 pill + displayApiError ヒント文 + 設定 toast:
   - **🐛 panel.js Apex 実行結果 pill**: 「Success」→「✓ 成功 (Success)」、「Runtime Error」→「⚠ 実行時エラー (Runtime Error)」、「Compile Error」→「❌ コンパイルエラー (Compile Error)」と絵文字+日本語+原文併記、「line X:Y」→「エラー位置: X 行目 / Y 列目」に
   - **🐛 panel.js Apex 詳細**: 「Compile:」→「コンパイルエラー内容:」、「Exception:」→「例外メッセージ:」、stackTrace に「スタックトレース:」ラベル付与
