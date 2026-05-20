@@ -4,6 +4,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.74.0 (2026-05-20 10:30)** — Picker focusReturnTarget DOM 接続チェック追加:
+  - **🐛 Picker close 時 focusReturnTarget が detached element だった場合の防御**: `document.body.contains(focusReturnTarget)` でツリー存在を確認、ダメなら focus() を呼ばない。**Org 切替や switchToView で呼び元 input が再生成された場合の "focus into thin air" 問題を予防**
+  - **🧪 nav-btn.active:focus-visible outline #fff のコントラスト**: 背景 `var(--bg3)` = `#142447` 上に `#fff` outline → コントラスト比 約 13:1 で WCAG AA (4.5:1) / AAA (7:1) 両基準クリア
 - **v1.73.0 (2026-05-20 10:25)** — nav-btn active+focus 同時時の outline 色差別化:
   - **♿ `.nav-btn.active:focus-visible { outline-color: #fff }`**: active 状態 (border-left 3px accent) + focus-visible (outline 3px accent) が同時の時、accent 色で二重に塗りつぶされて識別困難 → focus アウトラインのみ白に切替。**現在のタブ位置とキーボードフォーカス位置を独立して可視化**
 - **v1.72.0 (2026-05-20 10:20)** — nav-btn focus-visible 強化 + Picker focus 戻り確認:

@@ -256,8 +256,12 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
       overlay.remove();
       document.body.classList.remove("picker-open");
       // 元のトリガにフォーカスを戻す (キーボードユーザー向け)
+      // 開いた後に DOM 再描画で focusReturnTarget が detached になるケースを防ぐ:
+      // document.contains() でツリー存在を確認、ダメなら body にフォールバック
       if (focusReturnTarget && typeof focusReturnTarget.focus === "function") {
-        try { focusReturnTarget.focus(); } catch {}
+        try {
+          if (document.body.contains(focusReturnTarget)) focusReturnTarget.focus();
+        } catch {}
       }
       resolve(val);
     };
