@@ -63,9 +63,12 @@ html, body {
 button {
   background: var(--bg3); color: var(--fg); border: 1px solid var(--line);
   padding: 5px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; font-weight: 600;
+  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
 }
 button:hover { border-color: var(--accent); }
-button.primary { background: var(--accent); color: #fff; border-color: var(--accent-2); transition: box-shadow 0.15s, background 0.15s; }
+button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+button:active:not(:disabled) { transform: translateY(1px); }
+button.primary { background: var(--accent); color: #fff; border-color: var(--accent-2); }
 button.primary:hover { background: var(--accent-2); box-shadow: 0 0 0 3px rgba(27, 150, 255, 0.2); }
 
 /* Export ダウンロード走行中ボタンを 取消 風に */
@@ -634,6 +637,37 @@ td.cell-nested { word-break: break-word; }
 .design-preview th { background: #112042; color: var(--accent); position: sticky; top: 0; z-index: 1; cursor: default; }
 .design-preview th:hover { background: #112042; /* sortable と区別: hover で色変化なし */ }
 .design-preview code { background: #0a1224; padding: 1px 4px; border-radius: 3px; font: 11px ui-monospace, Consolas, monospace; color: #d6e0f5; }
+
+/* v3.23.0: 設計書プレビュー印刷最適化 — ブラウザ印刷 (Ctrl+P) で PDF 保存・物理印刷時の体裁を業務文書品質に */
+@media print {
+  /* 印刷時は背景を白・文字を黒 (インクと可読性) */
+  body, html, .design-preview { background: #fff !important; color: #000 !important; }
+  /* 操作 UI (ヘッダ/サイドバー/ツールバー/ボタン) は非表示 */
+  .hdr, .side, .toolbar, .panel-toast, .toast, .home-card, .api-guide, .home-tips, .nav, button { display: none !important; }
+  /* design-preview のみ全幅表示 */
+  .cols, .main, .view { display: block !important; height: auto !important; overflow: visible !important; }
+  .design-preview { position: static !important; max-height: none !important; overflow: visible !important; padding: 0 !important; }
+  /* sticky 解除 (印刷時は不要、改ページ位置がずれる原因) */
+  .design-preview h1, .design-preview h2, .design-preview h3 { position: static !important; background: transparent !important; color: #1b96ff !important; }
+  .design-preview th { position: static !important; background: #e8f1ff !important; color: #1b96ff !important; }
+  .design-preview td { color: #000 !important; }
+  /* 表紙だけ大きく & ページ送り */
+  .design-preview h2:first-of-type {
+    background: linear-gradient(135deg, rgba(27,150,255,0.15) 0%, transparent 100%) !important;
+    border-left: 4px solid #1b96ff !important; border-bottom: 2px solid #1b96ff !important;
+    page-break-after: avoid;
+  }
+  /* セクション (h2) ごとに改ページ (1 章/シート ＝ 1 ページ感) */
+  .design-preview h2 { page-break-before: auto; page-break-after: avoid; }
+  .design-preview h2:not(:first-of-type) { page-break-before: page; }
+  /* 表の改ページ制御: 行を切らない */
+  .design-preview table { page-break-inside: auto; }
+  .design-preview tr { page-break-inside: avoid; page-break-after: auto; }
+  /* 罫線をはっきりさせる (グレースケール印刷でも識別可能に) */
+  .design-preview th, .design-preview td { border: 1px solid #555 !important; }
+  /* 用紙設定 (Chrome / Firefox 対応): A4 縦、ヘッダ/フッタは余白控えめ */
+  @page { size: A4; margin: 14mm 12mm; }
+}
 .design-preview pre { background: #0a1224; padding: 8px; border-radius: 5px; overflow: auto; font: 11px ui-monospace, Consolas, monospace; }
 .design-preview ul, .design-preview ol { padding-left: 20px; }
 .design-preview p { line-height: 1.7; }
