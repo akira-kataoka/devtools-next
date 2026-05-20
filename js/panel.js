@@ -784,13 +784,16 @@ async function csCopyXml() {
 
 function csDownloadXml() {
   const t = document.getElementById("csXml").textContent;
-  if (!t) return;
+  if (!t) { panelToast("📭 package.xml が未生成です (先に「package.xml 生成」をクリック)", { kind: "warn" }); return; }
   const blob = new Blob([t], { type: "application/xml;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = "package.xml"; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
   document.getElementById("csMeta").innerHTML += ` <span class="pill ok">package.xml ダウンロード</span>`;
+  const sz = t.length;
+  const label = sz < 1024 ? `${sz} B` : `${(sz / 1024).toFixed(1)} KB`;
+  panelToast(`📥 package.xml ダウンロード (${label})`, { kind: "ok" });
 }
 
 // SFDX バンドル: package.xml + sf cli 用 README + retrieve.bat/.sh + project の最小セット (テキスト形式の tar-like manifest)
@@ -857,6 +860,9 @@ sf project deploy validate --source-dir force-app --target-org production --test
   a.href = url; a.download = `sfdx-bundle-${tsForFilename()}.md`; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
   document.getElementById("csMeta").innerHTML += ` <span class="pill ok">SFDX バンドル (.md) ダウンロード</span>`;
+  const sz = bundle.length;
+  const label = sz < 1024 ? `${sz} B` : `${(sz / 1024).toFixed(1)} KB`;
+  panelToast(`📥 SFDX バンドル (.md) ダウンロード (${label})`, { kind: "ok" });
 }
 
 // ====== データエクスポート ======

@@ -4,6 +4,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.88.0 (2026-05-20 11:40)** — ChangeSet package.xml / SFDX バンドル download にも toast:
+  - **✨ `csDownloadXml()` 完了 toast**: `📥 package.xml ダウンロード (4.2 KB)` 形式
+  - **🛡 `csDownloadXml()` 未生成時警告**: `📭 package.xml が未生成です (先に「package.xml 生成」をクリック)` (従来 silent return)
+  - **✨ `csDownloadSfdxBundle()` 完了 toast**: `📥 SFDX バンドル (.md) ダウンロード (15.3 KB)` 形式
+  - **🧪 設計書 safeName**: `replace(/[\\\\/?*[\\]:"<>|]/g, "_").substring(0, 80)` で 80 文字に既に truncate 済 (panel.js:1856) → 修正不要
 - **v1.87.0 (2026-05-20 11:35)** — 設計書 download にもサイズ + 形式 + 未生成警告:
   - **✨ `downloadDesignSource()` の完了 toast 追加**: `📥 設計書ダウンロード: MD 312.4 KB` 形式で形式 + サイズ表示 (B/KB/MB 自動切替)。**従来 silent download だった UX が「何形式で何 KB 保存されたか」即視認可能**
   - **🛡 `downloadDesignSource()` 未生成時の警告 toast**: `lastDesign === null` 時 `📭 まだ設計書が未生成です` (kind:warn) → 従来 silent return で UX 不明瞭だった問題を解消
