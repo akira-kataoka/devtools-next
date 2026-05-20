@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.59.0 (2026-05-20 09:15)** — README に Inspector URL/CSV テスト手順 + package.xml ソート確認:
+  - **📖 README に Inspector「現在タブから取得」5 パターン動作表追加**: Lightning レコード / Setup (encoded address) / Setup (Apex Class) / Classic / Old Lightning fragment の各 URL 例と期待動作
+  - **📖 README に SOQL 列ソート + CSV/コピー反映の動作手順追加**: 6 ステップで実機確認可能。ロケール対応・数値判定のロジック説明込み
+  - **🧪 ChangeSet package.xml `<types>` ソート確認**: `panel.js:745-747` で `Object.keys(byType).sort()` + `Array.from(byType[type]).sort()` 二重ソート実装済 (修正不要)
 - **v1.58.0 (2026-05-20 09:10)** — Lightning Setup URL 抽出 + CSV ソート反映:
   - **🐛 Inspector「現在タブから取得」を Lightning Setup URL でも動作**: `?address=%2F<Id>` (encoded slash) クエリパラメタ、pathname の 15/18桁 ID、URL fragment (`#/sObject/...`) の 3 段階フォールバック。**従来 `/lightning/r/` のみ → Setup タブから ID 取得不可だったが、ManageUsers/ApexClasses 等の Setup URL からも抽出可能に**
   - **🐛 SOQL 「📥 CSV」/「📋 CSV」が列ソートを反映**: `getOrderedRecordsForExport()` で `#soqlResult th.sortable[data-sort-dir]` を検出 → `state.lastRecords` を同じソートロジックで並び替えて出力。**従来「テーブルでソートしたのに CSV は元順」だった違和感を解消**。toast に `(<col> <dir> ソート反映)` ヒント表示
@@ -508,6 +512,31 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 5. 「Excel ダウンロード」を実行
 6. 進捗表示で `XXX 件取得…` が増えていくのを確認
 7. 完了後、JS heap size が 100 MB 程度に戻ること (急増したまま戻らなければ leak の兆候)
+
+### 🧪 Inspector「現在タブから取得」の URL パターン対応 (v1.58.0+)
+
+`/lightning/r/<Object>/<Id>/view` 以外でも ID を抽出できるよう、3 段階フォールバック実装済。動作確認手順:
+
+| パターン | URL 例 | 動作 |
+|---|---|---|
+| Lightning レコード | `/lightning/r/Account/0011x00000abcde/view` | `Account:0011x00000abcde` を入力欄にセット |
+| Lightning Setup (User 編集) | `/lightning/setup/ManageUsers/page?address=%2F005xx...` | `005xx...` を抽出 (encoded slash 対応) |
+| Lightning Setup (Apex Class) | `/lightning/setup/ApexClasses/page?address=%2F01p...` | `01p...` を抽出 |
+| Classic | `https://<org>.my.salesforce.com/0011x00000abcde` | `0011x00000abcde` を抽出 |
+| Old Lightning fragment | `https://<org>.lightning.force.com/#/sObject/0011x00000abcde/view` | `0011x00000abcde` を抽出 |
+
+抽出失敗時は `タブからレコードIDを抽出できません URL: ...` に **`💡 レコード詳細画面で再試行 (Setup ページからは抽出できないことがあります)`** のヒントが付与される。
+
+### 🧪 SOQL 結果の列ソート + CSV/コピー反映 (v1.58.0+)
+
+1. SOQL 実行 → 結果テーブルに行表示
+2. 列ヘッダ (例 `Name`) をクリック → `▲` 矢印 + 行が asc ソート
+3. もう一度クリック → `▼` desc / 3 回目で unsort (元順)
+4. `📥 CSV` ダウンロード → ソート反映済の CSV が `.csv` ファイルとして保存
+5. 完了 toast に `📥 CSV N 行 (Name asc ソート反映)` 表示で反映を確認
+6. `📋 CSV` (クリップボードコピー) も同様に反映
+
+(数値判定: `/^-?\d+(\.\d+)?$/` にマッチすると数値ソート、それ以外は `localeCompare('ja')` で日本語対応)
 
 ### 🧪 401 INVALID_SESSION_ID テスト手順
 
