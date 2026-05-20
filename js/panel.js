@@ -1823,10 +1823,17 @@ async function doGenerateDesign() {
 }
 
 async function copyDesignSource() {
-  if (!lastDesign) return;
+  if (!lastDesign) { panelToast("📭 まだ設計書が未生成です", { kind: "warn" }); return; }
   try {
-    await navigator.clipboard.writeText(lastDesign.source || "");
-    panelToast("📋 設計書ソースをコピーしました", { kind: "ok" });
+    const src = lastDesign.source || "";
+    await navigator.clipboard.writeText(src);
+    // サイズ表示 (B/KB/MB)
+    const sz = src.length;
+    let label;
+    if (sz < 1024) label = `${sz} B`;
+    else if (sz < 1048576) label = `${(sz / 1024).toFixed(1)} KB`;
+    else label = `${(sz / 1048576).toFixed(1)} MB`;
+    panelToast(`📋 設計書ソースをコピー (${label})`, { kind: "ok" });
   } catch (e) {
     panelToast("⚠ コピー失敗: " + String(e), { kind: "err" });
   }
