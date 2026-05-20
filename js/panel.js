@@ -2163,7 +2163,17 @@ async function doMetadataList() {
     elem.innerHTML = ""; elem.appendChild(m);
     return;
   }
-  document.getElementById("metadataResult").innerHTML = recordsTable(r.data.records || []);
+  // 列名を業務用語に変換
+  const stateMap = { "unmanaged": "未管理", "installedEditable": "インストール済 (編集可)", "installedReadOnly": "インストール済 (読取専用)", "deprecated": "非推奨", "deleted": "削除済" };
+  const records = (r.data.records || []).map((rec) => ({
+    "Id": rec.Id,
+    "API 名": rec.Name,
+    "ネームスペース": rec.NamespacePrefix || "(なし)",
+    "管理状態": stateMap[rec.ManageableState] || rec.ManageableState || "",
+    "作成日": rec.CreatedDate,
+    "更新日": rec.LastModifiedDate,
+  }));
+  document.getElementById("metadataResult").innerHTML = recordsTable(records);
 }
 
 async function doFetchLogs() {
@@ -2173,11 +2183,23 @@ async function doFetchLogs() {
   if (!r.ok) {
     const elem = document.getElementById("logsResult");
     const m = document.createElement("div");
-    displayApiError(m, r.status, r.data, "ApexLog 取得");
+    displayApiError(m, r.status, r.data, "Apex ログ取得");
     elem.innerHTML = ""; elem.appendChild(m);
     return;
   }
-  document.getElementById("logsResult").innerHTML = recordsTable(r.data.records || []);
+  // ApexLog の列名を業務用語に変換
+  const statusMap = { "Success": "✓ 成功", "Error": "✗ エラー", "Warning": "⚠ 警告" };
+  const records = (r.data.records || []).map((rec) => ({
+    "Id": rec.Id,
+    "実行ユーザ": rec.LogUser ? rec.LogUser.Name : "",
+    "ステータス": statusMap[rec.Status] || rec.Status || "",
+    "アプリ": rec.Application || "",
+    "操作": rec.Operation || "",
+    "ログサイズ": rec.LogLength != null ? rec.LogLength.toLocaleString() + " バイト" : "",
+    "実行時間": rec.DurationMilliseconds != null ? rec.DurationMilliseconds + " ms" : "",
+    "開始日時": rec.StartTime,
+  }));
+  document.getElementById("logsResult").innerHTML = recordsTable(records);
 }
 
 async function doEnableDebug() {
@@ -2190,7 +2212,7 @@ async function doEnableDebug() {
 // (旧 doLimits は新ダッシュボード版に置換済 — 下部参照)
 
 function recordsTable(records) {
-  if (!records || !records.length) return `<div class="meta" style="padding:16px;text-align:center;font-size:12px">📭 該当データなし</div>`;
+  if (!records || !records.length) return `<div class="meta" style="padding:16px;text-align:center;font-size:12px">📭 該当するデータはありません</div>`;
   const cols = new Set();
   records.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
   const headers = Array.from(cols);

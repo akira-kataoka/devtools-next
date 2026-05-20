@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.34.0 (2026-05-20 15:40)** — 🚨 ユーザー要望 Phase 24: Metadata 一覧 / ApexLog 列名業務化 + recordsTable 空文言:
+  - **🐛 panel.js doMetadataList()**: 列名を SF API のままから「API 名 / ネームスペース / 管理状態 / 作成日 / 更新日」に日本語化、ManageableState を「未管理 / インストール済 (編集可) / インストール済 (読取専用) / 非推奨 / 削除済」マッピング、ネームスペース空欄に「(なし)」明示
+  - **🐛 panel.js doFetchLogs() (Apex ログ)**: 列名を「実行ユーザ / ステータス / アプリ / 操作 / ログサイズ / 実行時間 / 開始日時」に日本語化、Status を「✓ 成功 / ✗ エラー / ⚠ 警告」、LogLength を「N バイト」、DurationMilliseconds を「N ms」表示
+  - **🐛 panel.js Apex ログエラー context**: 「ApexLog 取得」→「Apex ログ取得」に
+  - **🐛 panel.js recordsTable 空状態**: 「📭 該当データなし」→「📭 該当するデータはありません」に ですます調
 - **v2.33.0 (2026-05-20 15:35)** — 🚨 ユーザー要望 Phase 23: API URL ビルダー / Metadata 一覧 タブ業務化:
   - **🐛 panel/tool.html API URL ビルダー**: apiObj placeholder を「オブジェクト API 名 (例: Account)」→「オブジェクトの API 名を入力してください (例: Account)」、▶ URL 生成 / URL コピー / curl コピー / ブラウザで開く 全 4 ボタンに機能説明 title 追加 (curl コピー: 「sid 含む」を明示)
   - **🐛 panel/tool.html API URL ビルダー結果ペイン**: 「REST URL」→「生成された REST URL」、「curl サンプル」→「curl コマンド サンプル」、「解説」→「解説 / 使い方」
