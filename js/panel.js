@@ -187,6 +187,36 @@ function setupDesignPicker() {
   refresh();
 }
 
+// v3.51.0: textarea にカーソル位置インジケータ (L:行 C:列) を装着
+// エラーメッセージの「3 行 5 列目」と照合しやすくする (Apex/REST/SOQL エディタ向け)
+function attachCursorPositionIndicator(textareaId) {
+  const ta = document.getElementById(textareaId);
+  if (!ta || ta.dataset.cursorPosAttached === "true") return;
+  ta.dataset.cursorPosAttached = "true";
+  // wrap で囲んで relative にして badge を絶対配置
+  const wrap = document.createElement("span");
+  wrap.className = "cursor-pos-wrap";
+  ta.parentNode.insertBefore(wrap, ta);
+  wrap.appendChild(ta);
+  const badge = document.createElement("span");
+  badge.className = "cursor-pos-badge";
+  badge.textContent = "L:1 C:1";
+  badge.title = "現在のカーソル位置 (行:列) — エラーメッセージの行/列番号と照合できます";
+  wrap.appendChild(badge);
+  const update = () => {
+    const value = ta.value;
+    const pos = ta.selectionStart || 0;
+    const before = value.substring(0, pos);
+    const line = (before.match(/\n/g) || []).length + 1;
+    const lastNl = before.lastIndexOf("\n");
+    const col = pos - (lastNl + 1) + 1;
+    const totalLines = (value.match(/\n/g) || []).length + 1;
+    badge.textContent = `L:${line}/${totalLines} C:${col}`;
+  };
+  ["input", "click", "keyup", "select", "focus"].forEach((ev) => ta.addEventListener(ev, update));
+  update();
+}
+
 // 入力欄に ✕ クリアボタンを後付けで追加する共通ヘルパー
 function attachClearButton(inputId) {
   const input = document.getElementById(inputId);
@@ -598,6 +628,10 @@ function bindEvents() {
   $on("btnLoadSoql", "click", loadSelectedQuery);
   // v2.87.0: SOQL オートコンプリート初期化 (Phase 78)
   setupSoqlAutocomplete();
+  // v3.51.0: SOQL / Apex textarea にカーソル位置インジケータ (L:行 C:列) を装着
+  attachCursorPositionIndicator("soqlText");
+  attachCursorPositionIndicator("apexCode");
+  attachCursorPositionIndicator("restBody");
   $on("soqlText", "keydown", (e) => {
     if (e.isComposing || e.keyCode === 229) return;
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") doSoql();

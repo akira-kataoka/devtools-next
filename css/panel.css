@@ -181,6 +181,23 @@ textarea {
   min-height: 140px;
   font: 12px/1.5 ui-monospace, Consolas, monospace;
 }
+/* v3.51.0: textarea カーソル位置インジケータ (L:行 C:列) */
+.cursor-pos-wrap { position: relative; display: block; }
+.cursor-pos-wrap > textarea { width: 100%; }
+.cursor-pos-badge {
+  position: absolute; right: 8px; bottom: 6px;
+  background: rgba(11,18,32,0.85); color: var(--fg-dim);
+  padding: 2px 8px; border-radius: 10px;
+  font: 10px ui-monospace, Consolas, monospace;
+  pointer-events: none;
+  border: 1px solid var(--line);
+  white-space: nowrap;
+  user-select: none;
+}
+.cursor-pos-wrap > textarea:focus + .cursor-pos-badge {
+  color: var(--accent);
+  border-color: var(--accent);
+}
 .meta { color: var(--fg-dim); font-size: 11px; }
 .code {
   flex: 1; overflow: auto; min-height: 100px;
