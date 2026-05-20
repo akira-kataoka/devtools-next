@@ -2632,10 +2632,36 @@ async function getObjectFields(objName) {
     const r = await sfFetch({ host: state.host, sid: state.sid,
       path: `/services/data/v${state.apiVersion}/sobjects/${encodeURIComponent(objName)}/describe` });
     if (!r.ok || !r.data || !Array.isArray(r.data.fields)) return [];
-    const fields = r.data.fields.map((f) => ({ name: f.name, label: f.label || "", type: f.type || "" }));
+    // v3.30.0: 参照先 (referenceTo) も取得して候補表示に活用
+    const fields = r.data.fields.map((f) => ({
+      name: f.name,
+      label: f.label || "",
+      type: f.type || "",
+      referenceTo: Array.isArray(f.referenceTo) ? f.referenceTo : []
+    }));
     _soqlAutocomplete.fieldsCache.set(objName, fields);
     return fields;
   } catch { return []; }
+}
+
+// v3.30.0: SOQL 候補表示のフィールド型 → アイコン マッピング
+function soqlTypeIcon(t) {
+  const lc = String(t || "").toLowerCase();
+  if (lc === "id") return "🆔";
+  if (lc === "reference") return "🔗";
+  if (lc === "boolean") return "☑️";
+  if (lc === "date" || lc === "datetime" || lc === "time") return "📅";
+  if (lc === "currency") return "💴";
+  if (lc === "percent") return "％";
+  if (lc === "double" || lc === "int" || lc === "integer" || lc === "long") return "🔢";
+  if (lc === "email") return "✉️";
+  if (lc === "phone") return "📞";
+  if (lc === "url") return "🔖";
+  if (lc === "textarea") return "📝";
+  if (lc === "picklist" || lc === "multipicklist") return "📋";
+  if (lc === "address") return "🏠";
+  if (lc === "location") return "📍";
+  return "🔹";
 }
 
 async function updateSoqlAutocomplete(textarea) {
@@ -2671,7 +2697,12 @@ async function updateSoqlAutocomplete(textarea) {
       candidates = fields
         .filter((f) => !q || f.name.toLowerCase().startsWith(q) || (f.label || "").toLowerCase().includes(q))
         .slice(0, 20)
-        .map((f) => ({ value: f.name, label: `${f.label || ""} (${f.type || ""})`, type: "field" }));
+        .map((f) => {
+          // v3.30.0: 参照型は参照先も表示 (例: 「取引先 (reference → Account)」)
+          const refSuffix = f.type === "reference" && f.referenceTo && f.referenceTo.length
+            ? ` → ${f.referenceTo.slice(0, 2).join("/")}` : "";
+          return { value: f.name, label: `${f.label || ""} (${f.type || ""}${refSuffix})`, type: "field", fieldType: f.type };
+        });
     }
   }
   if (!candidates.length) { hideSoqlAutocomplete(); return; }
@@ -2691,7 +2722,8 @@ function renderSoqlAutocomplete(textarea) {
   pop.style.display = "block";
   pop.innerHTML = _soqlAutocomplete.candidates
     .map((c, i) => {
-      const icon = c.type === "object" ? "📦" : "🔹";
+      // v3.30.0: field の場合は型別アイコン、object は 📦
+      const icon = c.type === "object" ? "📦" : soqlTypeIcon(c.fieldType);
       return `<div class="ac-item${i === _soqlAutocomplete.selectedIdx ? " selected" : ""}" data-idx="${i}">` +
         `<span class="ac-ico">${icon}</span><span class="ac-val">${escape(c.value)}</span>` +
         (c.label ? `<span class="ac-lbl">${escape(c.label)}</span>` : "") + `</div>`;
