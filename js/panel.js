@@ -2029,16 +2029,20 @@ async function getInspectedHref() {
 }
 
 async function reconnect() {
+  const unlock = lockBtn("btnReconnect");
+  document.getElementById("orgInfo").innerHTML = `<span class="meta">⏳ セッションを再取得しています…</span>`;
   const host = await getInspectedHost();
   if (!host || !isSalesforceHost(host)) {
-    document.getElementById("orgInfo").textContent = "非Salesforceタブ";
+    document.getElementById("orgInfo").innerHTML = `<span class="pill warn">Salesforce のタブではありません</span>`;
+    unlock();
     return;
   }
   state.host = host;
   state.apiHost = toApiHost(host);
   const session = await getSessionId(host);
   if (!session) {
-    document.getElementById("orgInfo").textContent = "sid 取得失敗";
+    document.getElementById("orgInfo").innerHTML = `<span class="pill err">sid Cookie の取得に失敗しました</span>`;
+    unlock();
     return;
   }
   const prevOrgId = state.orgId;
@@ -2059,6 +2063,7 @@ async function reconnect() {
   document.getElementById("orgInfo").innerHTML =
     `<span class="env-badge ${envClass}" title="${envLabel === "SBX" ? "Sandbox" : envLabel === "DEV" ? "Developer/Scratch" : "Production (本番)"}">${envLabel}</span> ` +
     `Org: ${escape(state.orgId)} @ ${escape(state.apiHost)}`;
+  unlock();
   // v2.6.0: 接続成功後に sObject 一覧を datalist に流し込み (オブジェクト入力欄の補完用)
   refreshSObjectDatalist();
 }

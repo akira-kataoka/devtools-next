@@ -8,6 +8,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.46.0 (2026-05-20 16:40)** — 🚨 ユーザー要望 Phase 36: reconnect 再接続ボタン disabled + 状態表示:
+  - **🐛 panel.js reconnect (再接続ボタン)**: 実行中に btnReconnect 無効化、orgInfo 領域に「⏳ セッションを再取得しています…」表示、SF タブ未検出時は「Salesforce のタブではありません」 pill、sid 失敗時は「sid Cookie の取得に失敗しました」 pill (ですます調)、成功時にボタン再有効化
+  - **🐛 panel.js exDownloadAll (CSV/Excel/JSON ダウンロード)**: 既存実装で「⏸ 取消」表記により実行中状態は明示済 (確認のみ)
+  - 全主要ボタン (12+) の実行中 disabled / loading 表示が統一完了
 - **v2.45.0 (2026-05-20 16:35)** — 🚨 ユーザー要望 Phase 35: 残ボタン disabled 統一 + lockBtn ヘルパー導入:
   - **🐛 panel.js lockBtn() ヘルパー追加**: ボタン id を渡すと無効化し、戻り値の関数で解除できる共通ヘルパー (DRY 化)
   - **🐛 panel.js doLimits / doMetadataList / doFetchLogs / doFetchLoginHistory / doGenerateDesign**: 5 関数全てに lockBtn を適用して実行中の二重クリック防止 (btnLimits / btnMetadata / btnFetchLogs / btnFetchLogin / btnDesignGen)
