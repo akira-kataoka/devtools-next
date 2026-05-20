@@ -171,6 +171,7 @@
           <button id="btnCopyCsv" title="クエリ結果を CSV としてクリップボードにコピーします (ダウンロード不要)">📋 CSV</button>
           <button id="btnExportCsv" title="クエリ結果を CSV ファイルとしてダウンロードします">📥 CSV</button>
           <button id="btnRunSoql" class="primary" title="SOQL クエリを実行します (Ctrl+Enter でも実行できます)">▶ 実行 (Ctrl+Enter)</button>
+          <button id="btnSoqlEvidence" title="現在の SOQL クエリと結果を Markdown 形式のエビデンスとしてダウンロードします (テスト工程の証跡用)">📸 エビデンス</button>
         </div>
         <textarea id="soqlText" rows="8" spellcheck="false" placeholder="SOQL クエリを入力してください (例: SELECT Id, Name FROM Account WHERE CreatedDate = LAST_N_DAYS:30 ORDER BY CreatedDate DESC LIMIT 50)">SELECT Id, Name, CreatedDate FROM Account ORDER BY CreatedDate DESC LIMIT 50</textarea>
         <div id="soqlMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
@@ -189,6 +190,7 @@
           <button id="btnInspectExportJson" title="レコードを JSON ファイルとしてダウンロードします">JSON</button>
           <button id="btnInspectExportCsv" title="レコードを CSV ファイルとしてダウンロードします">CSV</button>
           <button id="btnInspectOpenInOrg" title="このレコードを Salesforce 組織で開きます (新しいタブ)">レコードを開く</button>
+          <button id="btnInspectEvidence" title="現在のレコード詳細を Markdown 形式のエビデンスとしてダウンロードします (テスト工程の証跡用)">📸 エビデンス</button>
         </div>
         <div id="inspectMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
         <div class="inspector-layout">
