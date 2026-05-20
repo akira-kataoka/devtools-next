@@ -8,6 +8,12 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.29.0 (2026-05-20 15:15)** — 🚨 ユーザー要望 Phase 19: Inspector 履歴/inspectRef / 各タブ pill エラー文言:
+  - **🐛 panel.js Inspector 履歴戻る toast**: 「⏪ 戻る: Account:001…」→「⏪ 前のレコード (Account:001…) に戻りました」に詳細化
+  - **🐛 panel.js Inspector pill エラー**: 「未接続」→「Salesforce 未接続」、「有効な ID ではありません」→「有効な Salesforce ID ではありません (15 桁または 18 桁の英数字を入力してください)」、「KeyPrefix='X' のオブジェクトが見つかりません」→「Key Prefix 'X' のオブジェクトが見つかりませんでした」、「レコード取得失敗」→「レコードの取得に失敗しました」、「⏳ 取得中…」→「⏳ レコードを取得しています…」
+  - **🐛 panel.js ChangeSet/Export/API URL/Design/LoginHistory 未接続表示**: 「未接続」→「Salesforce 未接続」+ 補足説明、「describe 取得中…」→「describe 情報を取得しています…」、「Failed N」→「失敗 N 件」
+  - **🐛 panel.js Picker / 候補ロード**: 「⏳ 取得中…」→「⏳ 候補を取得しています…」
+  - **🐛 panel.js ブランドクリック title**: 「クリックで SOQL クエリ画面に戻る」→「クリックで SOQL クエリ画面に戻ります」
 - **v2.28.0 (2026-05-20 15:10)** — 🚨 ユーザー要望 Phase 18: キーボードショートカット toast / Inspector ドリル / parseId 結果:
   - **🐛 panel.js キーボードショートカット (Ctrl+Alt+I/Q/A/L/R/D)**: 切替時 toast を「inspector ビューに切り替え」→「🔍 レコード Inspector ビューに切り替えました」のように絵文字付き正式名称に統一 (6 ビュー)
   - **🐛 panel.js Inspector cell-id クリック**: tooltip 文言を「Click: Inspector で開く / ダブルクリック: コピー」→「クリックで Inspector に表示します / ダブルクリックでクリップボードにコピーします」に ですます調 詳細化、toast「Inspector で開く」→「Inspector で開きます」

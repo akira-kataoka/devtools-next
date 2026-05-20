@@ -222,7 +222,7 @@ function initHeader() {
   if (brand && brand.dataset.brandClick !== "true") {
     brand.dataset.brandClick = "true";
     brand.style.cursor = "pointer";
-    brand.title = "クリックで SOQL クエリ画面に戻る";
+    brand.title = "クリックで SOQL クエリ画面に戻ります";
     brand.addEventListener("click", () => switchToView("soql"));
   }
   // 既存に version badge が無ければ追加
@@ -531,7 +531,7 @@ async function csOnModeChange() {
 }
 
 async function csListOutbound() {
-  if (!state.sid) { document.getElementById("csListArea").innerHTML = `<div class="meta" style="padding:8px">未接続</div>`; return; }
+  if (!state.sid) { document.getElementById("csListArea").innerHTML = `<div class="meta" style="padding:8px">Salesforce 未接続です。先に「再接続」をクリックしてください</div>`; return; }
   // 送信変更セット: OutboundChangeSet オブジェクトは Tooling 経由
   const r = await runSoql({
     host: state.host, sid: state.sid, apiVersion: state.apiVersion, tooling: true,
@@ -573,10 +573,10 @@ async function csListDeployStatus() {
 }
 
 async function csListCandidates() {
-  if (!state.sid) { document.getElementById("csCandidates").innerHTML = `<div class="meta">未接続</div>`; return; }
+  if (!state.sid) { document.getElementById("csCandidates").innerHTML = `<div class="meta">Salesforce 未接続です</div>`; return; }
   const type = document.getElementById("csType").value;
   const root = document.getElementById("csCandidates");
-  root.innerHTML = `<div class="meta">⏳ 取得中…</div>`;
+  root.innerHTML = `<div class="meta">⏳ 候補を取得しています…</div>`;
 
   // メタデータ型 → SOQL/エンドポイント のマッピング
   let soql = null, tooling = true, mapFn = (r) => ({ name: r.Name, label: r.Name });
@@ -915,17 +915,17 @@ sf project deploy validate --source-dir force-app --target-org production --test
 const exState = { obj: null, fields: [], selected: new Set() };
 
 async function exLoadFields() {
-  if (!state.sid) { document.getElementById("exMeta").innerHTML = `<span class="pill err">未接続</span>`; return; }
+  if (!state.sid) { document.getElementById("exMeta").innerHTML = `<span class="pill err">Salesforce 未接続</span>`; return; }
   const obj = document.getElementById("exObj").value.trim();
   if (!obj) return;
   const exMetaEl = document.getElementById("exMeta");
-  exMetaEl.textContent = "⏳ describe 取得中…";
+  exMetaEl.textContent = "⏳ describe 情報を取得しています…";
   exMetaEl.classList.add("loading-pulse");
 
   const r = await sfFetch({ host: state.host, sid: state.sid, path: `/services/data/v${state.apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
   if (!r.ok) {
     exMetaEl.classList.remove("loading-pulse");
-    exMetaEl.innerHTML = `<span class="pill err">describe 失敗 HTTP ${r.status}</span> ${escape(JSON.stringify(r.data).substring(0, 200))}`;
+    exMetaEl.innerHTML = `<span class="pill err">describe の取得に失敗しました (HTTP ${r.status})</span> ${escape(JSON.stringify(r.data).substring(0, 200))}`;
     return;
   }
   // queryable で createable/updateable/calculated 等の判別はメモ。SOQL select 対象は describe.fields の中で
@@ -1340,7 +1340,7 @@ function apiBuildUrl() {
     `<p>${escape(API_HELP[op] || "")}</p>` +
     (note ? `<blockquote>${escape(note)}</blockquote>` : "") +
     (body ? `<p><b>サンプル body:</b></p><pre><code>${escape(body)}</code></pre>` : "");
-  document.getElementById("apiBuildMeta").innerHTML = `<span class="pill ok">${method}</span> ${escape(op)} ${state.sid ? "" : `<span class="pill warn">未接続: ホストはプレースホルダー</span>`}`;
+  document.getElementById("apiBuildMeta").innerHTML = `<span class="pill ok">${method}</span> ${escape(op)} ${state.sid ? "" : `<span class="pill warn">Salesforce 未接続: ホスト名はプレースホルダーです</span>`}`;
 }
 
 async function apiCopyUrl() {
@@ -1371,7 +1371,7 @@ function inspectGoBack() {
   const prev = inspectHistory.pop();
   if (prev) {
     document.getElementById("inspectRef").value = `${prev.obj}:${prev.id}`;
-    panelToast(`⏪ 戻る: ${prev.obj}:${prev.id}`, { kind: "ok" });
+    panelToast(`⏪ 前のレコード (${prev.obj}:${prev.id}) に戻りました`, { kind: "ok" });
     doInspect({ skipHistory: true, restoreScrollTop: prev.scrollTop || 0 });
   }
   updateInspectBackButton();
@@ -1430,7 +1430,7 @@ async function inspectFromTab() {
 
 let inspectRunId = 0;
 async function doInspect(opts = {}) {
-  if (!state.sid) { document.getElementById("inspectMeta").innerHTML = `<span class="pill err">未接続</span>`; return; }
+  if (!state.sid) { document.getElementById("inspectMeta").innerHTML = `<span class="pill err">Salesforce 未接続</span>`; return; }
   const raw = document.getElementById("inspectRef").value.trim();
   if (!raw) return;
   // 現在のレコードを履歴に push してから新規取得 (戻るボタン用)
@@ -1450,7 +1450,7 @@ async function doInspect(opts = {}) {
   }
   const myId = ++inspectRunId;
   const meta = document.getElementById("inspectMeta");
-  meta.textContent = `⏳ 取得中… #${myId}`;
+  meta.textContent = `⏳ レコードを取得しています… #${myId}`;
   meta.classList.add("loading-pulse");
 
   let objName = null, id = null;
@@ -1461,7 +1461,7 @@ async function doInspect(opts = {}) {
   }
   if (!/^[a-zA-Z0-9]{15,18}$/.test(id)) {
     meta.classList.remove("loading-pulse");
-    meta.innerHTML = `<span class="pill err">有効な ID ではありません</span>`;
+    meta.innerHTML = `<span class="pill err">有効な Salesforce ID ではありません (15 桁または 18 桁の英数字を入力してください)</span>`;
     return;
   }
 
@@ -1477,7 +1477,7 @@ async function doInspect(opts = {}) {
     }
     if (!objName) {
       meta.classList.remove("loading-pulse");
-      meta.innerHTML = `<span class="pill err">KeyPrefix='${escape(prefix)}' のオブジェクトが見つかりません</span>。'<Object>:<Id>' 形式で指定してください`;
+      meta.innerHTML = `<span class="pill err">Key Prefix '${escape(prefix)}' のオブジェクトが見つかりませんでした</span>。『&lt;Object&gt;:&lt;Id&gt;』形式 (例: Account:001...) で指定してください`;
       return;
     }
   }
@@ -1502,7 +1502,7 @@ async function doInspect(opts = {}) {
       : recR.status === 403
       ? `アクセス権限不足 (オブジェクト/レコードの共有設定を確認)`
       : `HTTP ${recR.status}`;
-    meta.innerHTML = `<span class="pill err">レコード取得失敗: ${escape(hint)}</span> ` +
+    meta.innerHTML = `<span class="pill err">レコードの取得に失敗しました: ${escape(hint)}</span> ` +
       `<span class="meta">describe (${escape(objName)}) は成功、レコード本体のみ失敗</span>`;
     return;
   }
@@ -1753,7 +1753,7 @@ let lastDesign = null;
 let designRunId = 0;
 
 async function doGenerateDesign() {
-  if (!state.sid) { document.getElementById("designMeta").innerHTML = `<span class="pill err">未接続</span> Salesforce タブで再接続してください`; return; }
+  if (!state.sid) { document.getElementById("designMeta").innerHTML = `<span class="pill err">Salesforce 未接続</span> Salesforce タブで再接続してください`; return; }
   const type = document.getElementById("designType").value;
   const obj = document.getElementById("designObj").value.trim();
   const format = document.getElementById("designFormat").value;
@@ -1855,7 +1855,7 @@ async function doGenerateDesign() {
     } else if (/が見つかりません|を入力してください/.test(msg)) {
       meta.innerHTML = `<span class="pill warn">入力が必要</span> ${escape(msg)}`;
     } else {
-      meta.innerHTML = `<span class="pill err">失敗</span> ${escape(msg)} (${dt}ms)`;
+      meta.innerHTML = `<span class="pill err">生成に失敗しました</span> ${escape(msg)} (${dt}ms)`;
     }
     preview.innerHTML = "";
     source.textContent = "";
@@ -2545,7 +2545,7 @@ async function doFetchLoginHistory() {
   const limit = parseInt(document.getElementById("loginLimit").value, 10) || 50;
   const statusFilter = document.getElementById("loginStatus").value;
   const meta = document.getElementById("loginMeta");
-  meta.textContent = "⏳ 取得中…";
+  meta.textContent = "⏳ ログイン履歴を取得しています…";
   meta.classList.add("loading-pulse");
 
   let where = "";
@@ -2587,7 +2587,7 @@ async function doFetchLoginHistory() {
   meta.classList.remove("loading-pulse");
   meta.innerHTML = `<span class="pill ok">${recs.length} 件</span> ` +
     `<span class="pill ok">Success ${successCount}</span> ` +
-    `<span class="pill err">Failed ${failedCount}</span> / ${dt}ms`;
+    `<span class="pill err">失敗 ${failedCount} 件</span> / ${dt}ms`;
   document.getElementById("loginResult").innerHTML = loginHistoryTable(rows);
 }
 
