@@ -1558,14 +1558,14 @@ function renderInspectorFields() {
     shown++;
     let valHtml;
     if (isNull) {
-      valHtml = `<div class="fval null">(null)</div>`;
+      valHtml = `<div class="fval null" title="値が設定されていません (null)">(空)</div>`;
     } else if (typeof v === "boolean") {
-      valHtml = `<div class="fval bool-${v ? "true" : "false"}">${v ? "✓ true" : "✗ false"}</div>`;
+      valHtml = `<div class="fval bool-${v ? "true" : "false"}" title="raw 値: ${v}">${v ? "✓ はい (true)" : "✗ いいえ (false)"}</div>`;
     } else if ((f.type === "int" || f.type === "double" || f.type === "currency" || f.type === "percent") && typeof v === "number") {
       // 3桁区切り + 通貨/パーセントなどのヒント
       const formatted = v.toLocaleString("ja-JP");
       const unit = f.type === "currency" ? " ¥" : (f.type === "percent" ? " %" : "");
-      valHtml = `<div class="fval" title="raw: ${escape(String(v))}">${escape(formatted)}${escape(unit)}</div>`;
+      valHtml = `<div class="fval" title="raw 値: ${escape(String(v))}">${escape(formatted)}${escape(unit)}</div>`;
     } else if ((f.type === "date" || f.type === "datetime") && typeof v === "string") {
       // ISO 文字列を読みやすく整形 (date: YYYY-MM-DD, datetime: YYYY-MM-DD HH:mm)
       let display = v;
@@ -1573,7 +1573,7 @@ function renderInspectorFields() {
       if (m) {
         display = f.type === "datetime" && m[2] ? `${m[1]} ${m[2]}` : m[1];
       }
-      valHtml = `<div class="fval" title="raw: ${escape(v)}">${escape(display)}</div>`;
+      valHtml = `<div class="fval" title="ISO raw 値: ${escape(v)}">${escape(display)}</div>`;
       // 参照先オブジェクト名を describe から取得 (KeyPrefix 逆引きに頼らない確実な方法)
       const refObj = (f.referenceTo || [])[0] || "";
       const refLabel = refObj ? `<span class="ref-target-label">→ ${escape(refObj)}</span>` : "";
@@ -1585,10 +1585,10 @@ function renderInspectorFields() {
     }
 
     const flags = [];
-    if (f.unique) flags.push(`<span class="badge-unique">U</span>`);
-    if (!f.nillable && !f.defaultedOnCreate && f.createable) flags.push(`<span class="badge-required">必</span>`);
-    if (f.type === "reference") flags.push(`<span class="badge-ref">→</span>`);
-    if (f.calculated) flags.push(`<span style="color:var(--fg-dim);font-size:9px">f(x)</span>`);
+    if (f.unique) flags.push(`<span class="badge-unique" title="一意 (Unique) 制約あり">U</span>`);
+    if (!f.nillable && !f.defaultedOnCreate && f.createable) flags.push(`<span class="badge-required" title="必須項目 (入力必須)">必</span>`);
+    if (f.type === "reference") flags.push(`<span class="badge-ref" title="参照項目 (他オブジェクトへの Lookup または Master-Detail)">→</span>`);
+    if (f.calculated) flags.push(`<span style="color:var(--fg-dim);font-size:9px" title="計算項目 (formula)">f(x)</span>`);
 
     html.push(`<div class="field-row">
       <div>
@@ -1694,15 +1694,17 @@ function renderLimitsList() {
   const critical = rows.filter((r) => r.pct >= 70).slice(0, 5);
   const sumEl = document.getElementById("limitsSummary");
   if (critical.length) {
-    sumEl.innerHTML = critical.map((r) => `
-      <div class="limit-card ${r.pct >= 90 ? "critical" : "warn"}">
+    sumEl.innerHTML = critical.map((r) => {
+      const status = r.pct >= 90 ? "🚨 危険水準" : "⚠ 注意水準";
+      return `
+      <div class="limit-card ${r.pct >= 90 ? "critical" : "warn"}" title="${escape(r.name)}: 使用 ${r.used.toLocaleString()} / 上限 ${r.max.toLocaleString()} (${r.pct}%)">
         <div class="title">${escape(r.name)}</div>
         <div class="val">${r.pct}%</div>
-        <div class="sub">${r.used.toLocaleString()} / ${r.max.toLocaleString()}</div>
-      </div>
-    `).join("");
+        <div class="sub">${r.used.toLocaleString()} / ${r.max.toLocaleString()} <span style="opacity:0.7">(${status})</span></div>
+      </div>`;
+    }).join("");
   } else {
-    sumEl.innerHTML = `<div class="limit-card"><div class="title">健全</div><div class="val" style="color:var(--ok)">✓ OK</div><div class="sub">使用率 70% を超える項目はありません</div></div>`;
+    sumEl.innerHTML = `<div class="limit-card"><div class="title">健全</div><div class="val" style="color:var(--ok)">✓ 問題なし</div><div class="sub">使用率 70% を超える項目はありません</div></div>`;
   }
 
   // 一覧

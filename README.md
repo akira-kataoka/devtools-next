@@ -8,6 +8,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.32.0 (2026-05-20 15:30)** — 🚨 ユーザー要望 Phase 22: Limits カード + Inspector 値表示 細部:
+  - **🐛 panel.js Limits 詳細カード**: critical (pct >= 90) に「🚨 危険水準」、warn (70-89) に「⚠ 注意水準」のステータスラベル付与、カード自体にも tooltip 追加、健全時「✓ OK」→「✓ 問題なし」
+  - **🐛 panel.js Inspector 値表示**: 「(null)」→「(空)」+ tooltip「値が設定されていません (null)」、boolean を「✓ true / ✗ false」→「✓ はい (true) / ✗ いいえ (false)」、tooltip「raw:」→「raw 値:」、datetime tooltip「raw:」→「ISO raw 値:」
+  - **🐛 panel.js Inspector 属性フラグ**: U / 必 / → / f(x) の 4 バッジに tooltip 追加 (「一意 (Unique) 制約あり」「必須項目 (入力必須)」「参照項目 (他オブジェクトへの Lookup または Master-Detail)」「計算項目 (formula)」)
 - **v2.31.0 (2026-05-20 15:25)** — 🚨 ユーザー要望 Phase 21: loginAs / Inspector 表示細部 ですます調:
   - **🐛 popup.js loginAs 検索**: 「検索中…」→「⏳ ユーザを検索しています…」、エラー文「❌ HTTP N: ...」→「❌ ユーザ検索に失敗しました (HTTP N): ...」、空結果ヒント「ユーザーがいません」→「ユーザは見つかりませんでした」+ 補足を ですます調 詳細化、「Modify All Data / View All Users」を業務語注釈付きに、「Active なユーザー」→「有効なユーザ」
   - **🐛 popup.js user-action**: 英語「Login」→「ログイン」+ tooltip「このユーザとしてログインします」追加
