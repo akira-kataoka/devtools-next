@@ -17,6 +17,12 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.62.0 (2026-05-20 19:47)** — 🚨 ユーザー要望 Phase 53: 説明列の長文 truncate + fmtTrunc ヘルパー導入:
+  - **🔤 design-docs.js fmtTrunc ヘルパー追加**: 長文を指定文字数 (既定 200 文字) で切り詰めて末尾に「 … [+N 文字省略]」を付与。3 桁区切りで残り文字数も表示
+  - **🐛 buildObjectDef**: ヘルプテキスト 150 文字 / 説明 200 文字で truncate
+  - **🐛 buildProfileList / buildPermSetList / buildFlowList / buildValidationRuleList / buildRecordTypeList / buildCustomSettingList / buildFieldSetList**: 「説明」列を 200 文字 truncate (RecordType・ValidationRule では「説明 (開発者向け)」、CustomSetting・FieldSet は通常「説明」)
+  - **🐛 buildValidationRuleList エラーメッセージ列**: 300 文字 truncate (一般的なユーザ向けメッセージは 200 文字より長くなることがあるため)
+  - **📐 buildRecordTypeList カラム名統一**: 「API名 (DeveloperName)」→「API 名 (DeveloperName)」(半角スペース)
 - **v2.61.0 (2026-05-20 19:43)** — 🚨 ユーザー要望 Phase 52: FLS レポート / ObjectDef 桁/精度 / AccessControl 件数:
   - **🐛 buildFlsReport**: 列を「編集可 (Edit) 件数 / 編集可 (Edit) 内訳 / 参照のみ (Read) 件数 / 参照のみ (Read) 内訳 / アクセス無し 件数」に拡張。各項目が何件のプロファイル/権限セットでどのアクセス許可になっているか一目で分かる
   - **🐛 buildObjectDef 桁/精度列**: 「123」→「123 文字」、「10,2」→「精度 10 / 小数 2」と単位付きに、カスタム列「Yes/No」→「○ カスタム / − 標準」絵文字付き

@@ -54,6 +54,15 @@ function fmtBytes(n) {
   return `${(v / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
 
+// 長文文字列を指定文字数で切り詰める ("ABC...XYZ" → "ABC... [+N 文字省略]")
+// 設計書の「説明」など長文セルで一目可読性を上げるため
+function fmtTrunc(s, max = 200) {
+  if (s == null) return "";
+  const str = String(s);
+  if (str.length <= max) return str;
+  return str.substring(0, max) + ` … [+${fmtNum(str.length - max)} 文字省略]`;
+}
+
 export async function generateDesign({ type, host, sid, apiVersion, obj, format, onProgress }) {
   let result;
   const progress = onProgress || (() => {});
@@ -117,8 +126,8 @@ async function buildObjectDef({ host, sid, apiVersion, obj }) {
     "参照先": (f.referenceTo || []).join(", "),
     "選択リスト値": (f.picklistValues || []).slice(0, 30).map((p) => p.value + (p.active ? "" : "(無効)")).join(" / "),
     "既定値": f.defaultValue != null ? String(f.defaultValue) : "",
-    "ヘルプテキスト": f.inlineHelpText || "",
-    "説明": f.description || "",
+    "ヘルプテキスト": fmtTrunc(f.inlineHelpText || "", 150),
+    "説明": fmtTrunc(f.description || "", 200),
   }));
 
   // メタ情報
@@ -195,7 +204,7 @@ async function buildProfileList({ host, sid, apiVersion }) {
     "プロファイル名": p.Name,
     "ライセンス": p.UserLicense ? p.UserLicense.Name : "(なし)",
     "ユーザ種別": userTypeMap[p.UserType] || p.UserType || "",
-    "説明": p.Description || "",
+    "説明": fmtTrunc(p.Description || "", 200),
     "作成日": fmtDate(p.CreatedDate),
     "更新日": fmtDate(p.LastModifiedDate),
   }));
@@ -231,7 +240,7 @@ async function buildPermSetList({ host, sid, apiVersion }) {
     "ライセンス": p.License ? p.License.Name : "(なし: 機能限定)",
     "ネームスペース": p.NamespacePrefix || "(なし: カスタム)",
     "種別": p.IsCustom ? "カスタム" : "標準/パッケージ",
-    "説明": p.Description || "",
+    "説明": fmtTrunc(p.Description || "", 200),
     "更新日": fmtDate(p.LastModifiedDate),
   }));
   const legend = [
@@ -375,7 +384,7 @@ async function buildFlowList({ host, sid, apiVersion }) {
     "種別": processTypeLabel(f.ProcessType),
     "アクティブ": f.IsActive ? "○ 稼働中" : "− 停止",
     "バージョン": f.VersionNumber != null ? `v${f.VersionNumber}` : "",
-    "説明": f.Description || "",
+    "説明": fmtTrunc(f.Description || "", 200),
     "更新日": fmtDate(f.LastModifiedDate),
   }));
   return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${fmtNum(rows.length)} 件 / 種別は業務用語と原文を併記しています。Process Builder は Salesforce 公式アナウンスにより段階的に廃止予定です` };
@@ -396,8 +405,8 @@ async function buildValidationRuleList({ host, sid, apiVersion, obj }) {
     "ルール名 (API)": v.ValidationName,
     "有効": v.Active ? "○ 有効" : "− 無効",
     "エラー表示位置": v.ErrorDisplayField ? `項目: ${v.ErrorDisplayField}` : "ページ上部 (全体)",
-    "エラーメッセージ": v.ErrorMessage || "",
-    "説明 (開発者向け)": v.Description || "",
+    "エラーメッセージ": fmtTrunc(v.ErrorMessage || "", 300),
+    "説明 (開発者向け)": fmtTrunc(v.Description || "", 200),
     "更新日": fmtDate(v.LastModifiedDate),
   }));
   const legend = [
@@ -425,15 +434,15 @@ async function buildRecordTypeList({ host, sid, apiVersion, obj }) {
     soql: `SELECT Id, Name, DeveloperName, SobjectType, IsActive, Description, BusinessProcessId FROM RecordType ${where} ORDER BY SobjectType, DeveloperName LIMIT 500`,
   });
   if (!r.ok) throw apiError("レコードタイプの取得に失敗しました", r);
-  const headers = ["No", "オブジェクト", "API名 (DeveloperName)", "ラベル (画面表示名)", "有効", "営業プロセス連携", "説明 (開発者向け)"];
+  const headers = ["No", "オブジェクト", "API 名 (DeveloperName)", "ラベル (画面表示名)", "有効", "営業プロセス連携", "説明 (開発者向け)"];
   const rows = (r.data.records || []).map((rt, i) => ({
     "No": i + 1,
     "オブジェクト": rt.SobjectType,
-    "API名 (DeveloperName)": rt.DeveloperName,
+    "API 名 (DeveloperName)": rt.DeveloperName,
     "ラベル (画面表示名)": rt.Name,
     "有効": rt.IsActive ? "○ 有効" : "− 無効",
     "営業プロセス連携": rt.BusinessProcessId ? `あり (${rt.BusinessProcessId.substring(0, 15)})` : "なし",
-    "説明 (開発者向け)": rt.Description || "",
+    "説明 (開発者向け)": fmtTrunc(rt.Description || "", 200),
   }));
   const legend = [
     ["レコードタイプとは", "同じオブジェクト内で異なるピックリスト値・ページレイアウト・営業プロセスを使い分ける仕組み"],
@@ -469,7 +478,7 @@ async function buildFieldSetList({ host, sid, apiVersion, obj }) {
     "No": i + 1,
     "API 名": fs.DeveloperName,
     "ラベル": fs.MasterLabel,
-    "説明": fs.Description || "",
+    "説明": fmtTrunc(fs.Description || "", 200),
   }));
   return {
     title: `フィールドセット一覧: ${obj}`,
@@ -496,7 +505,7 @@ async function buildCustomSettingList({ host, sid, apiVersion }) {
     "API 名": c.DeveloperName + "__c",
     "ラベル": c.MasterLabel,
     "種別": typeMap[c.CustomSettingsType] || c.CustomSettingsType,
-    "説明": c.Description || "",
+    "説明": fmtTrunc(c.Description || "", 200),
   }));
   const legend = [
     ["カスタム設定とは", "Apex/フロー/数式から高速にアクセスできるキー値ストア。標準オブジェクトより SOQL Limit を消費しない"],
