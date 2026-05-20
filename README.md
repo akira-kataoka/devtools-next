@@ -4,6 +4,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.75.0 (2026-05-20 10:35)** — README に Picker キーボード操作 & focus 戻りテスト手順追加:
+  - **📖 「Picker キーボード操作 & focus 戻りテスト手順」セクション追加**: Tab → Enter で Picker 起動 → ↑↓/Home/End/PageUp/PageDown/Enter/Esc 全キーボード操作確認 → close 後の `document.activeElement` 復帰確認 (DevTools Console での確認方法込み)
+  - **🧪 Picker reload で focusReturnTarget 維持**: reload は overlay 内 items 再描画のみで overlay 自体は不変 → focusReturnTarget も維持 (修正不要)
+  - **🧪 Org 切替時 inspectRef/soqlText input 値持続**: HTML 直書き要素で innerHTML 全置換しないため Org 切替後も同一 DOM 要素・値継続 (修正不要)
+  - **🧪 .panel-toast 画面外残り**: `switchToView()` 冒頭で `document.querySelectorAll(".panel-toast").forEach(t => t.remove())` 実装済 (v1.48.0 - 修正不要)
 - **v1.74.0 (2026-05-20 10:30)** — Picker focusReturnTarget DOM 接続チェック追加:
   - **🐛 Picker close 時 focusReturnTarget が detached element だった場合の防御**: `document.body.contains(focusReturnTarget)` でツリー存在を確認、ダメなら focus() を呼ばない。**Org 切替や switchToView で呼び元 input が再生成された場合の "focus into thin air" 問題を予防**
   - **🧪 nav-btn.active:focus-visible outline #fff のコントラスト**: 背景 `var(--bg3)` = `#142447` 上に `#fff` outline → コントラスト比 約 13:1 で WCAG AA (4.5:1) / AAA (7:1) 両基準クリア
@@ -619,6 +624,23 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 4. 結果 pre / div 内をマウスホイールで上下スクロール
 5. FPS 表示が 50〜60 fps を維持していれば最適化 OK (10〜30 fps だと再描画ボトルネック)
 6. 比較したい場合は DevTools Console で `document.getElementById("apexResult").style.contain = "none"` → スクロール → 戻す
+
+### 🧪 Picker キーボード操作 & focus 戻りテスト手順 (v1.74.0+)
+
+Picker モーダルのアクセシビリティ確認:
+
+1. tool.html を開く → 接続 → Inspector または SOQL ビューへ
+2. **Picker 起動**: 「オブジェクト選択」等の Picker 起動ボタンに **Tab キーで到達** → `Enter` または `Space` で Picker 開く
+3. **キーボード操作**:
+   - `↑ ↓` で行選択
+   - `Home / End` で先頭・末尾ジャンプ
+   - `PageUp / PageDown` で 10 行移動
+   - `Enter` で現在ハイライト行を選択 → close
+   - `Esc` でキャンセル close
+4. **focus 戻り確認**:
+   - Picker close 後、`document.activeElement` が **元のトリガボタン** (例 `btnPickObject`) に戻る
+   - DevTools Console で `document.activeElement.id` を確認
+5. **detached 防御 (v1.74.0)**: Org 切替で input が再生成されたケースでも、エラーなく Picker は閉じる (`document.body.contains` チェック)
 
 ### 🧪 401 INVALID_SESSION_ID テスト手順
 
