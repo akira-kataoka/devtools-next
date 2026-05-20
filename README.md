@@ -8,6 +8,17 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.16.0 (2026-05-20 14:10)** — 🚨 ユーザー要望 Phase 6: プロファイル/権限セット/カスタム設定/FLS マトリクス + README 解説:
+  - **🐛 buildProfileList**: ユーザ種別 (UserType) 8 種類を日本語+原文併記、凡例セクション 4 項目追加 (プロファイルとは / ライセンス / ユーザ種別 / 設計指針)。Spring '26 のプロファイル機能廃止予告も note に
+  - **🐛 buildPermSetList**: 列名業務化 (「ラベル (画面表示名)」「ネームスペース」「種別」)、IsCustom を「カスタム/標準/パッケージ」に、凡例 5 項目追加
+  - **🐛 buildCustomSettingList**: CustomSettingsType を「List 型 (組織共通の定数表)」「Hierarchy 型 (組織/プロファイル/ユーザ毎に上書き可)」と日本語化、凡例 4 項目 (CustomMetadata との違いも明記)
+  - **🐛 buildFieldPermMatrix**: 凡例を業務担当者向けに大幅拡充 (記号/列マーカー/必須列/除外条件)。「FLS とは何か」を最初に明示
+  - **📚 README に「設計書 22 種類 業務向け詳細解説」テーブル追加**: 各設計書が何を出力し業務でどう使うかを 1-2 行で
+- **v2.15.0 (2026-05-20 14:05)** — 🚨 ユーザー要望 Phase 5: 入力規則/レコードタイプ/LWC + mini-panel 日本語:
+  - **🐛 buildValidationRuleList**: 凡例セクション追加 (4 項目)、列名業務化 (「ルール名 (API)」「説明 (開発者向け)」)、有効/無効を○/−で明示、エラー表示位置を「項目: XXX」「ページ上部 (全体)」に
+  - **🐛 buildRecordTypeList**: 凡例セクション (レコードタイプとは / 有効 / 営業プロセス連携 / 割当て の 4 項目)、BusinessProcessId を「あり/なし」表示、列名業務化
+  - **🐛 buildLwcDetail**: 凡例セクション追加、形式 (html/js/xml/css/svg/json) に役割注釈、IsExposed を「○ 公開/− 非公開」に
+  - **🐛 content.js (mini-panel)**: 8 箇所の error/success メッセージを ですます調 に統一
 - **v2.14.0 (2026-05-20 13:50)** — 🚨 ユーザー要望 Phase 4: Flow / Apex 設計書業務用語化:
   - **🐛 buildFlowList**: ProcessType を業務用語の日本語+原文併記マップ追加 (12 種類):
     - `AutoLaunchedFlow` → `自動起動フロー (Autolaunched)`、`Flow` → `画面フロー (Screen)`、`Workflow` → `ワークフロー (Workflow Rule)`、`InvocableProcess` → `プロセスビルダー (Invocable Process)` 等
@@ -751,6 +762,37 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 ```
 
 ---
+
+### 📚 設計書 22 種類 業務向け詳細解説 (v2.16.0 拡充)
+
+各設計書が「何を出力し」「業務でどう使えるか」を 1-2 行で。Phase 1-6 で各設計書に凡例セクションを内蔵済 (ツール内で読める)。
+
+| # | 設計書名 | 何を出力するか | 業務での使い所 |
+|---|---|---|---|
+| 1 | **オブジェクト定義書 (objectDef)** | 1 オブジェクトのサマリ + 全項目 17 列 (型/必須/参照先/作成可/更新可/暗号化/ヘルプ等) + 子リレーション + RecordType | 開発前の項目仕様確認 / 監査向け項目台帳 / インポート前のレイアウト把握 |
+| 2 | **プロファイル詳細書 (profileDetail)** | 1 プロファイル または権限セットの 9 シート (Object/FLS/System/Apex/VF/Tab/RecordType/App 権限) | 監査時の権限スナップショット / ライセンス棚卸 / プロファイル統廃合検討 |
+| 3 | **FLS レポート (flsReport)** | 全項目 × Profile/PermSet を縦持ちで一覧 | 「この項目を見られるのは誰か」を縦串で確認 / SOX 監査資料 |
+| 4 | **フィールド権限マトリクス (fieldPermMatrix)** | 行=項目、列=Profile (👤) / PermSet (🔑)、セル RW/R-/-- + 必須列 | 項目アクセスの組織横断棚卸 / 改修前後の差分確認 (Excel diff) |
+| 5 | **オブジェクト権限マトリクス (objectPermMatrix)** | 行=オブジェクト、列=Profile/PermSet、セル CRUDVM 6 桁 (Read/Create/Edit/Delete/ViewAll/ModifyAll) | オブジェクトレベルの全権限可視化 / 統制レポート |
+| 6 | **プロファイル一覧 (profileList)** | 全 Profile のライセンス・ユーザ種別・更新日 | プロファイル数の棚卸 / 不要プロファイル削除候補抽出 |
+| 7 | **権限セット一覧 (permsetList)** | 全 PermissionSet (プロファイル付随除く) のライセンス・種別 | 権限セット運用整理 / Spring '26 後の権限セット移行計画 |
+| 8 | **Apex クラス一覧 (apexClassList)** | 全 ApexClass のステータス・コード行数・API バージョン | 6MB Apex Limit の進捗把握 / 古い API バージョンクラスの一覧化 |
+| 9 | **Apex トリガ一覧 (apexTriggerList)** | 全 Trigger × 7 イベント (BI/AI/BU/AU/BD/AD/AUD) の有無 | トリガ実行順制御の調査 / 1 オブジェクト 1 トリガ原則の遵守確認 |
+| 10 | **フロー一覧 (flowList)** | アクティブ Flow を業務種別 (画面/自動起動/レコード起動等) 日本語付きで列挙 | Process Builder 廃止対応の進捗 / フロー責任者の洗い出し |
+| 11 | **入力規則一覧 (validationRuleList)** | ValidationRule + エラー表示位置・エラーメッセージ全文 | 業務ルールの文書化 / 「保存できない理由」のユーザ説明資料 |
+| 12 | **レコードタイプ一覧 (recordTypeList)** | RecordType の有効/無効・営業プロセス連携状況 | レコードタイプ整理 / プロファイル別割当て棚卸の前準備 |
+| 13 | **フィールドセット一覧 (fieldSetList)** | 指定オブジェクトの FieldSet 定義 | LWC/VF 連携時に動的項目セットを使っている箇所の確認 |
+| 14 | **カスタム設定一覧 (customSettingList)** | CustomObject から CustomSettingsType=List/Hierarchy のみ抽出 | レガシー資産確認 / カスタムメタデータ型への移行候補抽出 |
+| 15 | **アプリ一覧 (appList)** | AppDefinition + AppMenuItem | App Launcher に出ているアプリの完全把握 |
+| 16 | **アクセスコントロール定義書 (accessControl)** | OWD (オブジェクト毎の組織既定共有設定) + UserRole 階層 + 凡例 | 共有設計レビュー / セキュリティ監査の必須資料 |
+| 17 | **フロー詳細書 (flowDetail)** | 1 Flow を要素 14 種類 (Decision/Action/Record 操作等) に分解 | 担当者交代時の業務ロジック引継ぎ |
+| 18 | **Apex 詳細書 (apexDetail)** | SymbolTable から methods / properties / innerClasses を抽出 | コードレビュー前の API 一覧把握 |
+| 19 | **LWC 設計図 (lwcDetail)** | バンドル内全ファイル (html/js/xml/css/svg/json) + 公開設定 | LWC 改修着手前の構成確認 / IsExposed の状況把握 |
+| 20 | **ER 図 (erDiagram)** | Mermaid 形式で Master-Detail (実線) と Lookup (点線) を区別 | データモデル説明資料 / Mermaid Live Editor で SVG/PNG 出力可 |
+| 21 | **Apex メソッド呼出ツリー (apexCallTree)** | クラス間呼出関係 (SymbolTable ベース) | 影響範囲調査 / リファクタ前の依存把握 |
+| 22 | **Limits ダッシュボード (limitsDashboard)** | 組織の API/Storage/Apex CPU 等の Limit 利用状況 | 容量増設タイミングの判断 / 月次レポート |
+
+各設計書は 6 形式 (Markdown / HTML / Excel SpreadsheetML / CSV / TSV / JSON) でエクスポート可能。ツール上のプレビューには **0. 凡例** セクションが自動表示され、業務担当者でも読めるようになっています。
 
 ### 🧪 設計書ジェネレータ 22 種類 手動テストガイド
 

@@ -158,21 +158,41 @@ async function buildProfileList({ host, sid, apiVersion }) {
     host, sid, apiVersion,
     soql: `SELECT Id, Name, UserLicense.Name, UserType, CreatedDate, LastModifiedDate, Description FROM Profile ORDER BY Name LIMIT 200`,
   });
-  if (!r.ok) throw apiError("Profile 取得", r);
-  const headers = ["No", "プロファイル名", "ライセンス", "UserType", "説明", "更新日"];
+  if (!r.ok) throw apiError("プロファイルの取得に失敗しました", r);
+  // UserType の業務用語マップ
+  const userTypeMap = {
+    "Standard": "標準ユーザ (Standard)",
+    "PowerPartner": "パワーパートナー (PowerPartner)",
+    "PowerCustomerSuccess": "顧客ポータルユーザ (PowerCustomerSuccess)",
+    "CustomerSuccess": "顧客ポータルユーザ (CustomerSuccess)",
+    "Guest": "ゲスト (Guest)",
+    "CSPLitePortal": "サービスクラウドポータル (CSPLitePortal)",
+    "CspLitePortal": "サービスクラウドポータル (CspLitePortal)",
+    "SelfService": "セルフサービス (SelfService)",
+  };
+  const headers = ["No", "プロファイル名", "ライセンス", "ユーザ種別", "説明", "更新日"];
   const rows = (r.data.records || []).map((p, i) => ({
     "No": i + 1,
     "プロファイル名": p.Name,
     "ライセンス": p.UserLicense ? p.UserLicense.Name : "",
-    "UserType": p.UserType || "",
+    "ユーザ種別": userTypeMap[p.UserType] || p.UserType || "",
     "説明": p.Description || "",
     "更新日": fmtDate(p.LastModifiedDate),
   }));
+  const legend = [
+    ["プロファイルとは", "ユーザ作成時に必須となる権限の母体。ユーザ毎にちょうど 1 つ割当てる (権限セットと違い複数割当不可)"],
+    ["ライセンス", "プロファイルが紐づく UserLicense。Salesforce / Salesforce Platform / Customer Community 等が代表"],
+    ["ユーザ種別", "標準 = 内部ユーザ、Power〇〇 / Customer〇〇 = 外部 (Experience Cloud / コミュニティ) ユーザ"],
+    ["設計指針", "近年は『最小プロファイル + 権限セットで加算』が推奨 (Spring '26 でプロファイル機能の一部廃止予定)"],
+  ];
   return {
     title: "プロファイル一覧",
     type: "profileList",
-    sections: [{ heading: "プロファイル", headers, rows }],
-    note: `合計 ${rows.length} 件`,
+    sections: [
+      { heading: "0. 凡例", kvRows: legend },
+      { heading: "1. プロファイル", headers, rows },
+    ],
+    note: `合計 ${rows.length} 件 / ユーザ種別が外部ユーザのものはコミュニティ/Experience Cloud 用`,
   };
 }
 
@@ -182,23 +202,33 @@ async function buildPermSetList({ host, sid, apiVersion }) {
     host, sid, apiVersion,
     soql: `SELECT Id, Name, Label, License.Name, IsCustom, NamespacePrefix, Description, LastModifiedDate FROM PermissionSet WHERE IsOwnedByProfile=false ORDER BY Name LIMIT 500`,
   });
-  if (!r.ok) throw apiError("PermissionSet 取得", r);
-  const headers = ["No", "API名", "ラベル", "ライセンス", "Namespace", "カスタム", "説明", "更新日"];
+  if (!r.ok) throw apiError("権限セットの取得に失敗しました", r);
+  const headers = ["No", "API名", "ラベル (画面表示名)", "ライセンス", "ネームスペース", "種別", "説明", "更新日"];
   const rows = (r.data.records || []).map((p, i) => ({
     "No": i + 1,
     "API名": p.Name,
-    "ラベル": p.Label,
-    "ライセンス": p.License ? p.License.Name : "",
-    "Namespace": p.NamespacePrefix || "",
-    "カスタム": p.IsCustom ? "○" : "",
+    "ラベル (画面表示名)": p.Label,
+    "ライセンス": p.License ? p.License.Name : "(なし: 機能限定)",
+    "ネームスペース": p.NamespacePrefix || "(なし: カスタム)",
+    "種別": p.IsCustom ? "カスタム" : "標準/パッケージ",
     "説明": p.Description || "",
     "更新日": fmtDate(p.LastModifiedDate),
   }));
+  const legend = [
+    ["権限セットとは", "プロファイルとは別に、特定機能 (例: レポート作成・データエクスポート) をユーザに『加算』する仕組み。複数割当可"],
+    ["ライセンス", "(なし) = 機能限定 / Salesforce 等 = そのライセンスに紐づくユーザにのみ割当可能"],
+    ["ネームスペース", "(なし) = 自組織のカスタム / 値あり = AppExchange パッケージや管理パッケージ由来"],
+    ["種別", "カスタム = 管理者が作成・編集可、標準/パッケージ = Salesforce 標準またはパッケージ提供で編集制限あり"],
+    ["除外条件", "IsOwnedByProfile=false (プロファイルに付随する内部 PermissionSet は本一覧から除外)"],
+  ];
   return {
     title: "権限セット一覧",
     type: "permsetList",
-    sections: [{ heading: "PermissionSet", headers, rows }],
-    note: `合計 ${rows.length} 件 (プロファイル付随を除く)`,
+    sections: [
+      { heading: "0. 凡例", kvRows: legend },
+      { heading: "1. PermissionSet", headers, rows },
+    ],
+    note: `合計 ${rows.length} 件 (プロファイル付随を除外) / 権限セットグループの中身は別途確認が必要`,
   };
 }
 
@@ -429,20 +459,33 @@ async function buildCustomSettingList({ host, sid, apiVersion }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, DeveloperName, MasterLabel, CustomSettingsType, Description FROM CustomObject WHERE CustomSettingsType != null ORDER BY DeveloperName LIMIT 500`,
   });
-  if (!r.ok) throw apiError("CustomSetting 取得", r);
+  if (!r.ok) throw apiError("カスタム設定の取得に失敗しました", r);
+  const typeMap = {
+    "List": "List 型 (組織共通の定数表)",
+    "Hierarchy": "Hierarchy 型 (組織/プロファイル/ユーザ毎に上書き可)",
+  };
   const headers = ["No", "API名", "ラベル", "種別", "説明"];
   const rows = (r.data.records || []).map((c, i) => ({
     "No": i + 1,
     "API名": c.DeveloperName + "__c",
     "ラベル": c.MasterLabel,
-    "種別": c.CustomSettingsType, // 'List' or 'Hierarchy'
+    "種別": typeMap[c.CustomSettingsType] || c.CustomSettingsType,
     "説明": c.Description || "",
   }));
+  const legend = [
+    ["カスタム設定とは", "Apex/フロー/数式から高速にアクセスできるキー値ストア。標準オブジェクトより SOQL Limit を消費しない"],
+    ["List 型", "組織全体で共通の定数表 (例: 国コード、税率テーブル)。レコードに『Name』だけがキー"],
+    ["Hierarchy 型", "組織 → プロファイル → ユーザの順で上書き可能。ユーザ毎に異なる値を返したい時に使用 (例: API キー)"],
+    ["カスタムメタデータとの違い", "カスタム設定はレコード=データ、カスタムメタデータはレコード=メタ定義 (デプロイ可能)。新規実装は CustomMetadata 推奨"],
+  ];
   return {
     title: "カスタム設定一覧",
     type: "customSettingList",
-    sections: [{ heading: "CustomSetting", headers, rows }],
-    note: `合計 ${rows.length} 件`,
+    sections: [
+      { heading: "0. 凡例", kvRows: legend },
+      { heading: "1. CustomSetting", headers, rows },
+    ],
+    note: `合計 ${rows.length} 件 / Salesforce は新規実装にカスタムメタデータ型を推奨 (本一覧は既存資産確認用)`,
   };
 }
 
@@ -1278,14 +1321,16 @@ async function buildFieldPermMatrix({ host, sid, apiVersion, obj, progress = () 
     return row;
   });
 
-  // 6. 凡例
+  // 6. 凡例 (業務担当者向け)
   const legend = [
-    ["記号", "意味"],
-    ["RW", "Read + Edit 可"],
-    ["R-", "Read のみ"],
-    ["--", "アクセス無し (PermissionsRead=false / レコード無し)"],
-    ["👤", "プロファイル"],
-    ["🔑", "権限セット"],
+    ["フィールド権限とは", "ユーザがレコードに含まれる個別項目を『参照可/編集可/不可』のいずれにできるかの設定 (FLS = Field Level Security)"],
+    ["RW", "参照 + 編集 可能 (PermissionsRead=true かつ PermissionsEdit=true)"],
+    ["R-", "参照のみ (PermissionsRead=true / PermissionsEdit=false) — 読み取り専用"],
+    ["--", "アクセス不可 (FieldPermissions レコード無し or PermissionsRead=false)"],
+    ["👤 列", "プロファイル単位の権限 (ユーザ毎にちょうど 1 つ適用)"],
+    ["🔑 列", "権限セット単位の権限 (複数加算可能 / 個別ユーザに付与)"],
+    ["必須列", "○ = 入力必須項目 (nillable=false かつ defaultedOnCreate=false かつ createable=true)。必須項目は権限に関わらず保存時に値必須"],
+    ["除外", "計算項目 (formula) と Id 項目は権限制御対象外のため一覧から除外"],
   ];
 
   return {
