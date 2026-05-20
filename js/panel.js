@@ -2398,9 +2398,27 @@ async function doMetadataList() {
   if (!state.sid) return;
   const unlock = lockBtn("btnMetadata");
   const type = document.getElementById("mdType").value;
-  const path = `/services/data/v${state.apiVersion}/tooling/query/?q=` +
-    encodeURIComponent(`SELECT Id, Name, NamespacePrefix, ManageableState, CreatedDate, LastModifiedDate FROM ${type} ORDER BY LastModifiedDate DESC LIMIT 200`);
-  const r = await sfFetch({ host: state.host, sid: state.sid, path });
+  // v2.86.0 バグ修正: Tooling API の各テーブルは持つフィールドが違うため type 別に SOQL を切り替える
+  // 旧実装は `SELECT Id, Name, ... FROM ${type}` 固定だったため Flow / FlowDefinition 等で「INVALID_FIELD: Name」エラー
+  // ユーザー報告「Flow のメタデータ一覧を取得しようとするとダメでした」(2026-05-20)
+  const TYPE_SOQL = {
+    "Flow": "SELECT Id, MasterLabel, DeveloperName, ProcessType, Status, VersionNumber, Description, LastModifiedDate FROM Flow ORDER BY LastModifiedDate DESC LIMIT 200",
+    "FlowDefinition": "SELECT Id, DeveloperName, MasterLabel, ActiveVersionId, LastModifiedDate FROM FlowDefinition ORDER BY LastModifiedDate DESC LIMIT 200",
+    "LightningComponentBundle": "SELECT Id, DeveloperName, MasterLabel, IsExposed, NamespacePrefix, ApiVersion, LastModifiedDate FROM LightningComponentBundle ORDER BY LastModifiedDate DESC LIMIT 200",
+    "AuraDefinitionBundle": "SELECT Id, DeveloperName, MasterLabel, ApiVersion, NamespacePrefix, ManageableState, LastModifiedDate FROM AuraDefinitionBundle ORDER BY LastModifiedDate DESC LIMIT 200",
+    "ValidationRule": "SELECT Id, ValidationName, Active, EntityDefinition.QualifiedApiName, ErrorMessage, LastModifiedDate FROM ValidationRule ORDER BY LastModifiedDate DESC LIMIT 200",
+    "StaticResource": "SELECT Id, Name, NamespacePrefix, ContentType, BodyLength, LastModifiedDate FROM StaticResource ORDER BY LastModifiedDate DESC LIMIT 200",
+  };
+  // Profile / PermissionSet は通常 REST (Tooling 不要) で取れる
+  const REST_TYPES = {
+    "Profile": "SELECT Id, Name, UserType, UserLicense.Name, CreatedDate, LastModifiedDate FROM Profile ORDER BY Name LIMIT 200",
+    "PermissionSet": "SELECT Id, Name, Label, License.Name, IsCustom, NamespacePrefix, LastModifiedDate FROM PermissionSet WHERE IsOwnedByProfile = false ORDER BY Name LIMIT 200",
+  };
+  const isRest = !!REST_TYPES[type];
+  const soql = TYPE_SOQL[type] || REST_TYPES[type] || `SELECT Id, Name, NamespacePrefix, ManageableState, CreatedDate, LastModifiedDate FROM ${type} ORDER BY LastModifiedDate DESC LIMIT 200`;
+  const r = isRest
+    ? await runSoql({ host: state.host, sid: state.sid, apiVersion: state.apiVersion, soql, tooling: false })
+    : await runSoql({ host: state.host, sid: state.sid, apiVersion: state.apiVersion, soql, tooling: true });
   unlock();
   if (!r.ok) {
     const elem = document.getElementById("metadataResult");
@@ -2409,16 +2427,85 @@ async function doMetadataList() {
     elem.innerHTML = ""; elem.appendChild(m);
     return;
   }
-  // 列名を業務用語に変換
+  // 列名を業務用語に変換 (type 別)
   const stateMap = { "unmanaged": "未管理", "installedEditable": "インストール済 (編集可)", "installedReadOnly": "インストール済 (読取専用)", "deprecated": "非推奨", "deleted": "削除済" };
-  const records = (r.data.records || []).map((rec) => ({
-    "Id": rec.Id,
-    "API 名": rec.Name,
-    "ネームスペース": rec.NamespacePrefix || "(なし)",
-    "管理状態": stateMap[rec.ManageableState] || rec.ManageableState || "",
-    "作成日": rec.CreatedDate,
-    "更新日": rec.LastModifiedDate,
-  }));
+  const records = (r.data.records || []).map((rec) => {
+    // Flow / LWC / Aura 系: DeveloperName + MasterLabel
+    if (type === "Flow") {
+      const statusEmo = { "Active": "✓ 有効", "Draft": "下書き", "Obsolete": "廃止", "InvalidDraft": "不正な下書き" };
+      return {
+        "ID": rec.Id,
+        "API 名": rec.DeveloperName || "",
+        "ラベル": rec.MasterLabel || "",
+        "種別": rec.ProcessType || "",
+        "状態": statusEmo[rec.Status] || rec.Status || "",
+        "バージョン": rec.VersionNumber != null ? `v${rec.VersionNumber}` : "",
+        "説明": (rec.Description || "").substring(0, 100),
+        "更新日": rec.LastModifiedDate,
+      };
+    }
+    if (type === "LightningComponentBundle" || type === "AuraDefinitionBundle") {
+      return {
+        "ID": rec.Id,
+        "API 名": rec.DeveloperName || "",
+        "ラベル": rec.MasterLabel || "",
+        "公開": rec.IsExposed != null ? (rec.IsExposed ? "○" : "−") : "",
+        "API バージョン": rec.ApiVersion != null ? `v${rec.ApiVersion}` : "",
+        "ネームスペース": rec.NamespacePrefix || "(なし)",
+        "更新日": rec.LastModifiedDate,
+      };
+    }
+    if (type === "ValidationRule") {
+      return {
+        "ID": rec.Id,
+        "ルール名": rec.ValidationName || "",
+        "有効": rec.Active ? "○ 有効" : "− 無効",
+        "対象オブジェクト": rec.EntityDefinition ? rec.EntityDefinition.QualifiedApiName : "",
+        "エラーメッセージ": (rec.ErrorMessage || "").substring(0, 100),
+        "更新日": rec.LastModifiedDate,
+      };
+    }
+    if (type === "Profile") {
+      return {
+        "ID": rec.Id,
+        "プロファイル名": rec.Name,
+        "ユーザ種別": rec.UserType || "",
+        "ライセンス": rec.UserLicense ? rec.UserLicense.Name : "",
+        "作成日": rec.CreatedDate,
+        "更新日": rec.LastModifiedDate,
+      };
+    }
+    if (type === "PermissionSet") {
+      return {
+        "ID": rec.Id,
+        "API 名": rec.Name,
+        "ラベル": rec.Label || "",
+        "ライセンス": rec.License ? rec.License.Name : "",
+        "種別": rec.IsCustom ? "カスタム" : "標準",
+        "更新日": rec.LastModifiedDate,
+      };
+    }
+    if (type === "StaticResource") {
+      const sizeKb = rec.BodyLength ? `${(rec.BodyLength / 1024).toFixed(1)} KB` : "";
+      return {
+        "ID": rec.Id,
+        "API 名": rec.Name,
+        "Content-Type": rec.ContentType || "",
+        "サイズ": sizeKb,
+        "ネームスペース": rec.NamespacePrefix || "(なし)",
+        "更新日": rec.LastModifiedDate,
+      };
+    }
+    // デフォルト (ApexClass / ApexTrigger / CustomObject 等は Name フィールドあり)
+    return {
+      "ID": rec.Id,
+      "API 名": rec.Name || "",
+      "ネームスペース": rec.NamespacePrefix || "(なし)",
+      "管理状態": stateMap[rec.ManageableState] || rec.ManageableState || "",
+      "作成日": rec.CreatedDate,
+      "更新日": rec.LastModifiedDate,
+    };
+  });
   document.getElementById("metadataResult").innerHTML = recordsTable(records);
 }
 

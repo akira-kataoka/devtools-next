@@ -31,38 +31,37 @@
         <input class="nav-search" id="navSearch" type="search" placeholder="🔍 機能を検索 (例: SOQL / Apex / 設計書)" aria-label="サイドメニュー機能検索" />
         <button class="nav-btn nav-home active" data-view="home" data-cat="home" title="ホームダッシュボードへ戻ります (主要機能のカード一覧)">🏠 ホーム</button>
 
-        <!-- v2.85.0: メニュー名称見直し (ユーザー指示: カタカナ語/英語を減らし、動詞ベースで意味が伝わる名称に) -->
-        <button class="nav-sep" data-cat="data" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 🗃️ データを扱う</button>
+        <!-- v2.86.0: メニュー名詞ベース + 変更セット削除 (ユーザー指示「変更セット作れないなら不要」「名詞ベース・説明はマウスオーバー」) -->
+        <button class="nav-sep" data-cat="data" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 🗃️ データ</button>
         <div class="nav-group" data-cat="data">
-          <button class="nav-btn" data-view="soql" data-cat="data" title="SOQL を書いてレコードを検索します"><span class="nav-label">🔎 データを検索 (SOQL)</span><kbd class="nav-kbd">Q</kbd></button>
-          <button class="nav-btn" data-view="inspector" data-cat="data" title="レコード ID を指定して全項目の値を表示します"><span class="nav-label">🔍 レコード 1 件を確認</span><kbd class="nav-kbd">I</kbd></button>
-          <button class="nav-btn" data-view="dataexport" data-cat="data" title="オブジェクトのデータを Excel/CSV/JSON で一括取得します"><span class="nav-label">📥 まとめてダウンロード</span></button>
+          <button class="nav-btn" data-view="soql" data-cat="data" title="SOQL を書いてレコードを検索 / CSV エクスポート (Tooling API 対応)"><span class="nav-label">🔎 SOQL クエリ</span><kbd class="nav-kbd">Q</kbd></button>
+          <button class="nav-btn" data-view="inspector" data-cat="data" title="レコード ID を指定して全項目の値を表示 / 参照辿り / 値コピー"><span class="nav-label">🔍 レコード詳細</span><kbd class="nav-kbd">I</kbd></button>
+          <button class="nav-btn" data-view="dataexport" data-cat="data" title="オブジェクトの全項目を Excel / CSV / JSON で一括ダウンロード"><span class="nav-label">📥 一括エクスポート</span></button>
         </div>
 
-        <button class="nav-sep" data-cat="dev" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 💻 開発する</button>
+        <button class="nav-sep" data-cat="dev" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 💻 開発</button>
         <div class="nav-group" data-cat="dev">
-          <button class="nav-btn" data-view="apex" data-cat="dev" title="匿名 Apex (Developer Console と同じ) を実行します"><span class="nav-label">🟧 Apex コードを実行</span><kbd class="nav-kbd">A</kbd></button>
-          <button class="nav-btn" data-view="apiurl" data-cat="dev" title="REST API の URL を組み立てる補助ツール"><span class="nav-label">🔗 REST API URL を作る</span></button>
-          <button class="nav-btn" data-view="rest" data-cat="dev" title="任意の REST API パスを直接呼び出します"><span class="nav-label">🌐 REST API を呼び出す</span><kbd class="nav-kbd">R</kbd></button>
-          <button class="nav-btn" data-view="describe" data-cat="dev" title="オブジェクトの項目定義 (describe) を表示します"><span class="nav-label">📖 オブジェクト構造を確認</span></button>
+          <button class="nav-btn" data-view="apex" data-cat="dev" title="匿名 Apex (Developer Console と同じ) を実行・Debug ログ取得"><span class="nav-label">🟧 Apex 実行</span><kbd class="nav-kbd">A</kbd></button>
+          <button class="nav-btn" data-view="apiurl" data-cat="dev" title="REST API の URL を組み立てる補助ツール"><span class="nav-label">🔗 REST API URL</span></button>
+          <button class="nav-btn" data-view="rest" data-cat="dev" title="任意の REST API パスを直接呼び出します"><span class="nav-label">🌐 REST API</span><kbd class="nav-kbd">R</kbd></button>
+          <button class="nav-btn" data-view="describe" data-cat="dev" title="オブジェクトの項目定義 (describe) を表示"><span class="nav-label">📖 オブジェクト構造</span></button>
         </div>
 
-        <button class="nav-sep" data-cat="monitor" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 📊 組織の状態を見る</button>
+        <button class="nav-sep" data-cat="monitor" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 📊 監視</button>
         <div class="nav-group" data-cat="monitor">
-          <button class="nav-btn" data-view="limits" data-cat="monitor" title="API コール数・Apex 容量・ストレージ等の使用状況"><span class="nav-label">📊 API・容量の使用状況</span><kbd class="nav-kbd">L</kbd></button>
-          <button class="nav-btn" data-view="logs" data-cat="monitor" title="Apex 実行ログ (Debug ログ) を取得・表示します"><span class="nav-label">📜 Apex 実行ログを見る</span></button>
-          <button class="nav-btn" data-view="login" data-cat="monitor" title="ユーザのログイン履歴を取得します"><span class="nav-label">🔐 ログイン履歴を見る</span></button>
+          <button class="nav-btn" data-view="limits" data-cat="monitor" title="API コール数・Apex 容量・ストレージ等の使用状況"><span class="nav-label">📊 使用状況</span><kbd class="nav-kbd">L</kbd></button>
+          <button class="nav-btn" data-view="logs" data-cat="monitor" title="Apex 実行ログ (Debug ログ) を取得・表示"><span class="nav-label">📜 Apex 実行ログ</span></button>
+          <button class="nav-btn" data-view="login" data-cat="monitor" title="ユーザのログイン履歴を取得"><span class="nav-label">🔐 ログイン履歴</span></button>
         </div>
 
-        <button class="nav-sep" data-cat="meta" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 📦 メタデータ・デプロイ</button>
+        <button class="nav-sep" data-cat="meta" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 📦 メタデータ</button>
         <div class="nav-group" data-cat="meta">
-          <button class="nav-btn" data-view="metadata" data-cat="meta" title="ApexClass / Flow / Profile 等のメタデータ一覧を取得"><span class="nav-label">📦 メタデータ一覧を見る</span></button>
-          <button class="nav-btn" data-view="changeset" data-cat="meta" title="メタデータを選んで変更セット (package.xml) を簡単に作成・ダウンロード"><span class="nav-label">📦 変更セットを作成</span></button>
+          <button class="nav-btn" data-view="metadata" data-cat="meta" title="ApexClass / Flow / Profile 等のメタデータ一覧"><span class="nav-label">📦 メタデータ一覧</span></button>
         </div>
 
-        <button class="nav-sep" data-cat="design" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 📋 設計書を作る</button>
+        <button class="nav-sep" data-cat="design" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 📋 設計書</button>
         <div class="nav-group" data-cat="design">
-          <button class="nav-btn" data-view="design" data-cat="design" title="オブジェクト定義書 / プロファイル詳細など 22 種類の設計書を Excel で自動生成"><span class="nav-label">📋 設計書を自動作成 (22 種)</span><kbd class="nav-kbd">D</kbd></button>
+          <button class="nav-btn" data-view="design" data-cat="design" title="オブジェクト定義書・プロファイル詳細など 22 種類の設計書を Excel で自動生成"><span class="nav-label">📋 設計書生成</span><kbd class="nav-kbd">D</kbd></button>
         </div>
       </nav>
     </aside>
@@ -75,47 +74,46 @@
           <p class="home-subtitle">Salesforce 開発・運用に必要な機能を 1 つにまとめた拡張機能です。下のカードをクリックして始めてください。</p>
         </div>
         <div class="home-grid" role="list" aria-label="主要 6 機能">
-          <button class="home-card" data-go="soql" role="listitem" aria-label="データを検索 (SOQL) へ移動" title="SOQL でレコードを検索する画面を開きます">
+          <button class="home-card" data-go="soql" role="listitem" aria-label="SOQL クエリ" title="SOQL を書いてレコードを検索 / CSV エクスポート (Tooling API 対応)">
             <div class="home-card-icon" aria-hidden="true">🔎</div>
-            <div class="home-card-title">データを検索 (SOQL)</div>
-            <div class="home-card-desc">SOQL を書いてレコードを検索 / CSV エクスポート。Tooling API も対応</div>
+            <div class="home-card-title">SOQL クエリ</div>
+            <div class="home-card-desc">SOQL を書いてレコードを検索 / CSV エクスポート (Tooling API 対応)</div>
           </button>
-          <button class="home-card" data-go="inspector" role="listitem" aria-label="レコード 1 件を確認" title="レコード ID から全項目値を確認する画面を開きます">
+          <button class="home-card" data-go="inspector" role="listitem" aria-label="レコード詳細" title="レコード ID を指定して全項目の値を表示 / 参照辿り / 値コピー">
             <div class="home-card-icon" aria-hidden="true">🔍</div>
-            <div class="home-card-title">レコード 1 件を確認</div>
-            <div class="home-card-desc">レコード ID から全項目値を表示 / 参照辿り / 値コピー</div>
+            <div class="home-card-title">レコード詳細</div>
+            <div class="home-card-desc">レコード ID を指定して全項目の値を表示 / 参照辿り / 値コピー</div>
           </button>
-          <button class="home-card" data-go="dataexport" role="listitem" aria-label="まとめてダウンロード" title="オブジェクトのデータを一括取得する画面を開きます">
+          <button class="home-card" data-go="dataexport" role="listitem" aria-label="一括エクスポート" title="オブジェクトの全項目を Excel / CSV / JSON で一括ダウンロード">
             <div class="home-card-icon" aria-hidden="true">📥</div>
-            <div class="home-card-title">まとめてダウンロード</div>
-            <div class="home-card-desc">オブジェクトの全項目を選択して Excel / CSV / JSON で一括取得</div>
+            <div class="home-card-title">一括エクスポート</div>
+            <div class="home-card-desc">オブジェクトの全項目を Excel / CSV / JSON で一括ダウンロード</div>
           </button>
-          <button class="home-card" data-go="apex" role="listitem" aria-label="Apex コードを実行" title="匿名 Apex を実行する画面を開きます">
+          <button class="home-card" data-go="apex" role="listitem" aria-label="Apex 実行" title="匿名 Apex (Developer Console と同じ) を実行・Debug ログ取得">
             <div class="home-card-icon" aria-hidden="true">🟧</div>
-            <div class="home-card-title">Apex コードを実行</div>
-            <div class="home-card-desc">Developer Console を開かずに Apex コードを実行 / Debug ログ取得</div>
+            <div class="home-card-title">Apex 実行</div>
+            <div class="home-card-desc">匿名 Apex (Developer Console と同じ) を実行・Debug ログ取得</div>
           </button>
-          <button class="home-card" data-go="design" role="listitem" aria-label="設計書を自動作成" title="22 種類の設計書を Excel で自動生成する画面を開きます">
+          <button class="home-card" data-go="design" role="listitem" aria-label="設計書生成" title="オブジェクト定義書 / プロファイル詳細など 22 種類の設計書を Excel で自動生成">
             <div class="home-card-icon" aria-hidden="true">📋</div>
-            <div class="home-card-title">設計書を自動作成</div>
-            <div class="home-card-desc">22 種類の設計書 (オブジェクト定義書 / プロファイル詳細など) を Excel で自動生成</div>
+            <div class="home-card-title">設計書生成 (22 種)</div>
+            <div class="home-card-desc">オブジェクト定義書・プロファイル詳細など 22 種類の設計書を Excel で自動生成</div>
           </button>
-          <button class="home-card" data-go="limits" role="listitem" aria-label="API・容量の使用状況" title="組織の Limits を確認する画面を開きます">
+          <button class="home-card" data-go="limits" role="listitem" aria-label="使用状況" title="API コール数・Apex 容量・ストレージ等の使用状況を視覚化">
             <div class="home-card-icon" aria-hidden="true">📊</div>
-            <div class="home-card-title">API・容量の使用状況</div>
-            <div class="home-card-desc">API コール数 / Apex 容量 / ストレージ等の使用状況を視覚化</div>
+            <div class="home-card-title">使用状況</div>
+            <div class="home-card-desc">API コール数・Apex 容量・ストレージ等の使用状況を視覚化</div>
           </button>
         </div>
         <div class="home-secondary">
           <div class="home-secondary-title">他の機能</div>
           <div class="home-secondary-grid">
-            <button class="home-mini-card" data-go="apiurl" title="REST API URL を組み立てます">🔗 REST API URL を作る</button>
-            <button class="home-mini-card" data-go="rest" title="任意 REST API パスを直接呼び出します">🌐 REST API を呼び出す</button>
-            <button class="home-mini-card" data-go="describe" title="オブジェクトの describe 情報を表示します">📖 オブジェクト構造を確認</button>
-            <button class="home-mini-card" data-go="metadata" title="ApexClass / Flow / Profile 等のメタデータ一覧">📦 メタデータ一覧を見る</button>
-            <button class="home-mini-card" data-go="changeset" title="メタデータを選んで変更セット (package.xml) を簡単に作成">📦 変更セットを作成</button>
-            <button class="home-mini-card" data-go="logs" title="Apex 実行ログ (Debug ログ) を取得">📜 Apex 実行ログを見る</button>
-            <button class="home-mini-card" data-go="login" title="ユーザのログイン履歴を取得">🔐 ログイン履歴を見る</button>
+            <button class="home-mini-card" data-go="apiurl" title="REST API の URL を組み立てる補助ツール">🔗 REST API URL</button>
+            <button class="home-mini-card" data-go="rest" title="任意の REST API パスを直接呼び出します">🌐 REST API</button>
+            <button class="home-mini-card" data-go="describe" title="オブジェクトの項目定義 (describe) を表示">📖 オブジェクト構造</button>
+            <button class="home-mini-card" data-go="metadata" title="ApexClass / Flow / Profile 等のメタデータ一覧">📦 メタデータ一覧</button>
+            <button class="home-mini-card" data-go="logs" title="Apex 実行ログ (Debug ログ) を取得">📜 Apex 実行ログ</button>
+            <button class="home-mini-card" data-go="login" title="ユーザのログイン履歴を取得">🔐 ログイン履歴</button>
           </div>
         </div>
         <div class="home-tips">
@@ -395,97 +393,6 @@ System.debug('Now: ' + System.now());</textarea>
         </div>
         <div id="limitsSummary" class="limits-summary"></div>
         <div id="limitsResult" class="limits-grid"></div>
-      </div>
-
-      <div class="view hidden" data-view="changeset">
-        <!-- v2.85.0: 変更セット作成のチュートリアル + クイックスタートテンプレ -->
-        <div class="api-guide">
-          <div class="api-guide-title">📦 変更セットの作成 (package.xml)</div>
-          <ol class="api-guide-steps">
-            <li><b>① 種類を選ぶ</b>: 「ApexClass」「Flow」「Profile」など追加したいメタデータ型を選択</li>
-            <li><b>② 候補をロード → 項目を選ぶ</b>: チェックボックスでデプロイしたい要素を選択 (複数型を組合せ可)</li>
-            <li><b>③ package.xml をダウンロード</b>: 出来た XML を sfdx / Workbench / VS Code でデプロイ</li>
-          </ol>
-          <div class="api-guide-examples">
-            <span class="api-guide-label">🚀 クイックスタート:</span>
-            <button class="api-example-chip" data-quickset="apex" title="全 Apex クラスと全 Apex トリガを一括追加">全 Apex (クラス+トリガ)</button>
-            <button class="api-example-chip" data-quickset="flow" title="全フローを一括追加">全 Flow</button>
-            <button class="api-example-chip" data-quickset="perm" title="全プロファイルと全権限セットを一括追加">全プロファイル + 権限セット</button>
-            <button class="api-example-chip" data-quickset="lwc" title="全 LWC バンドルを一括追加">全 LWC</button>
-          </div>
-          <div class="api-guide-tip">💡 これは <b>Setup の変更セット送信</b> とは別物で、Metadata API デプロイ用の package.xml ファイル作成ツールです。生成した XML は sfdx <code>--manifest</code> や Workbench Migration Tool で使えます。</div>
-        </div>
-        <div class="toolbar">
-          <select id="csMode">
-            <option value="builder">📦 package.xml ビルダー (新規)</option>
-            <option value="outboundList">送信変更セット一覧 (既存)</option>
-            <option value="inboundList">受信変更セット一覧 (既存)</option>
-            <option value="deployStatus">デプロイ状況 (最近10件)</option>
-          </select>
-          <span class="grow"></span>
-          <button id="btnCsLoad" class="primary" title="選択したモードのデータを読み込みます">▶ ロード / 切替</button>
-        </div>
-
-        <div id="csBuilderArea" class="changeset-layout">
-          <div class="changeset-left">
-            <div class="export-pane-label">メタデータ型を選んで追加</div>
-            <div class="row">
-              <select id="csType" style="flex:1">
-                <option value="ApexClass">ApexClass</option>
-                <option value="ApexTrigger">ApexTrigger</option>
-                <option value="ApexPage">ApexPage (VF)</option>
-                <option value="ApexComponent">ApexComponent</option>
-                <option value="Flow">Flow</option>
-                <option value="CustomObject">CustomObject</option>
-                <option value="CustomField">CustomField</option>
-                <option value="ValidationRule">ValidationRule</option>
-                <option value="RecordType">RecordType</option>
-                <option value="ListView">ListView</option>
-                <option value="WebLink">WebLink</option>
-                <option value="Profile">Profile</option>
-                <option value="PermissionSet">PermissionSet</option>
-                <option value="PermissionSetGroup">PermissionSetGroup</option>
-                <option value="StaticResource">StaticResource</option>
-                <option value="LightningComponentBundle">LightningComponentBundle (LWC)</option>
-                <option value="AuraDefinitionBundle">AuraDefinitionBundle (Aura)</option>
-                <option value="CustomTab">CustomTab</option>
-                <option value="CustomApplication">CustomApplication</option>
-                <option value="EmailTemplate">EmailTemplate</option>
-                <option value="Layout">Layout</option>
-                <option value="QuickAction">QuickAction</option>
-                <option value="Report">Report</option>
-                <option value="Dashboard">Dashboard</option>
-                <option value="GlobalValueSet">GlobalValueSet</option>
-                <option value="CustomMetadata">CustomMetadata</option>
-              </select>
-              <button id="btnCsListType" title="選択した型のメタデータ候補を取得します">候補をロード</button>
-            </div>
-            <input id="csFilter" placeholder="名前またはラベルで絞り込めます" title="API 名・ラベルの部分一致で候補リストを絞り込みます" />
-            <div id="csCandidates" class="changeset-list"></div>
-          </div>
-
-          <div class="changeset-right">
-            <div class="export-pane-label">
-              選択済み (<span id="csSelectedCount">0</span> 件)
-              <button id="btnCsClear" class="mini-btn" title="選択済みのメタデータをすべてクリアします">全クリア</button>
-            </div>
-            <div id="csSelectedList" class="changeset-list"></div>
-
-            <div class="row" style="margin-top:6px">
-              <label class="export-row" style="flex:1">API バージョン
-                <input id="csApiVer" value="62.0" style="width:80px" />
-              </label>
-              <button id="btnCsBuildXml" class="primary" title="選択済みメタデータから package.xml を生成します">package.xml 生成</button>
-              <button id="btnCsCopyXml" title="生成した package.xml をクリップボードにコピーします">コピー</button>
-              <button id="btnCsDlXml" title="package.xml をファイルとしてダウンロードします">ダウンロード</button>
-              <button id="btnCsDlBundle" title="SFDX 形式 (manifest/ ディレクトリ構造) でバンドルダウンロードします">SFDX バンドル</button>
-            </div>
-            <div id="csMeta" class="meta"></div>
-            <pre id="csXml" class="code" style="min-height:200px"></pre>
-          </div>
-        </div>
-
-        <div id="csListArea" class="grid hidden" style="margin-top:8px"></div>
       </div>
 
       <div class="view hidden" data-view="design">

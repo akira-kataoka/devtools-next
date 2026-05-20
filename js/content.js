@@ -138,6 +138,24 @@ function flashToast(text) {
       }
       .quick-btn:hover { background: #1b96ff; color: #fff; border-color: #1b96ff; }
       .quick-btn:disabled { opacity: 0.4; cursor: default; }
+      /* v2.86.0 Team K: SOQL 履歴チップ */
+      .history-row {
+        display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+        margin-bottom: 6px;
+        font-size: 10px;
+      }
+      .history-row:empty { display: none; }
+      .history-label { color: #9fb0c9; }
+      .history-chip {
+        background: rgba(46,204,113,0.10);
+        border: 1px solid rgba(46,204,113,0.3);
+        color: #2ecc71;
+        padding: 2px 8px; border-radius: 10px;
+        font-size: 10px; cursor: pointer;
+        font-family: ui-monospace, Consolas, monospace;
+        max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      }
+      .history-chip:hover { background: #2ecc71; color: #fff; }
     </style>
     <button class="launcher" id="lnch" title="DevToolsNext のミニパネルを開く (Salesforce 上で簡易 SOQL を実行できます)" aria-label="DevToolsNext ミニパネルを開く">🛠</button>
     <div class="panel" id="pnl" role="dialog" aria-label="DevToolsNext ミニパネル">
@@ -148,13 +166,16 @@ function flashToast(text) {
         <button class="hdr-close" id="cls" title="ミニパネルを閉じます" aria-label="ミニパネルを閉じる">✕</button>
       </div>
       <div class="body">
-        <!-- v2.85.0 Team M: 現在ページのレコード即操作ボタン (URL から自動抽出) -->
+        <!-- v2.85.0 Team M: 現在ページのレコード即操作ボタン -->
         <div class="quick-row" id="quickRow">
           <span class="quick-label">📍 現在のレコード:</span>
           <span class="quick-info" id="quickInfo">--</span>
           <button class="quick-btn" id="qCopyId" title="現在ページのレコード ID をクリップボードにコピー">📋 ID コピー</button>
           <button class="quick-btn" id="qOpenNew" title="現在のレコードを新しいタブで開く">↗ 新タブ</button>
+          <button class="quick-btn" id="qRelated" title="現在のオブジェクトの最近 5 件を一覧表示">🔎 最近 5 件</button>
         </div>
+        <!-- v2.86.0 Team K: 直近 SOQL クエリ 3 件をチップ表示 (ワンクリック再実行) -->
+        <div class="history-row" id="histRow"></div>
         <textarea id="qry" placeholder="SELECT Id, Name FROM Account LIMIT 5" spellcheck="false">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 5</textarea>
         <div class="row">
           <button class="hdr-close" id="useId" title="現在のページのレコード ID を WHERE Id='...' でクエリに挿入します" style="border-color:#1b96ff;color:#1b96ff">📋 ID をクエリに挿入</button>
