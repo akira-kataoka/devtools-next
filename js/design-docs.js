@@ -257,17 +257,27 @@ async function buildObjectDef({ host, sid, apiVersion, obj }) {
     revision: "初版",
   });
 
+  // v3.36.0: 凡例セクション追加 (業務担当者向け項目型の説明)
+  const objLegend = [
+    ["カスタム", "Salesforce 標準でない、自組織で追加した項目 (○ 表示)"],
+    ["必須", "保存時に値が必須の項目 (○) — null 不可制約"],
+    ["参照先", "参照型 (reference) の場合、関連する親オブジェクト名"],
+    ["FLS R/W", "プロファイル/権限セットで参照可能/編集可能を制御 (詳細は FLS レポート参照)"],
+    ["子リレーション", "本オブジェクトを親とする子レコード関係 (削除時の影響範囲)"],
+    ["レコードタイプ", "同一オブジェクトを業務別に使い分ける単位 (詳細はレコードタイプ一覧参照)"],
+  ];
   return {
     title: `オブジェクト定義書: ${d.label} (${d.name})`,
     type: "objectDef",
     sections: [
       cover,
+      { heading: "0. 凡例", kvRows: objLegend },
       { heading: "1. オブジェクト概要", kvRows: meta },
       { heading: "2. 項目定義", headers, rows },
       ...(childRels.length ? [{ heading: "3. 子リレーション", headers: Object.keys(childRels[0] || {}), rows: childRels }] : []),
       ...(rts.length ? [{ heading: "4. レコードタイプ", headers: Object.keys(rts[0] || {}), rows: rts }] : []),
     ],
-    note: `項目数 ${fmtNum(rows.length)} / 子リレーション ${fmtNum(childRels.length)} / レコードタイプ ${fmtNum(rts.length)} — 業務担当者向け: 「項目定義」シートが入力画面の項目一覧と一致します。「2. 項目定義」を Excel でフィルタ → 「カスタム=○」絞り込みで自組織独自項目のみ抽出できます。新規実装時はこのシートをレビュー対象資料として活用してください。`,
+    note: `項目数 ${fmtNum(rows.length)} / 子リレーション ${fmtNum(childRels.length)} / レコードタイプ ${fmtNum(rts.length)}。**業務担当者向け**: 「項目定義」シートが入力画面の項目一覧と一致します。「2. 項目定義」を Excel でフィルタ → 「カスタム=○」絞り込みで自組織独自項目のみ抽出できます。新規実装時はこのシートをレビュー対象資料として活用してください。`,
   };
 }
 
@@ -565,12 +575,23 @@ async function buildFlowList({ host, sid, apiVersion }) {
   const legacyNote = (wfCount || pbCount)
     ? ` / ⚠ 廃止予定: Workflow ${fmtNum(wfCount)} 件・Process Builder ${fmtNum(pbCount)} 件 (フロー移行推奨)`
     : "";
+  // v3.36.0: 凡例セクション追加 (フロー種別の業務担当者向け解説)
+  const flowListLegend = [
+    ["Flow (Screen Flow)", "ユーザーが画面操作で起動するフロー (Lightning ページ・ボタン・モバイル等から呼出)"],
+    ["Auto-Launched Flow", "他システム/Apex から自動起動 (画面なし、レコードトリガ含む)"],
+    ["Record-Triggered Flow", "レコード保存時に自動実行 (insert/update/delete)、Workflow Rule / トリガ代替"],
+    ["Schedule-Triggered Flow", "スケジュール起動 (バッチ処理代替)"],
+    ["Workflow Rule", "**廃止予定** (項目自動更新・メール送信主用途。フローへ移行要)"],
+    ["Process Builder", "**廃止予定** (旧プロセスビルダ、フローへ移行要)"],
+    ["アクティブ", "○=稼働中 / −=停止 (旧版含む)"],
+  ];
   return {
     title: "フロー一覧 (アクティブのみ)",
     type: "flowList",
     sections: [
       makeCoverSection({ docTitle: "フロー一覧 (アクティブのみ)", target: "組織全体 (全アクティブ Flow)", orgHost: host, revision: "初版" }),
-      { heading: "フロー", headers, rows },
+      { heading: "0. 凡例", kvRows: flowListLegend },
+      { heading: "1. フロー", headers, rows },
     ],
     note: `合計 ${fmtNum(records.length)} 件 / 種別内訳: ${typeBreakdown}${legacyNote}。**業務担当者向け**: 本一覧はアクティブな自動化資産 (Flow + 既存 Workflow Rule / Process Builder) を網羅します。**Process Builder は Salesforce 公式アナウンスにより段階的に廃止予定**のため、移行計画の対象洗い出し資料として優先活用してください。Workflow Rule は項目自動更新・メール送信が主用途のため、Flow への置換時の影響範囲確認にも有用です。`,
   };
@@ -813,12 +834,22 @@ async function buildErDiagram({ host, sid, apiVersion, obj }) {
   const parentTotal = parentMD + parentLookup;
   const childRendered = childMD + childLookup;
   const truncMsg = childTruncated ? ` (うち ${fmtNum(childTotal - 30)} 件は表示省略・childRelationships 上限 30 件)` : "";
+  // v3.36.0: 凡例セクション追加 (業務担当者向け Mermaid 記号の説明)
+  const erLegend = [
+    ["||--o{", "Lookup (任意参照) — 親なしでも子だけ存在可。例: Account ⇔ Case (Case の Account 紐付け解除可)"],
+    ["||--|{", "Master-Detail (必須参照・カスケード削除) — 親削除時に子も自動削除。例: Order ⇔ OrderItem"],
+    ["親方向参照", "本オブジェクトが「子」側になる参照 (上位のレコード)"],
+    ["子方向参照", "本オブジェクトが「親」側になる参照 (下位のレコード、削除時影響あり)"],
+    ["1-hop", "起点オブジェクトから直接参照される 1 階層のみを表示 (深掘り無し)"],
+    ["可視化方法", "https://mermaid.live に貼り付けると視覚的な ER 図が描画されます"],
+  ];
   return {
     title: `ER 図: ${d.label} (${d.name}) を起点とした 1-hop`,
     type: "erDiagram",
     sections: [
       makeCoverSection({ docTitle: "ER 図", target: `${d.label} (${d.name}) を起点とした 1-hop`, orgHost: host, revision: "初版" }),
-      { heading: "ER 図 (Mermaid)", mermaid },
+      { heading: "0. 凡例", kvRows: erLegend },
+      { heading: "1. ER 図 (Mermaid)", mermaid },
     ],
     note: `関連エンティティ ${fmtNum(seen.size - 1)} 件 / 親方向参照 ${fmtNum(parentTotal)} 件 (MD ${fmtNum(parentMD)} + Lookup ${fmtNum(parentLookup)}) / 子方向参照 ${fmtNum(childRendered)} 件 (MD ${fmtNum(childMD)} + Lookup ${fmtNum(childLookup)})${truncMsg}。**業務担当者向け**: 本図はデータ連携の依存関係を示します。**Master-Detail (必須参照・カスケード削除)** = 親レコード削除時に子も自動削除される強い結合。**Lookup (任意参照)** = 親なしでも子だけ存在可能な弱い結合。要件定義書や移行計画でデータ削除順序の検討にご活用ください。**可視化**: https://mermaid.live に貼り付け。`,
   };
@@ -979,8 +1010,18 @@ async function buildProfileDetail({ host, sid, apiVersion, obj, progress = () =>
     ["集計件数 App 可視性", fmtNum(appRows.length) + " 件"],
   ];
 
+  // v3.36.0: 凡例セクション追加 (業務担当者向け権限略号の説明)
+  const profDetailLegend = [
+    ["Object 権限 C/R/E/D", "Create / Read / Edit / Delete — 標準 CRUD 権限"],
+    ["Object 権限 V/M", "ViewAllRecords / ModifyAllRecords — 全レコード参照/編集 (高権限・要監査)"],
+    ["FLS R/E", "Read=参照可能 / Edit=編集可能 (項目レベルセキュリティ)"],
+    ["System 権限", "ApiEnabled / EditPublicReports 等の組織横断機能アクセス権"],
+    ["Tab 設定", "DefaultOn=デフォルト表示 / DefaultOff=非表示既定 / Hidden=完全非表示"],
+    ["App 可視性", "Lightning/Classic アプリの利用可否"],
+  ];
   const sections = [];
   sections.push(makeCoverSection({ docTitle: `${targetType}詳細レポート`, target: targetName, orgHost: host, revision: "初版" }));
+  sections.push({ heading: "0. 凡例", kvRows: profDetailLegend });
   sections.push({ heading: "1.サマリ", kvRows: summary });
   if (objRows.length) sections.push({ heading: "2.Object 権限", headers: objHeaders, rows: objRows });
   if (fldRows.length) sections.push({ heading: "3.項目レベルセキュリティ (FLS)", headers: fldHeaders, rows: fldRows });
