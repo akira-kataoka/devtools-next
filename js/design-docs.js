@@ -1099,20 +1099,46 @@ async function buildApexDetail({ host, sid, apiVersion, obj }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, Name, ApiVersion, Status, NamespacePrefix, LengthWithoutComments, IsValid, Body, SymbolTable FROM ApexClass WHERE Name='${obj.replace(/'/g, "\\'")}' LIMIT 1`,
   });
-  if (!r.ok) throw apiError(`ApexClass(${obj})`, r);
-  if (!r.data.records || !r.data.records[0]) throw new Error(`HTTP 404 ApexClass '${obj}' が見つかりません`);
+  if (!r.ok) throw apiError(`Apex クラス (${obj}) の取得に失敗しました`, r);
+  if (!r.data.records || !r.data.records[0]) throw new Error(`HTTP 404 Apex クラス '${obj}' が見つかりません`);
   const c = r.data.records[0];
+
+  // 可視性の業務向け説明
+  const visibilityMap = {
+    "public": "public (組織内公開)",
+    "private": "private (クラス内のみ)",
+    "global": "global (パッケージ外公開)",
+    "protected": "protected (継承先のみ)",
+  };
+  // ステータス日本語化
+  const statusMap = { "Active": "○ 有効", "Inactive": "− 無効", "Deleted": "✗ 削除済" };
 
   const summary = [
     ["クラス名", c.Name],
-    ["API Version", c.ApiVersion],
-    ["Status", c.Status],
-    ["Namespace", c.NamespacePrefix || ""],
-    ["LengthWithoutComments", String(c.LengthWithoutComments)],
-    ["IsValid", c.IsValid ? "○" : "✗"],
+    ["API バージョン", c.ApiVersion],
+    ["ステータス", statusMap[c.Status] || c.Status],
+    ["ネームスペース", c.NamespacePrefix || "(なし: 自組織のカスタム)"],
+    ["コード行数 (コメント除く)", c.LengthWithoutComments.toLocaleString()],
+    ["コンパイル状態", c.IsValid ? "○ 正常 (IsValid=true)" : "✗ 再保存が必要 (IsValid=false)"],
   ];
 
-  const sections = [{ heading: "1. サマリ", kvRows: summary }];
+  // 凡例: Apex 用語の業務向け説明
+  const legend = [
+    ["Apex とは", "Salesforce 専用のサーバサイド言語 (Java 風)。トリガ・コントローラ・バッチ等で利用"],
+    ["メソッド", "クラスが提供する処理 (関数)。可視性・戻り型・引数で外部から呼ばれる API を定義"],
+    ["プロパティ", "クラスが保持する値 (getter/setter 付き)。VF/LWC からバインドされる"],
+    ["インスタンス変数", "クラス内の変数。プロパティと違い getter/setter なし"],
+    ["内部クラス", "ファイル内に定義された子クラス (DTO / Wrapper 用途で多用)"],
+    ["可視性", "public = 組織内全公開、private = クラス内のみ、global = 管理パッケージ外公開、protected = 継承先のみ"],
+    ["static 修飾子", "○ = インスタンス化不要でクラス名直接呼び出し可。ユーティリティメソッドに多い"],
+    ["アノテーション", "@AuraEnabled (LWC 連携), @InvocableMethod (Flow 連携), @future (非同期), @TestVisible (テスト用) 等"],
+    ["SymbolTable", "Salesforce が静的解析した構造情報。IsValid=false の場合は取得不可"],
+  ];
+
+  const sections = [
+    { heading: "0. 凡例 (Apex 用語の意味)", kvRows: legend },
+    { heading: "1. サマリ", kvRows: summary },
+  ];
 
   // SymbolTable からメソッド / プロパティ / 内部クラスを抽出
   const sym = c.SymbolTable;
@@ -1121,15 +1147,15 @@ async function buildApexDetail({ host, sid, apiVersion, obj }) {
     if (methods.length) {
       sections.push({
         heading: "2. メソッド一覧",
-        headers: ["No", "名前", "可視性", "戻り型", "引数", "static", "annotations"],
+        headers: ["No", "メソッド名", "可視性", "戻り型", "引数", "static", "アノテーション"],
         rows: methods.map((m, i) => ({
           "No": i + 1,
-          "名前": m.name,
-          "可視性": m.visibility || "",
+          "メソッド名": m.name,
+          "可視性": visibilityMap[m.visibility] || m.visibility || "",
           "戻り型": m.returnType || "void",
           "引数": (m.parameters || []).map((p) => `${p.type || ""} ${p.name || ""}`).join(", "),
           "static": (m.modifiers || []).includes("static") ? "○" : "",
-          "annotations": (m.annotations || []).map((a) => a.name).join(", "),
+          "アノテーション": (m.annotations || []).map((a) => `@${a.name}`).join(", "),
         })),
       });
     }
@@ -1137,9 +1163,12 @@ async function buildApexDetail({ host, sid, apiVersion, obj }) {
     if (props.length) {
       sections.push({
         heading: "3. プロパティ",
-        headers: ["No", "名前", "型", "可視性"],
+        headers: ["No", "プロパティ名", "型", "可視性"],
         rows: props.map((p, i) => ({
-          "No": i + 1, "名前": p.name, "型": p.type, "可視性": p.visibility || "",
+          "No": i + 1,
+          "プロパティ名": p.name,
+          "型": p.type,
+          "可視性": visibilityMap[p.visibility] || p.visibility || "",
         })),
       });
     }
@@ -1147,9 +1176,12 @@ async function buildApexDetail({ host, sid, apiVersion, obj }) {
     if (variables.length) {
       sections.push({
         heading: "4. インスタンス変数",
-        headers: ["No", "名前", "型", "可視性"],
+        headers: ["No", "変数名", "型", "可視性"],
         rows: variables.map((v, i) => ({
-          "No": i + 1, "名前": v.name, "型": v.type, "可視性": v.visibility || "",
+          "No": i + 1,
+          "変数名": v.name,
+          "型": v.type,
+          "可視性": visibilityMap[v.visibility] || v.visibility || "",
         })),
       });
     }
@@ -1157,9 +1189,10 @@ async function buildApexDetail({ host, sid, apiVersion, obj }) {
     if (innerClasses.length) {
       sections.push({
         heading: "5. 内部クラス",
-        headers: ["No", "名前", "メソッド数", "プロパティ数"],
+        headers: ["No", "内部クラス名", "メソッド数", "プロパティ数"],
         rows: innerClasses.map((ic, i) => ({
-          "No": i + 1, "名前": ic.name,
+          "No": i + 1,
+          "内部クラス名": ic.name,
           "メソッド数": (ic.methods || []).length,
           "プロパティ数": (ic.properties || []).length,
         })),
@@ -1168,15 +1201,17 @@ async function buildApexDetail({ host, sid, apiVersion, obj }) {
     const externalRefs = sym.externalReferences || [];
     if (externalRefs.length) {
       sections.push({
-        heading: "6. 外部参照",
-        headers: ["No", "名前", "Namespace"],
+        heading: "6. 外部参照 (依存クラス)",
+        headers: ["No", "参照クラス/型", "ネームスペース"],
         rows: externalRefs.map((er, i) => ({
-          "No": i + 1, "名前": er.name, "Namespace": er.namespace || "",
+          "No": i + 1,
+          "参照クラス/型": er.name,
+          "ネームスペース": er.namespace || "(自組織)",
         })),
       });
     }
   } else {
-    sections.push({ heading: "2. 解析失敗", kvRows: [["SymbolTable", "(未取得 — IsValid=false の可能性)"]] });
+    sections.push({ heading: "2. 解析失敗", kvRows: [["SymbolTable", "(未取得 — コンパイルエラー (IsValid=false) の可能性。Apex クラスを再保存してから再実行してください)"]] });
   }
 
   // ApexTrigger 参照 (このクラスを呼び出すトリガ)
@@ -1186,7 +1221,7 @@ async function buildApexDetail({ host, sid, apiVersion, obj }) {
   });
   if (trR.ok && trR.data.records && trR.data.records.length) {
     sections.push({
-      heading: "7. このクラスを参照するトリガ (Body一致)",
+      heading: "7. このクラスを参照するトリガ (本文一致検索)",
       headers: ["No", "トリガ名", "対象オブジェクト"],
       rows: trR.data.records.map((t, i) => ({ "No": i + 1, "トリガ名": t.Name, "対象オブジェクト": t.TableEnumOrId })),
     });
@@ -1196,7 +1231,7 @@ async function buildApexDetail({ host, sid, apiVersion, obj }) {
     title: `Apex 設計図: ${c.Name}`,
     type: "apexDetail",
     sections,
-    note: `SymbolTable はコンパイルが成功している場合のみ取得可。IsValid=false なら再保存後に再試行を。`,
+    note: `SymbolTable はコンパイルが成功している場合のみ取得可能 / IsValid=false なら Setup > Apex クラスから再保存後に再実行してください / 「7. 参照トリガ」はクラス名を本文に含むトリガを最大 50 件まで列挙`,
   };
 }
 

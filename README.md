@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.18.0 (2026-05-20 14:20)** — 🚨 ユーザー要望 Phase 8: ApexDetail / popup 履歴 / Limits / mini-panel ラベル:
+  - **🐛 buildApexDetail**: 凡例 9 項目追加 (Apex とは / メソッド / プロパティ / 可視性 (public/private/global/protected) / static / アノテーション (@AuraEnabled 等) / SymbolTable)、可視性を業務向け説明付きに、Status を ○有効/−無効/✗削除済 に、列名を「メソッド名」「アノテーション」「参照クラス/型」等に
+  - **🐛 popup.js SOQL 履歴**: 空状態を「履歴はまだありません。SOQL を実行するとここに最大 10 件保存します」に、tooltip を ですます調 に
+  - **🐛 panel.js Limits ダッシュボード**: 「使用率 70% を超える項目はありません」「項目 (Limit 名) / 残り / 使用率バー」等列名業務化、未取得 toast を ですます調 に
+  - **🐛 content.js (mini-panel)**: launcher / hdr-title / 各ボタン title を ですます調 に統一 ("DevToolsNext mini-panel を開く" → "DevToolsNext のミニパネルを開く (Salesforce 上で簡易 SOQL を実行できます)" 等)
 - **v2.17.0 (2026-05-20 14:15)** — 🚨 ユーザー要望 Phase 7: ObjectPermMatrix / FlsReport / AppList / FlowDetail 業務化:
   - **🐛 buildObjectPermMatrix**: 凡例を 10 項目に拡充 (CRUDVM 6 文字の意味、ViewAll/ModifyAll のリスク説明、CRUD-- 等の代表パターン)、note に Excel B2 ウィンドウ枠固定の Tips
   - **🐛 buildFlsReport**: 凡例セクション 7 項目 (FLS とは / 👤🔑 列マーカー / 必須項目の挙動 / 除外条件)、note を業務向け文言に

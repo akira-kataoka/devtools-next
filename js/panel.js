@@ -1698,13 +1698,13 @@ function renderLimitsList() {
       </div>
     `).join("");
   } else {
-    sumEl.innerHTML = `<div class="limit-card"><div class="title">健全</div><div class="val" style="color:var(--ok)">✓ OK</div><div class="sub">使用率 70%超の項目なし</div></div>`;
+    sumEl.innerHTML = `<div class="limit-card"><div class="title">健全</div><div class="val" style="color:var(--ok)">✓ OK</div><div class="sub">使用率 70% を超える項目はありません</div></div>`;
   }
 
   // 一覧
   const root = document.getElementById("limitsResult");
   const html = [`<div class="limit-row header">
-    <div>項目</div><div>使用</div><div>残量</div><div>上限</div><div>使用率</div><div>%</div>
+    <div>項目 (Limit 名)</div><div>使用</div><div>残り</div><div>上限</div><div>使用率バー</div><div>%</div>
   </div>`];
   for (const r of rows) {
     const cls = r.pct >= 90 ? "critical" : (r.pct >= 70 ? "warn" : (r.pct >= 50 ? "mid" : "low"));
@@ -1721,7 +1721,7 @@ function renderLimitsList() {
 }
 
 function exportLimitsCsv() {
-  if (!lastLimitsData) { panelToast("📭 Limits 未取得 (先に「取得」をクリック)", { kind: "warn" }); return; }
+  if (!lastLimitsData) { panelToast("📭 Limits 情報が未取得です。先に「取得」ボタンをクリックしてください", { kind: "warn" }); return; }
   // すべての列をダブルクォートで包む (Excel/Numbers/Google Sheets でロケール差や %/カンマ含む値を安全に)
   // 使用率は数値 (0-100) で出力 → Excel で数値ソート/フィルタ/条件付き書式が機能する
   const lines = [`"項目","使用","残量","上限","使用率(%)"`];

@@ -336,7 +336,7 @@ async function renderHistory() {
   if (!root) return;
   const { [HISTORY_KEY]: hist = [] } = await chrome.storage.local.get(HISTORY_KEY);
   if (!hist.length) {
-    root.innerHTML = `<div class="meta">履歴なし (実行するとここに最大10件保存。長押しでピン留め、ダブルクリックで削除)</div>`;
+    root.innerHTML = `<div class="meta">履歴はまだありません。SOQL を実行するとここに最大 10 件保存します (長押しでピン留め / ダブルクリックで削除できます)</div>`;
     return;
   }
   root.innerHTML = "";
@@ -348,7 +348,7 @@ async function renderHistory() {
       ${h.pinned ? `<span class="qbadge pin" title="ピン留め中">📌</span>` : ""}
       <span class="qbadge ${h.ok ? "ok" : "err"}">${h.ok ? "✓" : "✗"}</span>
       ${h.tooling ? `<span class="qbadge tool">T</span>` : ""}
-      <span class="qtext" title="クリックで復元 / ダブルクリックで削除 / 長押しでピン留め切替\n${escape(h.soql)}">${escape(h.soql)}</span>
+      <span class="qtext" title="クリックでクエリを復元します / ダブルクリックで削除 / 長押しでピン留めの切替\n${escape(h.soql)}">${escape(h.soql)}</span>
       <span class="qmeta">${h.count}件 ${h.ms}ms ${time}</span>
     `;
     // クリック=復元

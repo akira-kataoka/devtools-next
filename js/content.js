@@ -109,19 +109,19 @@ function flashToast(text) {
       .err { color: #ff6b6b; }
       .ok { color: #2ecc71; }
     </style>
-    <button class="launcher" id="lnch" title="DevToolsNext mini-panel を開く" aria-label="DevToolsNext mini-panel">🛠</button>
-    <div class="panel" id="pnl" role="dialog" aria-label="DevToolsNext mini panel">
+    <button class="launcher" id="lnch" title="DevToolsNext のミニパネルを開く (Salesforce 上で簡易 SOQL を実行できます)" aria-label="DevToolsNext ミニパネルを開く">🛠</button>
+    <div class="panel" id="pnl" role="dialog" aria-label="DevToolsNext ミニパネル">
       <div class="hdr">
-        <span class="hdr-title">🛠 DevToolsNext mini</span>
-        <button class="hdr-open" id="opn" title="フルパネルを新タブで開く">↗</button>
-        <button class="hdr-close" id="cls" title="閉じる" aria-label="閉じる">✕</button>
+        <span class="hdr-title">🛠 DevToolsNext ミニパネル</span>
+        <button class="hdr-open" id="opn" title="フルパネル (DevTools / ツールタブ) を新しいタブで開きます">↗</button>
+        <button class="hdr-close" id="cls" title="ミニパネルを閉じます" aria-label="閉じる">✕</button>
       </div>
       <div class="body">
         <textarea id="qry" placeholder="SELECT Id, Name FROM Account LIMIT 5" spellcheck="false">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 5</textarea>
         <div class="row">
-          <button class="hdr-close" id="useId" title="現在ページのレコード ID を WHERE Id='...' で挿入" style="border-color:#1b96ff;color:#1b96ff">📋 ID 挿入</button>
-          <button class="hdr-close" id="copyCsv" title="結果を CSV としてクリップボードにコピー">📋 CSV</button>
-          <span class="meta" id="mta">Ctrl+Enter で実行</span>
+          <button class="hdr-close" id="useId" title="現在のページのレコード ID を WHERE Id='...' でクエリに挿入します" style="border-color:#1b96ff;color:#1b96ff">📋 ID 挿入</button>
+          <button class="hdr-close" id="copyCsv" title="クエリ結果を CSV としてクリップボードにコピーします">📋 CSV</button>
+          <span class="meta" id="mta">Ctrl+Enter でクエリを実行できます</span>
           <button class="primary" id="run">▶ 実行</button>
         </div>
         <div class="result" id="res"></div>
