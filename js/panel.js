@@ -1270,19 +1270,19 @@ function apiBuildUrl() {
   let path = "", method = "GET", body = null, note = "";
   switch (op) {
     case "describe":
-      if (!objName) note = "⚠ オブジェクト API 名 が必要です";
+      if (!objName) note = "⚠ オブジェクトの API 名を入力してください";
       path = `/services/data/v${apiVer}/sobjects/${objName || "<Object>"}/describe`;
       break;
     case "describeGlobal":
       path = `/services/data/v${apiVer}/sobjects/`;
       break;
     case "get":
-      if (!objName || !id) note = "⚠ Object と Id が必要です";
+      if (!objName || !id) note = "⚠ オブジェクト API 名とレコード ID の両方を入力してください";
       path = `/services/data/v${apiVer}/sobjects/${objName || "<Object>"}/${id || "<Id>"}`;
       break;
     case "getByExtId":
-      if (!objName || !id) note = "⚠ Object と '<外部ID項目名>/<値>' が必要です (例 Email/foo@bar.com、Account__c/MyExtKey-123)";
-      else if (!/^[A-Za-z0-9_]+\/.+/.test(id)) note = "⚠ 形式エラー: 「外部ID項目名/値」 (スラッシュ区切り)。例: Email/foo@bar.com";
+      if (!objName || !id) note = "⚠ オブジェクト API 名と『<外部ID項目名>/<値>』形式の指定を入力してください (例: Email/foo@bar.com、Account__c/MyExtKey-123)";
+      else if (!/^[A-Za-z0-9_]+\/.+/.test(id)) note = "⚠ 形式エラーです: 「外部 ID 項目名 / 値」 をスラッシュ区切りで入力してください (例: Email/foo@bar.com)";
       path = `/services/data/v${apiVer}/sobjects/${objName || "<Object>"}/${id || "<ExtIdField>/<value>"}`;
       break;
     case "create":
@@ -1364,7 +1364,7 @@ function apiBuildUrl() {
   "${fullUrl}"`;
 
   if (state.sid) {
-    curl = `# 環境変数 SID は popup → セッション → copy で取得した値\nexport SID="${state.sid.substring(0, 20)}..."   # 実際は完全な sid を使用\n\n${curl}`;
+    curl = `# 環境変数 SID にはポップアップ > セッション情報 > コピー で取得した値を設定してください\nexport SID="${state.sid.substring(0, 20)}..."   # 実際は完全な sid を使用してください\n\n${curl}`;
   }
 
   document.getElementById("apiBuildUrl").textContent = fullUrl;
@@ -2657,15 +2657,36 @@ async function doFetchLoginHistory() {
 }
 
 function loginHistoryTable(rows) {
-  if (!rows.length) return `<div class="meta" style="padding:8px">該当なし</div>`;
-  const headers = ["LoginTime", "LoginType", "Application", "Status", "ApiType", "ApiVersion", "ClientVersion", "Browser", "Platform", "SourceIp", "UserId"];
-  const head = `<tr>${headers.map((h) => `<th>${escape(h)}</th>`).join("")}</tr>`;
+  if (!rows.length) return `<div class="meta" style="padding:8px">📭 該当するログイン履歴はありません</div>`;
+  // 列名を業務用語に変換するマッピング (内部キーは SF フィールド名のまま)
+  const colLabels = {
+    LoginTime: "ログイン日時",
+    LoginType: "ログイン種別",
+    Application: "アプリ",
+    Status: "ステータス",
+    ApiType: "API 種別",
+    ApiVersion: "API バージョン",
+    ClientVersion: "クライアントバージョン",
+    Browser: "ブラウザ",
+    Platform: "OS / プラットフォーム",
+    SourceIp: "送信元 IP アドレス",
+    UserId: "ユーザ ID",
+  };
+  const headers = Object.keys(colLabels);
+  const head = `<tr>${headers.map((h) => `<th title="${escape(h)} (Salesforce API 名)">${escape(colLabels[h])}</th>`).join("")}</tr>`;
   const body = rows.map((r) => {
     const statusOk = (r.Status || "").startsWith("Success");
-    const statusCell = `<span class="pill ${statusOk ? "ok" : "err"}">${escape(r.Status)}</span>`;
-    return `<tr>${headers.map((h) =>
-      h === "Status" ? `<td>${statusCell}</td>` : `<td>${escape(stringify(r[h]))}</td>`
-    ).join("")}</tr>`;
+    const statusLabel = statusOk ? `✓ ${escape(r.Status)}` : `✗ ${escape(r.Status)}`;
+    const statusCell = `<span class="pill ${statusOk ? "ok" : "err"}">${statusLabel}</span>`;
+    // ログイン日時を YYYY-MM-DD HH:mm に整形
+    let timeDisplay = stringify(r.LoginTime);
+    const m = String(r.LoginTime || "").match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+    if (m) timeDisplay = `${m[1]} ${m[2]}`;
+    return `<tr>${headers.map((h) => {
+      if (h === "Status") return `<td>${statusCell}</td>`;
+      if (h === "LoginTime") return `<td>${escape(timeDisplay)}</td>`;
+      return `<td>${escape(stringify(r[h]))}</td>`;
+    }).join("")}</tr>`;
   }).join("");
   return `<table>${head}${body}</table>`;
 }
@@ -2691,7 +2712,7 @@ function exportLoginCsv() {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   const sz = csv.length;
   const label = sz < 1024 ? `${sz} B` : `${(sz / 1024).toFixed(1)} KB`;
-  panelToast(`📥 Login History CSV (${state.lastLoginRecords.length} 件 / ${label})`, { kind: "ok" });
+  panelToast(`📥 ログイン履歴 CSV をダウンロードしました (${state.lastLoginRecords.length} 件 / ${label})`, { kind: "ok" });
 }
 
 // ====== saved queries (chrome.storage.local) ======

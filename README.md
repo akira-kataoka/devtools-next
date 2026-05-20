@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.37.0 (2026-05-20 15:55)** — 🚨 ユーザー要望 Phase 27: apiBuildUrl note / LoginHistory 列名 / curl SID コメント:
+  - **🐛 panel.js loginHistoryTable**: 列名を 11 個すべて日本語化 (LoginTime → ログイン日時、SourceIp → 送信元 IP アドレス、Platform → OS / プラットフォーム 等)、ヘッダに API 名を tooltip 表示、Status pill を「✓ Success」「✗ Failed」絵文字付きに、LoginTime を YYYY-MM-DD HH:mm に整形、空状態を「📭 該当するログイン履歴はありません」に
+  - **🐛 panel.js apiBuildUrl note**: 「⚠ オブジェクト API 名 が必要です」→「⚠ オブジェクトの API 名を入力してください」、「⚠ Object と Id が必要です」→「⚠ オブジェクト API 名とレコード ID の両方を入力してください」、外部 ID 形式エラーを ですます調 詳細化
+  - **🐛 panel.js curl SID コメント**: 「# 環境変数 SID は popup → セッション → copy で取得した値」→「# 環境変数 SID にはポップアップ > セッション情報 > コピー で取得した値を設定してください」、「# 実際は完全な sid を使用」→「# 実際は完全な sid を使用してください」
+  - **🐛 panel.js Login History CSV toast**: 「📥 Login History CSV (N 件 / X KB)」→「📥 ログイン履歴 CSV をダウンロードしました (N 件 / X KB)」
 - **v2.36.0 (2026-05-20 15:50)** — 🚨 ユーザー要望 Phase 26: API_HELP 19 項目業務拡充 + SOQL/Export meta:
   - **🐛 panel.js API_HELP 解説 19 オペレーション**: 各オペレーションの説明に「業務用途:」を追加して 2-3 行に拡充 (例: describe → 「新規開発前の項目仕様確認 / 監査時の項目台帳作成」、composite → 「API コール数削減 / トランザクション的に関連処理を実行」、event-log-file → 「監査ログのダウンロード / セキュリティ監視」)
   - **🐛 panel.js SOQL 結果 meta**: 「N 件 total=M / Tms Tooling」→「取得 N 件 / 合計 M 件 / Tms / Tooling (tooltip 付き)」に業務化
