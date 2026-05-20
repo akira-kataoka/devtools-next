@@ -222,6 +222,52 @@ function setupDesignPicker() {
   refresh();
 }
 
+// v3.63.0: SOQL 整形ヘルパー — キーワード大文字化 + 主節改行
+// シンプル実装: 文字列リテラル ('...') は退避してから加工、最後に復元
+function formatSoql(input) {
+  if (!input) return "";
+  // 1. 文字列リテラルを退避 (バックスラッシュエスケープ '\'' は連続文字として扱う)
+  const placeholders = [];
+  let working = input.replace(/'((?:[^'\\]|\\.|'')*)'/g, (m) => {
+    placeholders.push(m);
+    return `\x00LITERAL${placeholders.length - 1}\x00`;
+  });
+  // 2. キーワード大文字化 (単語境界判定で識別子は影響受けない)
+  const KEYWORDS = [
+    "SELECT", "FROM", "WHERE", "AND", "OR", "NOT", "IN", "NOT IN", "LIKE", "NULL",
+    "ORDER BY", "GROUP BY", "HAVING", "LIMIT", "OFFSET", "FOR VIEW", "FOR UPDATE", "FOR REFERENCE",
+    "ASC", "DESC", "NULLS FIRST", "NULLS LAST",
+    "TYPEOF", "WHEN", "THEN", "ELSE", "END",
+    "USING SCOPE", "WITH", "WITH SECURITY_ENFORCED",
+    "TRUE", "FALSE",
+    // 日付リテラル
+    "TODAY", "YESTERDAY", "TOMORROW", "LAST_WEEK", "THIS_WEEK", "NEXT_WEEK",
+    "LAST_MONTH", "THIS_MONTH", "NEXT_MONTH", "LAST_QUARTER", "THIS_QUARTER", "NEXT_QUARTER",
+    "LAST_YEAR", "THIS_YEAR", "NEXT_YEAR", "LAST_FISCAL_QUARTER", "THIS_FISCAL_QUARTER",
+    "LAST_FISCAL_YEAR", "THIS_FISCAL_YEAR", "NEXT_FISCAL_YEAR",
+    "LAST_N_DAYS", "NEXT_N_DAYS", "LAST_N_WEEKS", "NEXT_N_WEEKS",
+    "LAST_N_MONTHS", "NEXT_N_MONTHS", "LAST_N_QUARTERS", "NEXT_N_QUARTERS",
+    "LAST_N_YEARS", "NEXT_N_YEARS",
+  ];
+  // 長いキーワードから先に置換 (例: ORDER BY は ORDER より先)
+  const sortedKeywords = [...KEYWORDS].sort((a, b) => b.length - a.length);
+  sortedKeywords.forEach((kw) => {
+    const re = new RegExp(`\\b${kw.replace(/\s+/g, "\\s+")}\\b`, "gi");
+    working = working.replace(re, kw);
+  });
+  // 3. 主節 (SELECT/FROM/WHERE/ORDER BY/GROUP BY/HAVING/LIMIT/OFFSET) の前に改行
+  const MAJOR_CLAUSES = ["FROM", "WHERE", "ORDER BY", "GROUP BY", "HAVING", "LIMIT", "OFFSET"];
+  MAJOR_CLAUSES.forEach((kw) => {
+    const re = new RegExp(`\\s*\\b${kw.replace(/\s+/g, "\\s+")}\\b`, "g");
+    working = working.replace(re, `\n${kw}`);
+  });
+  // 4. 連続空白を 1 つにまとめる (改行は維持)
+  working = working.split(/\n/).map((line) => line.replace(/[ \t]+/g, " ").trim()).join("\n").trim();
+  // 5. プレースホルダ復元
+  working = working.replace(/\x00LITERAL(\d+)\x00/g, (_, i) => placeholders[+i]);
+  return working;
+}
+
 // v3.51.0: textarea にカーソル位置インジケータ (L:行 C:列) を装着
 // エラーメッセージの「3 行 5 列目」と照合しやすくする (Apex/REST/SOQL エディタ向け)
 function attachCursorPositionIndicator(textareaId) {
@@ -651,6 +697,24 @@ function bindEvents() {
 
   // SOQL
   $on("btnRunSoql", "click", doSoql);
+  // v3.63.0: SOQL 整形ボタン — 主節を大文字化 + 改行で揃え、業務文書として読みやすく
+  $on("btnSoqlFormat", "click", () => {
+    const ta = document.getElementById("soqlText");
+    if (!ta) return;
+    const original = ta.value;
+    if (!original.trim()) {
+      panelToast("📭 整形する SOQL がありません (まずクエリを入力してください)", { kind: "warn" });
+      ta.focus();
+      return;
+    }
+    const formatted = formatSoql(original);
+    if (formatted === original) {
+      panelToast("✓ 既に整形済みです (変更なし)", { kind: "ok" });
+      return;
+    }
+    ta.value = formatted;
+    panelToast(`🎨 SOQL を整形しました (${original.length} 文字 → ${formatted.length} 文字)`, { kind: "ok" });
+  });
   $on("btnExportCsv", "click", exportCsv);
   $on("btnSoqlEvidence", "click", captureSoqlEvidence);
   $on("btnInspectEvidence", "click", captureInspectorEvidence);
