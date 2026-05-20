@@ -17,6 +17,11 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.74.0 (2026-05-20 20:24)** — 🚨 Phase 65: exLoadFields lockBtn DRY + Picker コントラスト + apexClassList/fieldSetList 凡例追加:
+  - **🐛 panel.js exLoadFields**: 二重クリック防止のため `lockBtn("btnExLoadFields")` ヘルパーで disabled 化、入力空時のヒントを pill warn に統一、成功/失敗双方で確実に unlock
+  - **🎨 panel.css picker-row 選択強調**: `.picker-row.selected, .picker-row[aria-selected="true"]` の背景透明度を 0.15 → 0.28 に強化 + `inset box-shadow` で輪郭明確化 — キーボード操作時に現在ハイライト中の候補が一目でわかるよう視認性向上
+  - **📚 buildApexClassList 凡例セクション追加**: Apex クラスとは / unmanaged / installedEditable / installed の違い / コードサイズ Apex Limit 6 MB / ステータス / API バージョン の用語解説 7 項目
+  - **📚 buildFieldSetList 凡例セクション追加**: FieldSet とは / LWC・Visualforce での主な用途 / 管理画面 / 注意点 (削除時の依存) の業務担当向け解説 5 項目 + note に削除前確認の注意を追加
 - **v2.73.0 (2026-05-20 20:14)** — 🚨 Phase 64: popup Login as User UX + 残 3 設計書 note サマリ:
   - **🐛 popup.js searchUsersForLogin**: 検索ボタンを実行中無効化 (二重実行防止)、ボタンラベルを「⏳ 検索中…」に動的変更、検索結果ヘッダに「✓ N 件ヒット (有効ユーザのみ・最終ログイン日時降順・最大 30 件まで)」サマリ + 検索条件入力時はキーワードも表示。成功/失敗いずれの場合もボタン状態を確実に復元
   - **🐛 buildProfileList note**: 「合計 N 件 / 内部ユーザ向け X 件 / 外部 (コミュニティ/Experience Cloud) ユーザ向け Y 件 / ライセンス別: Salesforce A 件 / Salesforce Platform B 件 / ...」と内部/外部別とライセンス別を集計

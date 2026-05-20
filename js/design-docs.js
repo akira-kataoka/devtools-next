@@ -323,10 +323,23 @@ async function buildApexClassList({ host, sid, apiVersion }) {
   const deletedCount = records.filter((p) => p.Status === "Deleted").length;
   const acLocalCount = records.filter((p) => !p.NamespacePrefix).length;
   const acExtCount = records.length - acLocalCount;
+  // v2.74.0: 凡例セクション追加 (業務担当向けに用語解説)
+  const acLegend = [
+    ["Apex クラスとは", "Salesforce のサーバーサイド処理を記述する Java 風プログラム。トリガ・REST/SOAP サービス・テストクラス・コントローラ等の母体"],
+    ["unmanaged", "自組織で作成・編集可能なカスタム Apex"],
+    ["installedEditable", "AppExchange パッケージ由来だが組織側で編集可能なもの"],
+    ["installed (本一覧から除外)", "ロック済の管理パッケージ Apex (Salesforce 標準 + LMA 管理対象)。閲覧のみ可能"],
+    ["コードサイズ (Apex Limit)", "コメント除外行数の合計バイト数。組織全体で 6 MB が上限 (Salesforce 公式制限)"],
+    ["ステータス", "○ 有効 (実行可能) / − 無効 (コンパイル不可・実行されない) / ✗ 削除済 (UI に表示なし)"],
+    ["API バージョン", "実装時に指定した Salesforce API バージョン。新機能利用には新しいバージョンが必要"],
+  ];
   return {
     title: "Apex クラス一覧",
     type: "apexClassList",
-    sections: [{ heading: "Apex クラス", headers, rows }],
+    sections: [
+      { heading: "0. 凡例", kvRows: acLegend },
+      { heading: "1. Apex クラス", headers, rows },
+    ],
     note: `合計 ${fmtNum(records.length)} 件 (unmanaged + installedEditable のみ) / ステータス: 有効 ${fmtNum(activeCount)} 件・無効 ${fmtNum(inactiveCount)} 件・削除済 ${fmtNum(deletedCount)} 件 / ネームスペース: 自組織 ${fmtNum(acLocalCount)} 件・パッケージ由来 ${fmtNum(acExtCount)} 件 / 総コードサイズ: ${fmtBytes(totalLength)} (Apex Limit 6 MB に対する使用率: 約 ${fmtPercent(totalLength / (6 * 1024 * 1024))})`,
   };
 }
@@ -571,17 +584,30 @@ async function buildFieldSetList({ host, sid, apiVersion, obj }) {
   });
   if (!tr.ok) throw apiError("フィールドセットの取得に失敗しました", tr);
   const headers = ["No", "API 名", "ラベル", "説明"];
-  const rows = (tr.data.records || []).map((fs, i) => ({
+  const records = tr.data.records || [];
+  const rows = records.map((fs, i) => ({
     "No": i + 1,
     "API 名": fs.DeveloperName,
     "ラベル": fs.MasterLabel,
     "説明": fmtTrunc(fs.Description || "", 200),
   }));
+  // v2.74.0: 凡例セクション追加 (FieldSet の使い方を業務担当向けに解説)
+  const fsLegend = [
+    ["フィールドセットとは", "オブジェクト内の複数項目を 1 つの名前付きセットにまとめる仕組み。LWC/VF/Apex から動的に「表示すべき項目」を取得できる"],
+    ["主な用途 (LWC)", "lightning-record-edit-form の field-set 指定や、テーブルの動的列構築で使う。管理者が画面を変更してもコードは変更不要"],
+    ["主な用途 (Visualforce)", "<apex:repeat> や <apex:pageBlockTable> で動的にフィールドを描画する際のループソース"],
+    ["管理画面", "Setup → オブジェクト → フィールドセット で作成・並び替えが可能。プロジェクトでは『画面 = FieldSet 1 件』で管理することが多い"],
+    ["注意点", "削除時は依存する LWC/VF/Apex のコンパイルエラーになる可能性あり。事前に Setup の 『どこで使用されているか』 を確認すること"],
+  ];
+  // ネームスペース有無で組織側 / パッケージ由来を判別 (FieldSet テーブルには直接 NamespacePrefix が無いため API 名から推測しない方針 - 集計のみ件数)
   return {
     title: `フィールドセット一覧: ${obj}`,
     type: "fieldSetList",
-    sections: [{ heading: "FieldSet", headers, rows }],
-    note: `合計 ${fmtNum(rows.length)} 件 / FieldSet は LWC/VF から動的に項目セットを参照するために利用されます`,
+    sections: [
+      { heading: "0. 凡例", kvRows: fsLegend },
+      { heading: "1. FieldSet", headers, rows },
+    ],
+    note: `合計 ${fmtNum(records.length)} 件 / FieldSet は LWC/VF から動的に項目セットを参照するために利用されます — 削除前に Setup の使用箇所参照を必ず確認してください`,
   };
 }
 

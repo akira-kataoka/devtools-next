@@ -968,13 +968,19 @@ const exState = { obj: null, fields: [], selected: new Set() };
 async function exLoadFields() {
   if (!state.sid) { document.getElementById("exMeta").innerHTML = `<span class="pill err">Salesforce 未接続</span>`; return; }
   const obj = document.getElementById("exObj").value.trim();
-  if (!obj) return;
+  if (!obj) {
+    document.getElementById("exMeta").innerHTML = `<span class="pill warn">対象オブジェクトの API 名を入力してください</span>`;
+    return;
+  }
   const exMetaEl = document.getElementById("exMeta");
+  // v2.74.0: lockBtn ヘルパー化で二重クリック防止 + try/finally で確実に解除
+  const unlock = lockBtn("btnExLoadFields");
   exMetaEl.textContent = "⏳ describe 情報を取得しています…";
   exMetaEl.classList.add("loading-pulse");
 
   const r = await sfFetch({ host: state.host, sid: state.sid, path: `/services/data/v${state.apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
   if (!r.ok) {
+    unlock();
     exMetaEl.classList.remove("loading-pulse");
     exMetaEl.innerHTML = `<span class="pill err">describe の取得に失敗しました (HTTP ${r.status})</span> ${escape(JSON.stringify(r.data).substring(0, 200))}`;
     return;
@@ -995,6 +1001,7 @@ async function exLoadFields() {
   exMetaEl.innerHTML = `<span class="pill ok">${escape(obj)}</span> <span class="pill">${exState.fields.length} 項目</span> 標準フィールドを ${exState.selected.size} 件選択中`;
   exRenderFieldList();
   exBuildSoql();
+  unlock();
 }
 
 function exRenderFieldList() {
