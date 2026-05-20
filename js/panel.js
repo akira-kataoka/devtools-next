@@ -325,6 +325,7 @@ function bindEvents() {
   document.getElementById("btnSaveSoql").addEventListener("click", saveCurrentQuery);
   document.getElementById("btnLoadSoql").addEventListener("click", loadSelectedQuery);
   document.getElementById("soqlText").addEventListener("keydown", (e) => {
+    if (e.isComposing || e.keyCode === 229) return; // IME 確定中はスキップ
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") doSoql();
   });
 
@@ -366,6 +367,7 @@ function bindEvents() {
   enableTabToSpaces(document.getElementById("apexCode"));
   enableTabToSpaces(document.getElementById("soqlText"));
   document.getElementById("apexCode").addEventListener("keydown", (e) => {
+    if (e.isComposing || e.keyCode === 229) return; // IME 確定中はスキップ
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") doRunApex();
   });
   // LoginHistory
@@ -412,6 +414,7 @@ function bindEvents() {
   document.getElementById("inspectShowNull").addEventListener("change", renderInspectorFields);
   document.getElementById("inspectShowSystem").addEventListener("change", renderInspectorFields);
   document.getElementById("inspectRef").addEventListener("keydown", (e) => {
+    if (e.isComposing || e.keyCode === 229) return; // IME 確定中はスキップ
     if (e.key === "Enter") doInspect();
   });
 
@@ -432,6 +435,7 @@ function bindEvents() {
   document.getElementById("btnExDlJson").addEventListener("click", () => exDownloadAll("json"));
   document.getElementById("exFieldFilter").addEventListener("input", exRenderFieldList);
   document.getElementById("exObj").addEventListener("keydown", (e) => {
+    if (e.isComposing || e.keyCode === 229) return;
     if (e.key === "Enter") exLoadFields();
   });
 

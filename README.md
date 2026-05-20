@@ -4,6 +4,13 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.78.0 (2026-05-20 10:50)** — SOQL/Apex/Inspector Enter キーに IME 確定保護:
+  - **🐛 全 keydown ハンドラに `e.isComposing || e.keyCode === 229` ガード追加 (4 箇所)**:
+    - `#soqlText` Ctrl+Enter → doSoql
+    - `#apexCode` Ctrl+Enter → doRunApex
+    - `#inspectRef` Enter → doInspect
+    - `#exObj` Enter → exLoadFields
+  - **日本語/中国語/韓国語 IME 変換中の Enter (確定キー) が誤って実行/取得をトリガしていた問題を解消**。「営業時間」入力中の Enter は確定、二回目の Enter で実行 (正しい挙動)
 - **v1.77.0 (2026-05-20 10:45)** — IME 入力中の Tab キー無効化 + verBadge title 拡充:
   - **🐛 enableTabToSpaces() に IME 確定キー保護**: `e.isComposing || e.keyCode === 229` 時は preventDefault を呼ばずブラウザに委譲。**日本語/中国語/韓国語の IME 変換中 Tab で「次の候補選択」が動作するように** (従来 spaces 変換が割り込んで IME 機能を奪っていた)
   - **✨ verBadge title 拡充**: `現在のバージョン v1.77.0 (VERSION.txt 30秒ポーリングで自動更新)` で詳細な仕組みを案内
