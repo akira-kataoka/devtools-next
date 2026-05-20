@@ -7,6 +7,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.99.0 (2026-05-20 12:35)** — 🛡 信頼回復: queueMicrotask で TDZ 恒久解決 + README トラブルシューティング:
+  - **🐛 panel.js / popup.js の `init()` 呼出を `queueMicrotask()` でラップ**: v1.98.0 では API_OP_INPUTS のみ移動修正 → さらに調査した結果、**RECENT_VIEWS_KEY (line 257) も同じ TDZ パターンに該当**していた (init → bindNav → renderRecentNav → 参照)。queueMicrotask で init をモジュール body 評価完了後に遅延させ、**今後 const を追加しても TDZ になり得ない構造に**
+  - **📖 README に「🚨 起動時エラー対処」セクション**: TDZ / Cookie / sid / 404/403 などのエラー文と原因・対処マッピング + TDZ 再発防止設計の解説
 - **v1.98.0 (2026-05-20 12:30)** — 🚨 起動時 TDZ バグ修正 (API_OP_INPUTS):
   - **🐛 `init() → bindEvents() → updateApiInputVisibility()` が起動時に `const API_OP_INPUTS` を参照していたが、`init()` 呼出 (line 23) より const 宣言 (line 1171) が後にあったため `Cannot access 'API_OP_INPUTS' before initialization` で初期化失敗していた**
   - **修正**: `API_OP_INPUTS` 定義を init 呼出より上 (line 19 直前) に移動 + コメントで Why を明示。**v1.52.0 で追加されてから本不具合のまま動作していたが、ローカル環境/ユーザー報告により発覚 → 即時修正**
@@ -814,6 +817,25 @@ echo "VERSION.txt: $v / manifest: $m / README: $r"
 ```
 
 3 ファイルの version が完全一致しないと自動アップデート (background.js の VERSION.txt ポーリング) で `chrome.runtime.reload()` が空振りする恐れあり。
+
+### 🚨 起動時エラー対処 (v1.98.0+)
+
+panel/tool.html / popup の上部に「初期化エラー: …」表示が出た場合の対処:
+
+| エラー文 | 原因 | 対処 |
+|---|---|---|
+| `Cannot access 'XXX' before initialization` | モジュール内の `const` 宣言順 (TDZ バグ) | **v1.99.0 で queueMicrotask 化により恒久解決済**。古い拡張を使用している場合は最新版に更新 |
+| `chrome.cookies is undefined` | 拡張権限不足 / Web ページから直接読込 | `manifest.json` の `permissions: ["cookies"]` を確認、Web ページとして単独ロードしないこと |
+| `sid Cookie が見つかりません` | Salesforce にログインしていないタブで実行 | SF タブを開いてログイン → 再接続 (⟳) |
+| `見つかりません (HTTP 404)` | レコード ID が違う / 削除済 / 別組織 | ID 形式 (15/18 桁) 確認、現在の組織を `PROD/SBX/DEV` バッジで確認 |
+| `アクセス権限不足 (HTTP 403)` | Profile/PermSet で対象オブジェクト権限なし | Setup → 権限セット で確認 |
+| 「初期化エラー: …」が消えない | 拡張のキャッシュ汚染 | chrome://extensions → 「再読み込み」ボタン |
+
+#### 起動時 TDZ バグの再発防止 (内部実装)
+
+v1.98.0 で発覚した `Cannot access 'API_OP_INPUTS' before initialization` バグの根本原因は、`init()` を **モジュール body 評価中** に同期実行していたため、`init()` 内から参照される後方の `const` が TDZ にあったこと。
+
+v1.99.0 で `init()` の呼出を `queueMicrotask()` でラップ → モジュール body の全 const 評価完了後に init が走るように修正。今後 const を追加しても TDZ になり得ない構造に。
 
 ### 🧪 401 INVALID_SESSION_ID テスト手順
 

@@ -41,10 +41,14 @@ const API_OP_INPUTS = {
 };
 
 // モジュールスクリプトの defer 性質に対応 (popup.js と同じ防御)
+// 重要: init() を queueMicrotask で遅延させ、モジュール body 全 const 初期化完了後に走らせる
+// (v1.99.0: 旧 v1.98.0 では API_OP_INPUTS のみ移動修正、本変更で他の全 const も TDZ 安全に)
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("DOMContentLoaded", () => queueMicrotask(() =>
+    init().catch((e) => console.error("[DevToolsNext] panel init failed:", e))
+  ));
 } else {
-  init().catch((e) => console.error("[DevToolsNext] panel init failed:", e));
+  queueMicrotask(() => init().catch((e) => console.error("[DevToolsNext] panel init failed:", e)));
 }
 
 async function init() {

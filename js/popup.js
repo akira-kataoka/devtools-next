@@ -18,14 +18,15 @@ const state = {
 };
 
 // モジュールスクリプトは defer で読まれる → DOMContentLoaded を取り逃すケースがあるため両対応
+// v1.99.0: queueMicrotask で init を遅延 → モジュール body 全 const 初期化完了後に走らせ TDZ 回避
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
+  document.addEventListener("DOMContentLoaded", () => queueMicrotask(init));
 } else {
-  init().catch((e) => {
+  queueMicrotask(() => init().catch((e) => {
     const s = document.getElementById("statusMsg");
     if (s) s.textContent = "初期化エラー: " + String(e && e.message || e);
     console.error("popup init error:", e);
-  });
+  }));
 }
 
 async function init() {
