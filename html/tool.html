@@ -60,9 +60,9 @@
   </style>
 </head>
 <body>
-  <header class="hdr">
+  <header class="hdr" role="banner">
     <span class="brand">🛠️ DevToolsNext</span>
-    <span id="orgInfo" class="org" role="status" aria-live="polite">未接続</span>
+    <span id="orgInfo" class="org" role="status" aria-live="polite" aria-atomic="true">未接続</span>
     <span class="grow"></span>
     <span class="kbd-hint" title="主要なキーボードショートカット: Ctrl+Enter で実行 / Esc で閉じる / ↑↓ で Picker 移動 / Ctrl+Alt+I で Inspector / Q で SOQL / A で Apex / L で Limits / R で REST / D で 設計書">
       <kbd>Ctrl+Enter</kbd> 実行 / <kbd>Esc</kbd> 閉じる / <kbd>↑↓</kbd> Picker / <kbd>Ctrl+Alt+I/Q/A/L/R/D</kbd> ビュー切替
@@ -74,9 +74,9 @@
   </header>
 
   <div class="cols">
-    <aside class="side">
-      <button class="side-toggle" id="btnSideToggle" title="サイドメニューの折りたたみ・展開を切り替えます" aria-label="メニュー折りたたみ">◀</button>
-      <nav class="nav">
+    <aside class="side" aria-label="ツール選択サイドバー">
+      <button class="side-toggle" id="btnSideToggle" title="サイドメニューの折りたたみ・展開を切り替えます" aria-label="サイドメニューの折りたたみと展開を切り替えます">◀</button>
+      <nav class="nav" aria-label="ツール ナビゲーション">
         <div class="nav-sep">🗃️ データ操作</div>
         <button class="nav-btn active" data-view="soql" data-tooltip="SOQL クエリ" title="SOQL クエリを実行します">🔎 SOQL クエリ</button>
         <button class="nav-btn" data-view="inspector" data-tooltip="レコード Inspector" title="レコードを項目単位で確認します">🔍 レコード Inspector</button>
@@ -116,8 +116,8 @@
           <button id="btnRunSoql" class="primary" title="SOQL クエリを実行します (Ctrl+Enter でも実行できます)">▶ 実行 (Ctrl+Enter)</button>
         </div>
         <textarea id="soqlText" rows="8" spellcheck="false" placeholder="SOQL クエリを入力してください (例: SELECT Id, Name FROM Account WHERE CreatedDate = LAST_N_DAYS:30 ORDER BY CreatedDate DESC LIMIT 50)">SELECT Id, Name, CreatedDate FROM Account ORDER BY CreatedDate DESC LIMIT 50</textarea>
-        <div id="soqlMeta" class="meta"></div>
-        <div id="soqlResult" class="grid"></div>
+        <div id="soqlMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
+        <div id="soqlResult" class="grid" role="region" aria-label="SOQL クエリ結果"></div>
       </div>
 
       <div class="view hidden" data-view="inspector">
@@ -133,7 +133,7 @@
           <button id="btnInspectExportCsv" title="レコードを CSV ファイルとしてダウンロードします">CSV</button>
           <button id="btnInspectOpenInOrg" title="このレコードを Salesforce 組織で開きます (新しいタブ)">レコードを開く</button>
         </div>
-        <div id="inspectMeta" class="meta"></div>
+        <div id="inspectMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
         <div class="inspector-layout">
           <div class="inspector-left">
             <input id="inspectFilter" placeholder="フィールド絞込み (例 'email' / 'CreatedBy' / 'true' で値検索も可)" title="API 名・ラベル・値の部分一致で絞込み" />
@@ -178,9 +178,9 @@
               <button id="btnExDlCsv" title="クエリ結果を CSV ファイルとしてダウンロードします">CSV ダウンロード</button>
               <button id="btnExDlExcel" title="クエリ結果を Excel (.xls / SpreadsheetML) でダウンロードします">Excel (.xls) ダウンロード</button>
               <button id="btnExDlJson" title="クエリ結果を JSON ファイルとしてダウンロードします">JSON ダウンロード</button>
-              <span id="exProgress" class="meta"></span>
+              <span id="exProgress" class="meta" role="status" aria-live="polite" aria-atomic="true"></span>
             </div>
-            <div id="exMeta" class="meta"></div>
+            <div id="exMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
             <div id="exPreview" class="grid"></div>
           </div>
         </div>
@@ -216,7 +216,7 @@
           <button id="btnApiCurlCopy" title="生成された curl コマンドをクリップボードにコピーします (sid 含む)">curl コピー</button>
           <button id="btnApiOpen" title="生成された URL を新しいタブで開きます (GET のみ対応)">ブラウザで開く (GET のみ)</button>
         </div>
-        <div id="apiBuildMeta" class="meta"></div>
+        <div id="apiBuildMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
         <div class="apiurl-grid">
           <div>
             <div class="export-pane-label">REST URL</div>
@@ -247,7 +247,7 @@
 Account a = [SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 1];
 System.debug('Latest Account: ' + a);
 System.debug('Now: ' + System.now());</textarea>
-        <div id="apexMeta" class="meta"></div>
+        <div id="apexMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
         <div class="toolbar">
           <button id="btnApexCopy" title="Apex 結果をクリップボードへコピー">📋 結果コピー</button>
           <span class="grow"></span>
@@ -272,7 +272,7 @@ System.debug('Now: ' + System.now());</textarea>
           <button id="btnRest" class="primary" title="指定したパスとメソッドで REST API を送信します">送信</button>
         </div>
         <textarea id="restBody" rows="6" placeholder="POST / PATCH の場合は JSON ボディを入力してください (GET / DELETE では不要)"></textarea>
-        <div id="restMeta" class="meta"></div>
+        <div id="restMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
         <div class="toolbar">
           <button id="btnRestCopy" title="REST API のレスポンスをクリップボードにコピーします">📋 結果コピー</button>
           <span class="grow"></span>
@@ -317,7 +317,7 @@ System.debug('Now: ' + System.now());</textarea>
           <span class="grow"></span>
           <button id="btnLoginCsv" title="ログイン履歴を CSV ファイルとしてダウンロードします">CSV</button>
         </div>
-        <div id="loginMeta" class="meta"></div>
+        <div id="loginMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
         <div id="loginResult" class="grid"></div>
       </div>
 

@@ -85,7 +85,7 @@
         <input id="loginAsSearch" placeholder="ユーザ名 / 姓名 / Alias / Email で検索できます (有効ユーザのみ)" title="Name/Username/Email/Alias の部分一致で検索し、最終ログイン日時順 30 件を表示します" aria-label="ユーザ検索キーワード" />
         <button id="btnLoginAsSearch" class="primary" aria-label="ユーザーを検索">検索</button>
       </div>
-      <div id="loginAsResult" class="login-as-result" role="list"></div>
+      <div id="loginAsResult" class="login-as-result" role="list" aria-live="polite" aria-atomic="false"></div>
     </section>
 
     <section class="card">
@@ -109,8 +109,8 @@
         <button id="btnExportCsv" title="クエリ結果を CSV ファイルとしてダウンロードします">CSV</button>
         <button id="btnClearHistory" class="mini" title="SOQL 履歴をすべて削除します (ピン留め項目も削除されます)">履歴クリア</button>
       </div>
-      <div id="soqlMeta" class="meta"></div>
-      <div id="soqlResult" class="result"></div>
+      <div id="soqlMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
+      <div id="soqlResult" class="result" role="region" aria-label="SOQL クエリ結果"></div>
     </section>
     <section class="card">
       <h2>履歴 <span style="font-size:10px;color:var(--fg-dim);font-weight:400">— 📌 ピン留め優先 / その後 最新順 (最大10件)</span></h2>
@@ -133,8 +133,8 @@
         <button id="btnApiLimits" title="/limits エンドポイントに GET します">/limits</button>
         <button id="btnApiVersions" title="/services/data エンドポイントで利用可能な API バージョン一覧を取得します">/versions</button>
       </div>
-      <div id="apiMeta" class="meta"></div>
-      <pre id="apiResult" class="code"></pre>
+      <div id="apiMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
+      <pre id="apiResult" class="code" role="region" aria-label="REST API レスポンス"></pre>
     </section>
   </main>
 
@@ -146,7 +146,7 @@
   </main>
 
   <footer class="ftr">
-    <span id="statusMsg">準備完了</span>
+    <span id="statusMsg" role="status" aria-live="polite" aria-atomic="true">準備完了</span>
     <a href="#" id="openDevtools" title="DevToolsNext を新しいタブで全画面起動します">🛠️ ツールを開く</a>
   </footer>
 

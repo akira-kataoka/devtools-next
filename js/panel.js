@@ -296,17 +296,26 @@ async function renderRecentNav() {
 function switchToView(v) {
   // ビュー切替時は前ビューの toast を残さない (画面外に残り続ける問題の予防)
   document.querySelectorAll(".panel-toast").forEach((t) => t.remove());
-  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.remove("active"));
+  // v2.71.0: aria-current="page" を切替してスクリーンリーダーに現在ビューを通知
+  document.querySelectorAll(".nav-btn").forEach((b) => {
+    b.classList.remove("active");
+    b.removeAttribute("aria-current");
+  });
   const matched = document.querySelectorAll('.nav-btn[data-view="' + v + '"]');
   matched.forEach((b) => {
     b.classList.add("active");
+    b.setAttribute("aria-current", "page");
     // フラッシュアニメ: 既存クラスをトグルしてリトリガ
     b.classList.remove("flash");
     void b.offsetWidth; // reflow で animation 再起動
     b.classList.add("flash");
   });
   document.querySelectorAll(".view").forEach((p) => {
-    p.classList.toggle("hidden", p.dataset.view !== v);
+    const hidden = p.dataset.view !== v;
+    p.classList.toggle("hidden", hidden);
+    // v2.71.0: aria-hidden で非表示ビューをスクリーンリーダーからも除外
+    if (hidden) p.setAttribute("aria-hidden", "true");
+    else p.removeAttribute("aria-hidden");
   });
   // ビュー切替時にメイン領域のスクロール位置を最上部にリセット (前ビューでスクロールしていた状態が残る UX 問題を解消)
   const mainEl = document.querySelector(".main");
@@ -325,6 +334,11 @@ function bindNav() {
   document.querySelectorAll(".nav-btn").forEach((btn) => {
     btn.addEventListener("click", () => switchToView(btn.dataset.view));
   });
+  // v2.71.0: 起動時の既存 .active なナビボタンに aria-current="page" を付与
+  // (HTML の初期 active 状態には aria-current が無いため、a11y のために初期化時に同期させる)
+  document.querySelectorAll(".nav-btn.active").forEach((b) => b.setAttribute("aria-current", "page"));
+  // 同様に初期 hidden な .view にも aria-hidden を付与
+  document.querySelectorAll(".view.hidden").forEach((p) => p.setAttribute("aria-hidden", "true"));
   renderRecentNav();
   // サイドメニュー折りたたみトグル (v2.5.0)
   const sideToggle = document.getElementById("btnSideToggle");

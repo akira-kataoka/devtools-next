@@ -17,6 +17,14 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.71.0 (2026-05-20 21:00)** — 🚨 Phase 62: 設計書 note サマリ追加 + a11y (aria-live/role/aria-current) 強化:
+  - **🐛 buildValidationRuleList note**: 「有効 N 件 (XX.X%) / 無効 M 件 / 項目直下 K 件・ページ上部 L 件」と稼働状況と表示位置内訳を集計
+  - **🐛 buildRecordTypeList note**: 「対象オブジェクト N 種類 / 有効 X 件 (XX.X%) / 無効 Y 件 / 営業プロセス連携あり Z 件」と組織全体の RT 分布を可視化
+  - **🐛 buildCustomSettingList note**: 「List 型 N 件 / Hierarchy 型 M 件」の型別件数を分けて表記
+  - **🐛 buildErDiagram note**: 「関連エンティティ N 件 / 親方向参照 X 件 (MD A + Lookup B) / 子方向参照 Y 件 (MD C + Lookup D)」と MD/Lookup 内訳を集計、childRelationships 30 件超の省略明示
+  - **♿ a11y panel.html / tool.html / popup.html**: `header role=banner`、`aside aria-label`、`nav aria-label`、`<meta />` 領域 (soqlMeta / inspectMeta / exMeta / apiBuildMeta / apexMeta / restMeta / loginMeta / exProgress / orgInfo / apiMeta / statusMsg) に `role="status" aria-live="polite" aria-atomic="true"` を一斉付与 — スクリーンリーダーが結果取得・実行中状態を読み上げ可能に
+  - **♿ panel.js switchToView**: `nav-btn` の `aria-current="page"` トグル + `.view` の `aria-hidden` トグルを実装、初期 active ボタンにも bindNav で同期
+  - **🎨 CSS 空状態ヒント拡張**: `#metadataResult` / `#inspectResult` / `#exPreview` にも :empty::before で具体的な操作手順を表示 (3 ペイン分追加で 9 ペイン全網羅)
 - **v2.70.0 (2026-05-20 20:19)** — 🎊 Phase 61: 「カラム名・値・桁数の改善」累計サマリ表を README に追加:
   - **📚 README に「v2.69.0 累計サマリ (Phase 50-60)」セクション追加**: ユーザー要望対応の Phase 50-60 改修を 5 カテゴリ表で整理 (数値整形 / 長文 truncate / カラム名統一 / 集計 note / 値表記)
   - **🧪 設計書 22 種類のヘルパー適用最終確認**: fmtNum/fmtBytes/fmtTrunc/fmtPercent/fmtDate が全 builder に行き渡っていることを確認、残課題なし

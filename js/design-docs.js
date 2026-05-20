@@ -409,7 +409,8 @@ async function buildValidationRuleList({ host, sid, apiVersion, obj }) {
   });
   if (!r.ok) throw apiError("入力規則の取得に失敗しました", r);
   const headers = ["No", "オブジェクト", "ルール名 (API)", "有効", "エラー表示位置", "エラーメッセージ", "説明 (開発者向け)", "更新日"];
-  const rows = (r.data.records || []).map((v, i) => ({
+  const records = r.data.records || [];
+  const rows = records.map((v, i) => ({
     "No": i + 1,
     "オブジェクト": v.EntityDefinition ? v.EntityDefinition.QualifiedApiName : "",
     "ルール名 (API)": v.ValidationName,
@@ -425,6 +426,12 @@ async function buildValidationRuleList({ host, sid, apiVersion, obj }) {
     ["エラーメッセージ", "保存時に検証失敗した場合にユーザーへ表示される文言。多言語化したい場合は \\$Label を使用"],
     ["説明", "Setup 画面の開発者向けメモ。ユーザーには表示されない"],
   ];
+  // v2.71.0: note サマリで有効/無効件数 + 表示位置内訳を集計
+  const activeCount = records.filter((v) => v.Active).length;
+  const inactiveCount = records.length - activeCount;
+  const fieldLevelCount = records.filter((v) => v.ErrorDisplayField).length;
+  const pageLevelCount = records.length - fieldLevelCount;
+  const activeRate = records.length > 0 ? activeCount / records.length : 0;
   return {
     title: obj ? `入力規則一覧: ${obj}` : "入力規則一覧 (全オブジェクト)",
     type: "validationRuleList",
@@ -432,7 +439,7 @@ async function buildValidationRuleList({ host, sid, apiVersion, obj }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. ValidationRule", headers, rows },
     ],
-    note: `合計 ${fmtNum(rows.length)} 件 / 無効ルールも本一覧には含まれます (Setup では既定で非表示)`,
+    note: `合計 ${fmtNum(rows.length)} 件 / 有効 ${fmtNum(activeCount)} 件 (${fmtPercent(activeRate)}) / 無効 ${fmtNum(inactiveCount)} 件 / 表示位置: 項目直下 ${fmtNum(fieldLevelCount)} 件・ページ上部 ${fmtNum(pageLevelCount)} 件 — 無効ルールも本一覧には含まれます (Setup では既定で非表示)`,
   };
 }
 
@@ -445,7 +452,8 @@ async function buildRecordTypeList({ host, sid, apiVersion, obj }) {
   });
   if (!r.ok) throw apiError("レコードタイプの取得に失敗しました", r);
   const headers = ["No", "オブジェクト", "API 名 (DeveloperName)", "ラベル (画面表示名)", "有効", "営業プロセス連携", "説明 (開発者向け)"];
-  const rows = (r.data.records || []).map((rt, i) => ({
+  const records = r.data.records || [];
+  const rows = records.map((rt, i) => ({
     "No": i + 1,
     "オブジェクト": rt.SobjectType,
     "API 名 (DeveloperName)": rt.DeveloperName,
@@ -460,6 +468,12 @@ async function buildRecordTypeList({ host, sid, apiVersion, obj }) {
     ["営業プロセス連携", "Opportunity / Lead / Case / Solution で利用される BusinessProcess (フェーズ/ステータス段階) との紐付け"],
     ["割当て", "実際の利用可否はプロファイル/権限セットの『レコードタイプの割り当て』で決定 (本一覧はメタ定義のみ)"],
   ];
+  // v2.71.0: note サマリでオブジェクト別件数 + 有効/無効 + BusinessProcess 連携率を集計
+  const activeCount = records.filter((rt) => rt.IsActive).length;
+  const inactiveCount = records.length - activeCount;
+  const bpLinked = records.filter((rt) => rt.BusinessProcessId).length;
+  const objCount = new Set(records.map((rt) => rt.SobjectType)).size;
+  const activeRate = records.length > 0 ? activeCount / records.length : 0;
   return {
     title: obj ? `レコードタイプ一覧: ${obj}` : "レコードタイプ一覧 (全オブジェクト)",
     type: "recordTypeList",
@@ -467,7 +481,7 @@ async function buildRecordTypeList({ host, sid, apiVersion, obj }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. RecordType", headers, rows },
     ],
-    note: `合計 ${fmtNum(rows.length)} 件 / 無効レコードタイプも本一覧には含まれます`,
+    note: `合計 ${fmtNum(rows.length)} 件 / 対象オブジェクト ${fmtNum(objCount)} 種類 / 有効 ${fmtNum(activeCount)} 件 (${fmtPercent(activeRate)}) / 無効 ${fmtNum(inactiveCount)} 件 / 営業プロセス連携あり ${fmtNum(bpLinked)} 件 — 無効レコードタイプも本一覧には含まれます`,
   };
 }
 
@@ -509,8 +523,9 @@ async function buildCustomSettingList({ host, sid, apiVersion }) {
     "List": "List 型 (組織共通の定数表)",
     "Hierarchy": "Hierarchy 型 (組織/プロファイル/ユーザ毎に上書き可)",
   };
+  const records = r.data.records || [];
   const headers = ["No", "API 名", "ラベル", "種別", "説明"];
-  const rows = (r.data.records || []).map((c, i) => ({
+  const rows = records.map((c, i) => ({
     "No": i + 1,
     "API 名": c.DeveloperName + "__c",
     "ラベル": c.MasterLabel,
@@ -523,6 +538,9 @@ async function buildCustomSettingList({ host, sid, apiVersion }) {
     ["Hierarchy 型", "組織 → プロファイル → ユーザの順で上書き可能。ユーザ毎に異なる値を返したい時に使用 (例: API キー)"],
     ["カスタムメタデータとの違い", "カスタム設定はレコード=データ、カスタムメタデータはレコード=メタ定義 (デプロイ可能)。新規実装は CustomMetadata 推奨"],
   ];
+  // v2.71.0: note サマリで List 型 / Hierarchy 型 別件数を集計
+  const listCount = records.filter((c) => c.CustomSettingsType === "List").length;
+  const hierarchyCount = records.filter((c) => c.CustomSettingsType === "Hierarchy").length;
   return {
     title: "カスタム設定一覧",
     type: "customSettingList",
@@ -530,7 +548,7 @@ async function buildCustomSettingList({ host, sid, apiVersion }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. CustomSetting", headers, rows },
     ],
-    note: `合計 ${fmtNum(rows.length)} 件 / Salesforce は新規実装にカスタムメタデータ型を推奨 (本一覧は既存資産確認用)`,
+    note: `合計 ${fmtNum(rows.length)} 件 / List 型 ${fmtNum(listCount)} 件 / Hierarchy 型 ${fmtNum(hierarchyCount)} 件 — Salesforce は新規実装にカスタムメタデータ型を推奨 (本一覧は既存資産確認用)`,
   };
 }
 
@@ -556,6 +574,9 @@ async function buildErDiagram({ host, sid, apiVersion, obj }) {
   // Mermaid 記法:
   //   親 ||--o{ 子  → Lookup (1 対 0..多、子は親を持たなくても OK)
   //   親 ||--|{ 子  → Master-Detail (1 対 1..多、子は親必須・カスケード削除)
+  // v2.71.0: 親/子 別 + MD/Lookup 別の件数集計 (note サマリ用)
+  let parentMD = 0, parentLookup = 0, childMD = 0, childLookup = 0;
+  let childTotal = 0, childTruncated = false;
   // 親方向 (この obj が子側、reference 項目で親を参照)
   const refs = (d.fields || []).filter((f) => f.type === "reference" && (f.referenceTo || []).length);
   refs.forEach((f) => {
@@ -566,16 +587,20 @@ async function buildErDiagram({ host, sid, apiVersion, obj }) {
       const kind = isMD ? "MD" : "Lookup";
       lines.push(`    ${mid(d.name)} ${arrow} ${mid(to)} : "${mlabel(f.name)} (${kind})"`);
       seen.add(to);
+      if (isMD) parentMD++; else parentLookup++;
     });
   });
   // 子方向 (childRelationships) — cascadeDelete = true なら Master-Detail
-  (d.childRelationships || []).slice(0, 30).forEach((c) => {
-    if (!c.childSObject) return;
+  const allChildren = (d.childRelationships || []).filter((c) => c.childSObject);
+  childTotal = allChildren.length;
+  if (childTotal > 30) childTruncated = true;
+  allChildren.slice(0, 30).forEach((c) => {
     const isMD = !!c.cascadeDelete;
     const arrow = isMD ? `||--|{` : `||--o{`;
     const kind = isMD ? "MD" : "Lookup";
     lines.push(`    ${mid(d.name)} ${arrow} ${mid(c.childSObject)} : "${mlabel(c.field)} (${kind})"`);
     seen.add(c.childSObject);
+    if (isMD) childMD++; else childLookup++;
   });
 
   // 各エンティティに API 名表示用の空ブロック
@@ -591,11 +616,15 @@ async function buildErDiagram({ host, sid, apiVersion, obj }) {
 
   const mermaid = lines.join("\n");
 
+  // v2.71.0: note サマリに参照件数 (親方向/子方向 × MD/Lookup) を集計
+  const parentTotal = parentMD + parentLookup;
+  const childRendered = childMD + childLookup;
+  const truncMsg = childTruncated ? ` (うち ${fmtNum(childTotal - 30)} 件は表示省略・childRelationships 上限 30 件)` : "";
   return {
     title: `ER 図: ${d.label} (${d.name}) を起点とした 1-hop`,
     type: "erDiagram",
     sections: [{ heading: "ER 図 (Mermaid)", mermaid }],
-    note: "Mermaid Live Editor (https://mermaid.live) に貼り付けると可視化できます。線種: ||--o{ = Lookup (任意参照) / ||--|{ = Master-Detail (必須参照・カスケード削除) です。",
+    note: `関連エンティティ ${fmtNum(seen.size - 1)} 件 / 親方向参照 ${fmtNum(parentTotal)} 件 (MD ${fmtNum(parentMD)} + Lookup ${fmtNum(parentLookup)}) / 子方向参照 ${fmtNum(childRendered)} 件 (MD ${fmtNum(childMD)} + Lookup ${fmtNum(childLookup)})${truncMsg}。Mermaid Live Editor (https://mermaid.live) に貼り付けると可視化できます。線種: ||--o{ = Lookup (任意参照) / ||--|{ = Master-Detail (必須参照・カスケード削除) です。`,
   };
 }
 

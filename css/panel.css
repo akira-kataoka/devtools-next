@@ -299,6 +299,22 @@ td.cell-nested { word-break: break-word; }
   display: block; text-align: center; padding: 32px 16px;
   color: var(--accent); font-size: 13px; line-height: 1.8;
 }
+/* v2.71.0: メタデータ一覧 / Inspector / Export プレビュー の空状態ヒントも追加 */
+#metadataResult:empty::before {
+  content: "📦 メタデータ一覧がまだ取得されていません  /  上のセレクタで型を選択し「一覧取得」をクリックしてください";
+  display: block; text-align: center; padding: 32px 16px;
+  color: var(--accent); font-size: 13px; line-height: 1.8;
+}
+#inspectResult:empty::before {
+  content: "🔍 レコードがまだ表示されていません  /  上の入力欄にレコード ID を入力し「▶ 取得」をクリックしてください";
+  display: block; text-align: center; padding: 32px 16px;
+  color: var(--accent); font-size: 13px; line-height: 1.8;
+}
+#exPreview:empty::before {
+  content: "📥 プレビューがまだ取得されていません  /  対象オブジェクトの「フィールド読込」 → 「SOQL 組立」 → 「▶ 実行」の順で進めてください";
+  display: block; text-align: center; padding: 32px 16px;
+  color: var(--accent); font-size: 13px; line-height: 1.8;
+}
 .design-preview h1, .design-preview h2, .design-preview h3 {
   color: var(--accent); margin: 12px 0 6px;
   border-bottom: 1px solid var(--line); padding-bottom: 3px;
