@@ -244,8 +244,10 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
     const $clear = overlay.querySelector(".picker-clear");
     if ($clear) $clear.addEventListener("click", () => {
       $input.value = "";
+      selectedIdx = 0; // 検索クリア時は先頭にハイライト戻し
       $input.focus();
       $input.dispatchEvent(new Event("input"));
+      if ($list) $list.scrollTop = 0;
     });
 
     const close = (val) => {

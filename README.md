@@ -4,6 +4,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.76.0 (2026-05-20 10:40)** — Picker ✕ クリア時に selectedIdx + scrollTop もリセット:
+  - **🐛 Picker 検索 ✕ ボタンクリック時に `selectedIdx = 0` + `$list.scrollTop = 0`**: 従来は input.value="" + input.focus() のみ → ハイライト位置とリスト scroll が前検索結果のままで違和感。**reload (⟳) と同等の完全リセット動作に統一**
+  - **🧪 picker-clear aria-label, version badge 同期 (chrome.runtime.getManifest), Tab→spaces (enableTabToSpaces) はすべて既存実装で OK** (修正不要)
 - **v1.75.0 (2026-05-20 10:35)** — README に Picker キーボード操作 & focus 戻りテスト手順追加:
   - **📖 「Picker キーボード操作 & focus 戻りテスト手順」セクション追加**: Tab → Enter で Picker 起動 → ↑↓/Home/End/PageUp/PageDown/Enter/Esc 全キーボード操作確認 → close 後の `document.activeElement` 復帰確認 (DevTools Console での確認方法込み)
   - **🧪 Picker reload で focusReturnTarget 維持**: reload は overlay 内 items 再描画のみで overlay 自体は不変 → focusReturnTarget も維持 (修正不要)
