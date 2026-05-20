@@ -637,16 +637,17 @@ function bindEvents() {
   document.getElementById("apiOp").addEventListener("change", apiBuildUrl);
   updateApiInputVisibility(); // 初期描画時にも反映
 
-  // 変更セット / package.xml
-  document.getElementById("btnCsLoad").addEventListener("click", csOnModeChange);
-  document.getElementById("btnCsListType").addEventListener("click", csListCandidates);
-  document.getElementById("btnCsClear").addEventListener("click", csClearSelection);
-  document.getElementById("btnCsBuildXml").addEventListener("click", csBuildPackageXml);
-  document.getElementById("btnCsCopyXml").addEventListener("click", csCopyXml);
-  document.getElementById("btnCsDlXml").addEventListener("click", csDownloadXml);
-  document.getElementById("btnCsDlBundle").addEventListener("click", csDownloadSfdxBundle);
-  document.getElementById("csFilter").addEventListener("input", csRenderCandidates);
-  document.getElementById("csMode").addEventListener("change", csOnModeChange);
+  // 変更セット / package.xml (v2.88.0: v2.86 で changeset view を削除した影響で DOM が無い → null セーフ化で init エラー回避)
+  const $on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
+  $on("btnCsLoad", "click", csOnModeChange);
+  $on("btnCsListType", "click", csListCandidates);
+  $on("btnCsClear", "click", csClearSelection);
+  $on("btnCsBuildXml", "click", csBuildPackageXml);
+  $on("btnCsCopyXml", "click", csCopyXml);
+  $on("btnCsDlXml", "click", csDownloadXml);
+  $on("btnCsDlBundle", "click", csDownloadSfdxBundle);
+  $on("csFilter", "input", csRenderCandidates);
+  $on("csMode", "change", csOnModeChange);
 }
 
 // ====== 変更セット / package.xml ======
