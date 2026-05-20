@@ -112,18 +112,23 @@ async function buildObjectDef({ host, sid, apiVersion, obj }) {
   const fields = d.fields || [];
 
   // フィールド表 (業務テンプレ準拠: v2.11.0 で 「作成可」「更新可」「暗号化」「ヘルプテキスト」を追加分離)
+  // v2.80.0: 「桁/精度」が意味不明とのフィードバックを受け、「文字数」「数値桁数」「小数桁」の 3 列に分離
   const headers = [
-    "No", "API 名", "表示名", "データ型", "桁/精度", "必須", "一意", "外部ID", "計算項目",
+    "No", "API 名", "表示名", "データ型", "文字数", "数値桁数", "小数桁",
+    "必須", "一意", "外部ID", "計算項目",
     "作成可", "更新可", "暗号化", "参照先", "選択リスト値", "既定値", "ヘルプテキスト", "説明",
   ];
+  // 文字列系の型は length (文字数) を、数値系の型は precision (全桁数) と scale (小数桁) を使う
+  const isStringLike = (t) => ["string", "textarea", "email", "phone", "url"].includes(t);
+  const isNumericLike = (t) => ["currency", "double", "percent", "int", "long"].includes(t);
   const rows = fields.map((f, i) => ({
     "No": i + 1,
     "API 名": f.name,
     "表示名": f.label,
     "データ型": f.type,
-    "桁/精度": (f.type === "string" || f.type === "textarea" || f.type === "email" || f.type === "phone" || f.type === "url")
-      ? (f.length ? `${fmtNum(f.length)} 文字` : "")
-      : (f.precision != null && f.scale != null ? `精度 ${f.precision} / 小数 ${f.scale}` : ""),
+    "文字数": isStringLike(f.type) && f.length ? `${fmtNum(f.length)} 文字` : "",
+    "数値桁数": isNumericLike(f.type) && f.precision != null ? `${fmtNum(f.precision)} 桁` : "",
+    "小数桁": isNumericLike(f.type) && f.scale != null ? `${fmtNum(f.scale)} 桁` : "",
     "必須": !f.nillable && !f.defaultedOnCreate && f.createable ? "○" : "",
     "一意": f.unique ? "○" : "",
     "外部ID": f.externalId ? "○" : "",

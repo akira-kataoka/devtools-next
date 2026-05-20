@@ -288,37 +288,21 @@ function initHeader() {
 
 const RECENT_VIEWS_KEY = "sfdtRecentViews";
 async function pushRecentView(viewName, label) {
+  // v2.80.0: 「最近開いたビュー」のサイドバー表示を撤去 (ユーザー要望: サイドバーが下まで見えない / 機能群を分かりやすく整理)
+  // 履歴自体はストレージに保存し続けるが、サイドバーには展開しない (将来ホームに移動する余地は残す)
   try {
     const { [RECENT_VIEWS_KEY]: list = [] } = await chrome.storage.local.get(RECENT_VIEWS_KEY);
     const filtered = list.filter((v) => v.view !== viewName);
     filtered.unshift({ view: viewName, label, ts: Date.now() });
     await chrome.storage.local.set({ [RECENT_VIEWS_KEY]: filtered.slice(0, 7) });
-    renderRecentNav();
   } catch {}
 }
 
+// v2.80.0: サイドバーへの注入を停止 (関数は呼び出し側互換のため残す)
 async function renderRecentNav() {
-  try {
-    const { [RECENT_VIEWS_KEY]: list = [] } = await chrome.storage.local.get(RECENT_VIEWS_KEY);
-    let area = document.getElementById("nav-recent-section");
-    const nav = document.querySelector(".side .nav");
-    if (!nav) return;
-    if (!area) {
-      area = document.createElement("div");
-      area.id = "nav-recent-section";
-      // ナビの一番上に挿入
-      nav.insertBefore(area, nav.firstChild);
-    }
-    if (!list.length) { area.innerHTML = ""; return; }
-    area.innerHTML = `<div class="nav-sep" title="最近開いた最大 7 ビューを表示します">⏱ 最近開いたビュー</div>` +
-      list.map((r) =>
-        `<button class="nav-btn recent" data-view="${escape(r.view)}" title="${escape(r.label)} を ${escape(new Date(r.ts).toLocaleString())} に開きました">↻ ${escape(r.label)}</button>`
-      ).join("");
-    // 動的に追加したボタンにもクリックハンドラ
-    area.querySelectorAll(".nav-btn").forEach((btn) => {
-      btn.addEventListener("click", () => switchToView(btn.dataset.view));
-    });
-  } catch {}
+  // 既存の「最近開いたビュー」DOM があれば撤去 (古いキャッシュ対応)
+  const existing = document.getElementById("nav-recent-section");
+  if (existing) existing.remove();
 }
 
 function switchToView(v) {
@@ -1146,7 +1130,7 @@ function cancelExDownload() {
 function setExportButtonsLabel(running) {
   const map = {
     btnExDlCsv: { running: "⏸ 取消 (CSV)", idle: "CSV ダウンロード" },
-    btnExDlExcel: { running: "⏸ 取消 (Excel)", idle: "Excel (.xls) ダウンロード" },
+    btnExDlExcel: { running: "⏸ 取消 (Excel)", idle: "Excel (.xml) ダウンロード" },
     btnExDlJson: { running: "⏸ 取消 (JSON)", idle: "JSON ダウンロード" },
   };
   for (const [id, labels] of Object.entries(map)) {
@@ -1935,7 +1919,7 @@ async function doGenerateDesign() {
     } else if (format === "html") {
       preview.innerHTML = result.source;
     } else if (format === "excel" || format === "xls") {
-      preview.innerHTML = `<h2>${escape(result.title)}</h2><p>Excel 形式 (SpreadsheetML XML / .xls) を生成しました。</p><p><b>ダウンロード</b> ボタンで保存 → ダブルクリックで Excel が直接開きます。<br/>Excel が「保存形式を選ぶ」と聞いてきたら <b>.xlsx</b> を選んで再保存してください。</p><pre><code>${escape(result.source.substring(0, 800))}…</code></pre>`;
+      preview.innerHTML = `<h2>${escape(result.title)}</h2><p>Excel 形式 (SpreadsheetML XML / .xml) を生成しました。</p><p><b>ダウンロード</b> ボタンで保存 → ダブルクリックで Excel が直接開きます。<br/>Excel で開いた後、より高機能な <b>.xlsx</b> 形式で再保存するとブック保護等が使えます。</p><pre><code>${escape(result.source.substring(0, 800))}…</code></pre>`;
     } else {
       preview.innerHTML = `<pre><code>${escape(result.source)}</code></pre>`;
     }
@@ -2021,23 +2005,28 @@ async function copyDesignSource() {
 function downloadDesignSource() {
   if (!lastDesign) { panelToast("📭 まだ設計書が未生成です", { kind: "warn" }); return; }
   const fmt = lastDesign.format || "markdown";
-  const extMap = { markdown: "md", html: "html", csv: "csv", tsv: "tsv", excel: "xls", xls: "xls" };
+  // v2.80.0: Excel 形式は SpreadsheetML XML (Excel 2003 XML) のため、拡張子を .xls → .xml に変更。
+  // .xls だと Excel が「ファイル形式と拡張子が一致しません」警告を出していた事象を解消。
+  // Excel は .xml を「XML Spreadsheet」として自動認識し、警告なしで開く。
+  const extMap = { markdown: "md", html: "html", csv: "csv", tsv: "tsv", excel: "xml", xls: "xml" };
   const mimeMap = {
     markdown: "text/markdown;charset=utf-8",
     html: "text/html;charset=utf-8",
     csv: "text/csv;charset=utf-8",
     tsv: "text/tab-separated-values;charset=utf-8",
-    excel: "application/vnd.ms-excel;charset=utf-8",
-    xls: "application/vnd.ms-excel;charset=utf-8",
+    // SpreadsheetML XML の正式 MIME。Excel が直接開ける
+    excel: "application/xml;charset=utf-8",
+    xls: "application/xml;charset=utf-8",
   };
   const ext = extMap[fmt] || "txt";
   const mime = mimeMap[fmt] || "text/plain;charset=utf-8";
   const safeName = (lastDesign.title || "design").replace(/[\\/?*[\]:"<>|]/g, "_").substring(0, 80);
   const ts = tsForFilename();
 
-  // Excel/HTML/CSV は UTF-8 BOM を付ける (Excel が文字化けしないように)
+  // CSV/TSV/HTML は UTF-8 BOM を付ける (Excel が文字化けしないように)
+  // Excel SpreadsheetML XML は宣言で encoding を指定済なので BOM 不要 (むしろ XML パーサが壊れる可能性)
   let body = lastDesign.source;
-  if (fmt === "csv" || fmt === "tsv" || fmt === "excel" || fmt === "xls" || fmt === "html") {
+  if (fmt === "csv" || fmt === "tsv" || fmt === "html") {
     body = "﻿" + body;
   }
   const blob = new Blob([body], { type: mime });

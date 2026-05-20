@@ -104,10 +104,12 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 }
 .side-toggle:hover { background: var(--bg3); color: var(--accent); border-color: var(--accent); }
 .side.collapsed .side-toggle { transform: rotate(180deg); }
-.nav { display: flex; flex-direction: column; padding: 8px; gap: 4px; padding-top: 32px; }
+/* v2.80.0: サイドバーの「最近メニュー」を撤去したので nav の上余白を縮小 + 全機能が縦に収まるよう padding/gap を詰める */
+.nav { display: flex; flex-direction: column; padding: 6px; gap: 2px; padding-top: 28px; }
 .nav-btn {
   text-align: left; background: transparent; border: 1px solid transparent;
-  color: var(--fg-dim); padding: 8px 10px; border-radius: 6px;
+  color: var(--fg-dim); padding: 6px 10px; border-radius: 6px;
+  font-size: 12px;
 }
 .nav-btn { transition: background 0.1s, color 0.1s, border-color 0.1s; }
 .nav-btn:hover { background: var(--bg3); color: var(--fg); }
@@ -203,14 +205,15 @@ td.cell-nested { word-break: break-word; }
 .pill.err { color: var(--err); background: rgba(255,107,107,0.15); }
 .pill.warn { color: var(--warn); background: rgba(243,156,18,0.15); }
 
+/* v2.80.0: ナビセパレータをコンパクト化して、サイドバーに 13 機能 + 🏠 全てが収まるように */
 .nav-sep {
-  padding: 12px 10px 4px;
-  font-size: 11px;
+  padding: 6px 10px 2px;
+  font-size: 10px;
   color: var(--accent);
   font-weight: 700;
   letter-spacing: 0.3px;
   border-top: 1px solid var(--line);
-  margin-top: 8px;
+  margin-top: 4px;
   text-transform: uppercase;
 }
 .nav-sep:first-child {

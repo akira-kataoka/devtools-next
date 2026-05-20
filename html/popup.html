@@ -75,15 +75,7 @@
       <div id="loginAsResult" class="login-as-result" role="list" aria-live="polite" aria-atomic="false"></div>
     </section>
 
-    <section class="card">
-      <h2>🔢 Salesforce ID 解析</h2>
-      <input type="text" id="idInput" placeholder="15 桁 または 18 桁の Salesforce ID を貼り付けてください" aria-label="Salesforce ID 入力欄" pattern="[a-zA-Z0-9]{15,18}" maxlength="18" title="英数字 15 桁または 18 桁の Salesforce ID を入力してください" />
-      <div class="row">
-        <button id="btnParseId" class="primary" aria-label="ID を解析">解析</button>
-        <button id="btnOpenId" aria-label="ID のレコードを開く">レコードを開く</button>
-      </div>
-      <div id="idResult" class="result" role="region" aria-label="ID 解析結果"></div>
-    </section>
+    <!-- v2.80.0: 「Salesforce ID 解析」セクションを popup から撤去 (ユーザーから「いらない」フィードバック) -->
   </main>
 
   <main class="panel hidden" id="panel-links">
