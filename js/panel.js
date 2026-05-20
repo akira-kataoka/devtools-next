@@ -1204,7 +1204,8 @@ function apiBuildUrl() {
       path = `/services/data/v${apiVer}/sobjects/${objName || "<Object>"}/${id || "<Id>"}`;
       break;
     case "getByExtId":
-      if (!objName || !id) note = "⚠ Object と '<外部ID項目名>/<値>' が必要です (例: Email/foo@bar.com)";
+      if (!objName || !id) note = "⚠ Object と '<外部ID項目名>/<値>' が必要です (例 Email/foo@bar.com、Account__c/MyExtKey-123)";
+      else if (!/^[A-Za-z0-9_]+\/.+/.test(id)) note = "⚠ 形式エラー: 「外部ID項目名/値」 (スラッシュ区切り)。例: Email/foo@bar.com";
       path = `/services/data/v${apiVer}/sobjects/${objName || "<Object>"}/${id || "<ExtIdField>/<value>"}`;
       break;
     case "create":

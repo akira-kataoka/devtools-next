@@ -80,7 +80,7 @@
     <section class="card">
       <h2>🔐 他ユーザーとしてログイン (Login as User)</h2>
       <div class="row">
-        <input id="loginAsSearch" placeholder="名前 / Username / Email で検索 (Active のみ)" aria-label="ユーザー検索キーワード" />
+        <input id="loginAsSearch" placeholder="Username / 姓名 / Alias / Email で検索 (Active のみ)" title="部分一致検索 (Name/Username/Email/Alias)、ORDER BY LastLoginDate DESC LIMIT 30" aria-label="ユーザー検索キーワード" />
         <button id="btnLoginAsSearch" class="primary" aria-label="ユーザーを検索">検索</button>
       </div>
       <div id="loginAsResult" class="login-as-result" role="list"></div>

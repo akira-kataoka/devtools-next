@@ -4,6 +4,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.57.0 (2026-05-20 09:05)** — getByExtId 形式チェック + placeholder 拡充:
+  - **✨ API URL Builder `getByExtId` で形式エラー検出**: `id` が `<項目名>/<値>` 形式 (`/^[A-Za-z0-9_]+\/.+/`) でない場合に `⚠ 形式エラー: 「外部ID項目名/値」 (スラッシュ区切り)。例: Email/foo@bar.com` を表示
+  - **✨ `#apiId` プレースホルダ拡充**: `Id (get/update/delete) または ExtIdField/値 (例 Email/x@y.com)` + title 属性で詳細ヒント。max-width も 200→280px に拡張
+  - **✨ popup `#loginAsSearch` プレースホルダ統一**: `Username / 姓名 / Alias / Email で検索 (Active のみ)` + title で SOQL 仕様明示 (`ORDER BY LastLoginDate DESC LIMIT 30`)
+  - **🧪 検証完了**: Inspector reference 失敗→back の scrollTop 復元は `inspectHistory.push` が fetch 前なので OK (back で fresh doInspect → scrollTop restore 動作確認)
 - **v1.56.0 (2026-05-20 09:00)** — Login as 0件ヒント + 設計書 th 視覚分離 + 検証完了:
   - **✨ popup Login as 検索結果 0 件時に詳細ヒント**: 検索語ありの時は `検索条件「<term>」に一致するユーザーがいません 💡 別のキーワード (Username の一部、Alias、姓名) で再検索してください`、無しの時は `権限不足の可能性 (Modify All Data / View All Users)` を案内。**従来「該当ユーザーなし」だけだったエラーが原因+対処を明示**
   - **✨ 設計書 markdown プレビュー内 th を非ソート可能と明示**: `.design-preview th { cursor: default }` + hover 時に背景色変化なし。**.grid th (sortable, cursor:pointer + hover 濃色) との視覚差別化** で「クリックできそうだけどできない」混乱を解消
