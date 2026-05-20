@@ -356,6 +356,7 @@ System.debug('Now: ' + System.now());</textarea>
           <button id="btnFetchLogin" class="primary" title="指定した条件で LoginHistory を取得します">取得</button>
           <span class="grow"></span>
           <button id="btnLoginCsv" title="ログイン履歴を CSV ファイルとしてダウンロードします">CSV</button>
+          <button id="btnLoginEvidence" title="現在のログイン履歴を Markdown 形式のエビデンスとしてダウンロードします (テスト工程の証跡用)">📸 エビデンス</button>
         </div>
         <div id="loginMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
         <div id="loginResult" class="grid"></div>
@@ -372,6 +373,7 @@ System.debug('Now: ' + System.now());</textarea>
           </select>
           <label class="inspector-opt" title="使用率 0% の項目を一覧から除外します"><input type="checkbox" id="limitsOnlyUsed" /> 使用中のみ表示します</label>
           <button id="btnLimitsCsv" title="Limits 一覧を CSV ファイルとしてダウンロードします">CSV</button>
+          <button id="btnLimitsEvidence" title="現在の Limits 使用状況を Markdown 形式のエビデンスとしてダウンロードします (テスト工程の証跡用)">📸 エビデンス</button>
         </div>
         <div id="limitsSummary" class="limits-summary"></div>
         <div id="limitsResult" class="limits-grid"></div>

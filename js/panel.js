@@ -558,6 +558,8 @@ function bindEvents() {
   $on("btnExportCsv", "click", exportCsv);
   $on("btnSoqlEvidence", "click", captureSoqlEvidence);
   $on("btnInspectEvidence", "click", captureInspectorEvidence);
+  $on("btnLimitsEvidence", "click", captureLimitsEvidence);
+  $on("btnLoginEvidence", "click", captureLoginHistoryEvidence);
   $on("btnCopyCsv", "click", copyCsvToClipboard);
   $on("btnSaveSoql", "click", saveCurrentQuery);
   $on("btnLoadSoql", "click", loadSelectedQuery);
@@ -2835,6 +2837,70 @@ function captureSoqlEvidence() {
   });
   downloadEvidence(md, "soql-evidence");
   panelToast(`📸 SOQL エビデンスを Markdown でダウンロードしました (${state.lastRecords.length} 件)`, { kind: "ok" });
+}
+
+function captureLimitsEvidence() {
+  if (!lastLimitsData) {
+    panelToast("📭 エビデンス対象がありません。先に Limits を取得してください", { kind: "warn" });
+    return;
+  }
+  // Limits 全件をテーブル化
+  const records = Object.entries(lastLimitsData).map(([k, v]) => {
+    const max = (v && v.Max != null) ? v.Max : 0;
+    const remaining = (v && v.Remaining != null) ? v.Remaining : 0;
+    const used = max - remaining;
+    const pct = max > 0 ? Math.round((used / max) * 100) : 0;
+    return {
+      "Limit 名": (typeof limitJa === "function" ? limitJa(k) : k),
+      "API 名": k,
+      "使用": used.toLocaleString(),
+      "残り": remaining.toLocaleString(),
+      "上限": max.toLocaleString(),
+      "使用率": `${pct}%`,
+    };
+  });
+  const md = makeEvidence({
+    title: "Limits 使用状況エビデンス",
+    extraMeta: { "取得対象": "組織の全 Limits", "監視ポイント": "70% 以上は注意、90% 以上は危険" },
+    recordsLabel: "Limits 一覧",
+    records,
+  });
+  downloadEvidence(md, "limits-evidence");
+  panelToast(`📸 Limits エビデンスを Markdown でダウンロードしました (${records.length} 件)`, { kind: "ok" });
+}
+
+function captureLoginHistoryEvidence() {
+  if (!state.lastLoginRecords || !state.lastLoginRecords.length) {
+    panelToast("📭 エビデンス対象がありません。先にログイン履歴を取得してください", { kind: "warn" });
+    return;
+  }
+  // ログイン履歴を表示形式 (日時順) で整形
+  const records = state.lastLoginRecords.map((rec) => ({
+    "ログイン日時": rec.LoginTime ? rec.LoginTime.replace("T", " ").replace(/\..*$/, "") : "",
+    "種別": rec.LoginType || "",
+    "アプリ": rec.Application || "",
+    "ステータス": rec.Status || "",
+    "API 種別": rec.ApiType || "",
+    "API ver": rec.ApiVersion || "",
+    "クライアント": rec.ClientVersion || "",
+    "ブラウザ": rec.Browser || "",
+    "プラットフォーム": rec.Platform || "",
+    "送信元 IP": rec.SourceIp || "",
+  }));
+  const successCount = state.lastLoginRecords.filter((r) => r.Status === "Success").length;
+  const failedCount = state.lastLoginRecords.length - successCount;
+  const md = makeEvidence({
+    title: "ログイン履歴エビデンス",
+    extraMeta: {
+      "総件数": state.lastLoginRecords.length,
+      "成功": successCount,
+      "失敗": failedCount,
+    },
+    recordsLabel: "ログイン履歴",
+    records,
+  });
+  downloadEvidence(md, "login-history-evidence");
+  panelToast(`📸 ログイン履歴エビデンスを Markdown でダウンロードしました (${records.length} 件)`, { kind: "ok" });
 }
 
 function captureInspectorEvidence() {
