@@ -43,11 +43,11 @@ async function pushRecent(kind, value, orgKey) {
 const PICKER_DEFS = {
   sobject: {
     title: "オブジェクトを選択",
-    placeholder: "オブジェクト API 名で検索 (例: Account, Custom__c)",
+    placeholder: "オブジェクト API 名 / 表示名で検索 (例: Account / 取引先 / Custom__c)",
     columns: ["API 名", "ラベル", "Key Prefix", "種別"],
     async load({ host, sid, apiVersion }) {
       const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/` });
-      if (!r.ok) throw new Error(`sobjects 取得失敗: HTTP ${r.status}`);
+      if (!r.ok) throw new Error(`オブジェクト一覧の取得に失敗しました (HTTP ${r.status})`);
       return (r.data.sobjects || [])
         .filter((s) => s.queryable)
         .map((s) => ({
@@ -59,12 +59,12 @@ const PICKER_DEFS = {
   },
   field: {
     title: "フィールドを選択",
-    placeholder: "フィールド API 名 / ラベルで検索",
+    placeholder: "項目 API 名 / 表示名で検索",
     columns: ["API 名", "ラベル", "型", "必須"],
     async load({ host, sid, apiVersion, parentObject }) {
       if (!parentObject) throw new Error("親オブジェクトが必要です");
       const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(parentObject)}/describe` });
-      if (!r.ok) throw new Error(`describe 失敗: HTTP ${r.status}`);
+      if (!r.ok) throw new Error(`項目定義 (describe) の取得に失敗しました (HTTP ${r.status})`);
       return (r.data.fields || []).map((f) => ({
         value: f.name,
         row: [f.name, f.label, f.type, !f.nillable && !f.defaultedOnCreate && f.createable ? "○" : ""],
@@ -79,7 +79,7 @@ const PICKER_DEFS = {
     async load({ host, sid, apiVersion }) {
       const r = await runSoql({ host, sid, apiVersion,
         soql: `SELECT Id, Name, UserLicense.Name, UserType FROM Profile ORDER BY Name LIMIT 500` });
-      if (!r.ok) throw new Error(`Profile 取得失敗`);
+      if (!r.ok) throw new Error(`プロファイル一覧の取得に失敗しました`);
       return (r.data.records || []).map((p) => ({
         value: p.Name,
         row: [p.Name, p.UserLicense ? p.UserLicense.Name : "", p.UserType || ""],
@@ -94,7 +94,7 @@ const PICKER_DEFS = {
     async load({ host, sid, apiVersion }) {
       const r = await runSoql({ host, sid, apiVersion,
         soql: `SELECT Id, Name, Label, License.Name FROM PermissionSet WHERE IsOwnedByProfile=false ORDER BY Name LIMIT 500` });
-      if (!r.ok) throw new Error(`PermissionSet 取得失敗`);
+      if (!r.ok) throw new Error(`権限セットの取得に失敗しました`);
       return (r.data.records || []).map((p) => ({
         // PermSet は profileDetail に '@<API名>' で渡すので最初から @ を付ける
         value: "@" + p.Name,
@@ -134,7 +134,7 @@ const PICKER_DEFS = {
     async load({ host, sid, apiVersion }) {
       const r = await runSoql({ host, sid, apiVersion, tooling: true,
         soql: `SELECT Name, ApiVersion, Status FROM ApexClass WHERE ManageableState='unmanaged' OR ManageableState='installedEditable' ORDER BY Name LIMIT 1000` });
-      if (!r.ok) throw new Error(`ApexClass 取得失敗`);
+      if (!r.ok) throw new Error(`Apex クラスの取得に失敗しました`);
       return (r.data.records || []).map((c) => ({
         value: c.Name,
         row: [c.Name, c.Status, c.ApiVersion],
@@ -149,7 +149,7 @@ const PICKER_DEFS = {
     async load({ host, sid, apiVersion }) {
       const r = await runSoql({ host, sid, apiVersion, tooling: true,
         soql: `SELECT DeveloperName, MasterLabel, ActiveVersion.VersionNumber FROM FlowDefinition ORDER BY DeveloperName LIMIT 500` });
-      if (!r.ok) throw new Error(`Flow 取得失敗`);
+      if (!r.ok) throw new Error(`フロー一覧の取得に失敗しました`);
       return (r.data.records || []).map((f) => ({
         value: f.DeveloperName,
         row: [f.DeveloperName, f.MasterLabel || "", f.ActiveVersion ? "v" + f.ActiveVersion.VersionNumber : "(なし)"],

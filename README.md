@@ -8,6 +8,22 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.13.0 (2026-05-20 13:45)** — 🚨 ユーザー要望 Phase 3: ER 図リレーション種別区別 + picker 日本語:
+  - **🐛 ER 図 (Mermaid) で Master-Detail と Lookup の線種を区別**:
+    - Lookup (任意参照): `親 ||--o{ 子` (従来通り)
+    - Master-Detail (必須・カスケード削除): `親 ||--|{ 子` (新規)
+    - ラベルに `(MD)` / `(Lookup)` 種別併記
+    - 判定: 親方向は `!nillable && (cascadeDelete || writeRequiresMasterRead)`、子方向は `cascadeDelete`
+    - note に線種凡例追記
+  - **🐛 picker.js のエラーメッセージ + placeholder を業務用語化**:
+    - `sobjects 取得失敗` → `オブジェクト一覧の取得に失敗しました`
+    - `describe 失敗` → `項目定義 (describe) の取得に失敗しました`
+    - `Profile 取得失敗` → `プロファイル一覧の取得に失敗しました`
+    - `PermissionSet 取得失敗` → `権限セットの取得に失敗しました`
+    - `ApexClass 取得失敗` → `Apex クラスの取得に失敗しました`
+    - `Flow 取得失敗` → `フロー一覧の取得に失敗しました`
+    - placeholder: `オブジェクト API 名で検索` → `オブジェクト API 名 / 表示名で検索 (例: Account / 取引先 / Custom__c)`
+    - placeholder: `フィールド API 名 / ラベルで検索` → `項目 API 名 / 表示名で検索`
 - **v2.12.0 (2026-05-20 13:40)** — 🚨 ユーザー要望対応 Phase 2: アクセスコントロール改善 + popup 日本語見直し:
   - **🐛 設計書「アクセスコントロール定義書」を業務向けに大幅改善**:
     - **0. 凡例セクション追加**: OWD / Private (非公開) / Public Read/Write / Controlled By Parent / Sharing Rules / PermSet 上乗せ の業務担当者向け説明

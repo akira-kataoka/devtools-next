@@ -412,18 +412,29 @@ async function buildErDiagram({ host, sid, apiVersion, obj }) {
     .replace(/\r?\n/g, " ")      // 改行 → 空白
     .replace(/[\x00-\x1F]/g, ""); // 制御文字除去
 
-  // 親方向 (reference 項目)
+  // v2.13.0: Master-Detail と Lookup で線種を区別
+  // Mermaid 記法:
+  //   親 ||--o{ 子  → Lookup (1 対 0..多、子は親を持たなくても OK)
+  //   親 ||--|{ 子  → Master-Detail (1 対 1..多、子は親必須・カスケード削除)
+  // 親方向 (この obj が子側、reference 項目で親を参照)
   const refs = (d.fields || []).filter((f) => f.type === "reference" && (f.referenceTo || []).length);
   refs.forEach((f) => {
     (f.referenceTo || []).forEach((to) => {
-      lines.push(`    ${mid(d.name)} }o--|| ${mid(to)} : "${mlabel(f.name)}"`);
+      // f.nillable=false かつ writeRequiresMasterRead が true なら Master-Detail
+      const isMD = f.relationshipName && !f.nillable && (f.cascadeDelete || f.writeRequiresMasterRead);
+      const arrow = isMD ? `}|--||` : `}o--||`;
+      const kind = isMD ? "MD" : "Lookup";
+      lines.push(`    ${mid(d.name)} ${arrow} ${mid(to)} : "${mlabel(f.name)} (${kind})"`);
       seen.add(to);
     });
   });
-  // 子方向 (childRelationships)
+  // 子方向 (childRelationships) — cascadeDelete = true なら Master-Detail
   (d.childRelationships || []).slice(0, 30).forEach((c) => {
     if (!c.childSObject) return;
-    lines.push(`    ${mid(d.name)} ||--o{ ${mid(c.childSObject)} : "${mlabel(c.field)}"`);
+    const isMD = !!c.cascadeDelete;
+    const arrow = isMD ? `||--|{` : `||--o{`;
+    const kind = isMD ? "MD" : "Lookup";
+    lines.push(`    ${mid(d.name)} ${arrow} ${mid(c.childSObject)} : "${mlabel(c.field)} (${kind})"`);
     seen.add(c.childSObject);
   });
 
@@ -444,7 +455,7 @@ async function buildErDiagram({ host, sid, apiVersion, obj }) {
     title: `ER 図: ${d.label} (${d.name}) を起点とした 1-hop`,
     type: "erDiagram",
     sections: [{ heading: "ER 図 (Mermaid)", mermaid }],
-    note: "Mermaid Live Editor (https://mermaid.live) に貼ると可視化されます。",
+    note: "Mermaid Live Editor (https://mermaid.live) に貼ると可視化されます。線種: ||--o{ = Lookup (任意参照) / ||--|{ = Master-Detail (必須参照・カスケード削除)。",
   };
 }
 
