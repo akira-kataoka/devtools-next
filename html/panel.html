@@ -193,28 +193,12 @@
       </div>
 
       <div class="view hidden" data-view="apiurl">
-        <!-- v2.84.0: API URL ビルダーの使い方ガイドカード (ユーザー要望「API のところの使い方がよくわからない」) -->
-        <div class="api-guide">
-          <div class="api-guide-title">🔗 API URL ビルダーの使い方 (3 ステップ)</div>
-          <ol class="api-guide-steps">
-            <li><b>① 操作を選ぶ</b>: ドロップダウンから「何をしたいか」を選択 (例: <code>get</code> = 1 件取得 / <code>query</code> = SOQL 検索 / <code>describe</code> = 項目情報取得)</li>
-            <li><b>② 対象を入力</b>: オブジェクト名 (例: <code>Account</code>) や ID (例: <code>0011x00000abcde</code>) を入力</li>
-            <li><b>③ 「▶ URL 生成」をクリック</b>: 右側に REST URL と curl コマンドが生成されます。「URL コピー」「curl コピー」でクリップボードにコピー、「ブラウザで開く」で直接アクセス可能</li>
-          </ol>
-          <div class="api-guide-examples">
-            <span class="api-guide-label">💡 よくある例:</span>
-            <button class="api-example-chip" data-op="describe" data-obj="Account" title="Account オブジェクトの全項目を確認">describe Account</button>
-            <button class="api-example-chip" data-op="query" data-obj="Account" title="Account を SOQL で 10 件取得">query Account 10 件</button>
-            <button class="api-example-chip" data-op="limits" title="組織の API 使用量を確認">limits 確認</button>
-            <button class="api-example-chip" data-op="userinfo" title="現在のユーザ情報を取得">userinfo</button>
-            <button class="api-example-chip" data-op="versions" title="利用可能な API バージョン一覧">versions</button>
-          </div>
-        </div>
-        <div class="toolbar">
-          <input id="apiObj" placeholder="オブジェクトの API 名を入力してください (例: Account)" list="dl-sobjects" autocomplete="off" style="max-width:200px" />
-          <select id="apiOp">
-            <option value="describe">describe (オブジェクト)</option>
-            <option value="describeGlobal">describe (グローバル / 全オブジェクト)</option>
+        <!-- v2.96.0: API ガイドカード撤去 (説明は各 input/button の title へ集約)、「▶ 実行」ボタンを追加して URL ビルダーと実行を 1 画面に統合 -->
+        <div class="toolbar" title="操作種別 (describe/get/query 等) を選び、対象を入力 → 「▶ URL 生成」または「▶ 実行」。よくある例は下のチップから">
+          <input id="apiObj" placeholder="オブジェクト API 名 (例: Account)" list="dl-sobjects" autocomplete="off" title="対象オブジェクトの API 名を入力。describeGlobal/limits/userinfo/versions では未使用" style="max-width:200px" />
+          <select id="apiOp" title="操作種別 — describe=構造取得 / get=1件取得 / query=SOQL検索 / create=新規作成 / update=更新 / delete=削除 / limits=使用量 / userinfo=ユーザ情報">
+            <option value="describe">describe (オブジェクト構造)</option>
+            <option value="describeGlobal">describe (全オブジェクト)</option>
             <option value="get">get (単一レコード取得)</option>
             <option value="getByExtId">get (外部ID で取得)</option>
             <option value="create">create (POST)</option>
@@ -227,33 +211,47 @@
             <option value="composite">composite (一括)</option>
             <option value="composite-tree">composite tree</option>
             <option value="batch">composite batch</option>
-            <option value="limits">limits</option>
+            <option value="limits">limits (使用量)</option>
             <option value="versions">versions</option>
             <option value="userinfo">userinfo</option>
             <option value="event-log-file">EventLogFile</option>
           </select>
-          <input id="apiId" placeholder="Id (get/update/delete) または ExtIdField/値 (例: Email/x@y.com)" title="get: 15 桁または 18 桁の ID / getByExtId: <外部 ID 項目名>/<値> 形式で入力します" style="max-width:280px" />
-          <button id="btnApiBuild" class="primary" title="入力内容から REST API の URL と curl サンプルを生成します">▶ URL 生成</button>
+          <input id="apiId" placeholder="Id または ExtIdField/値 (例: Email/x@y.com)" title="get/update/delete=15 桁または 18 桁の ID / getByExtId=外部 ID 項目名/値 をスラッシュ区切りで指定" style="max-width:280px" />
+          <button id="btnApiBuild" title="入力内容から REST URL と curl サンプルを生成します (実行はしません)">📝 URL 生成</button>
+          <button id="btnApiRun" class="primary" title="生成された URL を Salesforce に送信し、レスポンスを下に表示します">▶ 実行</button>
           <span class="grow"></span>
           <button id="btnApiCopy" title="生成された REST URL をクリップボードにコピーします">URL コピー</button>
-          <button id="btnApiCurlCopy" title="生成された curl コマンドをクリップボードにコピーします (sid 含む)">curl コピー</button>
-          <button id="btnApiOpen" title="生成された URL を新しいタブで開きます (GET のみ対応)">ブラウザで開く (GET のみ)</button>
+          <button id="btnApiCurlCopy" title="生成された curl コマンドをクリップボードにコピー (sid 含む)">curl コピー</button>
+          <button id="btnApiOpen" title="生成された URL を新しいタブで開きます (GET のみ対応)">ブラウザで開く</button>
+        </div>
+        <!-- v2.96.0: よくある例チップ (旧 API ガイドカードから取り出し、最上部に薄く配置) -->
+        <div class="api-example-row" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px;color:var(--fg-dim);padding:2px 0 6px">
+          <span>💡 例:</span>
+          <button class="api-example-chip" data-op="describe" data-obj="Account" title="Account オブジェクトの全項目を確認">describe Account</button>
+          <button class="api-example-chip" data-op="query" data-obj="Account" title="Account を SOQL で 10 件取得">query Account</button>
+          <button class="api-example-chip" data-op="limits" title="組織の API 使用量を確認">limits</button>
+          <button class="api-example-chip" data-op="userinfo" title="現在のユーザ情報を取得">userinfo</button>
+          <button class="api-example-chip" data-op="versions" title="利用可能な API バージョン一覧">versions</button>
         </div>
         <div id="apiBuildMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
         <div class="apiurl-grid">
           <div>
-            <div class="export-pane-label">生成された REST URL</div>
+            <div class="export-pane-label" title="入力から組み立てられた REST API の URL。「URL コピー」「ブラウザで開く」で利用可">生成された REST URL</div>
             <pre id="apiBuildUrl" class="code"></pre>
           </div>
           <div>
-            <div class="export-pane-label">curl コマンド サンプル</div>
+            <div class="export-pane-label" title="ターミナルで実行できる curl コマンド。sid を含むので外部共有時はマスクしてください">curl コマンド サンプル</div>
             <pre id="apiBuildCurl" class="code"></pre>
           </div>
           <div>
-            <div class="export-pane-label">解説 / 使い方</div>
+            <div class="export-pane-label" title="選択した操作の業務用途・補足">解説 / 使い方</div>
             <div id="apiBuildHelp" class="design-preview"></div>
           </div>
         </div>
+        <!-- v2.96.0: 実行結果表示エリア (実行ボタン押下時に表示) -->
+        <div class="export-pane-label" id="apiRunLabel" style="display:none" title="「▶ 実行」を押した結果。HTTP ステータス・実行時間・レスポンスボディ (JSON) を表示">📡 実行結果</div>
+        <div id="apiRunMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
+        <pre id="apiRunResult" class="code" style="display:none"></pre>
       </div>
 
       <div class="view hidden" data-view="apex">

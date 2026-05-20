@@ -668,8 +668,9 @@ function bindEvents() {
     if (e.key === "Enter") exLoadFields();
   });
 
-  // API URL ビルダー
+  // API URL ビルダー + v2.96.0 「▶ 実行」ボタン
   $on("btnApiBuild", "click", apiBuildUrl);
+  $on("btnApiRun", "click", apiRunRequest);
   $on("btnApiCopy", "click", apiCopyUrl);
   $on("btnApiCurlCopy", "click", apiCopyCurl);
   $on("btnApiOpen", "click", apiOpenInBrowser);
@@ -1451,6 +1452,50 @@ function updateApiInputVisibility() {
   if (apiId) apiId.style.display = cfg.id ? "" : "none";
 }
 
+// v2.96.0: 生成された API リクエスト情報を保持 (URL 生成 / 実行 で共有)
+let _lastApiBuild = null;
+
+async function apiRunRequest() {
+  if (!state.sid) {
+    document.getElementById("apiRunMeta").innerHTML = `<span class="pill warn">Salesforce に未接続です</span>`;
+    return;
+  }
+  // まず URL を生成
+  apiBuildUrl();
+  if (!_lastApiBuild || !_lastApiBuild.path) {
+    document.getElementById("apiRunMeta").innerHTML = `<span class="pill warn">URL が生成されていません。入力を確認してください</span>`;
+    return;
+  }
+  const { path, method, body } = _lastApiBuild;
+  const unlock = lockBtn("btnApiRun");
+  const meta = document.getElementById("apiRunMeta");
+  const label = document.getElementById("apiRunLabel");
+  const out = document.getElementById("apiRunResult");
+  if (label) label.style.display = "";
+  if (out) out.style.display = "";
+  meta.innerHTML = `<span class="pill">⏳ ${escape(method)} ${escape(path)} を実行しています…</span>`;
+  out.textContent = "";
+  const t0 = performance.now();
+  let r;
+  try {
+    r = await sfFetch({
+      host: state.host, sid: state.sid, path,
+      method, body: body || undefined,
+    });
+  } catch (e) {
+    unlock();
+    meta.innerHTML = `<span class="pill err">❌ 実行エラー: ${escape(e.message || String(e))}</span>`;
+    return;
+  }
+  const dt = Math.round(performance.now() - t0);
+  unlock();
+  const statusCls = r.ok ? "ok" : "err";
+  const statusIcon = r.ok ? "✓" : "❌";
+  meta.innerHTML = `<span class="pill ${statusCls}">${statusIcon} HTTP ${r.status}</span> <span class="meta">${dt}ms</span>`;
+  const formatted = (typeof r.data === "object") ? JSON.stringify(r.data, null, 2) : String(r.data || "");
+  out.textContent = formatted;
+}
+
 function apiBuildUrl() {
   if (!state.apiHost) {
     document.getElementById("apiBuildMeta").innerHTML = `<span class="pill warn">SF に接続後に生成可能</span>`;
@@ -1570,6 +1615,8 @@ function apiBuildUrl() {
     (note ? `<blockquote>${escape(note)}</blockquote>` : "") +
     (body ? `<p><b>サンプル body:</b></p><pre><code>${escape(body)}</code></pre>` : "");
   document.getElementById("apiBuildMeta").innerHTML = `<span class="pill ok">${method}</span> ${escape(op)} ${state.sid ? "" : `<span class="pill warn">Salesforce 未接続: ホスト名はプレースホルダーです</span>`}`;
+  // v2.96.0: 「▶ 実行」ボタンで使う情報を保存
+  _lastApiBuild = { path, method, body };
 }
 
 async function apiCopyUrl() {
@@ -2095,8 +2142,10 @@ function renderLimitsList() {
   const arrow = (col) => _limitsSortCol === col ? (_limitsSortDir === "asc" ? " ▲" : " ▼") : "";
   const root = document.getElementById("limitsResult");
   // v2.93.0: ピン留めトグル、列クリックソート、日本語名+原文 tooltip、ピン留めのみ表示トグル
+  // v2.96.0 バグ修正: fmtNum は design-docs.js 内のローカル関数で panel.js からは参照不可 → ReferenceError で renderLimitsList が落ちて「使用状況が取得できない」状態になっていた
+  const limitFmt = (n) => Number(n || 0).toLocaleString("ja-JP");
   const html = [`<div class="limit-toolbar" style="margin-bottom:6px;font-size:11px">
-    <label style="cursor:pointer"><input type="checkbox" id="chkPinnedOnly" ${_limitsShowPinnedOnly ? "checked" : ""}/> ★ ピン留めのみ表示 (${fmtNum ? fmtNum(_limitsPinned.length) : _limitsPinned.length} 件)</label>
+    <label style="cursor:pointer"><input type="checkbox" id="chkPinnedOnly" ${_limitsShowPinnedOnly ? "checked" : ""}/> ★ ピン留めのみ表示 (${limitFmt(_limitsPinned.length)} 件)</label>
     <span style="margin-left:12px;color:var(--fg-dim)">表示: ${rows.length} / 全 ${Object.keys(lastLimitsData).length} 件</span>
   </div>`];
   html.push(`<div class="limit-row header">
