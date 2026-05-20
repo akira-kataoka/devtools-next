@@ -118,6 +118,19 @@ function flashToast(text) {
       .result th[data-sort-dir="asc"]::after { content: " ▲"; font-size: 8px; opacity: 0.8; }
       .result th[data-sort-dir="desc"]::after { content: " ▼"; font-size: 8px; opacity: 0.8; }
       .result td { padding: 3px 6px; border-bottom: 1px solid #1f2c46; vertical-align: top; max-width: 200px; word-break: break-word; }
+      /* v3.17.0: 空状態ガイドを panel/tool と統一トーンで mini-panel にも展開 */
+      .empty-state {
+        padding: 14px 12px; color: #9fb0c9;
+        font-size: 11px; line-height: 1.7;
+        background: linear-gradient(180deg, rgba(27,150,255,0.06) 0%, transparent 100%);
+        border-radius: 4px;
+      }
+      .empty-state strong { color: #1b96ff; font-weight: 600; }
+      .empty-state code {
+        background: #142447; color: #e6ecf5;
+        padding: 1px 4px; border-radius: 3px;
+        font-size: 10px; border: 1px solid #1f2c46;
+      }
       .err { color: #ff6b6b; }
       .ok { color: #2ecc71; }
       /* v2.85.0 Team M: 現在ページレコード即操作 */
@@ -187,7 +200,7 @@ function flashToast(text) {
         </div>
         <!-- v2.86.0 Team K: 直近 SOQL クエリ 3 件をチップ表示 (ワンクリック再実行) -->
         <div class="history-row" id="histRow"></div>
-        <textarea id="qry" placeholder="SELECT Id, Name FROM Account LIMIT 5" spellcheck="false">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 5</textarea>
+        <textarea id="qry" placeholder="SOQL を入力 (例: SELECT Id, Name FROM Account LIMIT 5) / Ctrl+Enter で実行 / 入力中に候補表示" spellcheck="false" title="軽量 SOQL 実行ツールです。上の『📋 ID をクエリに挿入』で現在レコードの WHERE Id='...' を簡単挿入できます。Tooling API オブジェクトは利用できません — 全機能は ↗ 全画面 (開発者モード) で">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 5</textarea>
         <div class="row">
           <button class="hdr-close" id="useId" title="現在のページのレコード ID を WHERE Id='...' でクエリに挿入します" style="border-color:#1b96ff;color:#1b96ff">📋 ID をクエリに挿入</button>
           <button class="hdr-close" id="copyCsv" title="クエリ結果を CSV としてクリップボードにコピーします">📋 CSV コピー</button>
@@ -195,7 +208,7 @@ function flashToast(text) {
           <span class="meta" id="mta">Ctrl+Enter でクエリを実行できます</span>
           <button class="primary" id="run">▶ 実行</button>
         </div>
-        <div class="result" id="res"></div>
+        <div class="result" id="res"><div class="empty-state">👆 SOQL を入力して <strong>Ctrl+Enter</strong> または「▶ 実行」を押すと、ここに結果が表示されます。<br/><br/><strong>💡 ヒント</strong>: 「📋 ID をクエリに挿入」で現在開いているレコードの ID を <code>WHERE Id='...'</code> に挿入できます。「🔎 最近 5 件」は現在オブジェクトの最近作成 5 件を一発取得。テーブルは列ヘッダクリックでソート可能。複雑なクエリやエクスポートは ↗ 全画面 (開発者モード) でどうぞ。</div></div>
       </div>
     </div>
   `;
