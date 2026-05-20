@@ -1185,7 +1185,10 @@ async function exLoadFields() {
   if (!state.sid) { document.getElementById("exMeta").innerHTML = `<span class="pill err">Salesforce 未接続</span>`; return; }
   const obj = document.getElementById("exObj").value.trim();
   if (!obj) {
-    document.getElementById("exMeta").innerHTML = `<span class="pill warn">対象オブジェクトの API 名を入力してください</span>`;
+    // v3.49.0: 早期バリデーション + 入力欄にフォーカス戻し
+    document.getElementById("exMeta").innerHTML = `<span class="pill warn">⚠ 入力が必要</span> 対象オブジェクトの API 名を入力してください (例: <code>Account</code> / <code>Contact</code> / <code>Opportunity</code>)`;
+    const inp = document.getElementById("exObj");
+    if (inp) inp.focus();
     return;
   }
   const exMetaEl = document.getElementById("exMeta");
@@ -1279,6 +1282,17 @@ function exBuildSoql() {
 let exPreviewRunId = 0;
 async function exRunPreview() {
   if (!state.sid) return;
+  // v3.49.0: 早期バリデーション — フィールド読込前 / フィールド未選択時の即フィードバック
+  if (!exState.obj) {
+    document.getElementById("exMeta").innerHTML = `<span class="pill warn">⚠ 入力が必要</span> 先に対象オブジェクトを入力して<strong>「フィールド読込」</strong>を押してください (例: <code>Account</code>)`;
+    const inp = document.getElementById("exObj");
+    if (inp) inp.focus();
+    return;
+  }
+  if (!exState.selected || exState.selected.size === 0) {
+    document.getElementById("exMeta").innerHTML = `<span class="pill warn">⚠ 入力が必要</span> エクスポートするフィールドを 1 つ以上チェックしてください (「全選択」「標準のみ」ボタンが便利です)`;
+    return;
+  }
   exBuildSoql();
   const soql = document.getElementById("exSoql").value;
   if (!soql) return;
@@ -3261,7 +3275,13 @@ async function doRest() {
   const path = document.getElementById("restPath").value.trim();
   const body = document.getElementById("restBody").value.trim();
   const meta = document.getElementById("restMeta");
-  if (!path) return;
+  if (!path) {
+    // v3.49.0: 早期バリデーション + 入力欄にフォーカス戻し
+    meta.innerHTML = `<span class="pill warn">⚠ 入力が必要</span> REST API パスを入力してください (例: <code>/services/data/v62.0/limits</code> / <code>/services/data/v62.0/sobjects/Account/describe</code>)`;
+    const inp = document.getElementById("restPath");
+    if (inp) inp.focus();
+    return;
+  }
   const myId = ++restRunId;
   meta.textContent = `📡 送信中… #${myId}`;
   const t0 = performance.now();
