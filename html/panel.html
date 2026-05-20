@@ -48,17 +48,17 @@
     <section class="main">
       <div class="view" data-view="soql">
         <div class="toolbar">
-          <input id="soqlSavedName" placeholder="名前を付けて保存..." />
-          <button id="btnSaveSoql">保存</button>
-          <select id="soqlSaved"></select>
-          <button id="btnLoadSoql">読込</button>
-          <label><input type="checkbox" id="useTooling" /> Tooling API</label>
+          <input id="soqlSavedName" placeholder="名前を付けて保存します..." title="現在の SOQL クエリに名前を付けて保存します" />
+          <button id="btnSaveSoql" title="入力した名前で現在の SOQL を保存します">保存</button>
+          <select id="soqlSaved" title="保存済みの SOQL クエリを選択して読み込みます"></select>
+          <button id="btnLoadSoql" title="選択した保存済み SOQL をエディタに読み込みます">読込</button>
+          <label title="Tooling API を使う場合はチェックしてください (ApexClass / ValidationRule 等)"><input type="checkbox" id="useTooling" /> Tooling API を使用</label>
           <span class="grow"></span>
           <button id="btnCopyCsv" title="クエリ結果を CSV としてクリップボードにコピーします (ダウンロード不要)">📋 CSV</button>
-          <button id="btnExportCsv">📥 CSV</button>
-          <button id="btnRunSoql" class="primary">▶ 実行 (Ctrl+Enter)</button>
+          <button id="btnExportCsv" title="クエリ結果を CSV ファイルとしてダウンロードします">📥 CSV</button>
+          <button id="btnRunSoql" class="primary" title="SOQL クエリを実行します (Ctrl+Enter でも実行できます)">▶ 実行 (Ctrl+Enter)</button>
         </div>
-        <textarea id="soqlText" rows="8" spellcheck="false" placeholder="例: SELECT Id, Name FROM Account WHERE CreatedDate = LAST_N_DAYS:30 ORDER BY CreatedDate DESC LIMIT 50">SELECT Id, Name, CreatedDate FROM Account ORDER BY CreatedDate DESC LIMIT 50</textarea>
+        <textarea id="soqlText" rows="8" spellcheck="false" placeholder="SOQL クエリを入力してください (例: SELECT Id, Name FROM Account WHERE CreatedDate = LAST_N_DAYS:30 ORDER BY CreatedDate DESC LIMIT 50)">SELECT Id, Name, CreatedDate FROM Account ORDER BY CreatedDate DESC LIMIT 50</textarea>
         <div id="soqlMeta" class="meta"></div>
         <div id="soqlResult" class="grid"></div>
       </div>
@@ -68,20 +68,20 @@
           <button id="btnInspectBack" title="一つ前のレコードに戻ります (履歴)" disabled>← 戻る</button>
           <input id="inspectRef" placeholder="レコード ID または '<Object>:<Id>' 形式で入力します (例: 0011x00000abcde / Account:001...)" style="flex:1" />
           <button id="btnInspectPasteId" title="クリップボードの ID を貼り付けてレコードを取得します">📋 貼付</button>
-          <button id="btnInspectFromTab">現在タブから取得</button>
-          <button id="btnInspect" class="primary">▶ 取得 (Enter)</button>
+          <button id="btnInspectFromTab" title="現在のタブが Salesforce レコードページなら、その ID とオブジェクトを自動取得します">現在タブから取得</button>
+          <button id="btnInspect" class="primary" title="指定したレコードを取得します (Enter キーでも実行できます)">▶ 取得 (Enter)</button>
           <span class="grow"></span>
           <button id="btnInspectCopyJson" title="全項目を JSON 形式でクリップボードにコピーします">📋 JSON</button>
-          <button id="btnInspectExportJson">JSON</button>
-          <button id="btnInspectExportCsv">CSV</button>
-          <button id="btnInspectOpenInOrg">レコードを開く</button>
+          <button id="btnInspectExportJson" title="レコードを JSON ファイルとしてダウンロードします">JSON</button>
+          <button id="btnInspectExportCsv" title="レコードを CSV ファイルとしてダウンロードします">CSV</button>
+          <button id="btnInspectOpenInOrg" title="このレコードを Salesforce 組織で開きます (新しいタブ)">レコードを開く</button>
         </div>
         <div id="inspectMeta" class="meta"></div>
         <div class="inspector-layout">
           <div class="inspector-left">
             <input id="inspectFilter" placeholder="フィールドを絞り込みます (例: 'email' / 'CreatedBy' / 'true' で値検索も可能)" title="API 名・ラベル・値の部分一致で絞り込めます" />
-            <label class="inspector-opt"><input type="checkbox" id="inspectShowNull" /> 空値も表示</label>
-            <label class="inspector-opt"><input type="checkbox" id="inspectShowSystem" /> System 項目を表示 (Id/CreatedById/SystemModstamp 等)</label>
+            <label class="inspector-opt" title="null や空文字の項目も結果に表示します (既定は非表示)"><input type="checkbox" id="inspectShowNull" /> 空値も表示します</label>
+            <label class="inspector-opt" title="システム項目 (Id / CreatedById / LastModifiedDate / SystemModstamp 等) を表示します"><input type="checkbox" id="inspectShowSystem" /> システム項目を表示します</label>
           </div>
           <div class="inspector-right">
             <div id="inspectResult" class="grid"></div>
@@ -238,27 +238,27 @@ System.debug('Now: ' + System.now());</textarea>
 
       <div class="view hidden" data-view="logs">
         <div class="toolbar">
-          <button id="btnFetchLogs" class="primary">最新 20 件</button>
-          <button id="btnEnableDebug">DebugLevel ON</button>
+          <button id="btnFetchLogs" class="primary" title="最新 20 件の ApexLog (Debug ログ) を取得します">最新 20 件</button>
+          <button id="btnEnableDebug" title="自身に対する DebugLevel + TraceFlag を有効化します (Apex 実行ログ取得のため)">DebugLevel ON</button>
         </div>
         <div id="logsResult" class="grid"></div>
       </div>
 
       <div class="view hidden" data-view="login">
         <div class="toolbar">
-          <select id="loginLimit">
+          <select id="loginLimit" title="LoginHistory の取得件数を指定します">
             <option value="50">最新 50 件</option>
             <option value="100">最新 100 件</option>
             <option value="200">最新 200 件</option>
           </select>
-          <select id="loginStatus">
-            <option value="">全Status</option>
-            <option value="Success">Success のみ</option>
-            <option value="Failed">Failed のみ</option>
+          <select id="loginStatus" title="ログイン成否で結果を絞り込みます">
+            <option value="">全ステータス</option>
+            <option value="Success">成功のみ</option>
+            <option value="Failed">失敗のみ</option>
           </select>
-          <button id="btnFetchLogin" class="primary">取得</button>
+          <button id="btnFetchLogin" class="primary" title="指定した条件で LoginHistory を取得します">取得</button>
           <span class="grow"></span>
-          <button id="btnLoginCsv">CSV</button>
+          <button id="btnLoginCsv" title="ログイン履歴を CSV ファイルとしてダウンロードします">CSV</button>
         </div>
         <div id="loginMeta" class="meta"></div>
         <div id="loginResult" class="grid"></div>
@@ -266,15 +266,15 @@ System.debug('Now: ' + System.now());</textarea>
 
       <div class="view hidden" data-view="limits">
         <div class="toolbar">
-          <button id="btnLimits" class="primary">取得 / 更新</button>
+          <button id="btnLimits" class="primary" title="組織の Limits 情報を取得・更新します">取得 / 更新</button>
           <span class="grow"></span>
-          <select id="limitsSort">
+          <select id="limitsSort" title="Limits 一覧の並び順を切り替えます">
             <option value="pct">使用率 ↓</option>
             <option value="used">使用量 ↓</option>
             <option value="name">名前 ↑</option>
           </select>
-          <label class="inspector-opt"><input type="checkbox" id="limitsOnlyUsed" /> 使用率 > 0 のみ</label>
-          <button id="btnLimitsCsv">CSV</button>
+          <label class="inspector-opt" title="使用率 0% の項目を一覧から除外します"><input type="checkbox" id="limitsOnlyUsed" /> 使用中のみ表示します</label>
+          <button id="btnLimitsCsv" title="Limits 一覧を CSV ファイルとしてダウンロードします">CSV</button>
         </div>
         <div id="limitsSummary" class="limits-summary"></div>
         <div id="limitsResult" class="limits-grid"></div>

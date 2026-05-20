@@ -8,6 +8,13 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.22.0 (2026-05-20 14:40)** — 🚨 ユーザー要望 Phase 12: SOQL/Inspector/LoginHistory/Limits/Logs タブ title 業務化:
+  - **🐛 SOQL タブ (panel/tool)**: 保存名 placeholder + title, 保存/読込/Tooling/CSV/実行ボタン全てに title 追加 + ですます調 ("Tooling API" → "Tooling API を使用"), soqlText placeholder を「SOQL クエリを入力してください」に
+  - **🐛 Inspector タブ**: 現在タブから取得・取得・JSON/CSV エクスポート・レコードを開くボタンに機能説明 title、「空値も表示」→「空値も表示します」、「System 項目を表示」→「システム項目を表示します」+ 機能説明 title
+  - **🐛 Login History タブ**: loginLimit/loginStatus/btnFetchLogin/btnLoginCsv に title、「全 Status / Success のみ / Failed のみ」→「全ステータス / 成功のみ / 失敗のみ」
+  - **🐛 Limits タブ**: btnLimits/limitsSort/limitsOnlyUsed/btnLimitsCsv に title、「使用率 > 0 のみ」→「使用中のみ表示します」
+  - **🐛 Logs (Apex Log) タブ**: btnFetchLogs/btnEnableDebug に title (DebugLevel + TraceFlag の意味を説明)
+  - **🐛 popup.js アップデート確認 toast**: "アップデート確認中…" → "アップデートを確認しています…"、エラー文も ですます調 に
 - **v2.21.0 (2026-05-20 14:35)** — 🚨 ユーザー要望 Phase 11: 設計書/Apex/REST/Export/Describe タブ placeholder + title 業務化:
   - **🐛 html/panel.html, html/tool.html 設計書タブ**: designObj placeholder を「設計書の種類に応じて入力してください」+ title で objectDef/profileDetail/PermSet 等の使い分け説明、生成/コピー/ダウンロードボタンに機能説明 title、空状態メッセージを「設計書はまだ生成されていません」に
   - **🐛 Apex タブ**: 保存済みドロップダウン/読込/保存/Debug ログチェック/実行ボタンに title 追加、placeholder ですます調 (「名前を付けて保存します...」)、「Debug Log 取得」→「Debug ログを取得」

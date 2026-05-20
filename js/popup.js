@@ -68,10 +68,10 @@ function bindEvents() {
   const btnUpd = document.getElementById("btnCheckUpdate");
   if (btnUpd) {
     btnUpd.addEventListener("click", async () => {
-      toast("⏳ アップデート確認中…", { kind: "loading" });
+      toast("⏳ アップデートを確認しています…", { kind: "loading" });
       chrome.runtime.sendMessage({ type: "sfdt:checkUpdate" }, (res) => {
-        if (res && res.ok) toast(`✓ v${res.version} を確認しました (新版があれば自動で適用されます)`, { kind: "ok" });
-        else toast("❌ アップデート確認に失敗しました", { kind: "err" });
+        if (res && res.ok) toast(`✓ v${res.version} を確認しました (新しいバージョンがあれば自動で適用されます)`, { kind: "ok" });
+        else toast("❌ アップデートの確認に失敗しました", { kind: "err" });
       });
     });
   }
