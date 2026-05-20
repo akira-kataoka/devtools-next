@@ -282,9 +282,9 @@ async function renderRecentNav() {
       nav.insertBefore(area, nav.firstChild);
     }
     if (!list.length) { area.innerHTML = ""; return; }
-    area.innerHTML = `<div class="nav-sep">⏱ 最近開いたビュー</div>` +
+    area.innerHTML = `<div class="nav-sep" title="最近開いた最大 7 ビューを表示します">⏱ 最近開いたビュー</div>` +
       list.map((r) =>
-        `<button class="nav-btn recent" data-view="${escape(r.view)}" title="${escape(new Date(r.ts).toLocaleString())}">↻ ${escape(r.label)}</button>`
+        `<button class="nav-btn recent" data-view="${escape(r.view)}" title="${escape(r.label)} を ${escape(new Date(r.ts).toLocaleString())} に開きました">↻ ${escape(r.label)}</button>`
       ).join("");
     // 動的に追加したボタンにもクリックハンドラ
     area.querySelectorAll(".nav-btn").forEach((btn) => {
@@ -1654,14 +1654,20 @@ function renderInspectorFields() {
     </div>`);
   }
 
+  // 絞込み中の場合は冒頭にヒット件数を表示
+  const filterVal = document.getElementById("inspectFilter").value;
+  if (filterVal && shown > 0) {
+    html.splice(1, 0, `<div class="meta" style="padding:4px 8px;color:var(--accent)">🔍 絞込み「${escape(filterVal)}」: ${shown} 件ヒット (全 ${fields.length} 項目中)</div>`);
+  }
+
   if (!shown) {
     const hints = [];
-    if (!document.getElementById("inspectShowNull").checked) hints.push("「空値も表示」をチェックすると null フィールドも出ます");
-    if (!document.getElementById("inspectShowSystem").checked) hints.push("「System 項目を表示」で CreatedById/SystemModstamp も見られます");
+    if (!document.getElementById("inspectShowNull").checked) hints.push("「空値も表示します」をチェックすると null フィールドも表示されます");
+    if (!document.getElementById("inspectShowSystem").checked) hints.push("「システム項目を表示します」で CreatedById / SystemModstamp も確認できます");
     const filter = document.getElementById("inspectFilter").value;
-    if (filter) hints.push(`絞込み "${escape(filter)}" を ✕ でクリアして全件表示`);
+    if (filter) hints.push(`絞込み "${escape(filter)}" を ✕ でクリアすると全件表示されます`);
     html.push(`<div class="meta" style="padding:16px;text-align:center;line-height:1.7">` +
-      `<div style="font-size:13px;color:var(--accent);margin-bottom:8px">📭 該当フィールドなし</div>` +
+      `<div style="font-size:13px;color:var(--accent);margin-bottom:8px">📭 該当するフィールドはありません</div>` +
       hints.map((h) => `<div>💡 ${h}</div>`).join("") +
       `</div>`);
   }

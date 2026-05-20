@@ -8,6 +8,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.47.0 (2026-05-20 16:45)** — 🚨 ユーザー要望 Phase 37: Inspector フィルタ件数表示 + Picker 9 種文言:
+  - **🐛 panel.js renderInspectorFields**: 絞込み中に冒頭で「🔍 絞込み「X」: N 件ヒット (全 M 項目中)」を表示。空状態ヒント文言を ですます調 詳細化 (「null フィールドも出ます」→「null フィールドも表示されます」、「✕ でクリアして全件表示」→「✕ でクリアすると全件表示されます」)、空メッセージ「📭 該当フィールドなし」→「📭 該当するフィールドはありません」
+  - **🐛 panel.js renderRecentNav**: 「最近開いたビュー」見出しに tooltip 追加、各ボタン tooltip を日時付きの ですます調 詳細化 (「X を YYYY-MM-DD HH:mm に開きました」)
+  - **🐛 picker.js PICKER_DEFS 9 種類**: タイトル/placeholder を統一形式 (「X を選択してください」「Y で検索できます」) に変更 (sobject / field / profile / permset / profileOrPermset / apexClass / flow / lwc / user の 9 種類)、「LWC バンドル」→「LWC コンポーネント」、「ユーザー」→「ユーザ」
 - **v2.46.0 (2026-05-20 16:40)** — 🚨 ユーザー要望 Phase 36: reconnect 再接続ボタン disabled + 状態表示:
   - **🐛 panel.js reconnect (再接続ボタン)**: 実行中に btnReconnect 無効化、orgInfo 領域に「⏳ セッションを再取得しています…」表示、SF タブ未検出時は「Salesforce のタブではありません」 pill、sid 失敗時は「sid Cookie の取得に失敗しました」 pill (ですます調)、成功時にボタン再有効化
   - **🐛 panel.js exDownloadAll (CSV/Excel/JSON ダウンロード)**: 既存実装で「⏸ 取消」表記により実行中状態は明示済 (確認のみ)

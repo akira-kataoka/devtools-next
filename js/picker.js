@@ -42,8 +42,8 @@ async function pushRecent(kind, value, orgKey) {
 
 const PICKER_DEFS = {
   sobject: {
-    title: "オブジェクトを選択",
-    placeholder: "オブジェクト API 名 / 表示名で検索 (例: Account / 取引先 / Custom__c)",
+    title: "オブジェクトを選択してください",
+    placeholder: "オブジェクトを API 名または表示名で検索できます (例: Account / 取引先 / Custom__c)",
     columns: ["API 名", "ラベル", "Key Prefix", "種別"],
     async load({ host, sid, apiVersion }) {
       const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/` });
@@ -58,8 +58,8 @@ const PICKER_DEFS = {
     },
   },
   field: {
-    title: "フィールドを選択",
-    placeholder: "項目 API 名 / 表示名で検索",
+    title: "フィールドを選択してください",
+    placeholder: "項目を API 名または表示名で検索できます",
     columns: ["API 名", "ラベル", "型", "必須"],
     async load({ host, sid, apiVersion, parentObject }) {
       if (!parentObject) throw new Error("項目を取得するには、先に親オブジェクトを指定してください");
@@ -73,8 +73,8 @@ const PICKER_DEFS = {
     },
   },
   profile: {
-    title: "プロファイルを選択",
-    placeholder: "プロファイル名で検索",
+    title: "プロファイルを選択してください",
+    placeholder: "プロファイル名で検索できます",
     columns: ["Name", "ライセンス", "UserType"],
     async load({ host, sid, apiVersion }) {
       const r = await runSoql({ host, sid, apiVersion,
@@ -88,8 +88,8 @@ const PICKER_DEFS = {
     },
   },
   permset: {
-    title: "権限セットを選択",
-    placeholder: "API 名 / ラベルで検索",
+    title: "権限セットを選択してください",
+    placeholder: "API 名またはラベルで検索できます",
     columns: ["API 名", "ラベル", "ライセンス"],
     async load({ host, sid, apiVersion }) {
       const r = await runSoql({ host, sid, apiVersion,
@@ -105,8 +105,8 @@ const PICKER_DEFS = {
   },
   profileOrPermset: {
     // プロファイル詳細レポート用の統合 Picker (Profile or PermSet を選ぶ)
-    title: "プロファイル または 権限セットを選択",
-    placeholder: "Profile / PermissionSet 検索",
+    title: "プロファイルまたは権限セットを選択してください",
+    placeholder: "プロファイルまたは権限セットを名前で検索できます",
     columns: ["種別", "名前", "ラベル/ライセンス"],
     async load({ host, sid, apiVersion }) {
       const [profR, psR] = await Promise.all([
@@ -128,8 +128,8 @@ const PICKER_DEFS = {
     },
   },
   apexClass: {
-    title: "Apex クラスを選択",
-    placeholder: "クラス名で検索",
+    title: "Apex クラスを選択してください",
+    placeholder: "Apex クラス名で検索できます",
     columns: ["クラス名", "Status", "API Ver"],
     async load({ host, sid, apiVersion }) {
       const r = await runSoql({ host, sid, apiVersion, tooling: true,
@@ -143,8 +143,8 @@ const PICKER_DEFS = {
     },
   },
   flow: {
-    title: "Flow を選択",
-    placeholder: "Flow DeveloperName / ラベルで検索",
+    title: "フローを選択してください",
+    placeholder: "Flow DeveloperName またはラベルで検索できます",
     columns: ["DeveloperName", "ラベル", "Active"],
     async load({ host, sid, apiVersion }) {
       const r = await runSoql({ host, sid, apiVersion, tooling: true,
@@ -158,8 +158,8 @@ const PICKER_DEFS = {
     },
   },
   lwc: {
-    title: "LWC バンドルを選択",
-    placeholder: "LWC DeveloperName / ラベルで検索",
+    title: "LWC コンポーネントを選択してください",
+    placeholder: "LWC DeveloperName またはラベルで検索できます",
     columns: ["DeveloperName", "ラベル", "公開"],
     async load({ host, sid, apiVersion }) {
       const r = await runSoql({ host, sid, apiVersion, tooling: true,
@@ -173,8 +173,8 @@ const PICKER_DEFS = {
     },
   },
   user: {
-    title: "ユーザーを選択",
-    placeholder: "Name / Username / Email で検索",
+    title: "ユーザを選択してください",
+    placeholder: "Name / Username / Email で検索できます",
     columns: ["Name", "Username", "Profile"],
     async load({ host, sid, apiVersion }) {
       const r = await runSoql({ host, sid, apiVersion,
