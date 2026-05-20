@@ -413,10 +413,10 @@ System.debug('Now: ' + System.now());</textarea>
             <option value="csv">CSV</option>
             <option value="tsv">TSV (Excel貼付)</option>
           </select>
-          <button id="btnDesignGen" class="primary" title="選択した設計書を生成します">▶ 生成</button>
+          <button id="btnDesignGen" class="primary" title="選択した種類・対象・形式で設計書を生成します。生成された設計書は表紙 (作成日時 / 対象組織 / 改訂履歴) 付きでプロジェクト成果物として利用可能です">▶ 生成</button>
           <span class="grow"></span>
-          <button id="btnDesignCopy" title="設計書のソースをクリップボードにコピーします">クリップボード</button>
-          <button id="btnDesignDownload" title="設計書を選択した形式でダウンロードします">ダウンロード</button>
+          <button id="btnDesignCopy" title="生成された設計書のソースをクリップボードにコピーします (Markdown / HTML / CSV 等の形式そのまま)">📋 クリップボード</button>
+          <button id="btnDesignDownload" title="生成された設計書をファイルとしてダウンロードします (Excel の場合は .xls で出力、初回は形式警告が出ますが『はい』で開けます)">📥 ダウンロード</button>
         </div>
         <div id="designMeta" class="meta"></div>
         <div class="design-split">
