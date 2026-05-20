@@ -56,14 +56,27 @@
     </section>
 
     <section class="card">
-      <h2>クイックアクション</h2>
-      <div class="grid2">
-        <button data-act="openSetup" title="Setup 画面を新しいタブで開きます">Setup を開く</button>
-        <button data-act="openDevConsole" title="Developer Console を新しいタブで開きます">Developer Console</button>
-        <button data-act="openObjectMgr" title="オブジェクトマネージャを開きます">オブジェクトマネージャ</button>
-        <button data-act="openProfile" title="自分のユーザプロフィールを開きます">マイプロフィール</button>
-        <button data-act="openOrgInfo" title="組織情報 (Company Information) を開きます">組織情報</button>
-        <button data-act="logoutUI" title="この組織からログアウトします">ログアウト</button>
+      <h2>⚡ クイックアクション</h2>
+      <!-- v2.83.0 Team F: 6 ボタンをアイコン + ラベルの 2 行大型カードに -->
+      <div class="quick-grid">
+        <button class="quick-card" data-act="openSetup" title="Salesforce Setup 画面を新しいタブで開きます">
+          <div class="quick-ico">⚙️</div><div class="quick-lbl">Setup</div>
+        </button>
+        <button class="quick-card" data-act="openDevConsole" title="Developer Console を新しいタブで開きます">
+          <div class="quick-ico">💻</div><div class="quick-lbl">Dev Console</div>
+        </button>
+        <button class="quick-card" data-act="openObjectMgr" title="オブジェクトマネージャを新しいタブで開きます">
+          <div class="quick-ico">📦</div><div class="quick-lbl">Object Manager</div>
+        </button>
+        <button class="quick-card" data-act="openProfile" title="自分のユーザプロフィールを開きます">
+          <div class="quick-ico">👤</div><div class="quick-lbl">マイプロフィール</div>
+        </button>
+        <button class="quick-card" data-act="openOrgInfo" title="組織情報 (Company Information) を開きます">
+          <div class="quick-ico">🏢</div><div class="quick-lbl">組織情報</div>
+        </button>
+        <button class="quick-card quick-card-danger" data-act="logoutUI" title="この組織からログアウトします">
+          <div class="quick-ico">🚪</div><div class="quick-lbl">ログアウト</div>
+        </button>
       </div>
     </section>
 
@@ -74,6 +87,8 @@
         <button id="btnLoginAsSearch" class="primary" aria-label="ユーザーを検索">検索</button>
       </div>
       <div id="loginAsResult" class="login-as-result" role="list" aria-live="polite" aria-atomic="false"></div>
+      <!-- v2.83.0 Team G: 検索履歴 + 最近ログインしたユーザ -->
+      <div id="loginAsHistory" class="login-history" aria-label="検索履歴と最近ログインしたユーザ"></div>
     </section>
 
     <!-- v2.80.0: 「Salesforce ID 解析」セクションを popup から撤去 (ユーザーから「いらない」フィードバック) -->

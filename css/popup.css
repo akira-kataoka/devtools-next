@@ -161,6 +161,60 @@ html, body {
 .mini:hover { color: var(--fg); border-color: var(--accent); }
 
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+
+/* v2.83.0 Team F: クイックアクションを大型 2 行カード型に */
+.quick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+@media (max-width: 420px) { .quick-grid { grid-template-columns: repeat(2, 1fr); } }
+.quick-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px;
+  padding: 10px 6px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--fg);
+  transition: border-color 0.15s, background 0.15s, transform 0.1s;
+}
+.quick-card:hover {
+  border-color: var(--accent);
+  background: rgba(27,150,255,0.08);
+  transform: translateY(-1px);
+}
+.quick-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+.quick-card.quick-card-danger:hover { border-color: var(--err); background: rgba(255,107,107,0.08); }
+.quick-ico { font-size: 22px; line-height: 1; }
+.quick-lbl { font-size: 11px; font-weight: 600; text-align: center; }
+
+/* v2.83.0 Team G: Login as User 検索履歴 + 最近ログインユーザ */
+.login-history { margin-top: 8px; }
+.login-history-title {
+  font-size: 10px;
+  color: var(--fg-dim);
+  margin: 6px 0 4px;
+  letter-spacing: 0.4px;
+}
+.login-history-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.login-chip {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  color: var(--fg-dim);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.login-chip:hover { border-color: var(--accent); background: rgba(27,150,255,0.08); color: var(--fg); }
+.login-chip.recent-user { background: rgba(46,204,113,0.08); color: var(--ok); border-color: rgba(46,204,113,0.3); }
+.login-chip.recent-user:hover { background: rgba(46,204,113,0.18); }
 button {
   background: #142447; color: var(--fg); border: 1px solid var(--line);
   border-radius: 6px; padding: 7px 10px; cursor: pointer; font-size: 11px; font-weight: 600;

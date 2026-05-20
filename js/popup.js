@@ -36,6 +36,7 @@ async function init() {
     renderLinks();
     await refreshSession();
     await renderHistory();
+    await renderLoginAsHistory();
   } catch (e) {
     console.error("popup init error:", e);
     const s = document.getElementById("statusMsg");
@@ -218,7 +219,16 @@ async function refreshSession() {
   } else {
     userMsg = `⚠️ ユーザ情報の取得に失敗しました (HTTP ${ui.status}): ${JSON.stringify(ui.data).substring(0, 100)}`;
   }
-  setBadge("接続OK", true);
+  // v2.83.0 Team H: popup ヘッダーに組織名 + ユーザ名を簡潔表示
+  // バッジは「接続OK」→ 「組織名 / ユーザ名」に置換、長すぎる場合は省略
+  const orgName = (ui.ok && ui.data && (ui.data.organization_name || ui.data.org_name)) || "";
+  const displayUser = (ui.ok && ui.data && (ui.data.name || ui.data.preferred_username || ui.data.email)) || "";
+  let badgeText = "接続OK";
+  if (orgName || displayUser) {
+    const short = (s, n) => (s && s.length > n) ? s.substring(0, n) + "…" : s;
+    badgeText = [short(orgName, 20), short(displayUser, 16)].filter(Boolean).join(" / ");
+  }
+  setBadge(badgeText, true);
   fillInfo({
     host: state.host,
     orgId: state.orgId,
@@ -445,9 +455,70 @@ async function clearHistory() {
 }
 
 // ====== クイックログイン (Login as User) ======
+// v2.83.0 Team G: 検索履歴と最近ログインしたユーザ
+const LOGIN_AS_HISTORY_KEY = "sfdtLoginAsHistory"; // 最近検索ワード (最大 5 件)
+const LOGIN_AS_RECENT_KEY = "sfdtLoginAsRecentUsers"; // 最近ログインしたユーザ (最大 5 件)
+
+async function pushLoginAsHistory(term) {
+  if (!term || !term.trim()) return;
+  try {
+    const { [LOGIN_AS_HISTORY_KEY]: list = [] } = await chrome.storage.local.get(LOGIN_AS_HISTORY_KEY);
+    const next = [term, ...list.filter((t) => t !== term)].slice(0, 5);
+    await chrome.storage.local.set({ [LOGIN_AS_HISTORY_KEY]: next });
+    await renderLoginAsHistory();
+  } catch {}
+}
+async function pushLoginAsRecent(user) {
+  if (!user || !user.Id) return;
+  try {
+    const { [LOGIN_AS_RECENT_KEY]: list = [] } = await chrome.storage.local.get(LOGIN_AS_RECENT_KEY);
+    const minimal = { Id: user.Id, Name: user.Name, Username: user.Username, Alias: user.Alias, ts: Date.now() };
+    const next = [minimal, ...list.filter((u) => u.Id !== user.Id)].slice(0, 5);
+    await chrome.storage.local.set({ [LOGIN_AS_RECENT_KEY]: next });
+    await renderLoginAsHistory();
+  } catch {}
+}
+async function renderLoginAsHistory() {
+  const root = document.getElementById("loginAsHistory");
+  if (!root) return;
+  try {
+    const { [LOGIN_AS_HISTORY_KEY]: terms = [], [LOGIN_AS_RECENT_KEY]: users = [] } =
+      await chrome.storage.local.get([LOGIN_AS_HISTORY_KEY, LOGIN_AS_RECENT_KEY]);
+    if (!terms.length && !users.length) { root.innerHTML = ""; return; }
+    let html = "";
+    if (users.length) {
+      html += `<div class="login-history-title">⏱ 最近ログインしたユーザ</div>`;
+      html += `<div class="login-history-chips">` + users.map((u) =>
+        `<button class="login-chip recent-user" data-user-id="${escape(u.Id)}" data-user-name="${escape(u.Name || "")}" title="${escape(u.Username || "")} (${escape(u.Alias || "")}) を ${escape(new Date(u.ts).toLocaleString())} にログイン">↻ ${escape(u.Name || u.Username || "?")}</button>`
+      ).join("") + `</div>`;
+    }
+    if (terms.length) {
+      html += `<div class="login-history-title">🔎 最近の検索キーワード</div>`;
+      html += `<div class="login-history-chips">` + terms.map((t) =>
+        `<button class="login-chip search-term" data-term="${escape(t)}" title="クリックでこのキーワードで再検索">${escape(t)}</button>`
+      ).join("") + `</div>`;
+    }
+    root.innerHTML = html;
+    // クリックハンドラ
+    root.querySelectorAll(".login-chip.search-term").forEach((b) => {
+      b.addEventListener("click", () => {
+        document.getElementById("loginAsSearch").value = b.dataset.term;
+        searchUsersForLogin();
+      });
+    });
+    root.querySelectorAll(".login-chip.recent-user").forEach((b) => {
+      b.addEventListener("click", () => {
+        loginAsUser({ Id: b.dataset.userId, Name: b.dataset.userName });
+      });
+    });
+  } catch {}
+}
+
 async function searchUsersForLogin() {
   if (!state.sid) { toast("⚠ 先に Salesforce タブへ接続してください", { kind: "warn" }); return; }
   const term = document.getElementById("loginAsSearch").value.trim();
+  // v2.83.0 Team G: 検索ワード履歴に保存
+  if (term) pushLoginAsHistory(term);
   const result = document.getElementById("loginAsResult");
   // v2.73.0: 検索ボタンを実行中無効化 (二重実行防止 + ユーザに状態を可視化)
   const searchBtn = document.getElementById("btnLoginAsSearch");
@@ -518,6 +589,8 @@ async function searchUsersForLogin() {
 
 function loginAsUser(u) {
   if (!state.host || !state.orgId) { toast("⚠ セッション情報が取得できていません。先に Salesforce タブで再接続してください", { kind: "warn" }); return; }
+  // v2.83.0 Team G: 最近ログインユーザに記録
+  pushLoginAsRecent(u);
   // Salesforce Login As の URL: /servlet/servlet.su?oid=<OrgId15>&suorgadminid=<UserId15>&retURL=/lightning/&targetURL=/
   const orgId = state.orgId.substring(0, 15);
   const userId = (u.Id || "").substring(0, 15);
