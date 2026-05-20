@@ -91,6 +91,28 @@ async function init() {
     setupDesignPicker();
     // 検索系入力欄に ✕ クリア共通化
     ["inspectFilter", "exFieldFilter", "csFilter", "exObj", "descObj", "apiObj", "inspectRef"].forEach(attachClearButton);
+    // v2.93.0: リフレッシュ時の直前 view 復元 (ユーザー要望「リフレッシュしても前のページ状態を残して」)
+    try {
+      const { sfdtLastView } = await chrome.storage.local.get("sfdtLastView");
+      if (sfdtLastView && sfdtLastView !== "home" && document.querySelector(`.view[data-view="${sfdtLastView}"]`)) {
+        switchToView(sfdtLastView);
+      }
+    } catch {}
+    // v2.93.0: レコード詳細をデフォルト表示時、現在ページのレコード ID を自動入力 (ユーザー要望「現在のレコードをデフォルト表示」)
+    try {
+      const inspectRefEl = document.getElementById("inspectRef");
+      if (inspectRefEl && !inspectRefEl.value && typeof chrome.devtools !== "undefined" && chrome.devtools.inspectedWindow) {
+        chrome.devtools.inspectedWindow.eval("location.href", (href) => {
+          if (!href) return;
+          const m = href.match(/\/lightning\/r\/([^/]+)\/([a-zA-Z0-9]{15,18})/);
+          if (m) inspectRefEl.value = m[2];
+          else {
+            const m2 = href.match(/\/([a-zA-Z0-9]{15,18})(?:[/?]|$)/);
+            if (m2) inspectRefEl.value = m2[1];
+          }
+        });
+      }
+    } catch {}
     console.log("[DevToolsNext] init: complete");
   } catch (e) {
     console.error("[DevToolsNext] init error:", e);
@@ -340,6 +362,8 @@ function switchToView(v) {
     // document.title を動的更新 (ブラウザタブで現在のビュー名が見える)
     document.title = `${label} - DevToolsNext`;
   }
+  // v2.93.0: リフレッシュしても直前の view を復元するため最終 view を保存
+  try { chrome.storage.local.set({ sfdtLastView: v }); } catch {}
 
   // v2.90.0: 開いた瞬間に自動取得 (ユーザー要望: 「使用状況とかは開いたらすぐ取得してほしい」)
   // 入力不要で実行可能なビュー (limits / login / logs / metadata) は switchToView 時に自動実行
@@ -1894,8 +1918,124 @@ function lockBtn(id) {
   return () => { b.disabled = false; b.style.opacity = ""; };
 }
 
+// v2.93.0 Phase 83: Limits ダッシュボード抜本改修 (ユーザー要望 5 件対応)
+// 1) カラム固定スクロール時の重なり修正 (CSS z-index + 不透明背景)
+// 2) ソート機能 (全列クリックでソート、向き ↑↓ 切替)
+// 3) 日本語訳 (Limit 名を業務用語に)
+// 4) 追加 Limit 表示 (現状は /limits API のみだが、隠れている上限を解説文で補足)
+// 5) お気に入り (ピン留め) 機能で選択した Limit のみ表示する設定 (chrome.storage 永続化)
+
+// Salesforce Limits 名 → 日本語マップ + 補足情報 (公式ドキュメント参照)
+const LIMITS_JA = {
+  "AnalyticsExternalDataSizeMB": { ja: "Analytics 外部データサイズ", desc: "Wave 外部データの累計サイズ (MB)" },
+  "ConcurrentAsyncGetReportInstances": { ja: "並列レポートインスタンス取得", desc: "同時実行できる Analytics REST 非同期レポート数" },
+  "ConcurrentEinsteinDataInsightsStoryCreation": { ja: "Einstein Discovery 同時ストーリ作成", desc: "Einstein Discovery で同時作成可能なストーリ数" },
+  "ConcurrentEinsteinDiscoveryStoryCreation": { ja: "Einstein Discovery 同時作成", desc: "Einstein Discovery の同時作成数" },
+  "ConcurrentSyncReportRuns": { ja: "並列同期レポート実行", desc: "同時実行できる同期 Analytics レポート数" },
+  "DailyAnalyticsDataflowJobExecutions": { ja: "Analytics データフロージョブ実行 / 日", desc: "Tableau CRM データフロー実行回数の日次上限" },
+  "DailyAnalyticsUploadedFilesSizeMB": { ja: "Analytics アップロードファイルサイズ / 日", desc: "Tableau CRM への日次アップロードサイズ (MB)" },
+  "DailyApiRequests": { ja: "API リクエスト / 日", desc: "REST/SOAP/Bulk/Tooling 等 API コール総数の日次上限。最重要監視項目" },
+  "DailyAsyncApexExecutions": { ja: "非同期 Apex 実行 / 日", desc: "@future / Queueable / Batch Apex 実行回数の日次上限" },
+  "DailyAsyncApexTests": { ja: "非同期 Apex テスト / 日", desc: "並列で実行できる Apex テストメソッド数の日次上限" },
+  "DailyBulkApiBatches": { ja: "Bulk API バッチ / 日", desc: "Bulk API v1 のバッチ実行回数の日次上限" },
+  "DailyBulkV2QueryFileStorageMB": { ja: "Bulk API v2 クエリファイル / 日", desc: "Bulk API v2 のクエリ結果ファイル合計サイズ (MB)" },
+  "DailyBulkV2QueryJobs": { ja: "Bulk API v2 クエリジョブ / 日", desc: "Bulk API v2 クエリジョブ実行回数の日次上限" },
+  "DailyDeliveredPlatformEvents": { ja: "Platform Event 配信 / 日", desc: "高ボリューム Platform Event の日次配信件数上限" },
+  "DailyDurableGenericStreamingApiEvents": { ja: "Durable 汎用 Streaming API イベント / 日", desc: "" },
+  "DailyDurableStreamingApiEvents": { ja: "Durable Streaming API イベント / 日", desc: "PushTopic / 汎用 Streaming の永続化イベント上限" },
+  "DailyEinsteinDataInsightsStoryCreation": { ja: "Einstein Discovery ストーリ作成 / 日", desc: "" },
+  "DailyEinsteinDiscoveryOptimizationJobRuns": { ja: "Einstein Discovery 最適化ジョブ / 日", desc: "" },
+  "DailyEinsteinDiscoveryPredictAPICalls": { ja: "Einstein Discovery 予測 API / 日", desc: "" },
+  "DailyEinsteinDiscoveryPredictionsByCDC": { ja: "Einstein Discovery CDC 予測 / 日", desc: "Change Data Capture トリガで実行された予測件数" },
+  "DailyEinsteinDiscoveryStoryCreation": { ja: "Einstein Discovery ストーリ作成 / 日", desc: "" },
+  "DailyFunctionsApiCallLimit": { ja: "Salesforce Functions API / 日", desc: "" },
+  "DailyGenericStreamingApiEvents": { ja: "汎用 Streaming API イベント / 日", desc: "" },
+  "DailyScratchOrgs": { ja: "スクラッチ組織作成 / 日", desc: "DevHub からの日次スクラッチ Org 作成数上限" },
+  "DailyStandardVolumePlatformEvents": { ja: "標準ボリューム Platform Event / 日", desc: "" },
+  "DailyStreamingApiEvents": { ja: "Streaming API イベント / 日", desc: "" },
+  "DailyWorkflowEmails": { ja: "ワークフローメール送信 / 日", desc: "Workflow Rule + Process Builder メール送信の日次上限" },
+  "DataStorageMB": { ja: "データストレージ (MB)", desc: "オブジェクトレコードに使用しているストレージ容量。100% 近づいたら早期削減" },
+  "DurableStreamingApiConcurrentClients": { ja: "Durable Streaming API 同時接続", desc: "" },
+  "FileStorageMB": { ja: "ファイルストレージ (MB)", desc: "Salesforce Files / Attachment / Content の合計サイズ" },
+  "HourlyAsyncReportRuns": { ja: "非同期レポート実行 / 時", desc: "Analytics REST の非同期レポート実行 / 時間" },
+  "HourlyDashboardRefreshes": { ja: "ダッシュボード更新 / 時", desc: "" },
+  "HourlyDashboardResults": { ja: "ダッシュボード結果取得 / 時", desc: "" },
+  "HourlyDashboardStatuses": { ja: "ダッシュボード状態取得 / 時", desc: "" },
+  "HourlyElevateAsyncReportRuns": { ja: "Elevate 非同期レポート / 時", desc: "" },
+  "HourlyElevateSyncReportRuns": { ja: "Elevate 同期レポート / 時", desc: "" },
+  "HourlyLongTermIdMapping": { ja: "長期 ID マッピング / 時", desc: "" },
+  "HourlyManagedContentPublicRequests": { ja: "Managed Content Public リクエスト / 時", desc: "" },
+  "HourlyODataCallout": { ja: "OData コールアウト / 時", desc: "" },
+  "HourlyPublishedPlatformEvents": { ja: "Platform Event 発行 / 時", desc: "" },
+  "HourlyPublishedStandardVolumePlatformEvents": { ja: "標準ボリューム Platform Event 発行 / 時", desc: "" },
+  "HourlyShortTermIdMapping": { ja: "短期 ID マッピング / 時", desc: "" },
+  "HourlySyncReportRuns": { ja: "同期レポート実行 / 時", desc: "" },
+  "HourlyTimeBasedWorkflow": { ja: "時間ベースワークフロー / 時", desc: "" },
+  "MassEmail": { ja: "一括メール送信 (24h)", desc: "Salesforce 標準の一括メール送信 / 24 時間" },
+  "MonthlyEinsteinDiscoveryStoryCreation": { ja: "Einstein Discovery ストーリ作成 / 月", desc: "" },
+  "MonthlyPlatformEventsUsageEntitlement": { ja: "Platform Event 月次使用権", desc: "Platform Event の月次配信上限" },
+  "Package2VersionCreates": { ja: "2 世代パッケージバージョン作成 / 日", desc: "" },
+  "Package2VersionCreatesWithoutValidation": { ja: "2 世代パッケージバージョン作成 (検証なし) / 日", desc: "" },
+  "PermissionSets": { ja: "権限セット数", desc: "組織に作成された権限セット (Custom + Standard) の総数" },
+  "PrivateConnectOutboundCalloutHourlyLimitMB": { ja: "Private Connect アウトバウンド / 時 (MB)", desc: "" },
+  "PublishCallbacksUsageInApex": { ja: "Apex Publish Callback 使用回数", desc: "" },
+  "SingleEmail": { ja: "シングルメール送信 (24h)", desc: "外部メールアドレス宛シングルメール / 24 時間 (最重要)" },
+  "StreamingApiConcurrentClients": { ja: "Streaming API 同時接続", desc: "" },
+};
+function limitJa(name) {
+  return (LIMITS_JA[name] && LIMITS_JA[name].ja) || name;
+}
+function limitDesc(name) {
+  return (LIMITS_JA[name] && LIMITS_JA[name].desc) || "";
+}
+
+// ピン留め設定 (chrome.storage)
+const LIMITS_PINNED_KEY = "sfdtLimitsPinned";
+const LIMITS_SORT_KEY = "sfdtLimitsSortState";
+let _limitsPinned = []; // [name, name, ...]
+let _limitsSortCol = "pct"; // pct / used / remaining / max / name
+let _limitsSortDir = "desc"; // asc / desc
+let _limitsShowPinnedOnly = false;
+
+async function loadLimitsSettings() {
+  try {
+    const r = await chrome.storage.local.get([LIMITS_PINNED_KEY, LIMITS_SORT_KEY]);
+    _limitsPinned = r[LIMITS_PINNED_KEY] || [];
+    const sortSt = r[LIMITS_SORT_KEY] || {};
+    if (sortSt.col) _limitsSortCol = sortSt.col;
+    if (sortSt.dir) _limitsSortDir = sortSt.dir;
+    if (sortSt.pinnedOnly != null) _limitsShowPinnedOnly = !!sortSt.pinnedOnly;
+  } catch {}
+}
+async function saveLimitsSettings() {
+  try {
+    await chrome.storage.local.set({
+      [LIMITS_PINNED_KEY]: _limitsPinned,
+      [LIMITS_SORT_KEY]: { col: _limitsSortCol, dir: _limitsSortDir, pinnedOnly: _limitsShowPinnedOnly },
+    });
+  } catch {}
+}
+async function toggleLimitPin(name) {
+  if (_limitsPinned.includes(name)) _limitsPinned = _limitsPinned.filter((n) => n !== name);
+  else _limitsPinned = [..._limitsPinned, name];
+  await saveLimitsSettings();
+  renderLimitsList();
+}
+async function toggleLimitSort(col) {
+  if (_limitsSortCol === col) _limitsSortDir = _limitsSortDir === "asc" ? "desc" : "asc";
+  else { _limitsSortCol = col; _limitsSortDir = (col === "name") ? "asc" : "desc"; }
+  await saveLimitsSettings();
+  renderLimitsList();
+}
+async function toggleLimitPinnedOnly() {
+  _limitsShowPinnedOnly = !_limitsShowPinnedOnly;
+  await saveLimitsSettings();
+  renderLimitsList();
+}
+
 async function doLimits() {
   if (!state.sid) return;
+  await loadLimitsSettings();
   const unlock = lockBtn("btnLimits");
   const r = await sfFetch({ host: state.host, sid: state.sid, path: `/services/data/v${state.apiVersion}/limits` });
   unlock();
@@ -1910,20 +2050,29 @@ async function doLimits() {
 
 function renderLimitsList() {
   if (!lastLimitsData) return;
-  const sort = document.getElementById("limitsSort").value;
-  const onlyUsed = document.getElementById("limitsOnlyUsed").checked;
+  const sortLegacy = document.getElementById("limitsSort"); // 旧 select (互換)
+  const onlyUsed = document.getElementById("limitsOnlyUsed");
+  const isOnlyUsed = onlyUsed && onlyUsed.checked;
 
   let rows = Object.entries(lastLimitsData).map(([k, v]) => {
     const max = (v && v.Max != null) ? v.Max : 0;
     const remaining = (v && v.Remaining != null) ? v.Remaining : 0;
     const used = max - remaining;
     const pct = max > 0 ? Math.round((used / max) * 100) : 0;
-    return { name: k, max, remaining, used, pct };
+    return { name: k, ja: limitJa(k), desc: limitDesc(k), max, remaining, used, pct, pinned: _limitsPinned.includes(k) };
   });
-  if (onlyUsed) rows = rows.filter((r) => r.used > 0);
-  if (sort === "pct") rows.sort((a, b) => b.pct - a.pct);
-  else if (sort === "used") rows.sort((a, b) => b.used - a.used);
-  else rows.sort((a, b) => a.name.localeCompare(b.name));
+  if (isOnlyUsed) rows = rows.filter((r) => r.used > 0);
+  if (_limitsShowPinnedOnly) rows = rows.filter((r) => r.pinned);
+
+  // ソート (ピン留めは常に上位)
+  const dir = _limitsSortDir === "asc" ? 1 : -1;
+  rows.sort((a, b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    let av, bv;
+    if (_limitsSortCol === "name") { av = a.ja; bv = b.ja; return dir * av.localeCompare(bv); }
+    av = a[_limitsSortCol]; bv = b[_limitsSortCol];
+    return dir * ((av || 0) - (bv || 0));
+  });
 
   // サマリカード (危険な 5 件)
   const critical = rows.filter((r) => r.pct >= 70).slice(0, 5);
@@ -1932,8 +2081,8 @@ function renderLimitsList() {
     sumEl.innerHTML = critical.map((r) => {
       const status = r.pct >= 90 ? "🚨 危険水準" : "⚠ 注意水準";
       return `
-      <div class="limit-card ${r.pct >= 90 ? "critical" : "warn"}" title="${escape(r.name)}: 使用 ${r.used.toLocaleString()} / 上限 ${r.max.toLocaleString()} (${r.pct}%)">
-        <div class="title">${escape(r.name)}</div>
+      <div class="limit-card ${r.pct >= 90 ? "critical" : "warn"}" title="${escape(r.ja)} (${escape(r.name)}): 使用 ${r.used.toLocaleString()} / 上限 ${r.max.toLocaleString()} (${r.pct}%)">
+        <div class="title">${escape(r.ja)}</div>
         <div class="val">${r.pct}%</div>
         <div class="sub">${r.used.toLocaleString()} / ${r.max.toLocaleString()} <span style="opacity:0.7">(${status})</span></div>
       </div>`;
@@ -1942,15 +2091,30 @@ function renderLimitsList() {
     sumEl.innerHTML = `<div class="limit-card"><div class="title">健全</div><div class="val" style="color:var(--ok)">✓ 問題なし</div><div class="sub">使用率 70% を超える項目はありません</div></div>`;
   }
 
-  // 一覧
+  // 一覧 (列クリックでソート、★ ピン留めトグル)
+  const arrow = (col) => _limitsSortCol === col ? (_limitsSortDir === "asc" ? " ▲" : " ▼") : "";
   const root = document.getElementById("limitsResult");
-  const html = [`<div class="limit-row header">
-    <div>項目 (Limit 名)</div><div>使用</div><div>残り</div><div>上限</div><div>使用率バー</div><div>%</div>
+  // v2.93.0: ピン留めトグル、列クリックソート、日本語名+原文 tooltip、ピン留めのみ表示トグル
+  const html = [`<div class="limit-toolbar" style="margin-bottom:6px;font-size:11px">
+    <label style="cursor:pointer"><input type="checkbox" id="chkPinnedOnly" ${_limitsShowPinnedOnly ? "checked" : ""}/> ★ ピン留めのみ表示 (${fmtNum ? fmtNum(_limitsPinned.length) : _limitsPinned.length} 件)</label>
+    <span style="margin-left:12px;color:var(--fg-dim)">表示: ${rows.length} / 全 ${Object.keys(lastLimitsData).length} 件</span>
   </div>`];
+  html.push(`<div class="limit-row header">
+    <div class="lim-col-pin" data-col="pinned" title="ピン留め">★</div>
+    <div class="lim-col-name lim-sortable" data-col="name" title="クリックでソート">項目 (日本語)${arrow("name")}</div>
+    <div class="lim-sortable" data-col="used" title="クリックでソート">使用${arrow("used")}</div>
+    <div class="lim-sortable" data-col="remaining" title="クリックでソート">残り${arrow("remaining")}</div>
+    <div class="lim-sortable" data-col="max" title="クリックでソート">上限${arrow("max")}</div>
+    <div>使用率バー</div>
+    <div class="lim-sortable" data-col="pct" title="クリックでソート">%${arrow("pct")}</div>
+  </div>`);
   for (const r of rows) {
     const cls = r.pct >= 90 ? "critical" : (r.pct >= 70 ? "warn" : (r.pct >= 50 ? "mid" : "low"));
-    html.push(`<div class="limit-row">
-      <div class="limit-name">${escape(r.name)}</div>
+    const star = r.pinned ? "★" : "☆";
+    const tooltipName = `${escape(r.ja)} (${escape(r.name)})${r.desc ? "\\n" + escape(r.desc) : ""}`;
+    html.push(`<div class="limit-row${r.pinned ? " pinned" : ""}">
+      <div class="lim-col-pin lim-pin-btn" data-pin="${escape(r.name)}" title="クリックでピン留め切替">${star}</div>
+      <div class="limit-name lim-col-name" title="${tooltipName}">${escape(r.ja)}<span class="lim-en">${escape(r.name)}</span></div>
       <div>${r.used.toLocaleString()}</div>
       <div>${r.remaining.toLocaleString()}</div>
       <div>${r.max.toLocaleString()}</div>
@@ -1959,6 +2123,17 @@ function renderLimitsList() {
     </div>`);
   }
   root.innerHTML = html.join("");
+  // 列ソートクリックハンドラ
+  root.querySelectorAll(".lim-sortable").forEach((el) => {
+    el.addEventListener("click", () => toggleLimitSort(el.dataset.col));
+  });
+  // ピン留めトグル
+  root.querySelectorAll(".lim-pin-btn").forEach((el) => {
+    el.addEventListener("click", (e) => { e.stopPropagation(); toggleLimitPin(el.dataset.pin); });
+  });
+  // ピン留めのみ表示トグル
+  const chkPin = document.getElementById("chkPinnedOnly");
+  if (chkPin) chkPin.addEventListener("change", () => toggleLimitPinnedOnly());
 }
 
 function exportLimitsCsv() {
@@ -3111,11 +3286,12 @@ async function doFetchLoginHistory() {
   meta.textContent = "⏳ ログイン履歴を取得しています…";
   meta.classList.add("loading-pulse");
 
-  let where = "";
-  if (statusFilter === "Success") where = "WHERE Status = 'Success' ";
-  else if (statusFilter === "Failed") where = "WHERE Status != 'Success' ";
-
-  const soql = `SELECT Id, UserId, LoginTime, LoginType, Application, Status, ApiType, ApiVersion, ClientVersion, Browser, Platform, SourceIp ${where}ORDER BY LoginTime DESC LIMIT ${limit}`;
+  // v2.93.0 バグ修正: Salesforce LoginHistory は Status フィールドが filterable=false のため
+  // WHERE Status='Success' を入れると INVALID_FIELD / "No such filterable column" エラーになっていた。
+  // WHERE 句を撤廃し、取得後にクライアント側で Status フィルタを適用する。
+  // 取得件数を保証するため LIMIT を 2 倍に増やしフィルタ後に slice
+  const fetchLimit = statusFilter ? Math.min(limit * 3, 1000) : limit;
+  const soql = `SELECT Id, UserId, LoginTime, LoginType, Application, Status, ApiType, ApiVersion, ClientVersion, Browser, Platform, SourceIp FROM LoginHistory ORDER BY LoginTime DESC LIMIT ${fetchLimit}`;
 
   const t0 = performance.now();
   const r = await runSoql({ host: state.host, sid: state.sid, soql, apiVersion: state.apiVersion });
@@ -3129,7 +3305,11 @@ async function doFetchLoginHistory() {
     return;
   }
   unlock();
-  const recs = (r.data && r.data.records) || [];
+  let recs = (r.data && r.data.records) || [];
+  // v2.93.0: クライアント側で Status フィルタ
+  if (statusFilter === "Success") recs = recs.filter((rec) => rec.Status === "Success");
+  else if (statusFilter === "Failed") recs = recs.filter((rec) => rec.Status !== "Success");
+  recs = recs.slice(0, limit);
   state.lastLoginRecords = recs;
 
   // reference_sf_auth_records.md の列順で整形: LoginType / Application / Status / ApiType / ApiVersion / ClientVersion

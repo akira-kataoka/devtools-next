@@ -957,12 +957,27 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .limit-row {
   display: grid;
-  grid-template-columns: 1fr 80px 80px 80px 200px 50px;
+  /* v2.93.0: ピン留め列 (28px) を先頭に追加 → 7 列構成 */
+  grid-template-columns: 28px 1fr 90px 90px 90px 200px 50px;
   gap: 8px; align-items: center;
   padding: 6px 12px; border-bottom: 1px solid var(--line);
   font-size: 11px;
 }
-.limit-row.header { background: #112042; color: var(--accent); font-weight: 700; position: sticky; top: 0; }
+/* v2.93.0: Limits sticky ヘッダの重なり修正 + ソート可能列の視覚化 + ピン留め行強調 */
+.limit-row.header {
+  background: #112042; color: var(--accent); font-weight: 700;
+  position: sticky; top: 0; z-index: 10;
+  border-bottom: 2px solid var(--accent);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+.lim-sortable { cursor: pointer; user-select: none; }
+.lim-sortable:hover { color: #fff; background: rgba(27,150,255,0.2); }
+.limit-row.pinned { background: rgba(243,156,18,0.06); border-left: 3px solid var(--warn); padding-left: 7px; }
+.limit-row.pinned:hover { background: rgba(243,156,18,0.12); }
+.lim-col-pin { text-align: center; font-size: 14px; cursor: pointer; user-select: none; opacity: 0.5; transition: opacity 0.15s; }
+.lim-col-pin:hover { opacity: 1; }
+.limit-row.pinned .lim-col-pin { color: var(--warn); opacity: 1; }
+.lim-en { display: block; font-size: 9px; color: var(--fg-dim); font-family: ui-monospace, Consolas, monospace; opacity: 0.7; margin-top: 1px; }
 /* Limits 結果テーブル: 幅 600px 未満 (popup や狭幅 panel) で 1 行 縦並びに退化 */
 @media (max-width: 600px) {
   .limit-row { grid-template-columns: 1fr; gap: 2px; padding: 6px 8px; }
