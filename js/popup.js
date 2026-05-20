@@ -810,17 +810,40 @@ function renderLinks() {
       : state.host.replace(/\.my\.salesforce\.com$/, ".lightning.force.com");
     chrome.tabs.create({ url: `https://${lhost}${path}` });
   };
-  groups.forEach((g) => {
-    const heading = document.createElement("div");
-    heading.className = "links-group-title";
-    heading.textContent = g.title;
-    root.appendChild(heading);
-    g.links.forEach(([label, path]) => {
-      const a = document.createElement("a");
-      a.textContent = label;
-      a.href = "#";
-      a.addEventListener("click", (e) => { e.preventDefault(); openLink(path); });
-      root.appendChild(a);
+  // v3.43.0: フィルタ対応 — リンク名で部分一致絞り込み
+  const renderFiltered = (q) => {
+    root.innerHTML = "";
+    const qn = (q || "").toLowerCase().trim();
+    let hits = 0;
+    groups.forEach((g) => {
+      const matched = g.links.filter(([label]) => !qn || label.toLowerCase().includes(qn));
+      if (!matched.length) return;
+      const heading = document.createElement("div");
+      heading.className = "links-group-title";
+      heading.textContent = g.title;
+      root.appendChild(heading);
+      matched.forEach(([label, path]) => {
+        const a = document.createElement("a");
+        a.textContent = label;
+        a.href = "#";
+        a.addEventListener("click", (e) => { e.preventDefault(); openLink(path); });
+        root.appendChild(a);
+        hits++;
+      });
     });
-  });
+    if (!hits && qn) {
+      const empty = document.createElement("div");
+      empty.style.cssText = "color:var(--fg-dim);font-size:11px;padding:8px 4px";
+      empty.textContent = `「${q}」に一致するリンクは見つかりませんでした`;
+      root.appendChild(empty);
+    }
+  };
+  const filterInput = document.getElementById("linkFilter");
+  if (filterInput) {
+    filterInput.addEventListener("input", (e) => renderFiltered(e.target.value));
+    filterInput.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { filterInput.value = ""; renderFiltered(""); }
+    });
+  }
+  renderFiltered("");
 }
