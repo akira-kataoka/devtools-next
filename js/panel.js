@@ -739,6 +739,35 @@ function bindEvents() {
 
   // SOQL
   $on("btnRunSoql", "click", doSoql);
+  // v3.70.0: SOQL テンプレート挿入 — Apex 同様、よく使う 6 種を 1 クリックで textarea へ
+  $on("soqlTemplate", "change", (e) => {
+    const key = e.target.value;
+    if (!key) return;
+    const TEMPLATES = {
+      recent_accounts: `SELECT Id, Name, Industry, Type, CreatedDate, CreatedBy.Name\nFROM Account\nORDER BY CreatedDate DESC\nLIMIT 10`,
+      my_open_cases: `SELECT Id, CaseNumber, Subject, Status, Priority, CreatedDate, Account.Name\nFROM Case\nWHERE OwnerId = '${state.userId || "REPLACE_USER_ID"}' AND IsClosed = false\nORDER BY Priority ASC, CreatedDate DESC\nLIMIT 50`,
+      active_users: `SELECT Id, Name, Username, Email, Profile.Name, UserRole.Name, IsActive\nFROM User\nWHERE IsActive = true\nORDER BY Name\nLIMIT 100`,
+      apex_classes: `// Tooling API: 左の「Tooling API を使用」にチェックしてから実行\nSELECT Id, Name, NamespacePrefix, ApiVersion, Status, LengthWithoutComments, LastModifiedDate, LastModifiedBy.Name\nFROM ApexClass\nORDER BY LastModifiedDate DESC\nLIMIT 50`,
+      custom_fields: `// Tooling API: 左の「Tooling API を使用」にチェックしてから実行\nSELECT Id, DeveloperName, EntityDefinition.QualifiedApiName, DataType, Length, LastModifiedDate\nFROM CustomField\nWHERE EntityDefinition.QualifiedApiName = 'Account'\nORDER BY DeveloperName\nLIMIT 100`,
+      last_modified: `SELECT Id, Name, LastModifiedDate, LastModifiedBy.Name\nFROM Account\nWHERE LastModifiedDate = LAST_N_DAYS:7\nORDER BY LastModifiedDate DESC\nLIMIT 50`,
+    };
+    const code = TEMPLATES[key];
+    if (!code) return;
+    const ta = document.getElementById("soqlText");
+    if (ta) {
+      ta.value = code;
+      ta.focus();
+      ta.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    // Tooling API 系テンプレートは自動でチェック ON
+    const toolingCb = document.getElementById("useTooling");
+    if (toolingCb) {
+      if (key === "apex_classes" || key === "custom_fields") toolingCb.checked = true;
+      else toolingCb.checked = false;
+    }
+    e.target.value = "";
+    panelToast(`📝 SOQL サンプルを挿入しました (元クエリは上書きされました)`, { kind: "ok" });
+  });
   // v3.63.0: SOQL 整形ボタン — 主節を大文字化 + 改行で揃え、業務文書として読みやすく
   $on("btnSoqlFormat", "click", () => {
     const ta = document.getElementById("soqlText");
