@@ -4,6 +4,8 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.73.0 (2026-05-20 10:25)** — nav-btn active+focus 同時時の outline 色差別化:
+  - **♿ `.nav-btn.active:focus-visible { outline-color: #fff }`**: active 状態 (border-left 3px accent) + focus-visible (outline 3px accent) が同時の時、accent 色で二重に塗りつぶされて識別困難 → focus アウトラインのみ白に切替。**現在のタブ位置とキーボードフォーカス位置を独立して可視化**
 - **v1.72.0 (2026-05-20 10:20)** — nav-btn focus-visible 強化 + Picker focus 戻り確認:
   - **♿ `.nav-btn:focus-visible` を 3px アウトライン + offset -1px + 背景 `#1a2d56`**: 通常 button focus-visible (2px + offset 1px) より太く、active タブの border-left との視覚干渉を回避。**キーボード Tab 移動時にナビボタンの選択位置が明確**
   - **🧪 Picker close 後の focusReturnTarget**: `picker.js` 共通モジュールで両環境 (panel/tool.html) で同じ動作 → keyboard ユーザーが Picker 閉じても呼び元 input/button に戻れる (修正不要)

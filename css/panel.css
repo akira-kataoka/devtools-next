@@ -530,6 +530,10 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   outline-offset: -1px;
   background: #1a2d56;
 }
+/* active + focus 同時状態: 二重 accent で塗りつぶされるのを避け、outline を white に切替 */
+.nav-btn.active:focus-visible {
+  outline-color: #fff;
+}
 .picker-toolbar {
   display: flex; align-items: center; gap: 8px;
   padding: 10px 14px;
