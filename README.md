@@ -8,6 +8,8 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.4.0 (2026-05-20 13:00)** — empty-hint vs 該当データなし の競合検証:
+  - **🧪 SOQL 結果 0 件時の表示挙動確認**: `recordsTable()` (panel.js:2148) が `📭 該当データなし` div を返す → soqlResult.innerHTML が非空となり `:empty::before` (panel.css) は発火せず → recordsTable のメッセージのみ表示。**競合なし、現状で正しい挙動**
 - **v2.3.0 (2026-05-20 12:55)** — copy 後の focus 戻しなしを明文化 + 検証 3 件:
   - **🧪 Apex/REST copy 後の focus 戻し**: 意図的に **戻さない** (panel.js:379-398)。マウスクリックで copy したユーザーが結果領域を引き続き読み続けるのが自然な操作フロー。focus 強制移動はむしろ邪魔となるため現状維持
   - **🧪 Inspector reference click 履歴重複防止**: v1.52.0 で `sameAsLast` + `movingToCurrent` 判定実装済
