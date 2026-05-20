@@ -744,14 +744,14 @@ async function buildProfileDetail({ host, sid, apiVersion, obj, progress = () =>
     ["説明", isPermSet ? (ps.Description || "") : (ps.Profile && ps.Profile.Description || "")],
     ["PermissionSet Id", psId],
     ["生成日時", new Date().toLocaleString("ja-JP")],
-    ["集計件数 Object 権限", String(objRows.length)],
-    ["集計件数 Field 権限 (FLS)", String(fldRows.length)],
-    ["集計件数 System 権限 ON", String(systemPerms.length)],
-    ["集計件数 Apex Class アクセス", String(apexRows.length)],
-    ["集計件数 VF Page アクセス", String(vfRows.length)],
-    ["集計件数 Tab 設定", String(tabRows.length)],
-    ["集計件数 RecordType 可視性", String(rtRows.length)],
-    ["集計件数 App 可視性", String(appRows.length)],
+    ["集計件数 Object 権限", fmtNum(objRows.length) + " 件"],
+    ["集計件数 Field 権限 (FLS)", fmtNum(fldRows.length) + " 件"],
+    ["集計件数 System 権限 ON", fmtNum(systemPerms.length) + " 件"],
+    ["集計件数 Apex Class アクセス", fmtNum(apexRows.length) + " 件"],
+    ["集計件数 VF Page アクセス", fmtNum(vfRows.length) + " 件"],
+    ["集計件数 Tab 設定", fmtNum(tabRows.length) + " 件"],
+    ["集計件数 RecordType 可視性", fmtNum(rtRows.length) + " 件"],
+    ["集計件数 App 可視性", fmtNum(appRows.length) + " 件"],
   ];
 
   const sections = [];
@@ -1195,12 +1195,24 @@ async function buildApexDetail({ host, sid, apiVersion, obj }) {
 
   const summary = [
     ["クラス名", c.Name],
-    ["API バージョン", c.ApiVersion],
+    ["API バージョン", c.ApiVersion != null ? `v${c.ApiVersion}` : ""],
     ["ステータス", statusMap[c.Status] || c.Status],
     ["ネームスペース", c.NamespacePrefix || "(なし: 自組織のカスタム)"],
-    ["コード行数 (コメント除く)", c.LengthWithoutComments.toLocaleString()],
+    ["コードサイズ (コメント除く)", c.LengthWithoutComments != null ? fmtBytes(c.LengthWithoutComments) : ""],
     ["コンパイル状態", c.IsValid ? "○ 正常 (IsValid=true)" : "✗ 再保存が必要 (IsValid=false)"],
   ];
+  // SymbolTable があればメソッド可視性集計を summary に追加
+  if (c.SymbolTable) {
+    const methods = c.SymbolTable.methods || [];
+    const props = c.SymbolTable.properties || [];
+    const innerCls = c.SymbolTable.innerClasses || [];
+    if (methods.length) {
+      const visCount = (v) => methods.filter((m) => (m.visibility || "").toLowerCase() === v).length;
+      summary.push(["メソッド構成", `合計 ${fmtNum(methods.length)} 件 (global ${fmtNum(visCount("global"))} / public ${fmtNum(visCount("public"))} / private ${fmtNum(visCount("private"))} / protected ${fmtNum(visCount("protected"))})`]);
+    }
+    if (props.length) summary.push(["プロパティ数", fmtNum(props.length) + " 件"]);
+    if (innerCls.length) summary.push(["内部クラス数", fmtNum(innerCls.length) + " 件"]);
+  }
 
   // 凡例: Apex 用語の業務向け説明
   const legend = [

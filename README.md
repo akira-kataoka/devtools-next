@@ -17,6 +17,9 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.69.0 (2026-05-20 20:15)** — 🚨 ユーザー要望 Phase 60: ProfileDetail + ApexDetail サマリ拡充:
+  - **🐛 buildProfileDetail サマリ**: 9 シート毎の集計件数を「N 件」単位付きで表示 (Object 権限 / FLS / System 権限 / Apex / VF / Tab / RecordType / App 可視性)
+  - **🐛 buildApexDetail サマリ**: API バージョン `v62.0` 形式、コードサイズを fmtBytes (KB/MB)、メソッド構成「合計 N 件 (global X / public Y / private Z / protected W)」と可視性別件数集計、プロパティ数・内部クラス数も追加
 - **v2.68.0 (2026-05-20 20:11)** — 🚨 ユーザー要望 Phase 59: FLS レポート note サマリ集計:
   - **🐛 buildFlsReport note**: 「対象 N 項目 / 編集可 X 項目 (XX.X%) / 参照のみ Y 項目 (YY.Y%) / アクセス無し Z 項目 (ZZ.Z%) / Excel 形式推奨」と項目アクセス傾向のサマリを集計表示。FLS の傾向 (どの程度のフィールドが編集可・参照のみか) が一目で把握可能
 - **v2.67.0 (2026-05-20 20:07)** — 🚨 ユーザー要望 Phase 58: 権限マトリクス分析サマリ + LWC 総サイズ集計:
