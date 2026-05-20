@@ -1507,7 +1507,35 @@ function toCsv(result, sep) {
 }
 function csvCell(v) {
   if (v == null) return "";
-  const s = String(v);
+  // v1.95.0+: recordsToCsv と同じ整形 (ネスト attributes 持ち object → Name [Id]、ISO datetime → YYYY-MM-DD HH:mm)
+  let s;
+  if (typeof v === "object") {
+    if (v.attributes && typeof v.attributes === "object") {
+      const fields = Object.keys(v).filter((k) => k !== "attributes");
+      if (v.records && Array.isArray(v.records)) s = `[${v.records.length} 件のサブクエリ]`;
+      else {
+        const prefer = ["Name", "Subject", "Title", "DeveloperName", "MasterLabel", "FullName"];
+        let label = null;
+        for (const p of prefer) {
+          if (fields.includes(p) && v[p] != null) {
+            const id = fields.includes("Id") && v.Id ? ` [${String(v.Id).substring(0, 18)}]` : "";
+            label = `${csvCell(v[p])}${id}`;
+            break;
+          }
+        }
+        if (!label) label = fields.length ? `${fields[0]}=${csvCell(v[fields[0]])}` : "{}";
+        s = label;
+      }
+    } else {
+      s = JSON.stringify(v);
+    }
+  } else {
+    s = String(v);
+    // ISO datetime → 整形 (date のみは維持)
+    const m = s.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/);
+    if (m) s = `${m[1]} ${m[2]}`;
+  }
+  // CSV クォート (区切り文字や改行を含む場合)
   if (/[",\n\t]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }

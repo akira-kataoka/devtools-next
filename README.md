@@ -7,6 +7,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.95.0 (2026-05-20 12:15)** — 設計書 CSV/TSV にもネスト平坦化 + datetime 整形:
+  - **🐛 `design-docs.js csvCell()` に整形ロジック追加**: 設計書 CSV/TSV は複数セクション形式で recordsToCsv と構造が異なるため、csvCell 内に inline で同等ロジック (attributes 持ち object → `Name [Id]` / ISO datetime → `YYYY-MM-DD HH:mm`) を実装。**全 CSV 系出力 (SOQL/Inspector/Login/設計書) で整形ロジックが統一**
+  - **🧪 設計書 Excel (SpreadsheetML XML)**: 内部の値整形は別ロジックだが、設計書データは schema metadata 中心で datetime/ネストはほぼ含まれない → 影響なし (修正不要)
 - **v1.94.0 (2026-05-20 12:10)** — Inspector CSV を recordsToCsv 経由に統一:
   - **🐛 `exportInspect("csv")` を recordsToCsv 経由にリファクタ**: 従来 fields ループで直接 CSV 生成していたため v1.93.0 のネスト平坦化 + datetime 整形が **未適用** だった → describe.fields の順で `ordered` レコードを作成 → `recordsToCsv([ordered])` で生成。**Inspector CSV にも Excel フレンドリーな整形が波及**
   - **🧪 popup exportCsv は既に recordsToCsv 経由** で v1.93.0 整形が適用済 (修正不要)
