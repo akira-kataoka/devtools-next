@@ -1362,6 +1362,9 @@ async function buildLwcDetail({ host, sid, apiVersion, obj }) {
       "先頭 80 文字 (プレビュー)": src.substring(0, 80).replace(/\n/g, " "),
     };
   });
+  // バンドル総サイズ
+  const totalBundleBytes = resources.reduce((sum, res) => sum + new Blob([res.Source || ""]).size, 0);
+  const totalBundleChars = resources.reduce((sum, res) => sum + (res.Source || "").length, 0);
 
   // js-meta.xml の TargetConfigs パース (簡易)
   const targetSheet = [];
@@ -1387,7 +1390,7 @@ async function buildLwcDetail({ host, sid, apiVersion, obj }) {
     title: `LWC 設計図: ${b.MasterLabel} (${b.DeveloperName})`,
     type: "lwcDetail",
     sections,
-    note: `バンドル内ファイル ${fmtNum(fileRows.length)} 件 / 「App Builder に公開」が ○ の場合は管理者が Lightning ページに配置可能です`,
+    note: `バンドル内ファイル ${fmtNum(fileRows.length)} 件 / 総サイズ ${fmtBytes(totalBundleBytes)} (${fmtNum(totalBundleChars)} 文字) / 「App Builder に公開」が ○ の場合は管理者が Lightning ページに配置可能です`,
   };
 }
 
@@ -1507,6 +1510,13 @@ async function buildFieldPermMatrix({ host, sid, apiVersion, obj, progress = () 
     ["除外", "計算項目 (formula) と Id 項目は権限制御対象外のため一覧から除外"],
   ];
 
+  // 権限付与率 (RW 比率): 全 (フィールド × parent) セル中、RW または R- (= 何らかのアクセス) の比率
+  const totalCells = allFields.length * cols.length;
+  const grantedCells = allRecs.filter((rec) => rec.PermissionsRead).length;
+  const rwCells = allRecs.filter((rec) => rec.PermissionsEdit).length;
+  const grantRate = totalCells > 0 ? grantedCells / totalCells : 0;
+  const rwRate = totalCells > 0 ? rwCells / totalCells : 0;
+
   return {
     title: `フィールド権限マトリクス: ${obj}`,
     type: "fieldPermMatrix",
@@ -1518,6 +1528,8 @@ async function buildFieldPermMatrix({ host, sid, apiVersion, obj, progress = () 
         ["プロファイル数", fmtNum(cols.filter((c) => c.isProfile).length) + " 件"],
         ["権限セット数", fmtNum(cols.filter((c) => !c.isProfile).length) + " 件"],
         ["FieldPermissions レコード数", fmtNum(allRecs.length) + " 件"],
+        ["参照可率 (R 以上)", fmtPercent(grantRate) + ` (${fmtNum(grantedCells)} / ${fmtNum(totalCells)} セル)`],
+        ["編集可率 (RW)", fmtPercent(rwRate) + ` (${fmtNum(rwCells)} / ${fmtNum(totalCells)} セル)`],
       ]},
       { heading: "マトリクス", headers, rows },
     ],
@@ -1607,12 +1619,18 @@ async function buildObjectPermMatrix({ host, sid, apiVersion, progress = () => {
         ["👤 列", "プロファイル単位 (ユーザに 1 つ適用)"],
         ["🔑 列", "権限セット単位 (複数加算可)"],
       ]},
-      { heading: "1. サマリ", kvRows: [
-        ["対象オブジェクト数", fmtNum(objList.length) + " 件"],
-        ["プロファイル数", fmtNum(cols.filter((c) => c.isProfile).length) + " 件"],
-        ["権限セット数", fmtNum(cols.filter((c) => !c.isProfile).length) + " 件"],
-        ["ObjectPermissions レコード数", fmtNum(allRecs.length) + " 件"],
-      ]},
+      { heading: "1. サマリ", kvRows: (() => {
+        const viewAllCount = allRecs.filter((rec) => rec.PermissionsViewAllRecords).length;
+        const modifyAllCount = allRecs.filter((rec) => rec.PermissionsModifyAllRecords).length;
+        return [
+          ["対象オブジェクト数", fmtNum(objList.length) + " 件"],
+          ["プロファイル数", fmtNum(cols.filter((c) => c.isProfile).length) + " 件"],
+          ["権限セット数", fmtNum(cols.filter((c) => !c.isProfile).length) + " 件"],
+          ["ObjectPermissions レコード数", fmtNum(allRecs.length) + " 件"],
+          ["V (ViewAllRecords) 付与数", fmtNum(viewAllCount) + " 件 (監査時に要確認の高権限)"],
+          ["M (ModifyAllRecords) 付与数", fmtNum(modifyAllCount) + " 件 (誤付与リスク大、システム管理者相当)"],
+        ];
+      })()},
       { heading: "2. マトリクス", headers, rows },
     ],
     note: "Excel で開き B2 セルでウィンドウ枠固定すると左 2 列と先頭行が常時可視で見やすいです。V/M 権限の付与状況を年次監査で確認してください。",
