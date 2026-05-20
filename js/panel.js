@@ -560,6 +560,8 @@ function bindEvents() {
   $on("btnInspectEvidence", "click", captureInspectorEvidence);
   $on("btnLimitsEvidence", "click", captureLimitsEvidence);
   $on("btnLoginEvidence", "click", captureLoginHistoryEvidence);
+  $on("btnApexEvidence", "click", captureApexEvidence);
+  $on("btnMetadataEvidence", "click", captureMetadataEvidence);
   $on("btnCopyCsv", "click", copyCsvToClipboard);
   $on("btnSaveSoql", "click", saveCurrentQuery);
   $on("btnLoadSoql", "click", loadSelectedQuery);
@@ -2901,6 +2903,51 @@ function captureLoginHistoryEvidence() {
   });
   downloadEvidence(md, "login-history-evidence");
   panelToast(`📸 ログイン履歴エビデンスを Markdown でダウンロードしました (${records.length} 件)`, { kind: "ok" });
+}
+
+function captureApexEvidence() {
+  const code = document.getElementById("apexCode")?.value || "";
+  const result = document.getElementById("apexResult")?.textContent || "";
+  if (!code.trim() && !result.trim()) {
+    panelToast("📭 エビデンス対象がありません。先に Apex を実行してください", { kind: "warn" });
+    return;
+  }
+  const md = makeEvidence({
+    title: "匿名 Apex 実行エビデンス",
+    sourceLabel: "実行した匿名 Apex コード",
+    sourceContent: code,
+    extraMeta: { "実行ログサイズ": `${result.length.toLocaleString()} 文字` },
+  });
+  // 実行ログを追加 (records ではなく code block として)
+  const md2 = md + "\n\n## 実行結果 / Debug ログ\n\n```\n" + result.substring(0, 10000) + (result.length > 10000 ? "\n…(10,000 文字以降は省略)" : "") + "\n```\n";
+  downloadEvidence(md2, "apex-evidence");
+  panelToast(`📸 Apex 実行エビデンスを Markdown でダウンロードしました`, { kind: "ok" });
+}
+
+function captureMetadataEvidence() {
+  const result = document.getElementById("metadataResult");
+  const table = result?.querySelector("table");
+  if (!table) {
+    panelToast("📭 エビデンス対象がありません。先にメタデータ一覧を取得してください", { kind: "warn" });
+    return;
+  }
+  // テーブルから records に逆変換
+  const headers = Array.from(table.querySelectorAll("th")).map((th) => th.textContent.trim());
+  const records = Array.from(table.querySelectorAll("tbody tr, table > tr")).filter((tr) => !tr.querySelector("th")).map((tr) => {
+    const cells = Array.from(tr.cells).map((td) => td.textContent.trim());
+    const row = {};
+    headers.forEach((h, i) => { row[h] = cells[i] || ""; });
+    return row;
+  });
+  const mdType = document.getElementById("mdType")?.value || "(不明)";
+  const md = makeEvidence({
+    title: `メタデータ一覧エビデンス (${mdType})`,
+    extraMeta: { "メタデータ種別": mdType },
+    recordsLabel: `${mdType} 一覧`,
+    records,
+  });
+  downloadEvidence(md, `metadata-${mdType.toLowerCase()}-evidence`);
+  panelToast(`📸 メタデータ一覧エビデンスを Markdown でダウンロードしました (${records.length} 件)`, { kind: "ok" });
 }
 
 function captureInspectorEvidence() {

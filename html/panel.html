@@ -273,6 +273,7 @@ System.debug('Now: ' + System.now());</textarea>
         <div id="apexMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
         <div class="toolbar">
           <button id="btnApexCopy" title="匿名 Apex の実行結果をクリップボードにコピーします">📋 結果コピー</button>
+          <button id="btnApexEvidence" title="実行した Apex コードと結果を Markdown 形式のエビデンスとしてダウンロードします (テスト工程の証跡用)">📸 エビデンス</button>
           <span class="grow"></span>
         </div>
         <pre id="apexResult" class="code"></pre>
@@ -329,6 +330,7 @@ System.debug('Now: ' + System.now());</textarea>
             <option>AuraDefinitionBundle</option><option>ValidationRule</option>
           </select>
           <button id="btnMetadata" class="primary" title="選択したメタデータ型の一覧を Tooling API から取得します">一覧取得</button>
+          <button id="btnMetadataEvidence" title="現在のメタデータ一覧を Markdown 形式のエビデンスとしてダウンロードします">📸 エビデンス</button>
         </div>
         <div id="metadataResult" class="grid"></div>
       </div>
