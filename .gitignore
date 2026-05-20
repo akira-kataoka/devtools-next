@@ -14,6 +14,19 @@ Thumbs.db
 *.log
 *.tmp
 
-# ローカル開発用 (zip は配布物として含めるためコミットする)
+# ローカル開発用
 node_modules/
 dist/
+
+# v3.58.0 (Phase 148): リリース時の .zip / Chrome キャッシュ等
+# (release.yml の自動ビルドで生成、コミット対象外)
+devtoolsnext-*.zip
+devtoolsnext-v*.zip
+*.zip
+.cache/
+coverage/
+
+# 一時的なエクスポートファイル
+*-evidence-*.md
+*-export-*.csv
+*-export-*.json
