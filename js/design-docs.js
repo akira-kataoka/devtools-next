@@ -1433,27 +1433,40 @@ function toExcelXml(result) {
 }
 
 // v1.96.0+: Excel 出力でもネスト平坦化 + datetime 整形 (csvCell/recordsToCsv と同パターン)
+// v1.97.0+: Excel セル文字数上限 (32,767) を超える長文を末尾切詰 + 警告マーカー
+const EXCEL_CELL_LIMIT = 32767;
 function formatExcelValue(v) {
-  if (v == null) return "";
-  if (typeof v === "object") {
+  let s;
+  if (v == null) s = "";
+  else if (typeof v === "object") {
     if (v.attributes && typeof v.attributes === "object") {
       const fields = Object.keys(v).filter((k) => k !== "attributes");
-      if (v.records && Array.isArray(v.records)) return `[${v.records.length} 件のサブクエリ]`;
-      const prefer = ["Name", "Subject", "Title", "DeveloperName", "MasterLabel", "FullName"];
-      for (const p of prefer) {
-        if (fields.includes(p) && v[p] != null) {
-          const id = fields.includes("Id") && v.Id ? ` [${String(v.Id).substring(0, 18)}]` : "";
-          return `${formatExcelValue(v[p])}${id}`;
+      if (v.records && Array.isArray(v.records)) s = `[${v.records.length} 件のサブクエリ]`;
+      else {
+        let label = null;
+        const prefer = ["Name", "Subject", "Title", "DeveloperName", "MasterLabel", "FullName"];
+        for (const p of prefer) {
+          if (fields.includes(p) && v[p] != null) {
+            const id = fields.includes("Id") && v.Id ? ` [${String(v.Id).substring(0, 18)}]` : "";
+            label = `${formatExcelValue(v[p])}${id}`;
+            break;
+          }
         }
+        if (!label) label = fields.length ? `${fields[0]}=${formatExcelValue(v[fields[0]])}` : "{}";
+        s = label;
       }
-      if (fields.length) return `${fields[0]}=${formatExcelValue(v[fields[0]])}`;
-      return "{}";
+    } else {
+      s = JSON.stringify(v);
     }
-    return JSON.stringify(v);
+  } else {
+    s = String(v);
+    const m = s.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/);
+    if (m) s = `${m[1]} ${m[2]}`;
   }
-  const s = String(v);
-  const m = s.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/);
-  if (m) return `${m[1]} ${m[2]}`;
+  // Excel セル上限 32,767 文字。超えるとファイル破損の原因になるため末尾切詰
+  if (s.length > EXCEL_CELL_LIMIT) {
+    s = s.substring(0, EXCEL_CELL_LIMIT - 16) + " …(Excel 上限切詰)";
+  }
   return s;
 }
 function xmlText(s) {

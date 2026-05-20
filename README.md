@@ -7,6 +7,12 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.97.0 (2026-05-20 12:25)** — Excel セル 32,767 文字上限切詰 + 検証 3 件:
+  - **🛡 設計書 Excel セルが 32,767 文字超のときに末尾切詰**: `EXCEL_CELL_LIMIT = 32767` 定数化、超過時 `… (Excel 上限切詰)` マーカー付き truncate。**従来は超過時に Excel が開けない/破損する可能性があった**
+  - **🧪 検証 3 件すべて修正不要**:
+    - Inspector reference 失敗時の back: `inspectHistory.push` が `fetch` 前に実行されるため、404 でも back で前ページ可能 (panel.js:1422)
+    - 設計書 Excel WrapText: header/cell 両方の Style に `WrapText="1"` 設定済 (design-docs.js:1323, 1332)
+    - recordsToCsv 空 records: 冒頭 `if (!records || !records.length) return ""` で早期 return (sf-api.js:256)
 - **v1.96.0 (2026-05-20 12:20)** — 設計書 Excel + Inspector record エラーの UX 改善:
   - **🐛 設計書 Excel (SpreadsheetML) に formatExcelValue() 追加**: kvRows + rows 両方の値が ネスト object → `Name [Id]` / ISO datetime → `YYYY-MM-DD HH:mm` 整形。**全 6 出力形式 (Markdown/HTML/CSV/TSV/Excel/JSON) で整形が完全統一**
   - **🐛 Inspector record 取得失敗時のエラーメッセージ改善**: 404 → `見つかりません (削除済 / 別組織の Id / 権限不足の可能性)`, 403 → `アクセス権限不足 (オブジェクト/レコードの共有設定を確認)` + サブメッセージ `describe (Object) は成功、レコード本体のみ失敗`。**describe 成功 + record 失敗のハーフ取得状態が明示的に伝わる**
