@@ -130,10 +130,16 @@ function flashToast(text) {
         padding: 6px 8px; font: 11px/1.4 ui-monospace, Consolas, monospace;
       }
       .result table { width: 100%; border-collapse: collapse; font-size: 11px; }
-      .result th { background: #112042; color: #1b96ff; padding: 3px 6px; text-align: left; position: sticky; top: 0; cursor: pointer; user-select: none; }
+      /* v3.35.0: ソート可能列の視覚マーカー (panel と統一トーン) */
+      .result th { background: #112042; color: #1b96ff; padding: 3px 18px 3px 6px; text-align: left; position: sticky; top: 0; cursor: pointer; user-select: none; position: relative; }
       .result th:hover { background: #1a2d56; }
-      .result th[data-sort-dir="asc"]::after { content: " ▲"; font-size: 8px; opacity: 0.8; }
-      .result th[data-sort-dir="desc"]::after { content: " ▼"; font-size: 8px; opacity: 0.8; }
+      .result th::after {
+        content: "⇅"; position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+        font-size: 8px; opacity: 0.35; transition: opacity 0.12s ease;
+      }
+      .result th:hover::after { opacity: 0.7; }
+      .result th[data-sort-dir="asc"]::after { content: "▲"; opacity: 1; }
+      .result th[data-sort-dir="desc"]::after { content: "▼"; opacity: 1; }
       .result td { padding: 3px 6px; border-bottom: 1px solid #1f2c46; vertical-align: top; max-width: 200px; word-break: break-word; }
       /* v3.17.0: 空状態ガイドを panel/tool と統一トーンで mini-panel にも展開 */
       .empty-state {

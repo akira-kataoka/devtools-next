@@ -232,10 +232,19 @@ td.cell-nested { word-break: break-word; }
   border-bottom: 2px solid var(--accent);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
-.grid th.sortable { cursor: pointer; user-select: none; }
+/* v3.35.0: ソート可能列の視覚マーカー強化 — 業務担当者が「ここクリックで並び替えできる」と即判別可能に */
+.grid th.sortable { cursor: pointer; user-select: none; position: relative; padding-right: 18px; }
 .grid th.sortable:hover { background: #1a2d56; }
-.grid th.sortable[data-sort-dir="asc"]::after { content: " ▲"; font-size: 9px; opacity: 0.8; }
-.grid th.sortable[data-sort-dir="desc"]::after { content: " ▼"; font-size: 9px; opacity: 0.8; }
+.grid th.sortable:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+/* 未ソート状態でも 「並び替え可能」を示す薄いダブル矢印を表示 */
+.grid th.sortable::after {
+  content: "⇅";
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  font-size: 9px; opacity: 0.35; transition: opacity 0.12s ease;
+}
+.grid th.sortable:hover::after { opacity: 0.7; }
+.grid th.sortable[data-sort-dir="asc"]::after { content: "▲"; opacity: 1; color: var(--accent); }
+.grid th.sortable[data-sort-dir="desc"]::after { content: "▼"; opacity: 1; color: var(--accent); }
 .grid tr:hover td { background: #112042; }
 .grid tbody tr:nth-child(even) td,
 .grid table tr:nth-child(even) td { background: rgba(27,150,255,0.025); }
