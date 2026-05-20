@@ -354,7 +354,10 @@ async function renderHistory() {
     root.innerHTML = `<div class="meta">履歴はまだありません。SOQL を実行するとここに最大 10 件保存します (長押しでピン留め / ダブルクリックで削除できます)</div>`;
     return;
   }
-  root.innerHTML = "";
+  // 件数サマリ (ピン留め / 非ピン)
+  const pinCount = hist.filter((h) => h.pinned).length;
+  const freeCount = hist.length - pinCount;
+  root.innerHTML = `<div class="meta" style="padding:4px 6px;font-size:10px">📋 履歴 ${hist.length} 件${pinCount ? ` (📌 ピン留め ${pinCount} 件 / 通常 ${freeCount} 件)` : ""}</div>`;
   hist.forEach((h, idx) => {
     const el = document.createElement("div");
     el.className = "history-item" + (h.pinned ? " pinned" : "");

@@ -220,13 +220,13 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
       <div class="picker-modal">
         <div class="picker-header">
           <h3>${escape(def.title)}</h3>
-          <span class="picker-kbd-hint" title="キーボード操作">⌨ ↑↓ / Home/End / Enter / Esc</span>
-          <button class="picker-close" title="閉じる" aria-label="閉じる">✕</button>
+          <span class="picker-kbd-hint" title="↑↓ で候補移動 / Home/End で先頭・末尾へ / Enter で決定 / Esc で閉じる">⌨ ↑↓ / Home/End / Enter / Esc</span>
+          <button class="picker-close" title="ピッカーを閉じます" aria-label="閉じる">✕</button>
         </div>
         <div class="picker-toolbar">
           <div class="picker-search-wrap">
             <input class="picker-search" placeholder="${escape(def.placeholder)}" autofocus aria-label="候補検索" maxlength="200" />
-            <button class="picker-clear" type="button" title="クリア" aria-label="検索をクリア">✕</button>
+            <button class="picker-clear" type="button" title="検索キーワードをクリアします" aria-label="検索をクリア">✕</button>
           </div>
           <span class="picker-count meta">読み込み中…</span>
           <button class="picker-reload mini-btn" title="再取得">⟳</button>

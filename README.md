@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.48.0 (2026-05-20 16:50)** — 🚨 ユーザー要望 Phase 38: Picker キーボード操作詳細 + popup 履歴件数サマリ:
+  - **🐛 picker.js キーボードヘルプ tooltip**: 「⌨ ↑↓ / Home/End / Enter / Esc」の hover で「↑↓ で候補移動 / Home/End で先頭・末尾へ / Enter で決定 / Esc で閉じる」を詳細表示
+  - **🐛 picker.js 閉じる/クリアボタン title**: 「閉じる」→「ピッカーを閉じます」、「クリア」→「検索キーワードをクリアします」 ですます調
+  - **🐛 popup.js renderHistory**: 履歴一覧の冒頭に件数サマリ「📋 履歴 N 件 (📌 ピン留め M 件 / 通常 K 件)」を表示
+  - **🐛 design-docs.js apiError context 確認済**: 残った 8 箇所はすべて ですます調統一済 (撲滅完了)
 - **v2.47.0 (2026-05-20 16:45)** — 🚨 ユーザー要望 Phase 37: Inspector フィルタ件数表示 + Picker 9 種文言:
   - **🐛 panel.js renderInspectorFields**: 絞込み中に冒頭で「🔍 絞込み「X」: N 件ヒット (全 M 項目中)」を表示。空状態ヒント文言を ですます調 詳細化 (「null フィールドも出ます」→「null フィールドも表示されます」、「✕ でクリアして全件表示」→「✕ でクリアすると全件表示されます」)、空メッセージ「📭 該当フィールドなし」→「📭 該当するフィールドはありません」
   - **🐛 panel.js renderRecentNav**: 「最近開いたビュー」見出しに tooltip 追加、各ボタン tooltip を日時付きの ですます調 詳細化 (「X を YYYY-MM-DD HH:mm に開きました」)
