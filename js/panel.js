@@ -2101,10 +2101,17 @@ function recordsTable(records) {
   records.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
   const headers = Array.from(cols);
   const head = `<tr>${headers.map((h) => `<th class="sortable" data-col="${escape(h)}" title="クリックで ${escape(h)} 列をソート">${escape(h)}</th>`).join("")}</tr>`;
+  // SF ID 形式判定 (15/18桁 英数字、ただし純数値や URL は除外)
+  const isLikelyId = (v) => /^[a-zA-Z0-9]{15,18}$/.test(v) && /[a-zA-Z]/.test(v) && /\d/.test(v);
   const rows = records.map((r) =>
     `<tr>${headers.map((h) => {
       const val = stringify(r[h]);
-      return `<td title="ダブルクリックでコピー" class="cell-copyable">${escape(val)}</td>`;
+      const idCell = isLikelyId(val);
+      const classes = "cell-copyable" + (idCell ? " cell-id" : "");
+      const tip = idCell
+        ? "Click: Inspector で開く  /  ダブルクリック: コピー"
+        : "ダブルクリックでコピー";
+      return `<td title="${tip}" class="${classes}"${idCell ? ` data-record-id="${escape(val)}"` : ""}>${escape(val)}</td>`;
     }).join("")}</tr>`
   ).join("");
   // 結果を遅延でセル dblclick + th click ソートリスナーをバインド
@@ -2114,6 +2121,27 @@ function recordsTable(records) {
       td.addEventListener("dblclick", () => {
         const txt = td.textContent;
         navigator.clipboard.writeText(txt).then(() => panelToast(`📋 コピー: ${txt.substring(0, 40)}${txt.length > 40 ? "…" : ""}`, { kind: "ok" }));
+      });
+    });
+    // ID セルを single-click で Inspector ジャンプ (dblclick と競合しないよう遅延判定)
+    document.querySelectorAll("td.cell-id:not([data-id-bound])").forEach((td) => {
+      td.dataset.idBound = "true";
+      let clickTimer = null;
+      td.addEventListener("click", (e) => {
+        // dblclick との競合を避けるため 220ms 待機
+        if (clickTimer) return;
+        clickTimer = setTimeout(() => {
+          clickTimer = null;
+          const id = td.dataset.recordId;
+          if (!id) return;
+          document.getElementById("inspectRef").value = id;
+          switchToView("inspector");
+          doInspect();
+          panelToast(`🔍 ${id} を Inspector で開く`, { kind: "ok" });
+        }, 220);
+      });
+      td.addEventListener("dblclick", () => {
+        if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; }
       });
     });
     document.querySelectorAll("th.sortable:not([data-sort-bound])").forEach((th) => {

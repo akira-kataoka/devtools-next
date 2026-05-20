@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.60.0 (2026-05-20 09:20)** — 🎉 累計60リリース節目 - 結果テーブル ID セルクリックで Inspector ジャンプ:
+  - **✨ SOQL/describe/metadata/logs/ChangeSet 全 grid テーブルで ID 列を自動検出**: 15/18桁 英数字 + 英字 + 数字を含むセルを `.cell-id` 化、🔍 絵文字プレフィクス付き表示
+  - **✨ ID セル single-click で Inspector に瞬時ジャンプ**: `inspectRef` 入力欄に値セット → `switchToView("inspector")` → `doInspect()` 自動実行 + toast `🔍 <id> を Inspector で開く`。**Inspector Reloaded の「Show all data on record」UX 相当を独自実装**
+  - **🐛 dblclick (コピー) との競合解消**: 220ms 遅延で click を発火、dblclick が来たら cancel。**従来コピー用だったセルが「コピーしたいだけなのに飛ぶ」事故を防止**
 - **v1.59.0 (2026-05-20 09:15)** — README に Inspector URL/CSV テスト手順 + package.xml ソート確認:
   - **📖 README に Inspector「現在タブから取得」5 パターン動作表追加**: Lightning レコード / Setup (encoded address) / Setup (Apex Class) / Classic / Old Lightning fragment の各 URL 例と期待動作
   - **📖 README に SOQL 列ソート + CSV/コピー反映の動作手順追加**: 6 ステップで実機確認可能。ロケール対応・数値判定のロジック説明込み
