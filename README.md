@@ -8,6 +8,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.3.0 (2026-05-20 12:55)** — copy 後の focus 戻しなしを明文化 + 検証 3 件:
+  - **🧪 Apex/REST copy 後の focus 戻し**: 意図的に **戻さない** (panel.js:379-398)。マウスクリックで copy したユーザーが結果領域を引き続き読み続けるのが自然な操作フロー。focus 強制移動はむしろ邪魔となるため現状維持
+  - **🧪 Inspector reference click 履歴重複防止**: v1.52.0 で `sameAsLast` + `movingToCurrent` 判定実装済
+  - **🧪 popup 18桁 ID clipboard**: `navigator.clipboard.writeText(id18)` + toast 既実装 (popup.js:540)
 - **v2.2.0 (2026-05-20 12:50)** — Picker filter / design apiError context 検証:
   - **🧪 Picker 検索フィルタの特殊文字対応**: `String.includes` (regex 非使用) で `'` / `\\` / `()` 等の特殊文字エスケープ不要を確認 (picker.js:309 `it.hay.includes(q)`)。**例: "Account's Owner" / "(Custom)" / "Field\\Path" すべて正常マッチ**
   - **🧪 design-docs.js apiError の context 文字列確認**:
