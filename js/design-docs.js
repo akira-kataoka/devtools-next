@@ -71,6 +71,67 @@ function fmtPercent(ratio, decimals = 1) {
   return `${(v * 100).toFixed(decimals)}%`;
 }
 
+// v2.98.0: Salesforce フィールドタイプを日本語に変換 (ProfileReader 風表示)
+// reference は参照先オブジェクト名 (referenceTo[0]) を引数で渡す
+const FIELD_TYPE_JA = {
+  "string": "文字列",
+  "textarea": "テキストエリア",
+  "boolean": "チェックボックス",
+  "id": "ID",
+  "reference": "参照関係",
+  "currency": "通貨",
+  "double": "数値",
+  "int": "数値 (整数)",
+  "long": "数値 (整数)",
+  "percent": "パーセント",
+  "date": "日付",
+  "datetime": "日時",
+  "time": "時刻",
+  "email": "メール",
+  "phone": "電話",
+  "url": "URL",
+  "picklist": "選択リスト",
+  "multipicklist": "選択リスト (複数選択)",
+  "combobox": "コンボボックス",
+  "address": "住所",
+  "encryptedstring": "暗号化テキスト",
+  "base64": "Base64",
+  "anyType": "任意型",
+  "complexvalue": "複合値",
+  "location": "地理位置情報",
+  "calculated": "数式",
+  "junctionidlist": "ジャンクション ID リスト",
+};
+function fieldTypeJa(type, referenceTo) {
+  if (!type) return "";
+  if (type === "reference" && referenceTo) {
+    return `参照関係(${referenceTo})`;
+  }
+  // Salesforce Name 複合項目の特殊ケース (label が "名前" の string 型)
+  return FIELD_TYPE_JA[type] || type;
+}
+
+// v2.98.0: 設計書の表紙セクション共通生成 (プロジェクト成果物品質)
+// 全設計書冒頭に挿入する標準セクション
+function makeCoverSection(opts) {
+  // opts: { docTitle, target, orgHost, userName, version, revision }
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  return {
+    heading: "📄 表紙",
+    kvRows: [
+      ["設計書", opts.docTitle || ""],
+      ["対象", opts.target || ""],
+      ["対象組織", opts.orgHost || ""],
+      ["作成者", opts.userName || "(SOAP 認証ユーザ)"],
+      ["作成日時", dateStr],
+      ["拡張機能 Ver", opts.version || "DevToolsNext v2.98+"],
+      ["改訂履歴", opts.revision || `初版 / ${dateStr} 自動生成`],
+    ],
+  };
+}
+
 export async function generateDesign({ type, host, sid, apiVersion, obj, format, onProgress }) {
   let result;
   const progress = onProgress || (() => {});
@@ -125,7 +186,8 @@ async function buildObjectDef({ host, sid, apiVersion, obj }) {
     "No": i + 1,
     "API 名": f.name,
     "表示名": f.label,
-    "データ型": f.type,
+    // v2.98.0: データ型を日本語化 (参照関係(対象オブジェクト) / チェックボックス / 文字列 等)
+    "データ型": fieldTypeJa(f.type, (f.referenceTo || [])[0]),
     "文字数": isStringLike(f.type) && f.length ? `${fmtNum(f.length)} 文字` : "",
     "数値桁数": isNumericLike(f.type) && f.precision != null ? `${fmtNum(f.precision)} 桁` : "",
     "小数桁": isNumericLike(f.type) && f.scale != null ? `${fmtNum(f.scale)} 桁` : "",
@@ -180,10 +242,19 @@ async function buildObjectDef({ host, sid, apiVersion, obj }) {
     "デフォルト": r.defaultRecordTypeMapping ? "○" : "",
   }));
 
+  // v2.98.0: 表紙セクション追加 (プロジェクト成果物品質)
+  const cover = makeCoverSection({
+    docTitle: "オブジェクト定義書",
+    target: `${d.label} (${d.name})`,
+    orgHost: host,
+    revision: "初版",
+  });
+
   return {
     title: `オブジェクト定義書: ${d.label} (${d.name})`,
     type: "objectDef",
     sections: [
+      cover,
       { heading: "1. オブジェクト概要", kvRows: meta },
       { heading: "2. 項目定義", headers, rows },
       ...(childRels.length ? [{ heading: "3. 子リレーション", headers: Object.keys(childRels[0] || {}), rows: childRels }] : []),
@@ -916,9 +987,16 @@ async function buildFlsReport({ host, sid, apiVersion, obj, progress = () => {} 
   const dr = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
   if (!dr.ok) throw apiError(`オブジェクト '${obj}' の describe 取得に失敗しました`, dr);
   progress("FieldPermissions 取得中...");
+  // v2.98.0: タイプを日本語化、reference は参照先 (referenceTo[0]) を含める
   const allFields = (dr.data.fields || [])
     .filter((f) => !f.calculated && f.type !== "id")
-    .map((f) => ({ name: f.name, label: f.label, type: f.type, required: !f.nillable && !f.defaultedOnCreate && f.createable }));
+    .map((f) => ({
+      name: f.name,
+      label: f.label,
+      type: f.type,
+      typeJa: fieldTypeJa(f.type, (f.referenceTo || [])[0]),
+      required: !f.nillable && !f.defaultedOnCreate && f.createable,
+    }));
 
   const fpR = await fetchAllPaged({ host, sid, apiVersion,
     soql: `SELECT Field, PermissionsRead, PermissionsEdit, Parent.Name, Parent.IsOwnedByProfile, Parent.Profile.Name, Parent.Label FROM FieldPermissions WHERE SobjectType='${obj.replace(/'/g, "\\'")}'`,
@@ -947,14 +1025,14 @@ async function buildFlsReport({ host, sid, apiVersion, obj, progress = () => {} 
   const permsetCols = Array.from(permsetSet).sort();
   const allCols = [...profileCols, ...permsetCols];
 
-  const headers = ["No", "項目 API 名", "ラベル", "型", "必須", ...allCols];
+  const headers = ["No", "項目 API 名", "ラベル", "タイプ", "必須", ...allCols];
   const rows = allFields.map((f, i) => {
     const g = grid.get(f.name) || {};
     const row = {
       "No": i + 1,
       "項目 API 名": f.name,
       "ラベル": f.label,
-      "型": f.type,
+      "タイプ": f.typeJa, // v2.98.0: 日本語化 (参照関係(Contact) / チェックボックス / 文字列 / 選択リスト 等)
       "必須": f.required ? "○" : "",
     };
     // 各列のセルを設定。レコードが無い場合は "--" (アクセス無し)
@@ -985,10 +1063,19 @@ async function buildFlsReport({ host, sid, apiVersion, obj, progress = () => {} 
     ["Excel 使い方", "B2 セルでウィンドウ枠固定 → 左 5 列 (No / 項目 / ラベル / 型 / 必須) と先頭行を固定して全列を横スクロール可"],
   ];
 
+  // v2.98.0: 表紙セクションを冒頭に追加 (プロジェクト成果物レベル)
+  const cover = makeCoverSection({
+    docTitle: "項目レベルセキュリティ (FLS) レポート",
+    target: `${obj} (${dr.data.label || obj})`,
+    orgHost: host,
+    revision: "初版",
+  });
+
   return {
     title: `項目レベルセキュリティ (FLS) レポート: ${obj} (権限セット × プロファイル マトリクス)`,
     type: "flsReport",
     sections: [
+      cover,
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. FLS マトリクス (項目 × 権限主体)", headers, rows },
     ],
