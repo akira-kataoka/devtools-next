@@ -8,6 +8,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.33.0 (2026-05-20 15:35)** — 🚨 ユーザー要望 Phase 23: API URL ビルダー / Metadata 一覧 タブ業務化:
+  - **🐛 panel/tool.html API URL ビルダー**: apiObj placeholder を「オブジェクト API 名 (例: Account)」→「オブジェクトの API 名を入力してください (例: Account)」、▶ URL 生成 / URL コピー / curl コピー / ブラウザで開く 全 4 ボタンに機能説明 title 追加 (curl コピー: 「sid 含む」を明示)
+  - **🐛 panel/tool.html API URL ビルダー結果ペイン**: 「REST URL」→「生成された REST URL」、「curl サンプル」→「curl コマンド サンプル」、「解説」→「解説 / 使い方」
+  - **🐛 panel/tool.html Metadata 一覧**: mdType select に title「一覧を取得するメタデータ型を選択してください」、一覧取得ボタンに title「選択したメタデータ型の一覧を Tooling API から取得します」追加
 - **v2.32.0 (2026-05-20 15:30)** — 🚨 ユーザー要望 Phase 22: Limits カード + Inspector 値表示 細部:
   - **🐛 panel.js Limits 詳細カード**: critical (pct >= 90) に「🚨 危険水準」、warn (70-89) に「⚠ 注意水準」のステータスラベル付与、カード自体にも tooltip 追加、健全時「✓ OK」→「✓ 問題なし」
   - **🐛 panel.js Inspector 値表示**: 「(null)」→「(空)」+ tooltip「値が設定されていません (null)」、boolean を「✓ true / ✗ false」→「✓ はい (true) / ✗ いいえ (false)」、tooltip「raw:」→「raw 値:」、datetime tooltip「raw:」→「ISO raw 値:」
