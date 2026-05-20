@@ -73,11 +73,16 @@ function flashToast(text) {
       .hdr-title { color: #1b96ff; font-weight: 700; font-size: 13px; flex: 1; }
       .hdr-close, .hdr-open {
         background: transparent; border: 1px solid #1f2c46;
-        color: #9fb0c9; padding: 2px 8px; border-radius: 4px;
-        cursor: pointer; font-size: 11px;
+        color: #9fb0c9; padding: 3px 10px; border-radius: 4px;
+        cursor: pointer; font-size: 11px; font-weight: 600;
       }
       .hdr-close:hover { color: #ff6b6b; border-color: #ff6b6b; }
-      .hdr-open:hover { color: #1b96ff; border-color: #1b96ff; }
+      /* v2.79.0: hdr-open は SF 上から全画面 UI へ誘導する重要動線。アクセントカラーで強調 */
+      .hdr-open {
+        background: rgba(27,150,255,0.12);
+        color: #1b96ff; border-color: rgba(27,150,255,0.5);
+      }
+      .hdr-open:hover { background: #1b96ff; color: #fff; border-color: #1b96ff; }
       .body { padding: 10px 12px; flex: 1; overflow: auto; }
       textarea {
         width: 100%; min-height: 80px;
@@ -113,8 +118,8 @@ function flashToast(text) {
     <div class="panel" id="pnl" role="dialog" aria-label="DevToolsNext ミニパネル">
       <div class="hdr">
         <span class="hdr-title">🛠 DevToolsNext ミニパネル</span>
-        <button class="hdr-open" id="opn" title="フルパネル (DevTools / ツールタブ) を新しいタブで開きます">↗</button>
-        <button class="hdr-close" id="cls" title="ミニパネルを閉じます" aria-label="閉じる">✕</button>
+        <button class="hdr-open" id="opn" title="DevToolsNext を新しいタブで全画面起動します (SOQL/Inspector/設計書など全機能)" aria-label="DevToolsNext を全画面で開く">↗ 全画面</button>
+        <button class="hdr-close" id="cls" title="ミニパネルを閉じます" aria-label="ミニパネルを閉じる">✕</button>
       </div>
       <div class="body">
         <textarea id="qry" placeholder="SELECT Id, Name FROM Account LIMIT 5" spellcheck="false">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 5</textarea>
