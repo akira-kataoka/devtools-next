@@ -8,6 +8,19 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.11.0 (2026-05-20 13:35)** — 🚨 ユーザー要望対応 (Phase 1): 設計書 ObjectDef 強化 + 日本語見直し:
+  - **🐛 設計書 ObjectDef のフィールド表に列追加 (業務テンプレ準拠)**:
+    - 既存: No / API名 / ラベル / 型 / 桁・精度 / 必須 / 一意 / 外部ID / 計算式 / 参照先 / 選択リスト値 / デフォルト / 説明 (13 列)
+    - 追加: **作成可 / 更新可 / 暗号化 / ヘルプテキスト** + 「説明」を `description` (開発者向け) と「ヘルプテキスト」 `inlineHelpText` (利用者向け) に **正しく分離** → 計 **17 列**
+    - 「ラベル」→「表示名」「型」→「データ型」「デフォルト」→「既定値」「計算式」→「計算項目」 など業務用語に修正
+  - **🐛 日本語ライティング見直し (6 箇所、ですます調 統一)**:
+    - `📋 Apex 結果コピー (1234 文字)` → `📋 Apex の実行結果をコピーしました (1,234 文字)` (3 桁区切り toLocaleString も)
+    - `📋 REST 結果コピー` → `📋 REST のレスポンスをコピーしました`
+    - `⚠ レコード未取得です` → `⚠ レコードがまだ取得されていません`
+    - `📋 Object:Id の JSON をコピー` → `📋 ... の JSON をコピーしました`
+    - `📋 貼付: ...` → `📋 ID を貼付けました: ...`
+    - `⌨ inspector ビュー` → `⌨ inspector ビューに切り替えました`
+  - **📝 設計書/UI 改善は今後も継続予定** ([[feedback_japanese_design_quality]] memory 参照)
 - **v2.10.0 (2026-05-20 13:30)** — mini-panel に 📋 CSV コピー + 列ソート:
   - **✨ mini-panel ヘッダに「📋 CSV」ボタン**: 結果を CSV としてクリップボードコピー。ネスト平坦化 + ISO datetime 整形 (`recordsToCsv` 同パターン) を inline 実装で適用
   - **✨ mini-panel 結果テーブルの列ヘッダ click でソート**: asc → desc → unsort 3 段階トグル、数値判定 (`/^-?\\d+(\\.\\d+)?$/`) で数値/文字列ソート分岐、`localeCompare("ja")` で日本語対応。**panel/tool と同等のソート UX を mini-panel にも**

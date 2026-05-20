@@ -359,7 +359,7 @@ function bindEvents() {
     if (view) {
       e.preventDefault();
       switchToView(view);
-      panelToast(`⌨ ${view} ビュー`, { kind: "ok" });
+      panelToast(`⌨ ${view} ビューに切り替えました`, { kind: "ok" });
     }
   });
 
@@ -395,7 +395,7 @@ function bindEvents() {
     if (!txt) { panelToast("📭 コピーする結果がありません", { kind: "warn" }); return; }
     try {
       await navigator.clipboard.writeText(txt);
-      panelToast(`📋 Apex 結果コピー (${txt.length} 文字)`, { kind: "ok" });
+      panelToast(`📋 Apex の実行結果をコピーしました (${txt.length.toLocaleString()} 文字)`, { kind: "ok" });
     } catch (e) {
       panelToast("❌ コピー失敗: " + (e.message || e), { kind: "err" });
     }
@@ -405,7 +405,7 @@ function bindEvents() {
     if (!txt) { panelToast("📭 コピーする結果がありません", { kind: "warn" }); return; }
     try {
       await navigator.clipboard.writeText(txt);
-      panelToast(`📋 REST 結果コピー (${txt.length} 文字)`, { kind: "ok" });
+      panelToast(`📋 REST のレスポンスをコピーしました (${txt.length.toLocaleString()} 文字)`, { kind: "ok" });
     } catch (e) {
       panelToast("❌ コピー失敗: " + (e.message || e), { kind: "err" });
     }
@@ -437,7 +437,7 @@ function bindEvents() {
       const id = m[1].length === 15 ? to18CharId(m[1]) : m[1];
       document.getElementById("inspectRef").value = id;
       const expanded = m[1].length === 15 ? ` (15→18 展開)` : "";
-      panelToast(`📋 貼付: ${id}${expanded}`, { kind: "ok" });
+      panelToast(`📋 ID を貼付けました: ${id}${expanded}`, { kind: "ok" });
       doInspect();
     } catch (e) {
       panelToast("❌ クリップボード読取失敗: " + (e.message || e), { kind: "err" });
@@ -450,10 +450,10 @@ function bindEvents() {
   document.getElementById("btnInspectExportCsv").addEventListener("click", () => exportInspect("csv"));
   const btnCopyJson = document.getElementById("btnInspectCopyJson");
   if (btnCopyJson) btnCopyJson.addEventListener("click", async () => {
-    if (!inspectState.record) { panelToast("⚠ レコード未取得です", { kind: "warn" }); return; }
+    if (!inspectState.record) { panelToast("⚠ レコードがまだ取得されていません", { kind: "warn" }); return; }
     try {
       await navigator.clipboard.writeText(JSON.stringify(inspectState.record, null, 2));
-      panelToast(`📋 ${inspectState.obj}:${inspectState.id} の JSON をコピー`, { kind: "ok" });
+      panelToast(`📋 ${inspectState.obj}:${inspectState.id} の JSON をコピーしました`, { kind: "ok" });
     } catch (e) { panelToast("⚠ コピー失敗: " + (e.message || e), { kind: "err" }); }
   });
   document.getElementById("inspectFilter").addEventListener("input", renderInspectorFields);

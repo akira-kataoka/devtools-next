@@ -75,27 +75,31 @@ async function buildObjectDef({ host, sid, apiVersion, obj }) {
   const d = r.data;
   const fields = d.fields || [];
 
-  // フィールド表
+  // フィールド表 (業務テンプレ準拠: v2.11.0 で 「作成可」「更新可」「暗号化」「ヘルプテキスト」を追加分離)
   const headers = [
-    "No", "API名", "ラベル", "型", "桁/精度", "必須", "一意", "外部ID", "計算式",
-    "参照先", "選択リスト値", "デフォルト", "説明",
+    "No", "API名", "表示名", "データ型", "桁/精度", "必須", "一意", "外部ID", "計算項目",
+    "作成可", "更新可", "暗号化", "参照先", "選択リスト値", "既定値", "ヘルプテキスト", "説明",
   ];
   const rows = fields.map((f, i) => ({
     "No": i + 1,
     "API名": f.name,
-    "ラベル": f.label,
-    "型": f.type + (f.length ? "" : ""),
+    "表示名": f.label,
+    "データ型": f.type,
     "桁/精度": f.type === "string" || f.type === "textarea" || f.type === "email" || f.type === "phone" || f.type === "url"
       ? String(f.length || "")
       : (f.precision != null && f.scale != null ? `${f.precision},${f.scale}` : ""),
     "必須": !f.nillable && !f.defaultedOnCreate && f.createable ? "○" : "",
     "一意": f.unique ? "○" : "",
     "外部ID": f.externalId ? "○" : "",
-    "計算式": f.calculated ? "○" : "",
+    "計算項目": f.calculated ? "○" : "",
+    "作成可": f.createable ? "○" : "",
+    "更新可": f.updateable ? "○" : "",
+    "暗号化": f.encrypted ? "○" : "",
     "参照先": (f.referenceTo || []).join(", "),
     "選択リスト値": (f.picklistValues || []).slice(0, 30).map((p) => p.value + (p.active ? "" : "(無効)")).join(" / "),
-    "デフォルト": f.defaultValue != null ? String(f.defaultValue) : "",
-    "説明": f.inlineHelpText || "",
+    "既定値": f.defaultValue != null ? String(f.defaultValue) : "",
+    "ヘルプテキスト": f.inlineHelpText || "",
+    "説明": f.description || "",
   }));
 
   // メタ情報
