@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.69.0 (2026-05-20 10:05)** — popup .result contain + scroll FPS 計測手順:
+  - **✨ popup `.result` (SOQL 結果) にも `contain: layout style`**: panel/tool の Apex/REST/design-preview と統一。**popup 460px 幅でも長 SOQL 結果のスクロールが軽量化**
+  - **📖 README に「大量結果のスクロール FPS 計測手順」追加 (v1.67.0+ 対応)**: Chrome DevTools の Frame Rendering Stats で 50〜60 fps を維持できているか確認するステップを案内。`contain: none` で比較する手順も併記
+  - **🧪 contain: layout style は sticky positioning に干渉しない**: 設計書 h2/th sticky / Limits header sticky / Inspector header sticky いずれも `contain: paint` でないため scroll ancestor 検出が変わらず動作維持
 - **v1.68.0 (2026-05-20 10:00)** — design-preview contain + Limits レスポンシブ:
   - **✨ `.design-preview` に `contain: layout style`**: 大設計書 (1000+ 行 ObjectDef) のスクロール時、ブラウザに再描画範囲を制限ヒント。**Apex/REST と同じ CSS Containment パターンで統一**
   - **✨ Limits 結果テーブル `@media (max-width: 600px)` レスポンシブ**: popup や狭幅 panel で grid-template-columns を `1fr` 縦並びに退化、`used: / remaining: / max:` ラベル prefix で識別性確保。**iPad mini / popup 460px でも数値が画面外に出ない**
@@ -576,6 +580,17 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 6. `📋 CSV` (クリップボードコピー) も同様に反映
 
 (数値判定: `/^-?\d+(\.\d+)?$/` にマッチすると数値ソート、それ以外は `localeCompare('ja')` で日本語対応)
+
+### 🧪 大量結果のスクロール FPS 計測手順 (v1.67.0+)
+
+`#apexResult` / `#restResult` / `.design-preview` / `.result` に `contain: layout style` を適用済。1MB 超のテキストでもスクロールが軽くなることを Chrome DevTools で確認する手順:
+
+1. Chrome DevTools (F12) → **More tools → Rendering** タブ
+2. **Frame Rendering Stats** にチェック (画面右上に緑のオーバーレイで FPS 表示)
+3. tool.html → Apex 実行 (またはサンプルとして REST `/sobjects/Account/describe` で巨大 JSON 取得)
+4. 結果 pre / div 内をマウスホイールで上下スクロール
+5. FPS 表示が 50〜60 fps を維持していれば最適化 OK (10〜30 fps だと再描画ボトルネック)
+6. 比較したい場合は DevTools Console で `document.getElementById("apexResult").style.contain = "none"` → スクロール → 戻す
 
 ### 🧪 401 INVALID_SESSION_ID テスト手順
 
