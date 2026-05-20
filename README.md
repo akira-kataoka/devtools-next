@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.38.0 (2026-05-20 16:00)** — 🚨 ユーザー要望 Phase 28: Apex Debug ログ / API body サンプル / openIdInOrg:
+  - **🐛 panel.js Apex Debug ログ取得失敗時**: hint を ですます調 詳細化 (「削除済または期限切れの可能性」→「ログが削除済か期限切れの可能性があります」、「ApexLog 参照権限が不足しています」→「Apex ログの参照権限が不足しています (Setup → ユーザ → 権限セットをご確認ください)」、「Trace Flag が未設定の可能性」を ですます調 + 補足追加)
+  - **🐛 panel.js Apex 成功時表示**: 「(コンパイル & 実行 OK)」→「(コンパイル・実行に成功しました)」
+  - **🐛 panel.js API URL ビルダー body サンプル**: create/update/upsert の body JSON を 1 行から複数行 + 業務的な値に拡充 (取引先名 + Description 等、コピペで使える形)
+  - **🐛 popup.js openIdInOrg**: 「⚠ 有効な ID を入力してください」→「⚠ 15 桁または 18 桁の有効な Salesforce ID を入力してください」、「⚠ Salesforce のタブで実行してください」→「⚠ Salesforce のタブを開いてから実行してください」、成功時に「🔍 レコード X を新しいタブで開きました」 toast 追加
 - **v2.37.0 (2026-05-20 15:55)** — 🚨 ユーザー要望 Phase 27: apiBuildUrl note / LoginHistory 列名 / curl SID コメント:
   - **🐛 panel.js loginHistoryTable**: 列名を 11 個すべて日本語化 (LoginTime → ログイン日時、SourceIp → 送信元 IP アドレス、Platform → OS / プラットフォーム 等)、ヘッダに API 名を tooltip 表示、Status pill を「✓ Success」「✗ Failed」絵文字付きに、LoginTime を YYYY-MM-DD HH:mm に整形、空状態を「📭 該当するログイン履歴はありません」に
   - **🐛 panel.js apiBuildUrl note**: 「⚠ オブジェクト API 名 が必要です」→「⚠ オブジェクトの API 名を入力してください」、「⚠ Object と Id が必要です」→「⚠ オブジェクト API 名とレコード ID の両方を入力してください」、外部 ID 形式エラーを ですます調 詳細化

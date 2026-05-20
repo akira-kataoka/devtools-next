@@ -628,9 +628,10 @@ async function doParseId() {
 
 async function openIdInOrg() {
   const raw = document.getElementById("idInput").value.trim();
-  if (!/^[a-zA-Z0-9]{15,18}$/.test(raw)) { toast("⚠ 有効な ID を入力してください", { kind: "warn" }); return; }
-  if (!state.host) { toast("⚠ Salesforce のタブで実行してください", { kind: "warn" }); return; }
+  if (!/^[a-zA-Z0-9]{15,18}$/.test(raw)) { toast("⚠ 15 桁または 18 桁の有効な Salesforce ID を入力してください", { kind: "warn" }); return; }
+  if (!state.host) { toast("⚠ Salesforce のタブを開いてから実行してください", { kind: "warn" }); return; }
   chrome.tabs.create({ url: `https://${state.host}/${raw}` });
+  toast(`🔍 レコード ${raw} を新しいタブで開きました`, { kind: "ok" });
 }
 
 async function doApiCall() {

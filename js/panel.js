@@ -1286,15 +1286,15 @@ function apiBuildUrl() {
       path = `/services/data/v${apiVer}/sobjects/${objName || "<Object>"}/${id || "<ExtIdField>/<value>"}`;
       break;
     case "create":
-      method = "POST"; body = `{"Name": "サンプル"}`;
+      method = "POST"; body = `{\n  "Name": "サンプル取引先",\n  "Description": "DevToolsNext から作成したテストレコード"\n}`;
       path = `/services/data/v${apiVer}/sobjects/${objName || "<Object>"}/`;
       break;
     case "update":
-      method = "PATCH"; body = `{"FieldName__c": "新しい値"}`;
+      method = "PATCH"; body = `{\n  "FieldName__c": "新しい値",\n  "Description": "更新コメント"\n}`;
       path = `/services/data/v${apiVer}/sobjects/${objName || "<Object>"}/${id || "<Id>"}`;
       break;
     case "upsert":
-      method = "PATCH"; body = `{"Name": "サンプル"}`;
+      method = "PATCH"; body = `{\n  "Name": "サンプル",\n  "Description": "upsert で作成または更新されるレコード"\n}`;
       path = `/services/data/v${apiVer}/sobjects/${objName || "<Object>"}/${id || "<ExtIdField>/<value>"}`;
       break;
     case "delete":
@@ -2550,17 +2550,17 @@ async function doRunApex() {
       } else {
         // Debug Log 取得失敗時 (削除済 / 権限不足 / Trace flag 未設定) は分かりやすく
         const hint = logFetch.status === 404
-          ? "削除済または期限切れの可能性があります"
+          ? "ログが削除済か期限切れの可能性があります"
           : logFetch.status === 403
-          ? "ApexLog 参照権限が不足しています (Setup → ユーザー → 権限セットを確認)"
+          ? "Apex ログの参照権限が不足しています (Setup → ユーザ → 権限セットをご確認ください)"
           : `HTTP ${logFetch.status}`;
-        logBody = `⚠ Debug Log 取得に失敗: ${hint}\n` +
-          `Trace Flag が未設定の可能性: Setup → Debug Logs → ユーザー追加してください\n` +
-          `(実行結果は上記 OK でも、Log Body の取得は別 API です)`;
+        logBody = `⚠ Debug ログの取得に失敗しました: ${hint}\n` +
+          `Trace Flag が未設定の可能性があります。Setup → Debug Logs から対象ユーザを追加してください。\n` +
+          `(Apex の実行自体は上記の通り成功していますが、ログ本文の取得は別 API のため失敗することがあります)`;
       }
     }
   }
-  out.textContent = (success ? "(コンパイル & 実行 OK)\n\n" : "") + logBody;
+  out.textContent = (success ? "(コンパイル・実行に成功しました)\n\n" : "") + logBody;
   // Apex 結果の行数/文字数を meta に追記 (debug log の規模感を可視化)
   // ヘッダーのみ (success="(コンパイル & 実行 OK)\n\n") の場合はスキップ
   const txt = logBody;
