@@ -1,9 +1,15 @@
 # Salesforce DevTool (Chrome / Edge 拡張)  v0.6.0
 
+> 🎉 **v1.91.0 で累計 100 サイクルの自律改善ループ達成** (2026-05-20)。新機能追加を凍結し、UX 洗練 / バグ修正 / 他拡張参考 / アクセシビリティ強化 / IME 保護 / Toast 4色 + pulse / 16 種類 download 統一 / CSS Containment / WCAG AAA コントラスト 等、品質を高める方向に振り切った継続的改善の節目。
+
+
 Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.91.0 (2026-05-20 11:55)** — 🎊 累計 100 サイクル達成 - Login CSV 日時整形 + README 記念ヘッダー:
+  - **🐛 `exportLoginCsv()` の LoginTime を `YYYY-MM-DD HH:mm` 整形**: 従来 `2026-05-20T03:45:00.000+0000` ISO 形式のまま CSV 出力 → Excel で日時として認識されず文字列扱い。整形後は Excel で日時列として並び替え/フィルタ可能 (Inspector v1.36.0 と同パターン)
+  - **📖 README 先頭に「100 サイクル達成」記念ヘッダー追加**: 自律改善ループの節目を可視化
 - **v1.90.0 (2026-05-20 11:50)** — 🎉 累計90リリース節目 - Login History CSV toast + 全16 download 一覧表:
   - **✨ `exportLoginCsv()` 完了 toast**: `📥 Login History CSV (N 件 / <size>)` 形式 (件数 + サイズ)
   - **🛡 `exportLoginCsv()` 未取得時警告**: `📭 Login History 未取得 (先に「取得」をクリック)`

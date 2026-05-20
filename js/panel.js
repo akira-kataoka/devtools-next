@@ -2555,7 +2555,16 @@ function loginHistoryTable(rows) {
 
 function exportLoginCsv() {
   if (!state.lastLoginRecords || !state.lastLoginRecords.length) { panelToast("📭 Login History 未取得 (先に「取得」をクリック)", { kind: "warn" }); return; }
-  const csv = recordsToCsv(state.lastLoginRecords);
+  // LoginTime を YYYY-MM-DD HH:mm 整形 (Excel で読みやすく)
+  const formatted = state.lastLoginRecords.map((r) => {
+    const out = { ...r };
+    if (out.LoginTime && typeof out.LoginTime === "string") {
+      const m = out.LoginTime.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+      if (m) out.LoginTime = `${m[1]} ${m[2]}`;
+    }
+    return out;
+  });
+  const csv = recordsToCsv(formatted);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
