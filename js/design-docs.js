@@ -314,6 +314,7 @@ async function buildProfileList({ host, sid, apiVersion }) {
     title: "プロファイル一覧",
     type: "profileList",
     sections: [
+      makeCoverSection({ docTitle: "プロファイル一覧", target: "組織全体 (全プロファイル)", orgHost: host, revision: "初版" }),
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. プロファイル", headers, rows },
     ],
@@ -363,6 +364,7 @@ async function buildPermSetList({ host, sid, apiVersion }) {
     title: "権限セット一覧",
     type: "permsetList",
     sections: [
+      makeCoverSection({ docTitle: "権限セット一覧", target: "組織全体 (全 PermissionSet)", orgHost: host, revision: "初版" }),
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. PermissionSet", headers, rows },
     ],
@@ -413,6 +415,7 @@ async function buildApexClassList({ host, sid, apiVersion }) {
     title: "Apex クラス一覧",
     type: "apexClassList",
     sections: [
+      makeCoverSection({ docTitle: "Apex クラス一覧", target: "組織全体 (全 ApexClass)", orgHost: host, revision: "初版" }),
       { heading: "0. 凡例", kvRows: acLegend },
       { heading: "1. Apex クラス", headers, rows },
     ],
@@ -473,6 +476,7 @@ async function buildApexTriggerList({ host, sid, apiVersion }) {
     title: "Apex トリガ一覧",
     type: "apexTriggerList",
     sections: [
+      makeCoverSection({ docTitle: "Apex トリガ一覧", target: "組織全体 (全 ApexTrigger)", orgHost: host, revision: "初版" }),
       { heading: "0. 凡例 / トリガイベント略号", headers: legendHeaders, rows: legendRows },
       { heading: "1. Apex トリガ一覧", headers, rows },
     ],
@@ -557,7 +561,10 @@ async function buildFlowList({ host, sid, apiVersion }) {
   return {
     title: "フロー一覧 (アクティブのみ)",
     type: "flowList",
-    sections: [{ heading: "フロー", headers, rows }],
+    sections: [
+      makeCoverSection({ docTitle: "フロー一覧 (アクティブのみ)", target: "組織全体 (全アクティブ Flow)", orgHost: host, revision: "初版" }),
+      { heading: "フロー", headers, rows },
+    ],
     note: `合計 ${fmtNum(records.length)} 件 / 種別内訳: ${typeBreakdown}${legacyNote} — Process Builder は Salesforce 公式アナウンスにより段階的に廃止予定です`,
   };
 }
@@ -598,6 +605,7 @@ async function buildValidationRuleList({ host, sid, apiVersion, obj }) {
     title: obj ? `入力規則一覧: ${obj}` : "入力規則一覧 (全オブジェクト)",
     type: "validationRuleList",
     sections: [
+      makeCoverSection({ docTitle: "入力規則一覧", target: obj || "組織全体 (全オブジェクト)", orgHost: host, revision: "初版" }),
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. ValidationRule", headers, rows },
     ],
@@ -640,6 +648,7 @@ async function buildRecordTypeList({ host, sid, apiVersion, obj }) {
     title: obj ? `レコードタイプ一覧: ${obj}` : "レコードタイプ一覧 (全オブジェクト)",
     type: "recordTypeList",
     sections: [
+      makeCoverSection({ docTitle: "レコードタイプ一覧", target: obj || "組織全体 (全オブジェクト)", orgHost: host, revision: "初版" }),
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. RecordType", headers, rows },
     ],
@@ -680,6 +689,7 @@ async function buildFieldSetList({ host, sid, apiVersion, obj }) {
     title: `フィールドセット一覧: ${obj}`,
     type: "fieldSetList",
     sections: [
+      makeCoverSection({ docTitle: "フィールドセット一覧", target: obj, orgHost: host, revision: "初版" }),
       { heading: "0. 凡例", kvRows: fsLegend },
       { heading: "1. FieldSet", headers, rows },
     ],
@@ -720,6 +730,7 @@ async function buildCustomSettingList({ host, sid, apiVersion }) {
     title: "カスタム設定一覧",
     type: "customSettingList",
     sections: [
+      makeCoverSection({ docTitle: "カスタム設定一覧", target: "組織全体 (全 CustomSetting)", orgHost: host, revision: "初版" }),
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. CustomSetting", headers, rows },
     ],
@@ -798,7 +809,10 @@ async function buildErDiagram({ host, sid, apiVersion, obj }) {
   return {
     title: `ER 図: ${d.label} (${d.name}) を起点とした 1-hop`,
     type: "erDiagram",
-    sections: [{ heading: "ER 図 (Mermaid)", mermaid }],
+    sections: [
+      makeCoverSection({ docTitle: "ER 図", target: `${d.label} (${d.name}) を起点とした 1-hop`, orgHost: host, revision: "初版" }),
+      { heading: "ER 図 (Mermaid)", mermaid },
+    ],
     note: `関連エンティティ ${fmtNum(seen.size - 1)} 件 / 親方向参照 ${fmtNum(parentTotal)} 件 (MD ${fmtNum(parentMD)} + Lookup ${fmtNum(parentLookup)}) / 子方向参照 ${fmtNum(childRendered)} 件 (MD ${fmtNum(childMD)} + Lookup ${fmtNum(childLookup)})${truncMsg}。Mermaid Live Editor (https://mermaid.live) に貼り付けると可視化できます。線種: ||--o{ = Lookup (任意参照) / ||--|{ = Master-Detail (必須参照・カスケード削除) です。`,
   };
 }
