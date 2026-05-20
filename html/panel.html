@@ -151,6 +151,11 @@
             <input id="inspectFilter" placeholder="🔎 フィールドを絞り込む… (例: 'email' / 'CreatedBy' / 'true')" title="API 名・ラベル・値の部分一致で絞り込みます" />
             <label class="inspector-opt" title="null や空文字の項目も結果に表示します (既定は非表示)"><input type="checkbox" id="inspectShowNull" /> 空値も表示します</label>
             <label class="inspector-opt" title="システム項目 (Id / CreatedById / LastModifiedDate / SystemModstamp 等) を表示します"><input type="checkbox" id="inspectShowSystem" /> システム項目を表示します</label>
+            <!-- v3.67.0: 子リレーション セクション — レコード取得後に childRelationships を表示 -->
+            <details id="inspectChildRels" class="inspector-child-rels" style="display:none">
+              <summary title="このレコードを親とする子オブジェクト一覧 (Account → Contacts, Cases 等)。クリックで子レコード SOQL を生成">🌳 子レコード SOQL <span class="child-count"></span></summary>
+              <div class="inspector-child-rels-body"></div>
+            </details>
           </div>
           <div class="inspector-right">
             <div id="inspectResult" class="grid"><div class="empty-state">👆 上の入力欄にレコード ID を入力して「▶ 取得 (Enter)」を押してください。<br/>取得後は項目をクリックでインライン編集 (PATCH 保存) できます。<br/><br/><strong>💡 ヒント</strong>: 現在開いている Salesforce レコードページがあれば「現在タブから取得」で自動入力できます。フィールド絞り込みは API 名/ラベル/値の部分一致対応。📋 JSON コピー、📥 JSON/CSV ダウンロード、📸 エビデンス保存も可能です。</div></div>

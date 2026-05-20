@@ -2127,6 +2127,8 @@ async function doInspect(opts = {}) {
   inspectState.id = id;
   inspectState.describe = descR.data;
   inspectState.record = recR.data;
+  // v3.67.0: 子リレーション セクションをレンダリング
+  renderInspectorChildRelations();
 
   const fieldCount = (descR.data.fields || []).length;
   const filledCount = (descR.data.fields || []).filter((f) => {
@@ -2142,6 +2144,49 @@ async function doInspect(opts = {}) {
     const r = document.getElementById("inspectResult");
     if (r) r.scrollTop = opts.restoreScrollTop;
   }
+}
+
+// v3.67.0: Inspector 子リレーション セクションのレンダリング
+// describe.childRelationships からデプロイ可能な子オブジェクト一覧を表示し、
+// クリックで「SELECT Id, Name FROM <Child> WHERE <FK> = '<parentId>' LIMIT 50」を SOQL に投入して切替
+function renderInspectorChildRelations() {
+  const wrap = document.getElementById("inspectChildRels");
+  if (!wrap) return;
+  const describe = inspectState.describe || {};
+  const childRels = (describe.childRelationships || []).filter((c) => c.childSObject && c.field && !c.deprecatedAndHidden);
+  if (!childRels.length || !inspectState.id) {
+    wrap.style.display = "none";
+    return;
+  }
+  wrap.style.display = "";
+  const countEl = wrap.querySelector(".child-count");
+  if (countEl) countEl.textContent = `(${childRels.length} 件)`;
+  const body = wrap.querySelector(".inspector-child-rels-body");
+  if (!body) return;
+  // 主要な標準子オブジェクトを優先表示 (ContactRoles 等の中間表より Contacts/Cases/Opportunities/Tasks/Events を上に)
+  const PRIORITY_OBJS = new Set(["Contact", "Case", "Opportunity", "Task", "Event", "Note", "Attachment", "FeedItem", "AccountContactRelation"]);
+  const sorted = [...childRels].sort((a, b) => {
+    const pa = PRIORITY_OBJS.has(a.childSObject) ? 0 : 1;
+    const pb = PRIORITY_OBJS.has(b.childSObject) ? 0 : 1;
+    if (pa !== pb) return pa - pb;
+    return a.childSObject.localeCompare(b.childSObject);
+  });
+  body.innerHTML = sorted.map((c) => {
+    const label = `${escape(c.childSObject)}<span class="child-fk">.${escape(c.field)}</span>`;
+    const rel = c.relationshipName ? `<span class="child-rel-name" title="サブクエリ用リレーション名: ${escape(c.relationshipName)} (例: SELECT Id, (SELECT Id FROM ${escape(c.relationshipName)}) FROM ${escape(inspectState.obj)})">${escape(c.relationshipName)}</span>` : "";
+    return `<button class="child-rel-item" data-obj="${escape(c.childSObject)}" data-fk="${escape(c.field)}" title="SELECT Id, Name FROM ${escape(c.childSObject)} WHERE ${escape(c.field)} = '${escape(inspectState.id)}' LIMIT 50 を SOQL ビューに投入">${label}${rel}</button>`;
+  }).join("");
+  body.querySelectorAll(".child-rel-item").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const obj = btn.dataset.obj;
+      const fk = btn.dataset.fk;
+      const soql = `SELECT Id, Name\nFROM ${obj}\nWHERE ${fk} = '${inspectState.id}'\nLIMIT 50`;
+      const ta = document.getElementById("soqlText");
+      if (ta) ta.value = soql;
+      switchToView("soql");
+      panelToast(`🌳 ${obj} の子レコード SOQL を生成 (${fk} = ${inspectState.id})。Ctrl+Enter で実行`, { kind: "ok" });
+    });
+  });
 }
 
 function renderInspectorFields() {
