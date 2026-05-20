@@ -17,6 +17,10 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.58.0 (2026-05-20 17:40)** — 🚨 Phase 48: panel.html kbd-hint に Picker 操作追加 + 全 apiError 英語残存ゼロ確認:
+  - **🐛 html/panel.html ヘッダ kbd-hint**: 「Ctrl+Enter 実行 / Esc 閉じる / Ctrl+Alt+I/Q/A/L/R/D ビュー切替」→「Ctrl+Enter 実行 / Esc 閉じる / ↑↓ Picker / Ctrl+Alt+I/Q/A/L/R/D ビュー切替」(tool.html と完全一致)
+  - **🧪 design-docs.js apiError 22 箇所全点検**: 全て ですます調 + 業務語統一済を確認 (英語残存ゼロ)。代表例: 「プロファイル/権限セット/Apex クラス/フロー/入力規則/レコードタイプ/フィールドセット/カスタム設定/オブジェクト権限/項目権限 の取得に失敗しました」
+  - **🧪 console.log / @media / kbd タグ点検済**: 全て整合性確認
 - **v2.57.0 (2026-05-20 17:35)** — 🚨 Phase 47: manifest description を最新化:
   - **🐛 manifest.json description**: 「設計書20種」→「設計書 22 種類 (業務向け凡例付き)」に最新化、全角/半角スペースを統一 (レコードInspector → レコード Inspector、API URLビルダー → API URL ビルダー、Limitsダッシュボード → Limits ダッシュボード)、末尾「自動アップデート。」→「自動アップデートを提供します。」 ですます調 に統一
   - **🧪 console.log 15 箇所点検済**: 全て `[DevToolsNext]` プレフィックス付きの診断ログ (stale request discard / init error / datalist refresh) で適切。修正不要
