@@ -141,7 +141,7 @@ select { font-family: inherit; }
   margin: 8px 0 0; max-height: 320px; overflow: auto;
   background: #0a1224; border: 1px solid var(--line); border-radius: 6px;
   padding: 8px; font: 11px/1.4 ui-monospace, Consolas, monospace; color: #d6e0f5;
-  white-space: pre;
+  white-space: pre; user-select: text;
 }
 
 .links { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }

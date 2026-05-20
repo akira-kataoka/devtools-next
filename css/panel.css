@@ -106,6 +106,7 @@ textarea {
   background: #0a1224; border: 1px solid var(--line); border-radius: 6px;
   padding: 8px; font: 11px/1.4 ui-monospace, Consolas, monospace;
   white-space: pre; word-break: normal;
+  user-select: text; /* 明示: Ctrl+A で選択可能、コード全体ドラッグ選択も可 */
 }
 /* Apex 実行結果など長文の場合は折返し許容 */
 #apexResult.code, #restResult.code { white-space: pre-wrap; word-break: break-word; }
