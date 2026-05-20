@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.2.0 (2026-05-20 12:50)** — Picker filter / design apiError context 検証:
+  - **🧪 Picker 検索フィルタの特殊文字対応**: `String.includes` (regex 非使用) で `'` / `\\` / `()` 等の特殊文字エスケープ不要を確認 (picker.js:309 `it.hay.includes(q)`)。**例: "Account's Owner" / "(Custom)" / "Field\\Path" すべて正常マッチ**
+  - **🧪 design-docs.js apiError の context 文字列確認**:
+    - obj 指定型 (describe/objectDef/ER 図 等) は `describe(${obj})` でオブジェクト名込み ✅
+    - org 全体型 (Profile/PermissionSet/ApexClass/Flow 一覧) は `"Profile 取得"` 等のラベルのみ (正しい設計) ✅
 - **v2.1.0 (2026-05-20 12:45)** — README に popup SOQL 履歴仕様明記 + 動作検証 3 件:
   - **📖 README に「popup SOQL 履歴の仕様」セクション追加**: `HISTORY_MAX = 10` (popup.js:317) は非ピン留めのみ適用、ピン留めは件数制限なし。同一クエリ重複防止 + ピン状態維持の挙動も明記
   - **🧪 動作検証 3 件 (修正不要)**:
