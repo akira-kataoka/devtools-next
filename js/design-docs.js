@@ -296,10 +296,11 @@ async function buildApexClassList({ host, sid, apiVersion }) {
 async function buildApexTriggerList({ host, sid, apiVersion }) {
   const r = await runSoql({
     host, sid, apiVersion, tooling: true,
-    soql: `SELECT Id, Name, TableEnumOrId, UsageBeforeInsert, UsageAfterInsert, UsageBeforeUpdate, UsageAfterUpdate, UsageBeforeDelete, UsageAfterDelete, UsageAfterUndelete, Status, LastModifiedDate FROM ApexTrigger ORDER BY TableEnumOrId, Name LIMIT 500`,
+    soql: `SELECT Id, Name, TableEnumOrId, UsageBeforeInsert, UsageAfterInsert, UsageBeforeUpdate, UsageAfterUpdate, UsageBeforeDelete, UsageAfterDelete, UsageAfterUndelete, Status, LengthWithoutComments, LastModifiedDate FROM ApexTrigger ORDER BY TableEnumOrId, Name LIMIT 500`,
   });
   if (!r.ok) throw apiError("Apex トリガ一覧の取得に失敗しました", r);
-  const headers = ["No", "トリガ名", "対象オブジェクト", "BI", "AI", "BU", "AU", "BD", "AD", "AUD", "ステータス", "更新日"];
+  const statusLabel = (s) => ({ "Active": "○ 有効", "Inactive": "− 無効", "Deleted": "✗ 削除済" }[s] || s);
+  const headers = ["No", "トリガ名", "対象オブジェクト", "BI", "AI", "BU", "AU", "BD", "AD", "AUD", "ステータス", "コードサイズ", "更新日"];
   const rows = (r.data.records || []).map((p, i) => ({
     "No": i + 1,
     "トリガ名": p.Name,
@@ -311,7 +312,8 @@ async function buildApexTriggerList({ host, sid, apiVersion }) {
     "BD": p.UsageBeforeDelete ? "○" : "",
     "AD": p.UsageAfterDelete ? "○" : "",
     "AUD": p.UsageAfterUndelete ? "○" : "",
-    "ステータス": p.Status,
+    "ステータス": statusLabel(p.Status),
+    "コードサイズ": p.LengthWithoutComments != null ? fmtBytes(p.LengthWithoutComments) : "",
     "更新日": fmtDate(p.LastModifiedDate),
   }));
   // v2.14.0: 凡例セクションを別途追加 (業務担当向け)
@@ -1308,7 +1310,15 @@ async function buildLwcDetail({ host, sid, apiVersion, obj }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, FilePath, Format, Source FROM LightningComponentResource WHERE LightningComponentBundleId='${b.Id}' ORDER BY FilePath LIMIT 100`,
   });
+  // バンドル内ファイルを優先順 (html → js → xml → css → svg → json → 他) でソートして可読性向上
   const resources = rR.ok ? (rR.data.records || []) : [];
+  const fmtOrder = { "html": 1, "js": 2, "xml": 3, "css": 4, "svg": 5, "json": 6 };
+  resources.sort((a, b) => {
+    const ao = fmtOrder[(a.Format || "").toLowerCase()] || 99;
+    const bo = fmtOrder[(b.Format || "").toLowerCase()] || 99;
+    if (ao !== bo) return ao - bo;
+    return (a.FilePath || "").localeCompare(b.FilePath || "");
+  });
   const fileHeaders = ["No", "ファイル名", "形式", "文字数", "サイズ", "先頭 80 文字 (プレビュー)"];
   const fileRows = resources.map((res, i) => {
     const filename = (res.FilePath || "").split("/").pop();

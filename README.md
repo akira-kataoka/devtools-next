@@ -17,6 +17,10 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.65.0 (2026-05-20 19:59)** — 🚨 ユーザー要望 Phase 56: ApexTrigger コードサイズ + LWC バンドル並び順 + Inspector pill 改善:
+  - **🐛 buildApexTriggerList**: SOQL に LengthWithoutComments 追加、ステータスを絵文字付き (○ 有効 / − 無効 / ✗ 削除済)、新規列「コードサイズ」(fmtBytes 自動単位) 追加
+  - **🐛 buildLwcDetail バンドル内ファイル並び順**: html → js → xml → css → svg → json → 他 の優先順でソート (LWC 開発時の自然な閲覧順)
+  - **🐛 panel.js Inspector pill**: 項目数・値あり件数を 3 桁区切り (toLocaleString) に + tooltip 追加 (「describe の全項目数」「null/空白/false を除いた値があるフィールド数」)
 - **v2.64.0 (2026-05-20 19:55)** — 🚨 ユーザー要望 Phase 55: AppList 件数 + README ヘルパーリファレンス:
   - **🐛 buildAppList note**: 「合計 N アプリ」→「AppDefinition N 件 / AppMenuItem M 件」と 2 種類の件数を分けて明示
   - **📚 README に「設計書フォーマット用ヘルパー」リファレンス追加**: design-docs.js の `fmtNum / fmtBytes / fmtTrunc / fmtDate` の用途と例を表で整理、開発者が同じパターンで他設計書を改修できるよう

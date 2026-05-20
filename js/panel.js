@@ -1571,7 +1571,8 @@ async function doInspect(opts = {}) {
     return v !== null && v !== undefined && v !== "" && v !== false;
   }).length;
   meta.innerHTML = `<span class="pill ok">${escape(objName)}</span> <span class="pill">${escape(id)}</span> ` +
-    `<span class="pill">${fieldCount} 項目 / 値あり ${filledCount}</span> ${dt}ms`;
+    `<span class="pill" title="describe の全項目数">${fieldCount.toLocaleString()} 項目</span> ` +
+    `<span class="pill" title="null/空白/false を除いた値があるフィールド数">値あり ${filledCount.toLocaleString()}</span> ${dt}ms`;
 
   renderInspectorFields();
   if (opts.restoreScrollTop) {
