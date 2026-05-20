@@ -17,6 +17,10 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.57.0 (2026-05-20 17:35)** — 🚨 Phase 47: manifest description を最新化:
+  - **🐛 manifest.json description**: 「設計書20種」→「設計書 22 種類 (業務向け凡例付き)」に最新化、全角/半角スペースを統一 (レコードInspector → レコード Inspector、API URLビルダー → API URL ビルダー、Limitsダッシュボード → Limits ダッシュボード)、末尾「自動アップデート。」→「自動アップデートを提供します。」 ですます調 に統一
+  - **🧪 console.log 15 箇所点検済**: 全て `[DevToolsNext]` プレフィックス付きの診断ログ (stale request discard / init error / datalist refresh) で適切。修正不要
+  - **🧪 CSS @media 3 箇所点検済**: panel.css 内 `max-width 600/900` の breakpoint は別要素 (kbd-hint / picker-kbd-hint / Limits mobile) を制御、統合不要
 - **v2.56.0 (2026-05-20 17:30)** — 🔍 検証サイクル: Phase 46 既存実装の確認 (修正不要):
   - **🧪 panel.css field-row-header**: 既に sticky 実装済 (top:0, z-index:2 で長レコードでも先頭が常時可視)
   - **🧪 popup.css .history-item**: flex + ellipsis truncate で既に最適レイアウト
