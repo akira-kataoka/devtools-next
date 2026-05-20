@@ -1,8 +1,10 @@
 // popup.js – tab routing, SF info loading, SOQL/REST/ID utilities.
 
+// v3.87.0: Phase 177 — dead code 削除 (sfFetch / to18CharId / lookupPrefix / recordsToCsv 撤去)
+// これらは popup の SOQL/ID 解析/API タブで使われていたが v2.78.0 と v2.80.0 で UI が撤去され dead 化していた
 import {
   getActiveSfTab, getSessionId, parseOrgIdFromSid, toApiHost,
-  runSoql, sfFetch, getUserInfo, to18CharId, lookupPrefix, recordsToCsv,
+  runSoql, getUserInfo,
 } from "./sf-api.js";
 
 const state = {
@@ -35,8 +37,6 @@ async function init() {
     bindEvents();
     renderLinks();
     await refreshSession();
-    // v3.86.0: renderHistory() は v2.78.0 で popup から SOQL タブを撤去したため、id="soqlHistory" が存在せず常に早期 return する
-    // dead な chrome.storage.local.get 呼出を init から削除 (popup 起動の毎回 1 回ぶん I/O 削減)
     await renderLoginAsHistory();
   } catch (e) {
     console.error("popup init error:", e);
@@ -212,48 +212,14 @@ function bindEvents() {
 
   $on("info-apiver", "change", (e) => { state.apiVersion = e.target.value; });
 
-  // SOQL タブ関連 (popup 簡素化で撤廃済) — null セーフ
-  $on("btnRunSoql", "click", doSoql);
-  $on("btnExportCsv", "click", exportCsv);
-  $on("btnClearHistory", "click", clearHistory);
-  $on("soqlText", "keydown", (e) => {
-    if (e.isComposing || e.keyCode === 229) return;
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") doSoql();
-  });
+  // v3.87.0: Phase 177 で dead 化していた SOQL/ID 解析/API タブのバインディングを削除
+  // (v2.78.0 で popup から SOQL タブと API タブを撤去、v2.80.0 で ID 解析セクションを撤去後、$on null-safe で残っていたが完全に到達不能だった)
 
   // クイックログイン (Login as User) - ホームタブで保持
   $on("btnLoginAsSearch", "click", searchUsersForLogin);
   $on("loginAsSearch", "keydown", (e) => {
     if (e.isComposing || e.keyCode === 229) return;
     if (e.key === "Enter") searchUsersForLogin();
-  });
-
-  // ID 解析 - ホームタブで保持
-  $on("btnParseId", "click", doParseId);
-  $on("btnOpenId", "click", openIdInOrg);
-  let _idTimer = null;
-  $on("idInput", "input", (e) => {
-    if (_idTimer) clearTimeout(_idTimer);
-    const v = e.target.value.trim();
-    if (/^[a-zA-Z0-9]{15}$/.test(v) || /^[a-zA-Z0-9]{18}$/.test(v)) {
-      _idTimer = setTimeout(() => doParseId(), 250);
-    }
-  });
-  $on("idInput", "keydown", (e) => {
-    if (e.key === "Enter") { e.preventDefault(); doParseId(); }
-  });
-
-  // API タブ関連 (popup 簡素化で撤廃済) — null セーフ
-  $on("btnApiSend", "click", doApiCall);
-  $on("btnApiLimits", "click", () => {
-    const m = document.getElementById("apiMethod"); if (m) m.value = "GET";
-    const p = document.getElementById("apiPath"); if (p) p.value = `/services/data/v${state.apiVersion}/limits`;
-    doApiCall();
-  });
-  $on("btnApiVersions", "click", () => {
-    const m = document.getElementById("apiMethod"); if (m) m.value = "GET";
-    const p = document.getElementById("apiPath"); if (p) p.value = `/services/data`;
-    doApiCall();
   });
 
   // 全画面で開く — フッタリンクと最上部 CTA の両方に対応
@@ -408,141 +374,9 @@ async function runQuickAction(act) {
   if (map[act]) chrome.tabs.create({ url: map[act] });
 }
 
-async function doSoql() {
-  if (!state.sid) { toast("⚠ 先に Salesforce タブへ接続してください", { kind: "warn" }); return; }
-  const soql = document.getElementById("soqlText").value.trim();
-  const tooling = document.getElementById("soqlTooling").checked;
-  const runBtn = document.getElementById("btnRunSoql");
-  if (!soql) { toast("⚠ クエリを入力してください", { kind: "warn" }); return; }
-  setStatus("⏳ SOQL を実行しています…");
-  if (runBtn) { runBtn.disabled = true; runBtn.style.opacity = "0.6"; }
-  const t0 = performance.now();
-  const r = await runSoql({ host: state.host, sid: state.sid, soql, apiVersion: state.apiVersion, tooling });
-  const dt = Math.round(performance.now() - t0);
-  if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; }
-  if (!r.ok) {
-    document.getElementById("soqlMeta").textContent = `❌ クエリ実行に失敗しました (HTTP ${r.status}) — ${formatError(r.data)}`;
-    document.getElementById("soqlResult").innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;
-    setStatus("❌ 実行に失敗しました");
-    state.lastRecords = null;
-    await pushHistory({ soql, tooling, ok: false, count: 0, ms: dt, status: r.status });
-    return;
-  }
-  const recs = (r.data && r.data.records) || [];
-  state.lastRecords = recs;
-  document.getElementById("soqlMeta").textContent =
-    `✅ 取得 ${recs.length} 件 / 合計 ${r.data.totalSize ?? recs.length} 件 / ${dt}ms${tooling ? " (Tooling API)" : ""}`;
-  document.getElementById("soqlResult").innerHTML = recordsToTableHtml(recs);
-  setStatus("✓ 成功しました");
-  await pushHistory({ soql, tooling, ok: true, count: recs.length, ms: dt, status: r.status });
-}
-
-// ====== SOQL 履歴 (chrome.storage.local, 最大10件) ======
-const HISTORY_KEY = "soqlHistory";
-const HISTORY_MAX = 10;
-
-async function pushHistory(entry) {
-  const { [HISTORY_KEY]: hist = [] } = await chrome.storage.local.get(HISTORY_KEY);
-  // 同一クエリ連投の場合は既存を削除して先頭へ。ただしピン留め項目は維持
-  const existed = hist.find((h) => h.soql === entry.soql && h.tooling === entry.tooling);
-  const pinned = !!(existed && existed.pinned);
-  const filtered = hist.filter((h) => !(h.soql === entry.soql && h.tooling === entry.tooling));
-  filtered.unshift({ ...entry, ts: Date.now(), pinned });
-  // ピン留めを上に、非ピンを下に保ちつつ非ピンを最大 HISTORY_MAX 件に剪定
-  const pin = filtered.filter((h) => h.pinned);
-  const free = filtered.filter((h) => !h.pinned).slice(0, HISTORY_MAX);
-  const pruned = [...pin, ...free];
-  await chrome.storage.local.set({ [HISTORY_KEY]: pruned });
-  await renderHistory();
-}
-
-async function renderHistory() {
-  const root = document.getElementById("soqlHistory");
-  if (!root) return;
-  const { [HISTORY_KEY]: hist = [] } = await chrome.storage.local.get(HISTORY_KEY);
-  if (!hist.length) {
-    root.innerHTML = `<div class="meta">履歴はまだありません。SOQL を実行するとここに最大 10 件保存します (長押しでピン留め / ダブルクリックで削除できます)</div>`;
-    return;
-  }
-  // 件数サマリ (ピン留め / 非ピン)
-  const pinCount = hist.filter((h) => h.pinned).length;
-  const freeCount = hist.length - pinCount;
-  root.innerHTML = `<div class="meta" style="padding:4px 6px;font-size:10px">📋 履歴 ${hist.length} 件${pinCount ? ` (📌 ピン留め ${pinCount} 件 / 通常 ${freeCount} 件)` : ""}</div>`;
-  hist.forEach((h, idx) => {
-    const el = document.createElement("div");
-    el.className = "history-item" + (h.pinned ? " pinned" : "");
-    const time = new Date(h.ts).toLocaleTimeString();
-    el.innerHTML = `
-      ${h.pinned ? `<span class="qbadge pin" title="ピン留め中">📌</span>` : ""}
-      <span class="qbadge ${h.ok ? "ok" : "err"}">${h.ok ? "✓" : "✗"}</span>
-      ${h.tooling ? `<span class="qbadge tool">T</span>` : ""}
-      <span class="qtext" title="クリックでクエリを復元します / ダブルクリックで削除 / 長押しでピン留めの切替\n${escape(h.soql)}">${escape(h.soql)}</span>
-      <span class="qmeta">${h.count}件 ${h.ms}ms ${time}</span>
-    `;
-    // クリック=復元
-    el.addEventListener("click", () => {
-      if (el._suppressed) return;
-      document.getElementById("soqlText").value = h.soql;
-      document.getElementById("soqlTooling").checked = !!h.tooling;
-      toast("📋 クエリを復元しました", { kind: "ok" });
-    });
-    // ダブルクリック=削除
-    el.addEventListener("dblclick", async (e) => {
-      e.preventDefault();
-      el._suppressed = true;
-      await deleteHistoryAt(idx);
-      toast("🗑 履歴を削除しました", { kind: "warn" });
-    });
-    // 長押し (500ms) = ピン留め切替
-    let pressTimer = null;
-    const startPress = (e) => {
-      pressTimer = setTimeout(async () => {
-        pressTimer = null;
-        el._suppressed = true;
-        await togglePinAt(idx);
-      }, 500);
-    };
-    const cancelPress = () => {
-      if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    };
-    el.addEventListener("mousedown", startPress);
-    el.addEventListener("mouseup", cancelPress);
-    el.addEventListener("mouseleave", cancelPress);
-    el.addEventListener("touchstart", startPress);
-    el.addEventListener("touchend", cancelPress);
-
-    root.appendChild(el);
-  });
-}
-
-async function deleteHistoryAt(index) {
-  const { [HISTORY_KEY]: hist = [] } = await chrome.storage.local.get(HISTORY_KEY);
-  hist.splice(index, 1);
-  await chrome.storage.local.set({ [HISTORY_KEY]: hist });
-  await renderHistory();
-}
-async function togglePinAt(index) {
-  const { [HISTORY_KEY]: hist = [] } = await chrome.storage.local.get(HISTORY_KEY);
-  if (!hist[index]) return;
-  hist[index].pinned = !hist[index].pinned;
-  // 再ソート: pinned が先、各群内は ts 降順
-  hist.sort((a, b) => {
-    if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
-    return (b.ts || 0) - (a.ts || 0);
-  });
-  await chrome.storage.local.set({ [HISTORY_KEY]: hist });
-  await renderHistory();
-  toast(hist[0] && hist[0].pinned ? "📌 ピン留めしました" : "📌 ピンを外しました", { kind: "ok" });
-}
-
-async function clearHistory() {
-  // ピン留めは消さない
-  const { [HISTORY_KEY]: hist = [] } = await chrome.storage.local.get(HISTORY_KEY);
-  const kept = hist.filter((h) => h.pinned);
-  await chrome.storage.local.set({ [HISTORY_KEY]: kept });
-  await renderHistory();
-  toast(kept.length ? `🗑 ピン留め ${kept.length} 件を残し、その他の履歴を削除しました` : "🗑 履歴をすべて削除しました", { kind: "warn" });
-}
+// v3.87.0: Phase 177 — doSoql / pushHistory / renderHistory / deleteHistoryAt / togglePinAt / clearHistory を削除
+// (v2.78.0 で popup から SOQL タブを撤去後、これらの関数は呼び出し元 (dead な $on バインディング) のみで dead 化していた)
+// レガシー HISTORY_KEY ("soqlHistory") は Phase 176 で OWNED_NON_SFDT に追加済 → 「全削除」で除去される
 
 // ====== クイックログイン (Login as User) ======
 // v2.83.0 Team G: 検索履歴と最近ログインしたユーザ
@@ -693,111 +527,7 @@ function loginAsUser(u) {
   toast(`👤 ${u.Name} さんとしてログインします`, { kind: "ok" });
 }
 
-function exportCsv() {
-  if (!state.lastRecords || !state.lastRecords.length) { toast("📭 エクスポート対象がありません (先に SOQL を実行してください)", { kind: "warn" }); return; }
-  const csv = recordsToCsv(state.lastRecords);
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  chrome.downloads
-    ? chrome.downloads.download({ url, filename: `soql-${Date.now()}.csv` })
-    : window.open(url);
-}
-
-function recordsToTableHtml(records) {
-  if (!records.length) return `<div class="meta">該当なし</div>`;
-  const cols = new Set();
-  records.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
-  const headers = Array.from(cols);
-  const head = `<tr>${headers.map((h) => `<th class="sortable" data-col="${escape(h)}" title="クリックで ${escape(h)} 列をソート">${escape(h)}</th>`).join("")}</tr>`;
-  const rows = records.map((r) =>
-    `<tr>${headers.map((h) => {
-      const raw = r[h];
-      const val = stringify(raw);
-      const isNested = raw && typeof raw === "object" && raw.attributes;
-      const cls = "cell-copyable" + (isNested ? " cell-nested" : "");
-      const rawAttr = isNested ? ` data-raw-value="${escape(JSON.stringify(raw))}"` : "";
-      // ネストセルは tooltip に整形 JSON プレビュー (max 280 文字)
-      let tip = "ダブルクリックでコピー";
-      if (isNested) {
-        const pretty = JSON.stringify(raw, null, 2);
-        const preview = pretty.length > 280 ? pretty.substring(0, 280) + "\n…(切詰)" : pretty;
-        tip = `dblclick で raw JSON コピー:\n${preview}`;
-      }
-      return `<td class="${cls}"${rawAttr} title="${escape(tip)}">${escape(val)}</td>`;
-    }).join("")}</tr>`
-  ).join("");
-  setTimeout(() => {
-    document.querySelectorAll("#soqlResult th.sortable:not([data-sort-bound])").forEach((th) => {
-      th.dataset.sortBound = "true";
-      th.addEventListener("click", () => sortTableByTh(th));
-    });
-    document.querySelectorAll("#soqlResult td.cell-copyable:not([data-copy-bound])").forEach((td) => {
-      td.dataset.copyBound = "true";
-      td.addEventListener("dblclick", () => {
-        const txt = td.dataset.rawValue || td.textContent;
-        navigator.clipboard.writeText(txt).then(() => toast(`📋 コピー: ${txt.substring(0, 30)}${txt.length > 30 ? "…" : ""}`, { kind: "ok" }));
-      });
-    });
-  }, 0);
-  return `<table>${head}${rows}</table>`;
-}
-
-// popup 用: th クリックで in-place ソート (asc → desc → unsort トグル)
-function sortTableByTh(th) {
-  const table = th.closest("table");
-  if (!table) return;
-  const idx = Array.prototype.indexOf.call(th.parentElement.children, th);
-  const tbody = table.tBodies[0] || table;
-  const cur = th.dataset.sortDir || "";
-  const next = cur === "asc" ? "desc" : (cur === "desc" ? "" : "asc");
-  table.querySelectorAll("th.sortable").forEach((other) => { delete other.dataset.sortDir; });
-  if (next) th.dataset.sortDir = next;
-  if (!tbody.dataset.originalOrder) {
-    tbody.dataset.originalOrder = "true";
-    Array.from(tbody.rows).forEach((tr, i) => { tr.dataset.origIdx = String(i); });
-  }
-  const rows = Array.from(tbody.querySelectorAll("tr")).filter((tr) => tr.cells.length > idx && !tr.querySelector("th"));
-  if (!next) {
-    rows.sort((a, b) => (parseInt(a.dataset.origIdx, 10) || 0) - (parseInt(b.dataset.origIdx, 10) || 0));
-  } else {
-    const dir = next === "asc" ? 1 : -1;
-    rows.sort((a, b) => {
-      const av = a.cells[idx] ? a.cells[idx].textContent : "";
-      const bv = b.cells[idx] ? b.cells[idx].textContent : "";
-      const an = parseFloat(av), bn = parseFloat(bv);
-      if (!isNaN(an) && !isNaN(bn) && /^-?\d+(\.\d+)?$/.test(av.trim()) && /^-?\d+(\.\d+)?$/.test(bv.trim())) {
-        return (an - bn) * dir;
-      }
-      return av.localeCompare(bv, "ja") * dir;
-    });
-  }
-  rows.forEach((r) => tbody.appendChild(r));
-}
-
-function stringify(v) {
-  if (v == null) return "";
-  if (typeof v === "object") {
-    // SF ネストリレーション (例 Account.Owner) は { attributes:{...}, Name:"...", ... } で来る
-    // attributes を除いた代表項目を Name / Subject / Id 優先で平坦化 (panel と統一)
-    if (v.attributes && typeof v.attributes === "object") {
-      const fields = Object.keys(v).filter((k) => k !== "attributes");
-      if (v.records && Array.isArray(v.records)) {
-        return `[${v.records.length} 件のサブクエリ]`;
-      }
-      const prefer = ["Name", "Subject", "Title", "DeveloperName", "MasterLabel", "FullName"];
-      for (const p of prefer) {
-        if (fields.includes(p) && v[p] != null) {
-          const id = fields.includes("Id") && v.Id ? ` [${String(v.Id).substring(0, 18)}]` : "";
-          return `${stringify(v[p])}${id}`;
-        }
-      }
-      if (fields.length) return `${fields[0]}=${stringify(v[fields[0]])}`;
-      return "{}";
-    }
-    return JSON.stringify(v);
-  }
-  return String(v);
-}
+// v3.87.0: Phase 177 — exportCsv / recordsToTableHtml / sortTableByTh / stringify を削除 (popup SOQL タブ撤去後の dead code)
 function escape(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
@@ -807,59 +537,7 @@ function formatError(d) {
   return JSON.stringify(d);
 }
 
-async function doParseId() {
-  const raw = document.getElementById("idInput").value.trim();
-  if (!/^[a-zA-Z0-9]{15,18}$/.test(raw)) {
-    document.getElementById("idResult").innerHTML = `<div class="meta">15 桁または 18 桁の英数字 ID を入力してください</div>`;
-    return;
-  }
-  const id15 = raw.substring(0, 15);
-  const id18 = to18CharId(id15);
-  const prefix = raw.substring(0, 3);
-  const objGuess = lookupPrefix(raw);
-  const recordUrl = state.host ? `https://${state.host}/${raw}` : "(Salesforce に未接続)";
-
-  document.getElementById("idResult").innerHTML = `
-    <div class="kv"><span>15 桁 ID</span><code>${escape(id15)}</code></div>
-    <div class="kv"><span>18 桁 ID</span><code>${escape(id18 || "-")}</code><button class="mini" id="cp18" title="18 桁 ID をクリップボードにコピーします">コピー</button></div>
-    <div class="kv"><span>Key Prefix (先頭 3 文字)</span><code>${escape(prefix)}</code></div>
-    <div class="kv"><span>推定オブジェクト</span><code>${escape(objGuess || "-")}</code></div>
-    <div class="kv"><span>レコード URL</span><code>${escape(recordUrl)}</code></div>
-  `;
-  const cp = document.getElementById("cp18");
-  if (cp) cp.addEventListener("click", () => {
-    navigator.clipboard.writeText(id18 || "").then(() => toast(`📋 18 桁 ID をコピーしました: ${id18}`, { kind: "ok" }));
-  });
-}
-
-async function openIdInOrg() {
-  const raw = document.getElementById("idInput").value.trim();
-  if (!/^[a-zA-Z0-9]{15,18}$/.test(raw)) { toast("⚠ 15 桁または 18 桁の有効な Salesforce ID を入力してください", { kind: "warn" }); return; }
-  if (!state.host) { toast("⚠ Salesforce のタブを開いてから実行してください", { kind: "warn" }); return; }
-  chrome.tabs.create({ url: `https://${state.host}/${raw}` });
-  toast(`🔍 レコード ${raw} を新しいタブで開きました`, { kind: "ok" });
-}
-
-async function doApiCall() {
-  if (!state.sid) { toast("⚠ 先に Salesforce タブへ接続してください", { kind: "warn" }); return; }
-  const method = document.getElementById("apiMethod").value;
-  const path = document.getElementById("apiPath").value.trim();
-  const body = document.getElementById("apiBody").value.trim();
-  const sendBtn = document.getElementById("btnApiSend");
-  if (!path) { toast("⚠ REST API パスを入力してください", { kind: "warn" }); return; }
-  setStatus("⏳ API を呼び出しています…");
-  if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = "0.6"; }
-  const t0 = performance.now();
-  const r = await sfFetch({
-    host: state.host, sid: state.sid, path, method,
-    body: body ? body : null,
-  });
-  const dt = Math.round(performance.now() - t0);
-  if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = ""; }
-  document.getElementById("apiMeta").textContent = `${r.ok ? "✅" : "❌"} HTTP ${r.status} / ${dt}ms`;
-  document.getElementById("apiResult").textContent = JSON.stringify(r.data, null, 2);
-  setStatus(r.ok ? "✓ 成功しました" : "❌ 失敗しました");
-}
+// v3.87.0: Phase 177 — doParseId / openIdInOrg / doApiCall を削除 (popup から ID 解析セクション・API タブが撤去された後の dead code)
 
 async function renderLinks() {
   // カテゴリ別グルーピング: Setup / 開発 / 監視 / セキュリティ
