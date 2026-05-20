@@ -3548,6 +3548,7 @@ function recordsTable(records) {
     <span title="🔍 表内検索 — 全列を対象にリアルタイム絞込み、Esc でクリア、各列ヘッダのクリックでソート (昇順→降順→元順)">🔍</span>
     <input class="table-filter-input" data-target="${tableId}" placeholder="🔎 表内を絞り込む… (全列対象 / Esc でクリア / 列ヘッダクリックでソート)" title="全列を対象にリアルタイム絞込みします。Esc でクリア。列ヘッダクリックでソート (昇順→降順→元順)" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:4px 8px;border-radius:4px;font-size:11px" />
     <span class="table-filter-count" data-target="${tableId}" title="表示中件数 / 全件数">${records.length} 件</span>
+    <button class="table-md-copy" data-target="${tableId}" title="現在の表 (絞込み後) を Markdown テーブル形式でクリップボードへコピー — Slack / Confluence / Notion / GitHub に貼り付け可能" aria-label="表を Markdown としてコピー" style="background:var(--bg3);color:var(--fg);border:1px solid var(--line);padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer">📋 Markdown</button>
   </div>`;
   const head = `<tr>${headers.map((h) => `<th class="sortable" data-col="${escape(h)}" title="クリックで ${escape(h)} 列をソート (昇順→降順→元順)">${escape(h)}</th>`).join("")}</tr>`;
   // SF ID 形式判定 (15/18桁 英数字、ただし純数値や URL は除外)
@@ -3640,6 +3641,34 @@ function recordsTable(records) {
       });
       inp.addEventListener("keydown", (e) => {
         if (e.key === "Escape") { inp.value = ""; inp.dispatchEvent(new Event("input")); }
+      });
+    });
+    // v3.61.0: 「📋 Markdown」ボタンのバインド — 現在の表 (絞込み後の表示行のみ) を Markdown テーブル形式でコピー
+    document.querySelectorAll(".table-md-copy:not([data-md-bound])").forEach((btn) => {
+      btn.dataset.mdBound = "true";
+      const target = btn.dataset.target;
+      const table = document.getElementById(target);
+      if (!table) return;
+      btn.addEventListener("click", async () => {
+        try {
+          const headerCells = Array.from(table.tHead ? table.tHead.rows[0].cells : table.rows[0].cells);
+          const headerTexts = headerCells.map((th) => th.textContent.trim());
+          const bodyRows = Array.from(table.tBodies[0] ? table.tBodies[0].rows : table.rows)
+            .filter((tr) => !tr.querySelector("th") && tr.style.display !== "none");
+          const escMd = (s) => String(s || "").replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+          const lines = [];
+          lines.push("| " + headerTexts.map(escMd).join(" | ") + " |");
+          lines.push("|" + headerTexts.map(() => " --- ").join("|") + "|");
+          bodyRows.forEach((tr) => {
+            const cells = Array.from(tr.cells).map((td) => escMd(td.textContent));
+            lines.push("| " + cells.join(" | ") + " |");
+          });
+          const md = lines.join("\n");
+          await navigator.clipboard.writeText(md);
+          panelToast(`📋 Markdown テーブルをコピー (${bodyRows.length} 行 / ${md.length} 文字)`, { kind: "ok" });
+        } catch (e) {
+          panelToast("⚠ Markdown コピーに失敗: " + String(e), { kind: "err" });
+        }
       });
     });
   }, 0);
