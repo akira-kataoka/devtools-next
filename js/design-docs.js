@@ -260,7 +260,7 @@ async function buildObjectDef({ host, sid, apiVersion, obj }) {
       ...(childRels.length ? [{ heading: "3. 子リレーション", headers: Object.keys(childRels[0] || {}), rows: childRels }] : []),
       ...(rts.length ? [{ heading: "4. レコードタイプ", headers: Object.keys(rts[0] || {}), rows: rts }] : []),
     ],
-    note: `生成元: /services/data/v${apiVersion}/sobjects/${d.name}/describe`,
+    note: `項目数 ${fmtNum(rows.length)} / 子リレーション ${fmtNum(childRels.length)} / レコードタイプ ${fmtNum(rts.length)} — 業務担当者向け: 「項目定義」シートが入力画面の項目一覧と一致します。「2. 項目定義」を Excel でフィルタ → 「カスタム=○」絞り込みで自組織独自項目のみ抽出できます。新規実装時はこのシートをレビュー対象資料として活用してください。`,
   };
 }
 
@@ -813,7 +813,7 @@ async function buildErDiagram({ host, sid, apiVersion, obj }) {
       makeCoverSection({ docTitle: "ER 図", target: `${d.label} (${d.name}) を起点とした 1-hop`, orgHost: host, revision: "初版" }),
       { heading: "ER 図 (Mermaid)", mermaid },
     ],
-    note: `関連エンティティ ${fmtNum(seen.size - 1)} 件 / 親方向参照 ${fmtNum(parentTotal)} 件 (MD ${fmtNum(parentMD)} + Lookup ${fmtNum(parentLookup)}) / 子方向参照 ${fmtNum(childRendered)} 件 (MD ${fmtNum(childMD)} + Lookup ${fmtNum(childLookup)})${truncMsg}。Mermaid Live Editor (https://mermaid.live) に貼り付けると可視化できます。線種: ||--o{ = Lookup (任意参照) / ||--|{ = Master-Detail (必須参照・カスケード削除) です。`,
+    note: `関連エンティティ ${fmtNum(seen.size - 1)} 件 / 親方向参照 ${fmtNum(parentTotal)} 件 (MD ${fmtNum(parentMD)} + Lookup ${fmtNum(parentLookup)}) / 子方向参照 ${fmtNum(childRendered)} 件 (MD ${fmtNum(childMD)} + Lookup ${fmtNum(childLookup)})${truncMsg}。**業務担当者向け**: 本図はデータ連携の依存関係を示します。**Master-Detail (必須参照・カスケード削除)** = 親レコード削除時に子も自動削除される強い結合。**Lookup (任意参照)** = 親なしでも子だけ存在可能な弱い結合。要件定義書や移行計画でデータ削除順序の検討にご活用ください。**可視化**: https://mermaid.live に貼り付け。`,
   };
 }
 
@@ -988,7 +988,7 @@ async function buildProfileDetail({ host, sid, apiVersion, obj, progress = () =>
     title: `${targetType}詳細レポート: ${targetName}`,
     type: "profileDetail",
     sections,
-    note: `Excel 形式推奨 (各章が別シート)。プロファイル名指定なら '営業ユーザー'、権限セットなら '@MyPermSet_API名' のように @ を先頭に付けてください。`,
+    note: `**業務担当者向け**: Excel 形式での出力を推奨します (各章が別シートに分かれます)。プロファイル名指定なら '営業ユーザー'、権限セットなら '@MyPermSet_API名' のように @ を先頭に付けてください。**用途**: 年次セキュリティ監査・新規ユーザー権限設計・ロール変更時の影響範囲確認 等。各章 (1.オブジェクト権限 / 2.FLS / 3.Apex 4.VF 5.タブ 6.SOQL 7.外部参照 8.IP 9.App 可視性) を分けて承認回付できます。`,
   };
 }
 
@@ -1436,7 +1436,7 @@ async function buildFlowDetail({ host, sid, apiVersion, obj }) {
     title: `フロー設計図: ${flow.MasterLabel} (${obj}) v${flow.VersionNumber}`,
     type: "flowDetail",
     sections,
-    note: `要素総数: ${fmtNum(totalElements)} 件${counts ? ` (内訳: ${counts})` : ""} / Salesforce Flow metadata から各要素を抽出 / 要素 0 件のセクションは省略 / Status=Draft の場合は最新の保存版を表示`,
+    note: `要素総数: ${fmtNum(totalElements)} 件${counts ? ` (内訳: ${counts})` : ""} / 要素 0 件のセクションは省略 / Status=Draft の場合は最新の保存版を表示。**業務担当者向け**: 本設計図はフロー (画面/レコードトリガ/スケジュール) の処理ステップを可視化します。要件変更時の影響分析・障害切分・新人引継ぎ資料としてご活用ください。「割当 (assignment)」「決定 (decision)」「ループ」等は要件定義書の業務フロー図と対応付けて読むと理解しやすくなります。`,
   };
 }
 
@@ -1592,7 +1592,7 @@ async function buildApexDetail({ host, sid, apiVersion, obj }) {
     title: `Apex 設計図: ${c.Name}`,
     type: "apexDetail",
     sections,
-    note: `SymbolTable はコンパイルが成功している場合のみ取得可能 / IsValid=false なら Setup > Apex クラスから再保存後に再実行してください / 「7. 参照トリガ」はクラス名を本文に含むトリガを最大 50 件まで列挙`,
+    note: `SymbolTable はコンパイルが成功している場合のみ取得可能 / IsValid=false なら Setup > Apex クラスから再保存後に再実行 / 「7. 参照トリガ」はクラス名を本文に含むトリガを最大 50 件まで列挙。**業務担当者向け**: 本設計図はカスタムコード (Apex クラス) の構造と依存関係を示します。Salesforce バージョンアップ前の互換性チェック・保守引継ぎ資料・コードレビュー記録としてご活用ください。コードレビュー担当者は「メソッド」「内部クラス」「参照」を見れば概要を把握できます。`,
   };
 }
 
@@ -1684,7 +1684,7 @@ async function buildLwcDetail({ host, sid, apiVersion, obj }) {
     title: `LWC 設計図: ${b.MasterLabel} (${b.DeveloperName})`,
     type: "lwcDetail",
     sections,
-    note: `バンドル内ファイル ${fmtNum(fileRows.length)} 件 / 総サイズ ${fmtBytes(totalBundleBytes)} (${fmtNum(totalBundleChars)} 文字) / 「App Builder に公開」が ○ の場合は管理者が Lightning ページに配置可能です`,
+    note: `バンドル内ファイル ${fmtNum(fileRows.length)} 件 / 総サイズ ${fmtBytes(totalBundleBytes)} (${fmtNum(totalBundleChars)} 文字) / 「App Builder に公開」が ○ の場合は管理者が Lightning ページに配置可能。**業務担当者向け**: LWC は画面パーツ (Lightning Web Component) です。Lightning ページ・コミュニティで利用可能な画面部品としての設計記録、改修時の影響範囲確認、保守引継ぎ資料としてご活用ください。「TargetConfigs」シートは管理者が配置できる対象 (RecordPage / HomePage / AppPage 等) を示します。`,
   };
 }
 
@@ -1828,7 +1828,7 @@ async function buildFieldPermMatrix({ host, sid, apiVersion, obj, progress = () 
       ]},
       { heading: "マトリクス", headers, rows },
     ],
-    note: `Excel 形式での出力を推奨します。横列が多いため、Excel の「ウィンドウ枠の固定 (B2 セル)」で左 4 列と先頭行を固定すると見やすくなります`,
+    note: `**業務担当者向け**: Excel 形式での出力を推奨します。横列が多いため Excel の「ウィンドウ枠の固定 (B2 セル)」で左 4 列と先頭行を固定すると見やすくなります。**用途**: 項目レベルセキュリティ (FLS) の年次監査、機微情報の参照権限棚卸し、新規ユーザー権限申請時の影響範囲確認 等。プロファイル/権限セット × 項目の参照可・編集可をマトリクスで一目把握できます。`,
   };
 }
 
