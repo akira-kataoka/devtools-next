@@ -693,6 +693,39 @@ function bindEvents() {
       panelToast(`📋 Apex の実行結果をコピーしました (${txt.length.toLocaleString()} 文字)`, { kind: "ok" });
     } catch (e) { panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" }); }
   });
+  // v3.62.0: Apex Debug ログから「エラーのみ」抽出するトグルボタン
+  // パターン: USER_DEBUG ERROR / FATAL_ERROR / EXCEPTION_THROWN / LIMIT_USAGE / SYSTEM.EXCEPTION
+  // 状態: aria-pressed=false (全表示) / true (エラーのみ)、フルログは _apexFullLog にバックアップ
+  let _apexFullLog = null;
+  $on("btnApexErrorsOnly", "click", () => {
+    const resultEl = document.getElementById("apexResult");
+    if (!resultEl) return;
+    const btn = document.getElementById("btnApexErrorsOnly");
+    const pressed = btn.getAttribute("aria-pressed") === "true";
+    if (pressed) {
+      // 復元
+      if (_apexFullLog != null) resultEl.textContent = _apexFullLog;
+      btn.setAttribute("aria-pressed", "false");
+      btn.textContent = "⚠ エラーのみ";
+      panelToast("📜 全ログ表示に戻しました", { kind: "ok" });
+      return;
+    }
+    const full = resultEl.textContent || "";
+    if (!full.trim()) { panelToast("📭 抽出する Apex ログがありません (まず Apex を実行してください)", { kind: "warn" }); return; }
+    _apexFullLog = full;
+    const lines = full.split(/\r?\n/);
+    const ERR_RE = /USER_DEBUG.*\|\s*ERROR\b|FATAL_ERROR|EXCEPTION_THROWN|LIMIT_USAGE_FOR_NS|SYSTEM\.EXCEPTION|System\.LimitException|FAILURE|\bWARN\b|\bERROR\b/i;
+    const matched = lines.filter((l) => ERR_RE.test(l));
+    if (!matched.length) {
+      panelToast("✓ エラー/警告行はありません (すべて正常実行)", { kind: "ok" });
+      return;
+    }
+    resultEl.textContent = `===== ⚠ エラー/警告行のみ (${matched.length} / ${lines.length} 行) =====\n` + matched.join("\n") +
+      `\n\n===== 「⚠ エラーのみ」ボタンを再クリックで全ログ表示に戻る =====`;
+    btn.setAttribute("aria-pressed", "true");
+    btn.textContent = "📜 全ログ表示";
+    panelToast(`⚠ エラー/警告 ${matched.length} 行を抽出しました (元 ${lines.length} 行)`, { kind: "ok" });
+  });
   $on("btnRestCopy", "click", async () => {
     const resultEl = document.getElementById("restResult");
     const txt = (resultEl && resultEl.textContent) || "";
