@@ -44,6 +44,48 @@ async function init() {
   }
 }
 
+// v3.84.0: Phase 174 — chrome.storage 14 種を一括クリアできる「設定リセット」機能
+// 従来 ⚙ ボタンは「未実装」toast を出すだけだった (5 大指針 ② 「使えない機能改修」違反)
+// 業務シナリオ: 共用 PC で他人の SOQL/Apex draft が残らないようにしたい / デモ前に画面を初期化したい / 14 種の蓄積データを一気に整理したい
+async function showSettingsDialog() {
+  try {
+    const all = await chrome.storage.local.get(null);
+    const keys = Object.keys(all);
+    const sfdtKeys = keys.filter((k) => k.startsWith("sfdt") || k === "savedQueries" || k === "savedApex" || k === "sideCollapsed" || k === "whatsNewCollapsed");
+    // バイト数概算 (JSON.stringify サイズ — クォータ計算には不正確だが目安として十分)
+    let bytes = 0;
+    for (const k of sfdtKeys) {
+      try { bytes += new Blob([JSON.stringify(all[k] ?? null)]).size; } catch {}
+    }
+    const sizeLabel = bytes < 1024 ? `${bytes} B` : bytes < 1048576 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1048576).toFixed(2)} MB`;
+    const ok = window.confirm(
+      `🛠 DevToolsNext 設定リセット\n\n` +
+      `保存されているデータ: ${sfdtKeys.length} キー / 約 ${sizeLabel}\n\n` +
+      `以下を一括クリアします:\n` +
+      `・SOQL/Apex/REST 履歴 (3 種)\n` +
+      `・SOQL/Apex/REST body draft (3 種)\n` +
+      `・Inspector レコード履歴\n` +
+      `・設計書「対象」入力履歴\n` +
+      `・Limits ピン / メタデータ type / SOQL Tooling チェック / Apex Debug ログチェック\n` +
+      `・保存クエリ (savedQueries) / 保存 Apex (savedApex)\n` +
+      `・UI 状態 (サイドバー折りたたみ, 最後に開いた view 等)\n\n` +
+      `⚠ この操作は取り消せません。続行しますか?`
+    );
+    if (!ok) {
+      toast("🚫 キャンセルしました (データはそのまま)", { kind: "warn" });
+      return;
+    }
+    if (sfdtKeys.length === 0) {
+      toast("✓ クリアするデータがありません", { kind: "ok" });
+      return;
+    }
+    await chrome.storage.local.remove(sfdtKeys);
+    toast(`✓ ${sfdtKeys.length} キー (約 ${sizeLabel}) をクリアしました — 履歴 / draft / UI 状態すべてリセット`, { kind: "ok" });
+  } catch (e) {
+    toast(`❌ 設定リセットに失敗しました: ${e.message || e}`, { kind: "err" });
+  }
+}
+
 function bindTabs() {
   document.querySelectorAll(".tab").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -57,9 +99,7 @@ function bindTabs() {
 
 function bindEvents() {
   document.getElementById("btnRefresh").addEventListener("click", refreshSession);
-  document.getElementById("btnSettings").addEventListener("click", () => {
-    chrome.runtime.openOptionsPage ? chrome.runtime.openOptionsPage() : toast("⚠ 設定画面は今後のバージョンで実装予定です (現在は未実装)", { kind: "warn" });
-  });
+  document.getElementById("btnSettings").addEventListener("click", showSettingsDialog);
   // バージョン表示 + 自動アップデート
   const verEl = document.getElementById("versionBadge");
   if (verEl) {
