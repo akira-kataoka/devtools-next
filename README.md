@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.66.0 (2026-05-20 09:50)** — Apex サイズ pill 閾値色分け + ネストセル整形 tooltip:
+  - **🐛 Apex 結果サイズ pill が `logBody` のみで判定**: 従来 ヘッダー `"(コンパイル & 実行 OK)\n\n"` を含めた長さで `3 行 / 0.0 KB` 表示 → log 本体だけで判定し、空ログ時は pill 非表示。**実行ログがない時のノイズ削減**
+  - **✨ Apex サイズ pill に閾値色分け**: `< 1 KB` → `N B` 既定 / `< 500 KB` → 既定 / `500 KB ~ 1 MB` → warn (橙) / `1 MB 超` → err (赤、tooltip に「1MB 超: スクロール重い可能性」)
+  - **✨ cell-nested の title 属性に整形 JSON プレビュー**: 従来「ダブルクリックでコピー (raw JSON)」のみ → 整形 (indent 2) JSON 先頭 280 文字 + 切詰標記。**ブラウザ標準 tooltip で raw データの構造を即座に確認可能** (popup + panel 両方適用)
 - **v1.65.0 (2026-05-20 09:45)** — popup ネスト raw コピー + Apex 結果サイズ表示:
   - **🐛 popup SOQL 結果テーブル cell-nested に dblclick raw JSON コピー対応**: `data-raw-value` 属性に元 JSON を格納、dblclick 時に優先取得 (panel と統一)。**popup でも raw データ取得可能**
   - **✨ popup の `.result td.cell-copyable` と `.cell-nested` スタイル追加**: `🔗` prefix + italic + word-break + hover 背景。panel/tool と視覚統一

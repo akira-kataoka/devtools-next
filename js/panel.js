@@ -2113,9 +2113,14 @@ function recordsTable(records) {
       const idCell = isLikelyId(val);
       const isNested = raw && typeof raw === "object" && raw.attributes;
       const classes = "cell-copyable" + (idCell ? " cell-id" : "") + (isNested ? " cell-nested" : "");
-      const tip = idCell
-        ? "Click: Inspector で開く  /  ダブルクリック: コピー"
-        : (isNested ? "ダブルクリックでコピー (raw JSON)" : "ダブルクリックでコピー");
+      // ネストセルは tooltip に整形 JSON プレビュー (max 280 文字)
+      let tip;
+      if (idCell) tip = "Click: Inspector で開く  /  ダブルクリック: コピー";
+      else if (isNested) {
+        const pretty = JSON.stringify(raw, null, 2);
+        const preview = pretty.length > 280 ? pretty.substring(0, 280) + "\n…(切詰)" : pretty;
+        tip = `dblclick で raw JSON コピー:\n${preview}`;
+      } else tip = "ダブルクリックでコピー";
       // ネストセルは raw JSON を data-raw-value に格納 → dblclick で原データをコピー
       const dataAttrs = (idCell ? ` data-record-id="${escape(val)}"` : "")
         + (isNested ? ` data-raw-value="${escape(JSON.stringify(raw))}"` : "");
@@ -2403,12 +2408,18 @@ async function doRunApex() {
   }
   out.textContent = (success ? "(コンパイル & 実行 OK)\n\n" : "") + logBody;
   // Apex 結果の行数/文字数を meta に追記 (debug log の規模感を可視化)
-  const txt = out.textContent;
-  if (txt) {
+  // ヘッダーのみ (success="(コンパイル & 実行 OK)\n\n") の場合はスキップ
+  const txt = logBody;
+  if (txt && txt.length > 0) {
     const lines = (txt.match(/\n/g) || []).length + 1;
-    const sizeKb = (txt.length / 1024).toFixed(1);
+    const sizeBytes = txt.length;
+    const sizeKb = sizeBytes / 1024;
+    let sizeLabel, pillClass;
+    if (sizeBytes < 1024) { sizeLabel = `${sizeBytes} B`; pillClass = ""; }
+    else if (sizeKb < 1024) { sizeLabel = `${sizeKb.toFixed(1)} KB`; pillClass = sizeKb >= 500 ? "warn" : ""; }
+    else { sizeLabel = `${(sizeKb / 1024).toFixed(1)} MB`; pillClass = "err"; }
     const cur = meta.innerHTML;
-    meta.innerHTML = `${cur} <span class="pill" title="Apex 結果サイズ">${lines.toLocaleString()} 行 / ${sizeKb} KB</span>`;
+    meta.innerHTML = `${cur} <span class="pill ${pillClass}" title="Debug Log サイズ${sizeBytes > 1048576 ? ' (1MB 超: スクロール重い可能性)' : ''}">${lines.toLocaleString()} 行 / ${sizeLabel}</span>`;
   }
 }
 

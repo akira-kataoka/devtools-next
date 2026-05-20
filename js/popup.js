@@ -507,7 +507,14 @@ function recordsToTableHtml(records) {
       const isNested = raw && typeof raw === "object" && raw.attributes;
       const cls = "cell-copyable" + (isNested ? " cell-nested" : "");
       const rawAttr = isNested ? ` data-raw-value="${escape(JSON.stringify(raw))}"` : "";
-      return `<td class="${cls}"${rawAttr} title="${isNested ? "ダブルクリックでコピー (raw JSON)" : "ダブルクリックでコピー"}">${escape(val)}</td>`;
+      // ネストセルは tooltip に整形 JSON プレビュー (max 280 文字)
+      let tip = "ダブルクリックでコピー";
+      if (isNested) {
+        const pretty = JSON.stringify(raw, null, 2);
+        const preview = pretty.length > 280 ? pretty.substring(0, 280) + "\n…(切詰)" : pretty;
+        tip = `dblclick で raw JSON コピー:\n${preview}`;
+      }
+      return `<td class="${cls}"${rawAttr} title="${escape(tip)}">${escape(val)}</td>`;
     }).join("")}</tr>`
   ).join("");
   setTimeout(() => {
