@@ -4,6 +4,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.71.0 (2026-05-20 10:15)** — z-index 階層 panel.css 先頭ドキュメント化 + KBSC tool.html 動作確認:
+  - **📖 panel.css の先頭に z-index 階層コメントブロック追加**: table th (1) → design h3 (2) → design h2 (3) → Picker/Toast (99999) の昇順スタッキングを明示。**将来の sticky 要素追加時の判断基準として参照可能**
+  - **🧪 KBSC が tool.html (フルページ) でも動作確認**: `tool.html:473 / panel.html:408` で同じ `panel.js` を `type="module"` 読込 → `document.addEventListener("keydown")` がフルページとパネルの両環境で発火 (修正不要)
 - **v1.70.0 (2026-05-20 10:10)** — 🎉 累計70リリース節目 - z-index 階層整理 + 機能サマリ:
   - **🐛 設計書プレビューの z-index 階層を修正**: 従来 `h2 z:1 / h3 z:1 / table th z:2` → 修正後 `h2 z:3 / h3 z:2 / table th z:1`。**section header (h2) が常に table th より上に表示** → 長い項目定義テーブルでも `## 2. 項目定義` が画面上端に常時可視
   - **📖 README に v1.70.0 時点機能サマリ追加**: 70 リリース成果を 8 カテゴリ (データ操作/開発/監視/メタデータ/設計書/UI/UX/A11y/自動更新) で一覧化、累計実装機能を俯瞰可能

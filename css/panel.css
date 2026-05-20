@@ -1,3 +1,16 @@
+/*
+  panel.css - DevToolsNext panel/tool 共通スタイル
+
+  Z-INDEX HIERARCHY (small → large stacking order)
+  ──────────────────────────────────────────────────
+  table th sticky          : 1   (Inspector header, grid 列見出し)
+  design-preview h3 sticky : 2
+  design-preview h2 sticky : 3   (section header > table th)
+  Picker overlay           : 99999 (modal)
+  .panel-toast / .toast    : 99999 (toast 通知)
+  ──────────────────────────────────────────────────
+  Sticky 同士の干渉が起きた場合は上記階層を参照
+*/
 :root {
   --bg: #0b1220; --bg2: #111a2e; --bg3: #142447;
   --fg: #e6ecf5; --fg-dim: #9fb0c9;
