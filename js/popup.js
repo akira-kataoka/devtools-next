@@ -654,31 +654,31 @@ async function doApiCall() {
 function renderLinks() {
   // カテゴリ別グルーピング: Setup / 開発 / 監視 / セキュリティ
   const groups = [
-    { title: "⚙️ Setup", links: [
+    { title: "⚙️ 設定 (Setup)", links: [
       ["Setup ホーム", "/lightning/setup/SetupOneHome/home"],
-      ["Object Manager", "/lightning/setup/ObjectManager/home"],
-      ["Custom Settings", "/lightning/setup/CustomSettings/home"],
-      ["Custom Metadata", "/lightning/setup/CustomMetadata/home"],
+      ["オブジェクトマネージャ", "/lightning/setup/ObjectManager/home"],
+      ["カスタム設定", "/lightning/setup/CustomSettings/home"],
+      ["カスタムメタデータ型", "/lightning/setup/CustomMetadata/home"],
     ]},
     { title: "💻 開発", links: [
-      ["Apex Classes", "/lightning/setup/ApexClasses/home"],
-      ["Apex Triggers", "/lightning/setup/ApexTriggers/home"],
-      ["Flows", "/lightning/setup/Flows/home"],
-      ["Connected Apps", "/lightning/setup/ConnectedApplication/home"],
+      ["Apex クラス", "/lightning/setup/ApexClasses/home"],
+      ["Apex トリガ", "/lightning/setup/ApexTriggers/home"],
+      ["フロー (Flow)", "/lightning/setup/Flows/home"],
+      ["接続アプリケーション", "/lightning/setup/ConnectedApplication/home"],
     ]},
     { title: "📊 監視", links: [
-      ["Debug Logs", "/lightning/setup/ApexDebugLogs/home"],
-      ["Scheduled Jobs", "/lightning/setup/ScheduledJobs/home"],
-      ["Apex Jobs", "/lightning/setup/AsyncApexJobs/home"],
-      ["Login History", "/lightning/setup/SetupAuditTrail/home"],
+      ["デバッグログ", "/lightning/setup/ApexDebugLogs/home"],
+      ["スケジュール済みジョブ", "/lightning/setup/ScheduledJobs/home"],
+      ["Apex 非同期ジョブ", "/lightning/setup/AsyncApexJobs/home"],
+      ["設定変更履歴 (Setup Audit Trail)", "/lightning/setup/SetupAuditTrail/home"],
     ]},
     { title: "🔐 セキュリティ", links: [
-      ["Profiles", "/lightning/setup/EnhancedProfiles/home"],
-      ["Permission Sets", "/lightning/setup/PermSets/home"],
-      ["Users", "/lightning/setup/ManageUsers/home"],
-      ["Network Access", "/lightning/setup/NetworkAccess/home"],
-      ["Session Settings", "/lightning/setup/SecuritySession/home"],
-      ["OAuth Settings", "/lightning/setup/OAuthAndOpenIDConnectSettings/home"],
+      ["プロファイル", "/lightning/setup/EnhancedProfiles/home"],
+      ["権限セット", "/lightning/setup/PermSets/home"],
+      ["ユーザ管理", "/lightning/setup/ManageUsers/home"],
+      ["ネットワークアクセス (IP 制限)", "/lightning/setup/NetworkAccess/home"],
+      ["セッション設定", "/lightning/setup/SecuritySession/home"],
+      ["OAuth / OpenID Connect 設定", "/lightning/setup/OAuthAndOpenIDConnectSettings/home"],
     ]},
   ];
   const root = document.getElementById("linkList");

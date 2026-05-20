@@ -8,6 +8,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.27.0 (2026-05-20 15:05)** — 🚨 ユーザー要望 Phase 17: ナビボタンアイコン統一 + 便利リンク日本語化:
+  - **🐛 panel.html / tool.html ナビボタン全 13 個に絵文字プレフィックス統一**: 「SOQL クエリ」→「🔎 SOQL クエリ」、「Apex 実行」→「🟧 Apex 実行」、「REST 探索」→「🌐 REST 探索」、「Describe」→「📖 Describe」、「Limits ダッシュボード」→「📊 Limits ダッシュボード」、「Debug Logs」→「📜 Debug ログ」、「Login History」→「🔐 ログイン履歴」、「Metadata 一覧」→「📦 メタデータ一覧」、「変更セット」→「🔧 変更セット」、「設計書ジェネレータ」→「📋 設計書ジェネレータ」、各ボタンに機能説明 title 追加
+  - **🐛 tool.html CSS**: 重複していた `.nav-btn[data-view="X"]::before { content: ... }` 13 ルールを削除し、`::first-letter` 単一ルールに集約。テキストに絵文字プレフィックスが入ったため二重表示問題を回避
+  - **🐛 popup.js 便利リンク 18 項目を日本語化**: 「⚙️ Setup」→「⚙️ 設定 (Setup)」、「Object Manager」→「オブジェクトマネージャ」、「Custom Settings/Metadata」→「カスタム設定/メタデータ型」、「Apex Classes/Triggers」→「Apex クラス/トリガ」、「Connected Apps」→「接続アプリケーション」、「Debug Logs」→「デバッグログ」、「Scheduled Jobs」→「スケジュール済みジョブ」、「Apex Jobs」→「Apex 非同期ジョブ」、「Login History」→「設定変更履歴 (Setup Audit Trail)」、「Profiles/Permission Sets/Users」→「プロファイル/権限セット/ユーザ管理」、「Network Access」→「ネットワークアクセス (IP 制限)」、「Session/OAuth Settings」→「セッション設定/OAuth・OpenID Connect 設定」
 - **v2.26.0 (2026-05-20 15:00)** — 🚨 ユーザー要望 Phase 16: describe error 統一 + popup クイックアクション/SOQL/API/Whats New:
   - **🐛 design-docs.js**: 残った 5 箇所の `apiError(\`describe(${obj})\`, ...)` を `apiError(\`オブジェクト '${obj}' の describe 取得に失敗しました\`, ...)` に統一 (英語短縮残存撲滅)
   - **🐛 popup.html Whats New**: 「設計書ジェネレータ 20 種」→「設計書ジェネレータ 22 種類 (業務向け凡例付き)」に最新化

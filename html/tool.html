@@ -18,25 +18,11 @@
     @media (max-width: 1000px) {
       .side { width: 60px; overflow: hidden; }
       .nav-btn { font-size: 0; padding: 12px 8px; text-align: center; position: relative; }
+      /* 各ナビボタンのテキスト先頭の絵文字を ::first-letter で 16px 表示 (text 本体は font-size:0 で非表示) */
       .nav-btn::first-letter { font-size: 16px; }
-      /* 絵文字を最初に持つボタンはそれだけ見える */
-      .nav-btn[data-view="inspector"]::before { content: "🔍"; font-size: 16px; }
-      .nav-btn[data-view="dataexport"]::before { content: "📥"; font-size: 16px; }
-      .nav-btn[data-view="apex"]::before { content: "🟧"; font-size: 16px; }
-      .nav-btn[data-view="apiurl"]::before { content: "🔗"; font-size: 16px; }
-      .nav-btn[data-view="rest"]::before { content: "🌐"; font-size: 16px; }
-      .nav-btn[data-view="describe"]::before { content: "📖"; font-size: 16px; }
-      .nav-btn[data-view="limits"]::before { content: "📊"; font-size: 16px; }
-      .nav-btn[data-view="logs"]::before { content: "📜"; font-size: 16px; }
-      .nav-btn[data-view="login"]::before { content: "🔐"; font-size: 16px; }
-      .nav-btn[data-view="metadata"]::before { content: "📦"; font-size: 16px; }
-      .nav-btn[data-view="changeset"]::before { content: "🔧"; font-size: 16px; }
-      .nav-btn[data-view="design"]::before { content: "📋"; font-size: 16px; }
-      .nav-btn[data-view="soql"]::before { content: "Q"; font-size: 14px; font-weight: 700; }
       .nav-sep { font-size: 9px; padding: 8px 4px 2px; text-align: center; }
       .side:hover { width: 220px; }
       .side:hover .nav-btn { font-size: 12px; text-align: left; padding: 9px 12px; }
-      .side:hover .nav-btn::before { content: ""; }
       .side:hover .nav-sep { font-size: 11px; text-align: left; padding: 12px 10px 4px; }
 
       /* 折りたたみ中のホバーツールチップ (右側にラベル表示) */
@@ -87,30 +73,30 @@
 
   <div class="cols">
     <aside class="side">
-      <button class="side-toggle" id="btnSideToggle" title="サイドメニューを折りたたむ / 展開" aria-label="メニュー折りたたみ">◀</button>
+      <button class="side-toggle" id="btnSideToggle" title="サイドメニューの折りたたみ・展開を切り替えます" aria-label="メニュー折りたたみ">◀</button>
       <nav class="nav">
         <div class="nav-sep">🗃️ データ操作</div>
-        <button class="nav-btn active" data-view="soql" data-tooltip="SOQL クエリ">SOQL クエリ</button>
-        <button class="nav-btn" data-view="inspector" data-tooltip="レコード Inspector">🔍 レコード Inspector</button>
-        <button class="nav-btn" data-view="dataexport" data-tooltip="データエクスポート">📥 データエクスポート</button>
+        <button class="nav-btn active" data-view="soql" data-tooltip="SOQL クエリ" title="SOQL クエリを実行します">🔎 SOQL クエリ</button>
+        <button class="nav-btn" data-view="inspector" data-tooltip="レコード Inspector" title="レコードを項目単位で確認します">🔍 レコード Inspector</button>
+        <button class="nav-btn" data-view="dataexport" data-tooltip="データエクスポート" title="オブジェクトのデータを一括取得します">📥 データエクスポート</button>
 
         <div class="nav-sep">💻 開発ツール</div>
-        <button class="nav-btn" data-view="apex" data-tooltip="Apex 実行">Apex 実行</button>
-        <button class="nav-btn" data-view="apiurl" data-tooltip="API URL ビルダー">🔗 API URL ビルダー</button>
-        <button class="nav-btn" data-view="rest" data-tooltip="REST 探索">REST 探索</button>
-        <button class="nav-btn" data-view="describe" data-tooltip="オブジェクト Describe">Describe</button>
+        <button class="nav-btn" data-view="apex" data-tooltip="Apex 実行" title="匿名 Apex を実行します">🟧 Apex 実行</button>
+        <button class="nav-btn" data-view="apiurl" data-tooltip="API URL ビルダー" title="REST API の URL を組み立てます">🔗 API URL ビルダー</button>
+        <button class="nav-btn" data-view="rest" data-tooltip="REST 探索" title="任意の REST API を呼び出します">🌐 REST 探索</button>
+        <button class="nav-btn" data-view="describe" data-tooltip="オブジェクト Describe" title="オブジェクトの describe 情報を表示します">📖 Describe</button>
 
         <div class="nav-sep">📊 監視</div>
-        <button class="nav-btn" data-view="limits" data-tooltip="Limits ダッシュボード">Limits ダッシュボード</button>
-        <button class="nav-btn" data-view="logs" data-tooltip="Debug Logs">Debug Logs</button>
-        <button class="nav-btn" data-view="login" data-tooltip="Login History">Login History</button>
+        <button class="nav-btn" data-view="limits" data-tooltip="Limits ダッシュボード" title="組織の Limits 使用状況を確認します">📊 Limits ダッシュボード</button>
+        <button class="nav-btn" data-view="logs" data-tooltip="Debug ログ" title="最新の Debug ログを取得します">📜 Debug ログ</button>
+        <button class="nav-btn" data-view="login" data-tooltip="ログイン履歴" title="ログイン履歴を取得します">🔐 ログイン履歴</button>
 
         <div class="nav-sep">📦 メタデータ・デプロイ</div>
-        <button class="nav-btn" data-view="metadata" data-tooltip="Metadata 一覧">Metadata 一覧</button>
-        <button class="nav-btn" data-view="changeset" data-tooltip="変更セット / package.xml">変更セット / package.xml</button>
+        <button class="nav-btn" data-view="metadata" data-tooltip="メタデータ一覧" title="メタデータ型ごとの一覧を取得します">📦 メタデータ一覧</button>
+        <button class="nav-btn" data-view="changeset" data-tooltip="変更セット / package.xml" title="変更セット候補から package.xml を生成します">🔧 変更セット / package.xml</button>
 
         <div class="nav-sep">📋 設計書</div>
-        <button class="nav-btn" data-view="design" data-tooltip="設計書ジェネレータ">設計書ジェネレータ</button>
+        <button class="nav-btn" data-view="design" data-tooltip="設計書ジェネレータ" title="22 種類の設計書を生成します">📋 設計書ジェネレータ</button>
       </nav>
     </aside>
 
