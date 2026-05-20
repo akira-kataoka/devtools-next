@@ -1,7 +1,7 @@
 // DevTools パネル本体。inspectedWindow から URL を取って sid を引く。
 import {
   isSalesforceHost, toApiHost, getSessionId, parseOrgIdFromSid,
-  runSoql, sfFetch, recordsToCsv, to18CharId,
+  runSoql, sfFetch, recordsToCsv, to18CharId, getUserInfo,
 } from "./sf-api.js";
 import { generateDesign, markdownToHtml } from "./design-docs.js";
 import { showPicker, invalidatePickerCache } from "./picker.js";
@@ -766,7 +766,14 @@ function bindEvents() {
       else toolingCb.checked = false;
     }
     e.target.value = "";
-    panelToast(`📝 SOQL サンプルを挿入しました (元クエリは上書きされました)`, { kind: "ok" });
+    // v3.71.0: user_id 自動補完の状態を toast で明示
+    if (key === "my_open_cases" && !state.userId) {
+      panelToast(`📝 SOQL サンプルを挿入しました。⚠ ユーザー ID 未取得のため "REPLACE_USER_ID" を実 ID に書き換えてください`, { kind: "warn" });
+    } else if (key === "my_open_cases" && state.userId) {
+      panelToast(`📝 SOQL サンプルを挿入しました (✓ あなたのユーザー ID ${state.userId} を自動補完)`, { kind: "ok" });
+    } else {
+      panelToast(`📝 SOQL サンプルを挿入しました (元クエリは上書きされました)`, { kind: "ok" });
+    }
   });
   // v3.63.0: SOQL 整形ボタン — 主節を大文字化 + 改行で揃え、業務文書として読みやすく
   $on("btnSoqlFormat", "click", () => {
@@ -3039,6 +3046,20 @@ async function reconnect() {
   unlock();
   // v2.6.0: 接続成功後に sObject 一覧を datalist に流し込み (オブジェクト入力欄の補完用)
   refreshSObjectDatalist();
+  // v3.71.0: 現在ユーザー ID を取得して state.userId にキャッシュ (SOQL テンプレートで使用)
+  // 失敗時は state.userId = null のまま (テンプレートは REPLACE_USER_ID プレースホルダで継続動作)
+  refreshCurrentUserId();
+}
+
+async function refreshCurrentUserId() {
+  if (!state.sid || !state.host) return;
+  try {
+    const ui = await getUserInfo({ host: state.host, sid: state.sid, apiVersion: state.apiVersion });
+    if (ui && ui.ok && ui.data && ui.data.user_id) {
+      state.userId = ui.data.user_id;
+      console.log("[DevToolsNext] state.userId cached:", state.userId);
+    }
+  } catch (e) { console.log("[DevToolsNext] userId fetch failed (ignored):", e); }
 }
 
 // =====================================================================
