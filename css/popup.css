@@ -127,6 +127,11 @@ select { font-family: inherit; }
 .result th.sortable:hover { background: #1a2d56; }
 .result th.sortable[data-sort-dir="asc"]::after { content: " ▲"; font-size: 8px; opacity: 0.8; }
 .result th.sortable[data-sort-dir="desc"]::after { content: " ▼"; font-size: 8px; opacity: 0.8; }
+.result td.cell-copyable { cursor: copy; }
+.result td.cell-copyable:hover { color: var(--accent); }
+.result td.cell-nested { color: var(--fg); font-style: italic; word-break: break-word; }
+.result td.cell-nested::before { content: "🔗 "; font-size: 9px; opacity: 0.7; }
+.result td.cell-nested:hover { background: rgba(27,150,255,0.08); }
 .result tr:hover td { background: #112042; }
 .result table tr:nth-child(even) td { background: rgba(27,150,255,0.025); }
 .result table tr:nth-child(even):hover td { background: #112042; }

@@ -4,6 +4,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.65.0 (2026-05-20 09:45)** — popup ネスト raw コピー + Apex 結果サイズ表示:
+  - **🐛 popup SOQL 結果テーブル cell-nested に dblclick raw JSON コピー対応**: `data-raw-value` 属性に元 JSON を格納、dblclick 時に優先取得 (panel と統一)。**popup でも raw データ取得可能**
+  - **✨ popup の `.result td.cell-copyable` と `.cell-nested` スタイル追加**: `🔗` prefix + italic + word-break + hover 背景。panel/tool と視覚統一
+  - **✨ Apex 結果 meta に「行数 / KB サイズ」を追記**: 例 `Success 1234ms 8,521 行 / 312.4 KB` で **debug log の規模感が一目で分かる** (Inspector Reloaded の Query timing breakdown 風)
 - **v1.64.0 (2026-05-20 09:40)** — popup SOQL でもネストリレーション平坦化 (panel と統一):
   - **🐛 popup の `stringify()` も panel と同じネストリレーション平坦化ロジックに統一**: 従来 popup は `JSON.stringify(v)` で raw 表示だった → panel と同じ `Akira Kataoka [005xx...]` 形式に。サブクエリは `[N 件のサブクエリ]` 表示。**popup 460px 幅で SELECT Owner.Name FROM Account 等のリレーション結果が読みやすく**
   - **🧪 Inspector reference 列**: 個別 `renderInspectorFields()` 内で raw v (ID string) を直接使用、`stringify()` 経由しないため平坦化の影響なし (修正不要)

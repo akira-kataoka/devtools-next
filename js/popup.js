@@ -501,12 +501,26 @@ function recordsToTableHtml(records) {
   const headers = Array.from(cols);
   const head = `<tr>${headers.map((h) => `<th class="sortable" data-col="${escape(h)}" title="クリックで ${escape(h)} 列をソート">${escape(h)}</th>`).join("")}</tr>`;
   const rows = records.map((r) =>
-    `<tr>${headers.map((h) => `<td>${escape(stringify(r[h]))}</td>`).join("")}</tr>`
+    `<tr>${headers.map((h) => {
+      const raw = r[h];
+      const val = stringify(raw);
+      const isNested = raw && typeof raw === "object" && raw.attributes;
+      const cls = "cell-copyable" + (isNested ? " cell-nested" : "");
+      const rawAttr = isNested ? ` data-raw-value="${escape(JSON.stringify(raw))}"` : "";
+      return `<td class="${cls}"${rawAttr} title="${isNested ? "ダブルクリックでコピー (raw JSON)" : "ダブルクリックでコピー"}">${escape(val)}</td>`;
+    }).join("")}</tr>`
   ).join("");
   setTimeout(() => {
     document.querySelectorAll("#soqlResult th.sortable:not([data-sort-bound])").forEach((th) => {
       th.dataset.sortBound = "true";
       th.addEventListener("click", () => sortTableByTh(th));
+    });
+    document.querySelectorAll("#soqlResult td.cell-copyable:not([data-copy-bound])").forEach((td) => {
+      td.dataset.copyBound = "true";
+      td.addEventListener("dblclick", () => {
+        const txt = td.dataset.rawValue || td.textContent;
+        navigator.clipboard.writeText(txt).then(() => toast(`📋 コピー: ${txt.substring(0, 30)}${txt.length > 30 ? "…" : ""}`, { kind: "ok" }));
+      });
     });
   }, 0);
   return `<table>${head}${rows}</table>`;

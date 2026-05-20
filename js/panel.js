@@ -2402,6 +2402,14 @@ async function doRunApex() {
     }
   }
   out.textContent = (success ? "(コンパイル & 実行 OK)\n\n" : "") + logBody;
+  // Apex 結果の行数/文字数を meta に追記 (debug log の規模感を可視化)
+  const txt = out.textContent;
+  if (txt) {
+    const lines = (txt.match(/\n/g) || []).length + 1;
+    const sizeKb = (txt.length / 1024).toFixed(1);
+    const cur = meta.innerHTML;
+    meta.innerHTML = `${cur} <span class="pill" title="Apex 結果サイズ">${lines.toLocaleString()} 行 / ${sizeKb} KB</span>`;
+  }
 }
 
 async function loadSavedApex() {
