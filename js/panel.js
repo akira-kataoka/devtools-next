@@ -767,6 +767,11 @@ function bindEvents() {
   $on("btnLimitsCsv", "click", exportLimitsCsv);
   $on("limitsSort", "change", renderLimitsList);
   $on("limitsOnlyUsed", "change", renderLimitsList);
+  // v3.54.0: Limits 検索フィルタ — input でリアルタイム絞込み、Esc でクリア
+  $on("limitsFilter", "input", renderLimitsList);
+  $on("limitsFilter", "keydown", (e) => {
+    if (e.key === "Escape") { e.target.value = ""; renderLimitsList(); }
+  });
 
   // データエクスポート
   $on("btnExLoadFields", "click", exLoadFields);
@@ -2327,6 +2332,9 @@ function renderLimitsList() {
   const sortLegacy = document.getElementById("limitsSort"); // 旧 select (互換)
   const onlyUsed = document.getElementById("limitsOnlyUsed");
   const isOnlyUsed = onlyUsed && onlyUsed.checked;
+  // v3.54.0: 制限名 検索フィルタ (英名 + 日本語名 部分一致)
+  const filterEl = document.getElementById("limitsFilter");
+  const filterQ = filterEl ? (filterEl.value || "").toLowerCase().trim() : "";
 
   let rows = Object.entries(lastLimitsData).map(([k, v]) => {
     const max = (v && v.Max != null) ? v.Max : 0;
@@ -2337,6 +2345,13 @@ function renderLimitsList() {
   });
   if (isOnlyUsed) rows = rows.filter((r) => r.used > 0);
   if (_limitsShowPinnedOnly) rows = rows.filter((r) => r.pinned);
+  if (filterQ) {
+    rows = rows.filter((r) =>
+      r.name.toLowerCase().includes(filterQ) ||
+      (r.ja || "").toLowerCase().includes(filterQ) ||
+      (r.desc || "").toLowerCase().includes(filterQ)
+    );
+  }
 
   // ソート (ピン留めは常に上位)
   const dir = _limitsSortDir === "asc" ? 1 : -1;

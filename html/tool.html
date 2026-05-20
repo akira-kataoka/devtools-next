@@ -422,6 +422,7 @@ System.debug('Now: ' + System.now());</textarea>
       <div class="view hidden" data-view="limits">
         <div class="toolbar">
           <button id="btnLimits" class="primary" title="組織の Limits 情報を取得・更新します">取得 / 更新</button>
+          <input id="limitsFilter" type="search" placeholder="🔎 制限名で絞り込む… (例: API / Apex / Storage)" title="30+ 種類の Limits から名前部分一致で絞り込み (Esc でクリア)" style="max-width:240px" />
           <span class="grow"></span>
           <select id="limitsSort">
             <option value="pct">使用率 ↓</option>
