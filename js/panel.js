@@ -1762,7 +1762,13 @@ let inspectRunId = 0;
 async function doInspect(opts = {}) {
   if (!state.sid) { document.getElementById("inspectMeta").innerHTML = `<span class="pill err">Salesforce 未接続</span>`; return; }
   const raw = document.getElementById("inspectRef").value.trim();
-  if (!raw) return;
+  if (!raw) {
+    // v3.48.0: 早期バリデーション + 入力欄にフォーカス戻し
+    document.getElementById("inspectMeta").innerHTML = `<span class="pill warn">⚠ 入力が必要</span> レコード ID (15/18桁) または <code>オブジェクト名:ID</code> 形式で入力してください (例: <code>0011x00000abcdeAAA</code> / <code>Account:001xx000003DGbY</code>)`;
+    const ref = document.getElementById("inspectRef");
+    if (ref) ref.focus();
+    return;
+  }
   // 現在のレコードを履歴に push してから新規取得 (戻るボタン用)
   if (!opts.skipHistory && inspectState.obj && inspectState.id) {
     // 同一レコードの再 inspect は履歴に積まない (重複防止)
@@ -3090,7 +3096,10 @@ async function doSoql() {
   const meta = document.getElementById("soqlMeta");
   const runBtn = document.getElementById("btnRunSoql");
   if (!soql) {
-    meta.innerHTML = `<span class="pill warn">⚠ SOQL クエリを入力してください</span>`;
+    // v3.48.0: 早期バリデーション + 入力欄にフォーカス戻し
+    meta.innerHTML = `<span class="pill warn">⚠ 入力が必要</span> SOQL クエリを入力してください (例: <code>SELECT Id, Name FROM Account LIMIT 10</code>)`;
+    const ta = document.getElementById("soqlText");
+    if (ta) ta.focus();
     return;
   }
   meta.innerHTML = `<span class="pill loading">SOQL を実行しています… #${myId}</span>`;
@@ -3710,7 +3719,10 @@ async function doRunApex() {
   const out = document.getElementById("apexResult");
   const runBtn = document.getElementById("btnRunApex");
   if (!code.trim()) {
-    meta.innerHTML = `<span class="pill warn">⚠ Apex コードを入力してください</span>`;
+    // v3.48.0: 早期バリデーション + 入力欄にフォーカス戻し
+    meta.innerHTML = `<span class="pill warn">⚠ 入力が必要</span> 匿名 Apex コードを入力してください (例: <code>System.debug(UserInfo.getName());</code>)`;
+    const ta = document.getElementById("apexCode");
+    if (ta) ta.focus();
     return;
   }
   const myId = ++apexRunId;
