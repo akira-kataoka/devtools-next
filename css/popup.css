@@ -149,6 +149,23 @@ body { animation: popupFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
   margin-bottom: 10px;
 }
 .card h2 { margin: 0 0 8px; font-size: 12px; color: var(--accent); letter-spacing: 0.3px; }
+/* v3.39.0: <details> 型の card (セッション情報) — popup の高さ節約 */
+details.card { padding: 0; }
+details.card > summary {
+  cursor: pointer; padding: 10px 12px;
+  list-style: none;
+  display: flex; align-items: center; gap: 6px;
+  user-select: none;
+}
+details.card > summary::-webkit-details-marker { display: none; }
+details.card > summary::before {
+  content: "▶"; color: var(--accent); font-size: 10px;
+  transition: transform 0.15s ease;
+}
+details.card[open] > summary::before { transform: rotate(90deg); }
+details.card > summary > h2 { margin: 0 !important; }
+details.card[open] > :not(summary) { padding: 0 12px; }
+details.card[open] > :last-child { padding-bottom: 10px; }
 
 .kv { display: grid; grid-template-columns: 80px 1fr auto; gap: 6px; align-items: center; margin: 4px 0; }
 .kv > span { color: var(--fg-dim); font-size: 11px; }

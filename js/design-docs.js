@@ -2237,7 +2237,14 @@ function toHtml(result) {
     // v3.33.0: 凡例セクションには .design-legend クラスを付けて CSS で視覚的に区別
     const isLegend = s.heading && /^(\d+\.\s*)?凡例/.test(s.heading);
     const sectionClass = isLegend ? ' class="design-legend"' : "";
-    if (s.heading) parts.push(`<h2${sectionClass}>${esc(s.heading)}</h2>`);
+    if (s.heading) {
+      // v3.39.0: 番号付き heading (例: "1. オブジェクト概要") の先頭番号を <span class="design-chap-no"> で囲み CSS で chip 化
+      const numMatch = !isLegend && s.heading.match(/^(\d+)\.\s*(.+)$/);
+      const headingHtml = numMatch
+        ? `<span class="design-chap-no">${numMatch[1]}</span>${esc(numMatch[2])}`
+        : esc(s.heading);
+      parts.push(`<h2${sectionClass}>${headingHtml}</h2>`);
+    }
     if (s.kvRows) {
       parts.push(`<table${sectionClass}><thead><tr><th>項目</th><th>値</th></tr></thead><tbody>`);
       for (const [k, v] of s.kvRows) parts.push(`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`);

@@ -39,8 +39,9 @@
       <span class="cta-arrow">→</span>
     </button>
 
-    <section class="card">
-      <h2>セッション情報</h2>
+    <!-- v3.39.0: セッション情報を <details> で折りたたみ可能に (popup 高さ節約) -->
+    <details class="card session-card">
+      <summary><h2 style="display:inline">セッション情報</h2></summary>
       <div class="kv"><span>ドメイン</span><code id="info-host">-</code></div>
       <div class="kv"><span>Org ID</span><code id="info-orgid">-</code></div>
       <div class="kv"><span>User ID</span><code id="info-userid">-</code></div>
@@ -53,7 +54,7 @@
           <option>62.0</option><option>61.0</option><option>60.0</option><option>59.0</option>
         </select>
       </div>
-    </section>
+    </details>
 
     <section class="card">
       <h2>⚡ クイックアクション</h2>

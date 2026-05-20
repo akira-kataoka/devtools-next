@@ -633,6 +633,16 @@ td.cell-nested { word-break: break-word; }
   color: var(--accent); margin: 12px 0 6px;
   border-bottom: 1px solid var(--line); padding-bottom: 3px;
 }
+/* v3.39.0: 番号付き章 heading の番号を chip 化 (業務文書らしい体裁) */
+.design-preview .design-chap-no {
+  display: inline-block;
+  background: var(--accent); color: #fff;
+  font-weight: 700; font-size: 11px;
+  padding: 2px 7px; border-radius: 10px;
+  margin-right: 8px;
+  min-width: 18px; text-align: center;
+  line-height: 1.4;
+}
 /* v3.21.0: 表紙セクション (h2: 📄 表紙) を文書らしい体裁に拡張 — 上下余白厚め + センター寄せの段組み感 */
 .design-preview h2:first-of-type {
   background: linear-gradient(135deg, rgba(27,150,255,0.18) 0%, rgba(27,150,255,0.04) 100%);
