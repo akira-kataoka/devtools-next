@@ -123,6 +123,10 @@ select { font-family: inherit; }
 .result table { width: 100%; border-collapse: collapse; font-size: 11px; }
 .result th, .result td { padding: 4px 6px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .result th { background: #112042; color: var(--accent); position: sticky; top: 0; z-index: 2; }
+.result th.sortable { cursor: pointer; user-select: none; }
+.result th.sortable:hover { background: #1a2d56; }
+.result th.sortable[data-sort-dir="asc"]::after { content: " ▲"; font-size: 8px; opacity: 0.8; }
+.result th.sortable[data-sort-dir="desc"]::after { content: " ▼"; font-size: 8px; opacity: 0.8; }
 .result tr:hover td { background: #112042; }
 .result table tr:nth-child(even) td { background: rgba(27,150,255,0.025); }
 .result table tr:nth-child(even):hover td { background: #112042; }

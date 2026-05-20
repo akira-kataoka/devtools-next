@@ -496,11 +496,49 @@ function recordsToTableHtml(records) {
   const cols = new Set();
   records.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
   const headers = Array.from(cols);
-  const head = `<tr>${headers.map((h) => `<th>${escape(h)}</th>`).join("")}</tr>`;
+  const head = `<tr>${headers.map((h) => `<th class="sortable" data-col="${escape(h)}" title="クリックで ${escape(h)} 列をソート">${escape(h)}</th>`).join("")}</tr>`;
   const rows = records.map((r) =>
     `<tr>${headers.map((h) => `<td>${escape(stringify(r[h]))}</td>`).join("")}</tr>`
   ).join("");
+  setTimeout(() => {
+    document.querySelectorAll("#soqlResult th.sortable:not([data-sort-bound])").forEach((th) => {
+      th.dataset.sortBound = "true";
+      th.addEventListener("click", () => sortTableByTh(th));
+    });
+  }, 0);
   return `<table>${head}${rows}</table>`;
+}
+
+// popup 用: th クリックで in-place ソート (asc → desc → unsort トグル)
+function sortTableByTh(th) {
+  const table = th.closest("table");
+  if (!table) return;
+  const idx = Array.prototype.indexOf.call(th.parentElement.children, th);
+  const tbody = table.tBodies[0] || table;
+  const cur = th.dataset.sortDir || "";
+  const next = cur === "asc" ? "desc" : (cur === "desc" ? "" : "asc");
+  table.querySelectorAll("th.sortable").forEach((other) => { delete other.dataset.sortDir; });
+  if (next) th.dataset.sortDir = next;
+  if (!tbody.dataset.originalOrder) {
+    tbody.dataset.originalOrder = "true";
+    Array.from(tbody.rows).forEach((tr, i) => { tr.dataset.origIdx = String(i); });
+  }
+  const rows = Array.from(tbody.querySelectorAll("tr")).filter((tr) => tr.cells.length > idx && !tr.querySelector("th"));
+  if (!next) {
+    rows.sort((a, b) => (parseInt(a.dataset.origIdx, 10) || 0) - (parseInt(b.dataset.origIdx, 10) || 0));
+  } else {
+    const dir = next === "asc" ? 1 : -1;
+    rows.sort((a, b) => {
+      const av = a.cells[idx] ? a.cells[idx].textContent : "";
+      const bv = b.cells[idx] ? b.cells[idx].textContent : "";
+      const an = parseFloat(av), bn = parseFloat(bv);
+      if (!isNaN(an) && !isNaN(bn) && /^-?\d+(\.\d+)?$/.test(av.trim()) && /^-?\d+(\.\d+)?$/.test(bv.trim())) {
+        return (an - bn) * dir;
+      }
+      return av.localeCompare(bv, "ja") * dir;
+    });
+  }
+  rows.forEach((r) => tbody.appendChild(r));
 }
 
 function stringify(v) {

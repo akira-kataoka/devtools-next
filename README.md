@@ -4,6 +4,12 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.55.0 (2026-05-20 08:55)** — popup SOQL 結果テーブルも列ソート可能化 + 検証完了:
+  - **✨ popup SOQL 結果テーブルにも列クリックソート対応**: `recordsToTableHtml` の th に `.sortable` クラス + sortTableByTh ハンドラ。panel/tool と同じ asc/desc/unsort トグル + ▲/▼ 矢印 (popup 用に font-size: 8px 縮小)。**popup でも 460px 幅で SOQL 結果を即ソート可能**
+  - **🧪 検証完了 (3 件すべて修正不要)**:
+    - SOQL ソート状態 vs 再実行: `soqlResult.innerHTML = recordsTable(recs)` で table 要素全入替なので sortDir 自然消滅 (OK)
+    - 設計書 ▲ トップへ二重表示: `preview.innerHTML = ...` で毎回全消去 → 1 ボタンのみ追加 (OK)
+    - 列ソート ↔ td.dblclick (コピー) 干渉: 別要素 (th vs td) なので干渉なし (OK)
 - **v1.54.0 (2026-05-20 08:50)** — SOQL/grid 列クリックソート + 設計書 ▲ トップへボタン:
   - **✨ `.grid` 結果テーブル列ヘッダクリックでソート**: asc → desc → unsort の 3 段階トグル。文字列は `localeCompare('ja')`、数値判定 (`/^-?\d+(\.\d+)?$/`) されたら数値ソート。**SOQL/describe/metadata/logs/ChangeSet/export preview 全てで適用**。クリック先 th に `▲/▼` 矢印 + hover で背景濃色 (cursor: pointer)
   - **✨ 設計書プレビューに `▲ トップへ` ボタン (sticky 右下)**: 長い設計書 (1000+ 項目) 閲覧時、最下部から先頭に戻れる。`scrollTo({behavior:"smooth"})` で滑らかに移動。**Profile Reader の長スクロール対策に類似**
