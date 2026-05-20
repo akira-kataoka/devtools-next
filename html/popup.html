@@ -10,13 +10,13 @@
   <header class="hdr">
     <div class="hdr-l">
       <span class="brand">DevToolsNext</span>
-      <span id="versionBadge" class="badge" title="現在のバージョン">v?</span>
+      <span id="versionBadge" class="badge" title="現在のバージョン番号です">v?</span>
       <span id="orgBadge" class="badge">未接続</span>
     </div>
     <div class="hdr-r">
-      <button id="btnRefresh" class="ico" title="再取得">⟳</button>
-      <button id="btnCheckUpdate" class="ico" title="アップデート確認・自動再ロード">⬆</button>
-      <button id="btnSettings" class="ico" title="設定">⚙</button>
+      <button id="btnRefresh" class="ico" title="セッション情報を再取得します">⟳</button>
+      <button id="btnCheckUpdate" class="ico" title="アップデートを確認し、新しいバージョンがあれば自動で再読み込みします">⬆</button>
+      <button id="btnSettings" class="ico" title="設定画面を開きます">⚙</button>
     </div>
   </header>
 
@@ -29,7 +29,7 @@
 
   <main class="panel" id="panel-home">
     <section class="card whats-new" id="cardWhatsNew">
-      <h2 style="cursor:pointer;user-select:none" id="whatsNewToggle" title="クリックで折りたたみ/展開">
+      <h2 style="cursor:pointer;user-select:none" id="whatsNewToggle" title="クリックで折りたたみ・展開を切り替えます">
         <span id="whatsNewArrow">▼</span> 🚀 DevToolsNext を全画面で開く (F12 不要)
       </h2>
       <div class="whats-new-body" id="whatsNewBody">
@@ -80,7 +80,7 @@
     <section class="card">
       <h2>🔐 他ユーザーとしてログイン (Login as User)</h2>
       <div class="row">
-        <input id="loginAsSearch" placeholder="Username / 姓名 / Alias / Email で検索 (Active のみ)" title="部分一致検索 (Name/Username/Email/Alias)、ORDER BY LastLoginDate DESC LIMIT 30" aria-label="ユーザー検索キーワード" />
+        <input id="loginAsSearch" placeholder="ユーザ名 / 姓名 / Alias / Email で検索できます (有効ユーザのみ)" title="Name/Username/Email/Alias の部分一致で検索し、最終ログイン日時順 30 件を表示します" aria-label="ユーザ検索キーワード" />
         <button id="btnLoginAsSearch" class="primary" aria-label="ユーザーを検索">検索</button>
       </div>
       <div id="loginAsResult" class="login-as-result" role="list"></div>
@@ -88,7 +88,7 @@
 
     <section class="card">
       <h2>🔢 Salesforce ID 解析</h2>
-      <input type="text" id="idInput" placeholder="15桁 / 18桁 の Salesforce ID" aria-label="Salesforce ID 入力" />
+      <input type="text" id="idInput" placeholder="15 桁 または 18 桁の Salesforce ID を貼り付けてください" aria-label="Salesforce ID 入力欄" />
       <div class="row">
         <button id="btnParseId" class="primary" aria-label="ID を解析">解析</button>
         <button id="btnOpenId" aria-label="ID のレコードを開く">レコードを開く</button>
@@ -105,7 +105,7 @@
         <label><input type="checkbox" id="soqlTooling" /> Tooling API</label>
         <button id="btnRunSoql" class="primary">実行</button>
         <button id="btnExportCsv">CSV</button>
-        <button id="btnClearHistory" class="mini" title="履歴を全削除">履歴クリア</button>
+        <button id="btnClearHistory" class="mini" title="SOQL 履歴をすべて削除します (ピン留め項目も削除されます)">履歴クリア</button>
       </div>
       <div id="soqlMeta" class="meta"></div>
       <div id="soqlResult" class="result"></div>
@@ -125,7 +125,7 @@
         </select>
         <input id="apiPath" placeholder="/services/data/v62.0/sobjects/Account/describe" />
       </div>
-      <textarea id="apiBody" rows="4" placeholder='POST/PATCH の JSON ボディ（任意）'></textarea>
+      <textarea id="apiBody" rows="4" placeholder='POST/PATCH の JSON ボディ (任意項目)'></textarea>
       <div class="row">
         <button id="btnApiSend" class="primary">送信</button>
         <button id="btnApiLimits">/limits</button>
@@ -145,7 +145,7 @@
 
   <footer class="ftr">
     <span id="statusMsg">Ready</span>
-    <a href="#" id="openDevtools" title="DevToolsNext を新規タブで全画面起動">🛠️ ツールを開く</a>
+    <a href="#" id="openDevtools" title="DevToolsNext を新しいタブで全画面起動します">🛠️ ツールを開く</a>
   </footer>
 
   <script src="../js/popup.js" type="module"></script>

@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.19.0 (2026-05-20 14:25)** — 🚨 ユーザー要望 Phase 9: html/*.html title・placeholder 総点検 + apiError ですます調統一:
+  - **🐛 html/popup.html**: 9 箇所の title/placeholder/aria-label を ですます調 に統一 (例: "現在のバージョン" → "現在のバージョン番号です"、"再取得" → "セッション情報を再取得します"、"アップデート確認・自動再ロード" → "アップデートを確認し、新しいバージョンがあれば自動で再読み込みします")
+  - **🐛 html/panel.html**: 10 箇所の title/placeholder を ですます調 に (例: "セッションを再取得" → "現在のタブの Salesforce セッションを再取得します"、"全項目を JSON でクリップボードへ" → "全項目を JSON 形式でクリップボードにコピーします")
+  - **🐛 html/tool.html**: 再接続ボタンの title を panel.html と統一
+  - **🐛 design-docs.js**: 残り 9 箇所の apiError 文字列 ("ApexClass 取得" → "Apex クラス一覧の取得に失敗しました"、"Flow 取得 (Active)" → "フロー (アクティブ) の取得に失敗しました" 等) を ですます調 に統一
 - **v2.18.0 (2026-05-20 14:20)** — 🚨 ユーザー要望 Phase 8: ApexDetail / popup 履歴 / Limits / mini-panel ラベル:
   - **🐛 buildApexDetail**: 凡例 9 項目追加 (Apex とは / メソッド / プロパティ / 可視性 (public/private/global/protected) / static / アノテーション (@AuraEnabled 等) / SymbolTable)、可視性を業務向け説明付きに、Status を ○有効/−無効/✗削除済 に、列名を「メソッド名」「アノテーション」「参照クラス/型」等に
   - **🐛 popup.js SOQL 履歴**: 空状態を「履歴はまだありません。SOQL を実行するとここに最大 10 件保存します」に、tooltip を ですます調 に

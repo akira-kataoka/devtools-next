@@ -238,7 +238,7 @@ async function buildApexClassList({ host, sid, apiVersion }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, Name, ApiVersion, Status, NamespacePrefix, LengthWithoutComments, CreatedDate, LastModifiedDate FROM ApexClass WHERE ManageableState='unmanaged' OR ManageableState='installedEditable' ORDER BY Name LIMIT 500`,
   });
-  if (!r.ok) throw apiError("ApexClass 取得", r);
+  if (!r.ok) throw apiError("Apex クラス一覧の取得に失敗しました", r);
   // v2.14.0: ステータス + 列名を業務用語化
   const statusLabel = (s) => ({ "Active": "有効", "Inactive": "無効", "Deleted": "削除済" }[s] || s);
   const headers = ["No", "クラス名", "ネームスペース", "API バージョン", "ステータス", "コード行数 (コメント除く)", "更新日"];
@@ -265,7 +265,7 @@ async function buildApexTriggerList({ host, sid, apiVersion }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, Name, TableEnumOrId, UsageBeforeInsert, UsageAfterInsert, UsageBeforeUpdate, UsageAfterUpdate, UsageBeforeDelete, UsageAfterDelete, UsageAfterUndelete, Status, LastModifiedDate FROM ApexTrigger ORDER BY TableEnumOrId, Name LIMIT 500`,
   });
-  if (!r.ok) throw apiError("ApexTrigger 取得", r);
+  if (!r.ok) throw apiError("Apex トリガ一覧の取得に失敗しました", r);
   const headers = ["No", "トリガ名", "対象オブジェクト", "BI", "AI", "BU", "AU", "BD", "AD", "AUD", "ステータス", "更新日"];
   const rows = (r.data.records || []).map((p, i) => ({
     "No": i + 1,
@@ -333,7 +333,7 @@ async function buildFlowList({ host, sid, apiVersion }) {
       host, sid, apiVersion, tooling: true,
       soql: `SELECT Id, MasterLabel, ProcessType, Status, VersionNumber, Definition.DeveloperName FROM Flow WHERE Status='Active' ORDER BY MasterLabel LIMIT 500`,
     });
-    if (!r2.ok) throw apiError("Flow 取得 (fallback)", r2);
+    if (!r2.ok) throw apiError("フロー一覧の取得に失敗しました (フォールバック)", r2);
     const headers = ["No", "ラベル", "API 名", "種別", "状態", "バージョン"];
     const rows = (r2.data.records || []).map((f, i) => ({
       "No": i + 1, "ラベル": f.MasterLabel, "API 名": f.Definition ? f.Definition.DeveloperName : "",
@@ -437,7 +437,7 @@ async function buildFieldSetList({ host, sid, apiVersion, obj }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, DeveloperName, MasterLabel, Description, EntityDefinition.QualifiedApiName FROM FieldSet WHERE EntityDefinition.QualifiedApiName='${obj.replace(/'/g, "\\'")}' ORDER BY DeveloperName LIMIT 200`,
   });
-  if (!tr.ok) throw apiError("FieldSet 取得", tr);
+  if (!tr.ok) throw apiError("フィールドセットの取得に失敗しました", tr);
   const headers = ["No", "API名", "ラベル", "説明"];
   const rows = (tr.data.records || []).map((fs, i) => ({
     "No": i + 1,
@@ -578,7 +578,7 @@ async function buildProfileDetail({ host, sid, apiVersion, obj, progress = () =>
     psSoql = `SELECT Id, Name, Label, IsOwnedByProfile, Profile.Name, Profile.UserLicense.Name, Profile.UserType, Profile.Description FROM PermissionSet WHERE IsOwnedByProfile=true AND Profile.Name='${lookupName.replace(/'/g, "\\'")}' LIMIT 1`;
   }
   const psR = await runSoql({ host, sid, apiVersion, soql: psSoql });
-  if (!psR.ok) throw apiError("PermissionSet 取得", psR);
+  if (!psR.ok) throw apiError("権限セットの取得に失敗しました", psR);
   const ps = (psR.data.records || [])[0];
   if (!ps) throw new Error(`HTTP 404 ${isPermSet ? "権限セット" : "プロファイル"} '${lookupName}' が見つかりません`);
   const psId = ps.Id;
@@ -969,7 +969,7 @@ async function buildFlowDetail({ host, sid, apiVersion, obj }) {
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, MasterLabel, ProcessType, Status, VersionNumber, Description, Metadata FROM Flow WHERE Definition.DeveloperName='${obj.replace(/'/g, "\\'")}' AND Status='Active' ORDER BY VersionNumber DESC LIMIT 1`,
   });
-  if (!r.ok) throw apiError("Flow 取得 (Active)", r);
+  if (!r.ok) throw apiError("フロー (アクティブ) の取得に失敗しました", r);
   let flow = (r.data.records || [])[0];
   if (!flow) {
     // Active が無ければ最新を引く
@@ -977,7 +977,7 @@ async function buildFlowDetail({ host, sid, apiVersion, obj }) {
       host, sid, apiVersion, tooling: true,
       soql: `SELECT Id, MasterLabel, ProcessType, Status, VersionNumber, Description, Metadata FROM Flow WHERE Definition.DeveloperName='${obj.replace(/'/g, "\\'")}' ORDER BY VersionNumber DESC LIMIT 1`,
     });
-    if (!r2.ok) throw apiError("Flow 取得 (latest fallback)", r2);
+    if (!r2.ok) throw apiError("フロー (最新版) の取得に失敗しました", r2);
     if (!(r2.data.records || []).length) throw new Error(`HTTP 404 Flow '${obj}' が見つかりません`);
     flow = r2.data.records[0];
   }
@@ -1361,7 +1361,7 @@ async function buildFieldPermMatrix({ host, sid, apiVersion, obj, progress = () 
     }
     progress(`FieldPermissions 取得中... (${allRecs.length} 件${etaLabel})`);
     const r = await sfFetch({ host, sid, path: nextPath });
-    if (!r.ok) throw apiError(`FieldPermissions(${obj})`, r);
+    if (!r.ok) throw apiError(`項目権限 (${obj}) の取得に失敗しました`, r);
     allRecs = allRecs.concat(r.data.records || []);
     nextPath = r.data && r.data.nextRecordsUrl ? r.data.nextRecordsUrl : null;
     if (allRecs.length > 50000) break; // 安全弁
@@ -1461,7 +1461,7 @@ async function buildObjectPermMatrix({ host, sid, apiVersion, progress = () => {
   while (nextPath) {
     progress(`ObjectPermissions 取得中... (${allRecs.length} 件)`);
     const r = await sfFetch({ host, sid, path: nextPath });
-    if (!r.ok) throw apiError("ObjectPermissions 取得", r);
+    if (!r.ok) throw apiError("オブジェクト権限の取得に失敗しました", r);
     allRecs = allRecs.concat(r.data.records || []);
     nextPath = r.data && r.data.nextRecordsUrl ? r.data.nextRecordsUrl : null;
     if (allRecs.length > 50000) break;
