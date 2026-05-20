@@ -88,11 +88,15 @@ async function init() {
     loadSavedApex();
     loadSharedSoqlHistory();
     loadInspectHistory();
+    loadApexHistory();
     // v3.46.0: chrome.storage.local 変更を監視して、別画面/mini-panel での履歴更新を即時反映
     if (chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, area) => {
         if (area === "local" && changes[SHARED_SOQL_HISTORY_KEY]) {
           renderSharedSoqlHistory(changes[SHARED_SOQL_HISTORY_KEY].newValue || []);
+        }
+        if (area === "local" && changes[APEX_HISTORY_KEY]) {
+          renderApexHistory(changes[APEX_HISTORY_KEY].newValue || []);
         }
       });
     }
@@ -3650,6 +3654,51 @@ function renderSharedSoqlHistory(list) {
   });
 }
 
+// v3.76.0: Apex 実行履歴 (panel + tool 共通) — chrome.storage.local の sfdtRecentApex キー、最大 5 件
+const APEX_HISTORY_KEY = "sfdtRecentApex";
+async function loadApexHistory() {
+  try {
+    const data = await chrome.storage.local.get(APEX_HISTORY_KEY);
+    const list = Array.isArray(data[APEX_HISTORY_KEY]) ? data[APEX_HISTORY_KEY] : [];
+    renderApexHistory(list);
+  } catch { renderApexHistory([]); }
+}
+async function pushApexHistory(code) {
+  const norm = String(code || "").trim();
+  if (!norm) return;
+  try {
+    const data = await chrome.storage.local.get(APEX_HISTORY_KEY);
+    const list = Array.isArray(data[APEX_HISTORY_KEY]) ? data[APEX_HISTORY_KEY] : [];
+    const next = [norm, ...list.filter((c) => c !== norm)].slice(0, 5);
+    await chrome.storage.local.set({ [APEX_HISTORY_KEY]: next });
+    renderApexHistory(next);
+  } catch {}
+}
+function renderApexHistory(list) {
+  const row = document.getElementById("apexHistRow");
+  if (!row) return;
+  if (!list || !list.length) { row.innerHTML = ""; return; }
+  const summarize = (code) => {
+    // 1 行目をラベルに使う (空/コメントなら 2 行目以降を試行)
+    const lines = code.split("\n").map((l) => l.trim()).filter((l) => l.length > 0);
+    const firstNonComment = lines.find((l) => !l.startsWith("//") && !l.startsWith("/*")) || lines[0] || "(空)";
+    return firstNonComment.length > 50 ? firstNonComment.substring(0, 50) + "…" : firstNonComment;
+  };
+  row.innerHTML = `<span class="apex-hist-label">最近の Apex:</span>`;
+  list.forEach((code) => {
+    const chip = document.createElement("button");
+    chip.className = "apex-hist-chip";
+    chip.textContent = summarize(code);
+    chip.title = `クリックでこの Apex をエディタに反映 (実行はせず、確認してから ▶ を押してください):\n\n${code.length > 300 ? code.substring(0, 300) + "…" : code}`;
+    chip.addEventListener("click", () => {
+      const ta = document.getElementById("apexCode");
+      if (ta) { ta.value = code; ta.focus(); }
+      panelToast("📥 履歴の Apex をエディタに反映しました (実行は ▶ ボタンで)", { kind: "ok" });
+    });
+    row.appendChild(chip);
+  });
+}
+
 // 結果テーブルが列ソート中なら、その並びを state.lastRecords に反映してから返す
 function getOrderedRecordsForExport() {
   const recs = state.lastRecords || [];
@@ -4266,6 +4315,8 @@ async function doRunApex() {
   const d = r.data || {};
   const compiled = d.compiled === true;
   const success = d.success === true;
+  // v3.76.0: コンパイル成功時のみ履歴に push (構文エラーで弾かれたコードは履歴に積まない)
+  if (compiled) pushApexHistory(code);
   const statusClass = success ? "ok" : (compiled ? "warn" : "err");
   const statusLabel = success ? "✓ 成功 (Success)" : (compiled ? "⚠ 実行時エラー (Runtime Error)" : "❌ コンパイルエラー (Compile Error)");
   let summary = `<span class="pill ${statusClass}">${statusLabel}</span> ${dt}ms`;

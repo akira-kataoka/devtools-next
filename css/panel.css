@@ -743,6 +743,22 @@ td.cell-nested { word-break: break-word; }
 }
 .soql-hist-chip:hover { background: var(--ok); color: #fff; border-color: var(--ok); }
 .soql-hist-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* v3.76.0: Apex 履歴チップ — SOQL (緑) / 設計書対象 (オレンジ) と区別する紫系 */
+.apex-hist-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 10px; padding: 2px 0; }
+.apex-hist-row:empty { display: none; }
+.apex-hist-label { color: var(--fg-dim); font-weight: 600; margin-right: 4px; }
+.apex-hist-chip {
+  background: rgba(155,89,182,0.10);
+  border: 1px solid rgba(155,89,182,0.35);
+  color: #8e44ad;
+  padding: 2px 8px; border-radius: 10px;
+  font-size: 10px; cursor: pointer;
+  font-family: ui-monospace, Consolas, monospace;
+  max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.apex-hist-chip:hover { background: #8e44ad; color: #fff; border-color: #8e44ad; }
+.apex-hist-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 /* v3.74.0: 設計書「対象」入力履歴チップ — type 別に chrome.storage 永続化 */
 .design-obj-hist-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 10px; padding: 2px 0; }
 .design-obj-hist-row:empty { display: none; }

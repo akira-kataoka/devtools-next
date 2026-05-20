@@ -347,6 +347,7 @@
           <button id="btnApexFormat" title="現在の Apex コードを整形します: { } ベースのインデント (2 スペース) を再構成、コメント・文字列リテラルは保護">🎨 整形</button>
           <button id="btnRunApex" class="primary" title="匿名 Apex を実行します (Ctrl+Enter でも実行できます)">▶ 実行 (Ctrl+Enter)</button>
         </div>
+        <div id="apexHistRow" class="apex-hist-row" title="最近実行した匿名 Apex (3 モード共通の chrome.storage 保存) — チップクリックでエディタへ反映"></div>
         <textarea id="apexCode" rows="10" spellcheck="false" placeholder="匿名 Apex コードを入力してください&#10;例 1: System.debug(UserInfo.getName());&#10;例 2: DELETE [SELECT Id FROM Account WHERE Name LIKE 'Test%'];&#10;例 3: Database.executeBatch(new MyBatchClass(), 200);&#10;&#10;Ctrl+Enter で実行できます (Debug ログも自動取得)" title="匿名 Apex はトリガ・テストカバレッジを必要としません。本番組織でも実行できますが、UPDATE/DELETE は実データに影響するためご注意ください">// 匿名 Apex
 Account a = [SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 1];
 System.debug('Latest Account: ' + a);
