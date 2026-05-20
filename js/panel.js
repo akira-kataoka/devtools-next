@@ -340,6 +340,27 @@ function switchToView(v) {
     // document.title を動的更新 (ブラウザタブで現在のビュー名が見える)
     document.title = `${label} - DevToolsNext`;
   }
+
+  // v2.90.0: 開いた瞬間に自動取得 (ユーザー要望: 「使用状況とかは開いたらすぐ取得してほしい」)
+  // 入力不要で実行可能なビュー (limits / login / logs / metadata) は switchToView 時に自動実行
+  // 接続済みの時のみ、かつまだ未取得の時のみ (再表示時の重複コール防止)
+  if (state.sid) {
+    try {
+      if (v === "limits") {
+        const result = document.getElementById("limitsResult");
+        if (result && !result.innerHTML.trim()) doLimits();
+      } else if (v === "login") {
+        const result = document.getElementById("loginResult");
+        if (result && !result.innerHTML.trim()) doFetchLoginHistory();
+      } else if (v === "logs") {
+        const result = document.getElementById("logsResult");
+        if (result && !result.innerHTML.trim()) doFetchLogs();
+      } else if (v === "metadata") {
+        const result = document.getElementById("metadataResult");
+        if (result && !result.innerHTML.trim()) doMetadataList();
+      }
+    } catch (e) { console.warn("[DevToolsNext] auto-fetch on view switch failed:", e); }
+  }
 }
 
 function bindNav() {
@@ -504,141 +525,134 @@ function bindEvents() {
     }
   });
 
+  // v2.90.0: 全 addEventListener を null セーフ化 (ユーザー報告「初期化失敗 Cannot read properties of null」の根本対応)
+  // 旧コードは直接 document.getElementById(...).addEventListener(...) を呼んでおり、HTML 要素が無い時に init 全体が止まっていた
+  const $on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
+
   // SOQL
-  document.getElementById("btnRunSoql").addEventListener("click", doSoql);
-  document.getElementById("btnExportCsv").addEventListener("click", exportCsv);
-  const btnCopyCsv = document.getElementById("btnCopyCsv");
-  if (btnCopyCsv) btnCopyCsv.addEventListener("click", copyCsvToClipboard);
-  document.getElementById("btnSaveSoql").addEventListener("click", saveCurrentQuery);
-  document.getElementById("btnLoadSoql").addEventListener("click", loadSelectedQuery);
+  $on("btnRunSoql", "click", doSoql);
+  $on("btnExportCsv", "click", exportCsv);
+  $on("btnCopyCsv", "click", copyCsvToClipboard);
+  $on("btnSaveSoql", "click", saveCurrentQuery);
+  $on("btnLoadSoql", "click", loadSelectedQuery);
   // v2.87.0: SOQL オートコンプリート初期化 (Phase 78)
   setupSoqlAutocomplete();
-
-  document.getElementById("soqlText").addEventListener("keydown", (e) => {
-    if (e.isComposing || e.keyCode === 229) return; // IME 確定中はスキップ
+  $on("soqlText", "keydown", (e) => {
+    if (e.isComposing || e.keyCode === 229) return;
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") doSoql();
   });
 
-  // Describe
-  document.getElementById("btnDescribe").addEventListener("click", doDescribe);
-  // REST
-  document.getElementById("btnRest").addEventListener("click", doRest);
-  // Metadata
-  document.getElementById("btnMetadata").addEventListener("click", doMetadataList);
-  // Logs
-  document.getElementById("btnFetchLogs").addEventListener("click", doFetchLogs);
-  document.getElementById("btnEnableDebug").addEventListener("click", doEnableDebug);
-  // Limits
-  document.getElementById("btnLimits").addEventListener("click", doLimits);
+  // Describe / REST / Metadata / Logs / Limits
+  $on("btnDescribe", "click", doDescribe);
+  $on("btnRest", "click", doRest);
+  $on("btnMetadata", "click", doMetadataList);
+  $on("btnFetchLogs", "click", doFetchLogs);
+  $on("btnEnableDebug", "click", doEnableDebug);
+  $on("btnLimits", "click", doLimits);
+
   // Apex
-  document.getElementById("btnRunApex").addEventListener("click", doRunApex);
-  document.getElementById("btnSaveApex").addEventListener("click", saveCurrentApex);
-  document.getElementById("btnLoadApex").addEventListener("click", loadSelectedApex);
-  document.getElementById("btnApexCopy").addEventListener("click", async () => {
-    const txt = document.getElementById("apexResult").textContent || "";
+  $on("btnRunApex", "click", doRunApex);
+  $on("btnSaveApex", "click", saveCurrentApex);
+  $on("btnLoadApex", "click", loadSelectedApex);
+  $on("btnApexCopy", "click", async () => {
+    const resultEl = document.getElementById("apexResult");
+    const txt = (resultEl && resultEl.textContent) || "";
     if (!txt) { panelToast("📭 コピーする結果がありません", { kind: "warn" }); return; }
     try {
       await navigator.clipboard.writeText(txt);
       panelToast(`📋 Apex の実行結果をコピーしました (${txt.length.toLocaleString()} 文字)`, { kind: "ok" });
-    } catch (e) {
-      panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
-    }
+    } catch (e) { panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" }); }
   });
-  document.getElementById("btnRestCopy").addEventListener("click", async () => {
-    const txt = document.getElementById("restResult").textContent || "";
+  $on("btnRestCopy", "click", async () => {
+    const resultEl = document.getElementById("restResult");
+    const txt = (resultEl && resultEl.textContent) || "";
     if (!txt) { panelToast("📭 コピーする結果がありません", { kind: "warn" }); return; }
     try {
       await navigator.clipboard.writeText(txt);
       panelToast(`📋 REST のレスポンスをコピーしました (${txt.length.toLocaleString()} 文字)`, { kind: "ok" });
-    } catch (e) {
-      panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
-    }
+    } catch (e) { panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" }); }
   });
-  enableTabToSpaces(document.getElementById("apexCode"));
-  enableTabToSpaces(document.getElementById("soqlText"));
-  document.getElementById("apexCode").addEventListener("keydown", (e) => {
-    if (e.isComposing || e.keyCode === 229) return; // IME 確定中はスキップ
+  const apexCodeEl = document.getElementById("apexCode");
+  if (apexCodeEl) enableTabToSpaces(apexCodeEl);
+  const soqlTextEl = document.getElementById("soqlText");
+  if (soqlTextEl) enableTabToSpaces(soqlTextEl);
+  $on("apexCode", "keydown", (e) => {
+    if (e.isComposing || e.keyCode === 229) return;
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") doRunApex();
   });
   // LoginHistory
-  document.getElementById("btnFetchLogin").addEventListener("click", doFetchLoginHistory);
-  document.getElementById("btnLoginCsv").addEventListener("click", exportLoginCsv);
+  $on("btnFetchLogin", "click", doFetchLoginHistory);
+  $on("btnLoginCsv", "click", exportLoginCsv);
   // 設計書
-  document.getElementById("btnDesignGen").addEventListener("click", doGenerateDesign);
-  document.getElementById("btnDesignCopy").addEventListener("click", copyDesignSource);
-  document.getElementById("btnDesignDownload").addEventListener("click", downloadDesignSource);
+  $on("btnDesignGen", "click", doGenerateDesign);
+  $on("btnDesignCopy", "click", copyDesignSource);
+  $on("btnDesignDownload", "click", downloadDesignSource);
 
   // Inspector
-  document.getElementById("btnInspect").addEventListener("click", () => doInspect());
-  document.getElementById("btnInspectFromTab").addEventListener("click", inspectFromTab);
-  document.getElementById("btnInspectPasteId").addEventListener("click", async () => {
+  $on("btnInspect", "click", () => doInspect());
+  $on("btnInspectFromTab", "click", inspectFromTab);
+  $on("btnInspectPasteId", "click", async () => {
     try {
       const txt = (await navigator.clipboard.readText() || "").trim();
-      // ID 部分のみ抽出 (URL からの貼付けにも対応: 末尾の 15/18 桁を拾う)
       const m = txt.match(/([a-zA-Z0-9]{15,18})(?:[^a-zA-Z0-9].*)?$/);
       if (!m) { panelToast("⚠ クリップボードに有効な ID が見つかりません", { kind: "warn" }); return; }
-      // 15桁 ID は 18桁に展開 (REST API は両方受け入れるが 18桁の方が安全)
       const id = m[1].length === 15 ? to18CharId(m[1]) : m[1];
-      document.getElementById("inspectRef").value = id;
+      const refEl = document.getElementById("inspectRef");
+      if (refEl) refEl.value = id;
       const expanded = m[1].length === 15 ? ` (15→18 展開)` : "";
       panelToast(`📋 ID を貼付けました: ${id}${expanded}`, { kind: "ok" });
       doInspect();
-    } catch (e) {
-      panelToast("❌ クリップボードからの読み取りに失敗しました: " + (e.message || e), { kind: "err" });
-    }
+    } catch (e) { panelToast("❌ クリップボードからの読み取りに失敗しました: " + (e.message || e), { kind: "err" }); }
   });
-  const btnBack = document.getElementById("btnInspectBack");
-  if (btnBack) btnBack.addEventListener("click", inspectGoBack);
-  document.getElementById("btnInspectOpenInOrg").addEventListener("click", openInspectedInOrg);
-  document.getElementById("btnInspectExportJson").addEventListener("click", () => exportInspect("json"));
-  document.getElementById("btnInspectExportCsv").addEventListener("click", () => exportInspect("csv"));
-  const btnCopyJson = document.getElementById("btnInspectCopyJson");
-  if (btnCopyJson) btnCopyJson.addEventListener("click", async () => {
+  $on("btnInspectBack", "click", inspectGoBack);
+  $on("btnInspectOpenInOrg", "click", openInspectedInOrg);
+  $on("btnInspectExportJson", "click", () => exportInspect("json"));
+  $on("btnInspectExportCsv", "click", () => exportInspect("csv"));
+  $on("btnInspectCopyJson", "click", async () => {
     if (!inspectState.record) { panelToast("⚠ レコードがまだ取得されていません", { kind: "warn" }); return; }
     try {
       await navigator.clipboard.writeText(JSON.stringify(inspectState.record, null, 2));
       panelToast(`📋 ${inspectState.obj}:${inspectState.id} の JSON をコピーしました`, { kind: "ok" });
     } catch (e) { panelToast("⚠ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" }); }
   });
-  document.getElementById("inspectFilter").addEventListener("input", renderInspectorFields);
-  document.getElementById("inspectShowNull").addEventListener("change", renderInspectorFields);
-  document.getElementById("inspectShowSystem").addEventListener("change", renderInspectorFields);
-  document.getElementById("inspectRef").addEventListener("keydown", (e) => {
-    if (e.isComposing || e.keyCode === 229) return; // IME 確定中はスキップ
+  $on("inspectFilter", "input", renderInspectorFields);
+  $on("inspectShowNull", "change", renderInspectorFields);
+  $on("inspectShowSystem", "change", renderInspectorFields);
+  $on("inspectRef", "keydown", (e) => {
+    if (e.isComposing || e.keyCode === 229) return;
     if (e.key === "Enter") doInspect();
   });
 
   // Limits
-  document.getElementById("btnLimitsCsv").addEventListener("click", exportLimitsCsv);
-  document.getElementById("limitsSort").addEventListener("change", renderLimitsList);
-  document.getElementById("limitsOnlyUsed").addEventListener("change", renderLimitsList);
+  $on("btnLimitsCsv", "click", exportLimitsCsv);
+  $on("limitsSort", "change", renderLimitsList);
+  $on("limitsOnlyUsed", "change", renderLimitsList);
 
   // データエクスポート
-  document.getElementById("btnExLoadFields").addEventListener("click", exLoadFields);
-  document.getElementById("btnExSelectAll").addEventListener("click", () => exSelectFields(true, false));
-  document.getElementById("btnExSelectNone").addEventListener("click", () => exSelectFields(false, false));
-  document.getElementById("btnExSelectStandard").addEventListener("click", () => exSelectFields(true, true));
-  document.getElementById("btnExBuild").addEventListener("click", exBuildSoql);
-  document.getElementById("btnExRun").addEventListener("click", exRunPreview);
-  document.getElementById("btnExDlCsv").addEventListener("click", () => exDownloadAll("csv"));
-  document.getElementById("btnExDlExcel").addEventListener("click", () => exDownloadAll("excel"));
-  document.getElementById("btnExDlJson").addEventListener("click", () => exDownloadAll("json"));
-  document.getElementById("exFieldFilter").addEventListener("input", exRenderFieldList);
-  document.getElementById("exObj").addEventListener("keydown", (e) => {
+  $on("btnExLoadFields", "click", exLoadFields);
+  $on("btnExSelectAll", "click", () => exSelectFields(true, false));
+  $on("btnExSelectNone", "click", () => exSelectFields(false, false));
+  $on("btnExSelectStandard", "click", () => exSelectFields(true, true));
+  $on("btnExBuild", "click", exBuildSoql);
+  $on("btnExRun", "click", exRunPreview);
+  $on("btnExDlCsv", "click", () => exDownloadAll("csv"));
+  $on("btnExDlExcel", "click", () => exDownloadAll("excel"));
+  $on("btnExDlJson", "click", () => exDownloadAll("json"));
+  $on("exFieldFilter", "input", exRenderFieldList);
+  $on("exObj", "keydown", (e) => {
     if (e.isComposing || e.keyCode === 229) return;
     if (e.key === "Enter") exLoadFields();
   });
 
   // API URL ビルダー
-  document.getElementById("btnApiBuild").addEventListener("click", apiBuildUrl);
-  document.getElementById("btnApiCopy").addEventListener("click", apiCopyUrl);
-  document.getElementById("btnApiCurlCopy").addEventListener("click", apiCopyCurl);
-  document.getElementById("btnApiOpen").addEventListener("click", apiOpenInBrowser);
-  document.getElementById("apiOp").addEventListener("change", apiBuildUrl);
-  updateApiInputVisibility(); // 初期描画時にも反映
+  $on("btnApiBuild", "click", apiBuildUrl);
+  $on("btnApiCopy", "click", apiCopyUrl);
+  $on("btnApiCurlCopy", "click", apiCopyCurl);
+  $on("btnApiOpen", "click", apiOpenInBrowser);
+  $on("apiOp", "change", apiBuildUrl);
+  updateApiInputVisibility();
 
-  // 変更セット / package.xml (v2.88.0: v2.86 で changeset view を削除した影響で DOM が無い → null セーフ化で init エラー回避)
-  const $on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
+  // 変更セット / package.xml (v2.88.0: 削除済 view 対策で null セーフ化済)
   $on("btnCsLoad", "click", csOnModeChange);
   $on("btnCsListType", "click", csListCandidates);
   $on("btnCsClear", "click", csClearSelection);
