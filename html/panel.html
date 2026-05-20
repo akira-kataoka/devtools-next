@@ -27,29 +27,43 @@
     <aside class="side" aria-label="ツール選択サイドバー">
       <button class="side-toggle" id="btnSideToggle" title="サイドメニューの折りたたみ・展開を切り替えます" aria-label="サイドメニューの折りたたみと展開を切り替えます">◀</button>
       <nav class="nav" aria-label="ツール ナビゲーション">
-        <button class="nav-btn nav-home active" data-view="home" title="ホームダッシュボードへ戻ります (主要機能のカード一覧)">🏠 ホーム</button>
-        <div class="nav-sep">🗃️ データ操作</div>
-        <button class="nav-btn" data-view="soql" title="SOQL クエリを実行します">🔎 SOQL クエリ</button>
-        <button class="nav-btn" data-view="inspector" title="レコードを項目単位で確認します">🔍 レコード Inspector</button>
-        <button class="nav-btn" data-view="dataexport" title="オブジェクトのデータを一括取得します">📥 データエクスポート</button>
+        <!-- v2.82.0: Team D - 機能フィルタ検索 (機能名/ラベルで絞り込み) -->
+        <input class="nav-search" id="navSearch" type="search" placeholder="🔍 機能を検索 (例: SOQL / Apex / 設計書)" aria-label="サイドメニュー機能検索" />
+        <button class="nav-btn nav-home active" data-view="home" data-cat="home" title="ホームダッシュボードへ戻ります (主要機能のカード一覧)">🏠 ホーム</button>
 
-        <div class="nav-sep">💻 開発ツール</div>
-        <button class="nav-btn" data-view="apex" title="匿名 Apex を実行します">🟧 Apex 実行</button>
-        <button class="nav-btn" data-view="apiurl" title="REST API の URL を組み立てます">🔗 API URL ビルダー</button>
-        <button class="nav-btn" data-view="rest" title="任意の REST API を呼び出します">🌐 REST 探索</button>
-        <button class="nav-btn" data-view="describe" title="オブジェクトの describe 情報を表示します">📖 Describe</button>
+        <!-- Team A: カテゴリ別カラー / Team B: 折りたたみ / Team C: ショートカット表示 -->
+        <button class="nav-sep" data-cat="data" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 🗃️ データ操作</button>
+        <div class="nav-group" data-cat="data">
+          <button class="nav-btn" data-view="soql" data-cat="data" title="SOQL クエリを実行します"><span class="nav-label">🔎 SOQL クエリ</span><kbd class="nav-kbd">Q</kbd></button>
+          <button class="nav-btn" data-view="inspector" data-cat="data" title="レコードを項目単位で確認します"><span class="nav-label">🔍 レコード Inspector</span><kbd class="nav-kbd">I</kbd></button>
+          <button class="nav-btn" data-view="dataexport" data-cat="data" title="オブジェクトのデータを一括取得します"><span class="nav-label">📥 データエクスポート</span></button>
+        </div>
 
-        <div class="nav-sep">📊 監視</div>
-        <button class="nav-btn" data-view="limits" title="組織の Limits 使用状況を確認します">📊 Limits ダッシュボード</button>
-        <button class="nav-btn" data-view="logs" title="最新の Debug ログを取得します">📜 Debug ログ</button>
-        <button class="nav-btn" data-view="login" title="ログイン履歴を取得します">🔐 ログイン履歴</button>
+        <button class="nav-sep" data-cat="dev" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 💻 開発ツール</button>
+        <div class="nav-group" data-cat="dev">
+          <button class="nav-btn" data-view="apex" data-cat="dev" title="匿名 Apex を実行します"><span class="nav-label">🟧 Apex 実行</span><kbd class="nav-kbd">A</kbd></button>
+          <button class="nav-btn" data-view="apiurl" data-cat="dev" title="REST API の URL を組み立てます"><span class="nav-label">🔗 API URL ビルダー</span></button>
+          <button class="nav-btn" data-view="rest" data-cat="dev" title="任意の REST API を呼び出します"><span class="nav-label">🌐 REST 探索</span><kbd class="nav-kbd">R</kbd></button>
+          <button class="nav-btn" data-view="describe" data-cat="dev" title="オブジェクトの describe 情報を表示します"><span class="nav-label">📖 Describe</span></button>
+        </div>
 
-        <div class="nav-sep">📦 メタデータ・デプロイ</div>
-        <button class="nav-btn" data-view="metadata" title="メタデータ型ごとの一覧を取得します">📦 メタデータ一覧</button>
-        <button class="nav-btn" data-view="changeset" title="変更セット候補から package.xml を生成します">🔧 変更セット / package.xml</button>
+        <button class="nav-sep" data-cat="monitor" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 📊 監視</button>
+        <div class="nav-group" data-cat="monitor">
+          <button class="nav-btn" data-view="limits" data-cat="monitor" title="組織の Limits 使用状況を確認します"><span class="nav-label">📊 Limits ダッシュボード</span><kbd class="nav-kbd">L</kbd></button>
+          <button class="nav-btn" data-view="logs" data-cat="monitor" title="最新の Debug ログを取得します"><span class="nav-label">📜 Debug ログ</span></button>
+          <button class="nav-btn" data-view="login" data-cat="monitor" title="ログイン履歴を取得します"><span class="nav-label">🔐 ログイン履歴</span></button>
+        </div>
 
-        <div class="nav-sep">📋 設計書</div>
-        <button class="nav-btn" data-view="design" title="22 種類の設計書を生成します">📋 設計書ジェネレータ</button>
+        <button class="nav-sep" data-cat="meta" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 📦 メタデータ・デプロイ</button>
+        <div class="nav-group" data-cat="meta">
+          <button class="nav-btn" data-view="metadata" data-cat="meta" title="メタデータ型ごとの一覧を取得します"><span class="nav-label">📦 メタデータ一覧</span></button>
+          <button class="nav-btn" data-view="changeset" data-cat="meta" title="変更セット候補から package.xml を生成します"><span class="nav-label">🔧 変更セット / package.xml</span></button>
+        </div>
+
+        <button class="nav-sep" data-cat="design" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 📋 設計書</button>
+        <div class="nav-group" data-cat="design">
+          <button class="nav-btn" data-view="design" data-cat="design" title="22 種類の設計書を生成します"><span class="nav-label">📋 設計書ジェネレータ</span><kbd class="nav-kbd">D</kbd></button>
+        </div>
       </nav>
     </aside>
 

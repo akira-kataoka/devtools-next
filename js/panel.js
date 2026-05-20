@@ -352,6 +352,63 @@ function bindNav() {
   // 同様に初期 hidden な .view にも aria-hidden を付与
   document.querySelectorAll(".view.hidden").forEach((p) => p.setAttribute("aria-hidden", "true"));
   renderRecentNav();
+
+  // v2.82.0: 開発者モード サイドメニュー強化 (4 チーム工夫)
+  // Team B - カテゴリ折りたたみトグル + 状態の chrome.storage 永続化
+  const NAV_COLLAPSED_KEY = "sfdtNavCollapsedCats";
+  chrome.storage.local.get(NAV_COLLAPSED_KEY).then(({ [NAV_COLLAPSED_KEY]: collapsed = [] }) => {
+    collapsed.forEach((cat) => {
+      const sep = document.querySelector(`.nav-sep[data-cat="${cat}"]`);
+      const grp = document.querySelector(`.nav-group[data-cat="${cat}"]`);
+      if (sep) sep.setAttribute("aria-expanded", "false");
+      if (grp) grp.classList.add("collapsed");
+    });
+  }).catch(() => {});
+  document.querySelectorAll(".nav-sep[data-cat]").forEach((sep) => {
+    sep.addEventListener("click", async () => {
+      const cat = sep.dataset.cat;
+      const grp = document.querySelector(`.nav-group[data-cat="${cat}"]`);
+      const isOpen = sep.getAttribute("aria-expanded") !== "false";
+      sep.setAttribute("aria-expanded", isOpen ? "false" : "true");
+      if (grp) grp.classList.toggle("collapsed", isOpen);
+      try {
+        const { [NAV_COLLAPSED_KEY]: list = [] } = await chrome.storage.local.get(NAV_COLLAPSED_KEY);
+        const next = isOpen ? [...new Set([...list, cat])] : list.filter((c) => c !== cat);
+        await chrome.storage.local.set({ [NAV_COLLAPSED_KEY]: next });
+      } catch {}
+    });
+  });
+
+  // Team D - 機能フィルタ検索 (入力で nav-btn と nav-sep を絞り込み表示)
+  const navSearch = document.getElementById("navSearch");
+  if (navSearch) {
+    navSearch.addEventListener("input", () => {
+      const q = navSearch.value.trim().toLowerCase();
+      // 各カテゴリでヒット件数をカウントして、ヒットがあるカテゴリヘッダのみ表示
+      const catHits = new Map();
+      document.querySelectorAll(".nav-btn").forEach((btn) => {
+        if (btn.classList.contains("nav-home")) return; // ホームは常時表示
+        const txt = btn.textContent.trim().toLowerCase();
+        const hit = !q || txt.includes(q);
+        btn.classList.toggle("search-hidden", !hit);
+        if (hit && btn.dataset.cat) catHits.set(btn.dataset.cat, (catHits.get(btn.dataset.cat) || 0) + 1);
+      });
+      document.querySelectorAll(".nav-sep[data-cat]").forEach((sep) => {
+        const hasHit = !q || (catHits.get(sep.dataset.cat) || 0) > 0;
+        sep.classList.toggle("search-hidden", !hasHit);
+      });
+      document.querySelectorAll(".nav-group[data-cat]").forEach((grp) => {
+        const hasHit = !q || (catHits.get(grp.dataset.cat) || 0) > 0;
+        grp.classList.toggle("search-hidden", !hasHit);
+        // 検索中は collapsed を一時無視して開く
+        if (q) grp.classList.remove("collapsed");
+      });
+    });
+    // Esc でクリア
+    navSearch.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { navSearch.value = ""; navSearch.dispatchEvent(new Event("input")); navSearch.blur(); }
+    });
+  }
   // サイドメニュー折りたたみトグル (v2.5.0)
   const sideToggle = document.getElementById("btnSideToggle");
   const side = document.querySelector(".cols .side");

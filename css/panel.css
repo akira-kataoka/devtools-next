@@ -231,8 +231,36 @@ td.cell-nested { word-break: break-word; }
 .pill.err { color: var(--err); background: rgba(255,107,107,0.15); }
 .pill.warn { color: var(--warn); background: rgba(243,156,18,0.15); }
 
-/* v2.80.0: ナビセパレータをコンパクト化して、サイドバーに 13 機能 + 🏠 全てが収まるように */
+/* v2.82.0: 開発者モードのサイドメニューを 4 チームで工夫
+ * Team A (デザイン): カテゴリ別アクセントカラー (左ボーダー色分け)
+ * Team B (UX): カテゴリ折りたたみ (nav-sep を button 化 + .collapsed クラスで配下を非表示)
+ * Team C (a11y): キーボードショートカット表示 (.nav-kbd で右端に Q/I/A/L/R/D)
+ * Team D (検索): 機能フィルタ入力欄 (.nav-search で動的絞り込み)
+ */
+
+/* Team D - 検索入力 */
+.nav-search {
+  width: calc(100% - 4px);
+  margin: 0 2px 6px;
+  padding: 6px 10px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--fg);
+  font-size: 11px;
+}
+.nav-search:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(27,150,255,0.2);
+}
+
+/* Team B - カテゴリヘッダ (button 化、クリックで開閉) */
 .nav-sep {
+  display: flex; align-items: center; gap: 4px;
+  width: 100%; text-align: left;
+  background: transparent; border: none;
+  cursor: pointer;
   padding: 6px 10px 2px;
   font-size: 10px;
   color: var(--accent);
@@ -241,11 +269,50 @@ td.cell-nested { word-break: break-word; }
   border-top: 1px solid var(--line);
   margin-top: 4px;
   text-transform: uppercase;
+  transition: color 0.1s, background 0.1s;
 }
-.nav-sep:first-child {
-  border-top: none;
-  margin-top: 0;
+.nav-sep:hover { background: rgba(27,150,255,0.05); color: var(--fg); }
+.nav-sep:first-child { border-top: none; margin-top: 0; }
+.cat-arrow {
+  display: inline-block;
+  transition: transform 0.18s ease;
+  font-size: 8px;
 }
+.nav-sep[aria-expanded="false"] .cat-arrow { transform: rotate(-90deg); }
+.nav-group { display: flex; flex-direction: column; gap: 2px; }
+.nav-group.collapsed { display: none; }
+
+/* Team A - カテゴリ別アクセントカラー (左ボーダー) */
+.nav-btn[data-cat="data"]    { border-left: 2px solid rgba(27,150,255,0.4); }
+.nav-btn[data-cat="dev"]     { border-left: 2px solid rgba(155,89,182,0.4); }
+.nav-btn[data-cat="monitor"] { border-left: 2px solid rgba(46,204,113,0.4); }
+.nav-btn[data-cat="meta"]    { border-left: 2px solid rgba(243,156,18,0.4); }
+.nav-btn[data-cat="design"]  { border-left: 2px solid rgba(232,67,147,0.4); }
+.nav-btn[data-cat="home"]    { border-left: none; }
+.nav-btn[data-cat]:hover, .nav-btn[data-cat].active {
+  /* 既存の active スタイルが border-left を上書きするが、ホバー時にカラーを保つ */
+}
+
+/* Team C - キーボードショートカット表示 */
+.nav-btn .nav-label { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.nav-btn .nav-kbd {
+  display: inline-block;
+  background: rgba(27,150,255,0.15);
+  color: var(--accent);
+  border: 1px solid rgba(27,150,255,0.3);
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 9px;
+  font-family: ui-monospace, Consolas, monospace;
+  font-weight: 700;
+  margin-left: 6px;
+  opacity: 0.7;
+}
+.nav-btn:hover .nav-kbd { opacity: 1; background: rgba(27,150,255,0.25); }
+.nav-btn { display: flex; align-items: center; }
+
+/* 検索でヒットしないボタンの非表示 */
+.nav-btn.search-hidden, .nav-sep.search-hidden, .nav-group.search-hidden { display: none; }
 .nav-btn.recent {
   font-size: 11px;
   color: var(--fg-dim);
