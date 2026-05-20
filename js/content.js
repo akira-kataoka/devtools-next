@@ -271,7 +271,48 @@ function flashToast(text) {
   const runBtn = $("run");
   const meta = $("mta");
   const res = $("res");
+  const histRow = $("histRow");
   let lastRecs = []; // v2.10.0: CSV コピー用に最終結果保持
+
+  // v3.44.0: SOQL 履歴を chrome.storage.local に永続化 (最大 3 件 / 新しいものが先頭 / 重複除外)
+  const MINI_HISTORY_KEY = "sfdtMiniSoqlHistory";
+  let _miniHistory = [];
+  const loadMiniHistory = async () => {
+    try {
+      const data = await chrome.storage.local.get(MINI_HISTORY_KEY);
+      _miniHistory = Array.isArray(data[MINI_HISTORY_KEY]) ? data[MINI_HISTORY_KEY].slice(0, 3) : [];
+    } catch { _miniHistory = []; }
+    renderMiniHistory();
+  };
+  const saveMiniHistory = async () => {
+    try { await chrome.storage.local.set({ [MINI_HISTORY_KEY]: _miniHistory.slice(0, 3) }); } catch {}
+  };
+  const pushMiniHistory = (soql) => {
+    const norm = String(soql || "").trim();
+    if (!norm) return;
+    _miniHistory = [norm, ..._miniHistory.filter((q) => q !== norm)].slice(0, 3);
+    saveMiniHistory();
+    renderMiniHistory();
+  };
+  const truncMiniLabel = (s, n) => (s.length > n ? s.substring(0, n) + "…" : s);
+  const renderMiniHistory = () => {
+    if (!histRow) return;
+    if (!_miniHistory.length) { histRow.innerHTML = ""; return; }
+    histRow.innerHTML = `<span class="history-label">最近のクエリ:</span>`;
+    _miniHistory.forEach((soql) => {
+      const chip = document.createElement("button");
+      chip.className = "history-chip";
+      chip.textContent = truncMiniLabel(soql, 40);
+      chip.title = `クリックでこのクエリを再実行: ${soql}`;
+      chip.addEventListener("click", () => {
+        qry.value = soql;
+        qry.focus();
+        runBtn.click();
+      });
+      histRow.appendChild(chip);
+    });
+  };
+  loadMiniHistory();
 
   // v2.85.0 Team M: パネルを開いた時に現在ページの ID を quick-row に表示
   const updateQuickInfo = () => {
@@ -510,6 +551,8 @@ function flashToast(text) {
       lastRecs = recs;
       meta.innerHTML = `<span class="ok">✓ ${recs.length} 件を取得しました</span>`;
       res.innerHTML = renderTable(recs);
+      // v3.44.0: 成功時に履歴チップへ追加 (chrome.storage 永続化)
+      pushMiniHistory(soql);
     } catch (e) {
       meta.innerHTML = `<span class="err">❌ クエリ実行でエラーが発生しました: ${String(e && e.message || e)}</span>`;
     } finally {
