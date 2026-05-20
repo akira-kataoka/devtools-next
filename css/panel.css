@@ -695,6 +695,22 @@ td.cell-nested { word-break: break-word; }
 .design-preview th, .design-preview td { padding: 4px 6px; border: 1px solid var(--line); text-align: left; vertical-align: top; }
 .design-preview th { background: #112042; color: var(--accent); position: sticky; top: 0; z-index: 1; cursor: default; }
 .design-preview th:hover { background: #112042; /* sortable と区別: hover で色変化なし */ }
+/* v3.46.0: SOQL 履歴チップ (panel + tool) — mini-panel と共有の sfdtRecentSoql から表示 */
+.soql-hist-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 10px; padding: 2px 0; }
+.soql-hist-row:empty { display: none; }
+.soql-hist-label { color: var(--fg-dim); font-weight: 600; margin-right: 4px; }
+.soql-hist-chip {
+  background: rgba(46,204,113,0.10);
+  border: 1px solid rgba(46,204,113,0.35);
+  color: var(--ok);
+  padding: 2px 8px; border-radius: 10px;
+  font-size: 10px; cursor: pointer;
+  font-family: ui-monospace, Consolas, monospace;
+  max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.soql-hist-chip:hover { background: var(--ok); color: #fff; border-color: var(--ok); }
+.soql-hist-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 /* v3.44.0: 設計書プレビュー内 <code> を業務文書らしい体裁に — 例: 「ApexClass」「FieldPermissions」等の API 名強調 */
 .design-preview code {
   background: rgba(27,150,255,0.10);

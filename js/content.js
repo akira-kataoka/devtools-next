@@ -274,26 +274,46 @@ function flashToast(text) {
   const histRow = $("histRow");
   let lastRecs = []; // v2.10.0: CSV コピー用に最終結果保持
 
-  // v3.44.0: SOQL 履歴を chrome.storage.local に永続化 (最大 3 件 / 新しいものが先頭 / 重複除外)
-  const MINI_HISTORY_KEY = "sfdtMiniSoqlHistory";
+  // v3.44.0: SOQL 履歴を chrome.storage.local に永続化
+  // v3.46.0: panel/tool と共有のキー sfdtRecentSoql に統一 (最大 5 件保存、mini-panel は先頭 3 件表示)
+  const SHARED_KEY = "sfdtRecentSoql";
+  const LEGACY_KEY = "sfdtMiniSoqlHistory"; // v3.44 互換: 旧キーから 1 回だけマイグレーション
   let _miniHistory = [];
   const loadMiniHistory = async () => {
     try {
-      const data = await chrome.storage.local.get(MINI_HISTORY_KEY);
-      _miniHistory = Array.isArray(data[MINI_HISTORY_KEY]) ? data[MINI_HISTORY_KEY].slice(0, 3) : [];
+      const data = await chrome.storage.local.get([SHARED_KEY, LEGACY_KEY]);
+      let list = Array.isArray(data[SHARED_KEY]) ? data[SHARED_KEY] : [];
+      // 旧キーから移行 (SHARED_KEY が空かつ LEGACY_KEY に値がある場合のみ)
+      if (!list.length && Array.isArray(data[LEGACY_KEY]) && data[LEGACY_KEY].length) {
+        list = data[LEGACY_KEY].slice(0, 5);
+        await chrome.storage.local.set({ [SHARED_KEY]: list });
+        await chrome.storage.local.remove(LEGACY_KEY);
+      }
+      _miniHistory = list.slice(0, 3);
     } catch { _miniHistory = []; }
     renderMiniHistory();
   };
-  const saveMiniHistory = async () => {
-    try { await chrome.storage.local.set({ [MINI_HISTORY_KEY]: _miniHistory.slice(0, 3) }); } catch {}
-  };
-  const pushMiniHistory = (soql) => {
+  const pushMiniHistory = async (soql) => {
     const norm = String(soql || "").trim();
     if (!norm) return;
-    _miniHistory = [norm, ..._miniHistory.filter((q) => q !== norm)].slice(0, 3);
-    saveMiniHistory();
-    renderMiniHistory();
+    try {
+      const data = await chrome.storage.local.get(SHARED_KEY);
+      const list = Array.isArray(data[SHARED_KEY]) ? data[SHARED_KEY] : [];
+      const next = [norm, ...list.filter((q) => q !== norm)].slice(0, 5);
+      await chrome.storage.local.set({ [SHARED_KEY]: next });
+      _miniHistory = next.slice(0, 3);
+      renderMiniHistory();
+    } catch {}
   };
+  // panel/tool 側で履歴が更新された場合に mini-panel も即時反映
+  if (chrome.storage && chrome.storage.onChanged) {
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === "local" && changes[SHARED_KEY]) {
+        _miniHistory = (changes[SHARED_KEY].newValue || []).slice(0, 3);
+        renderMiniHistory();
+      }
+    });
+  }
   const truncMiniLabel = (s, n) => (s.length > n ? s.substring(0, n) + "…" : s);
   const renderMiniHistory = () => {
     if (!histRow) return;

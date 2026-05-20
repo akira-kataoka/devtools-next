@@ -86,6 +86,15 @@ async function init() {
     console.log("[DevToolsNext] init: post-reconnect (saved queries / pickers)");
     loadSavedQueries();
     loadSavedApex();
+    loadSharedSoqlHistory();
+    // v3.46.0: chrome.storage.local 変更を監視して、別画面/mini-panel での履歴更新を即時反映
+    if (chrome.storage && chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === "local" && changes[SHARED_SOQL_HISTORY_KEY]) {
+          renderSharedSoqlHistory(changes[SHARED_SOQL_HISTORY_KEY].newValue || []);
+        }
+      });
+    }
     initHeader();
     attachAllPickers();
     setupDesignPicker();
@@ -3086,6 +3095,49 @@ async function doSoql() {
   meta.classList.remove("loading-pulse");
   meta.innerHTML = `<span class="pill ok">取得 ${recs.length} 件</span> <span class="pill" title="クエリにヒットした総件数">合計 ${r.data.totalSize ?? recs.length} 件</span> ${dt}ms${tooling ? ' <span class="pill warn" title="Tooling API で実行">Tooling</span>' : ""}`;
   document.getElementById("soqlResult").innerHTML = recordsTable(recs);
+  // v3.46.0: 共有 SOQL 履歴に push (mini-panel と同期)
+  pushSharedSoqlHistory(soql);
+}
+
+// v3.46.0: 3 モード共有 SOQL 履歴 (panel + tool + mini-panel) — chrome.storage.local の sfdtRecentSoql キー
+const SHARED_SOQL_HISTORY_KEY = "sfdtRecentSoql";
+async function loadSharedSoqlHistory() {
+  try {
+    const data = await chrome.storage.local.get(SHARED_SOQL_HISTORY_KEY);
+    const list = Array.isArray(data[SHARED_SOQL_HISTORY_KEY]) ? data[SHARED_SOQL_HISTORY_KEY] : [];
+    renderSharedSoqlHistory(list);
+  } catch { renderSharedSoqlHistory([]); }
+}
+async function pushSharedSoqlHistory(soql) {
+  const norm = String(soql || "").trim();
+  if (!norm) return;
+  try {
+    const data = await chrome.storage.local.get(SHARED_SOQL_HISTORY_KEY);
+    const list = Array.isArray(data[SHARED_SOQL_HISTORY_KEY]) ? data[SHARED_SOQL_HISTORY_KEY] : [];
+    const next = [norm, ...list.filter((q) => q !== norm)].slice(0, 5);
+    await chrome.storage.local.set({ [SHARED_SOQL_HISTORY_KEY]: next });
+    renderSharedSoqlHistory(next);
+  } catch {}
+}
+function renderSharedSoqlHistory(list) {
+  const row = document.getElementById("soqlHistRow");
+  if (!row) return;
+  if (!list || !list.length) { row.innerHTML = ""; return; }
+  const trunc = (s, n) => (s.length > n ? s.substring(0, n) + "…" : s);
+  row.innerHTML = `<span class="soql-hist-label">最近のクエリ:</span>`;
+  list.forEach((soql) => {
+    const chip = document.createElement("button");
+    chip.className = "soql-hist-chip";
+    chip.textContent = trunc(soql, 60);
+    chip.title = `クリックでこの SOQL をエディタに反映して実行: ${soql}`;
+    chip.addEventListener("click", () => {
+      const ta = document.getElementById("soqlText");
+      if (ta) { ta.value = soql; ta.focus(); }
+      const btn = document.getElementById("btnRunSoql");
+      if (btn) btn.click();
+    });
+    row.appendChild(chip);
+  });
 }
 
 // 結果テーブルが列ソート中なら、その並びを state.lastRecords に反映してから返す
