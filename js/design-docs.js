@@ -779,35 +779,56 @@ async function buildFlsReport({ host, sid, apiVersion, obj, progress = () => {} 
     title: `項目レベルセキュリティ (FLS) レポート: ${obj}`,
     type: "flsReport",
     sections: [
-      { heading: "凡例", kvRows: [
-        ["👤 名前", "プロファイル"],
-        ["🔑 名前", "権限セット"],
-        ["Edit", "編集可 (PermissionsEdit=true)"],
-        ["Read", "参照可だが編集不可 (PermissionsRead=true, PermissionsEdit=false)"],
-        ["--", "アクセスなし"],
+      { heading: "0. 凡例", kvRows: [
+        ["FLS とは", "項目レベルセキュリティ。ユーザがレコード内の個別項目を『編集できる/参照のみ/見えない』を制御する仕組み"],
+        ["👤 名前", "プロファイル (ユーザに 1 つ適用)"],
+        ["🔑 名前", "権限セット (複数加算可)"],
+        ["編集可 (Edit)", "PermissionsEdit=true / 値を画面・API で書き換え可能"],
+        ["参照のみ (Read)", "PermissionsRead=true, PermissionsEdit=false / 読み取り専用表示"],
+        ["アクセス無し (--)", "PermissionsRead=false または FieldPermissions レコードなし / 画面で項目が非表示"],
+        ["必須", "○ = 入力必須項目 (nillable=false かつ defaultedOnCreate=false)。FLS で参照のみでもバックエンドでは値必要"],
+        ["除外項目", "計算項目 (formula) と Id 項目は FLS 制御対象外のため一覧から除外"],
       ]},
-      { heading: "FLS 一覧", headers, rows },
+      { heading: "1. FLS 一覧", headers, rows },
     ],
-    note: "Excel 形式推奨 (セルの折り返し有効)。Profile Reader 互換書式。",
+    note: "Excel 形式推奨 (セルの折り返し有効)。改行入りセルがあるため A4 縦 で印刷する場合は行高さ自動調整を推奨。",
   };
 }
 
 // ============ アプリケーション一覧 ============
 async function buildAppList({ host, sid, apiVersion }) {
+  // UI 種別マップ
+  const uiTypeMap = {
+    "Aloha": "Aloha (Classic UI)",
+    "Lightning": "Lightning Experience",
+  };
+  // ナビ種別マップ
+  const navTypeMap = {
+    "Standard": "標準ナビ (タブのみ)",
+    "Console": "コンソール (タブ + サブタブ + ホバー)",
+  };
+  // AppMenuItem 種別マップ
+  const menuTypeMap = {
+    "TabSet": "タブセット (Salesforce アプリ)",
+    "Connected": "Connected App (外部アプリ連携)",
+    "ServiceProvider": "Service Provider (SAML 等)",
+    "Network": "Experience Cloud サイト",
+  };
+
   // Tooling: CustomApplication (Lightning + Classic) + AppDefinition (Lightning Apps の正規)
   const r = await runSoql({
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, DeveloperName, MasterLabel, NamespacePrefix, UiType, NavType, ProfileId, Description FROM AppDefinition ORDER BY MasterLabel LIMIT 500`,
   });
-  if (!r.ok) throw apiError("AppDefinition 取得", r);
-  const headers = ["No", "API 名", "ラベル", "Namespace", "UI種別", "ナビ", "説明"];
+  if (!r.ok) throw apiError("アプリケーション定義の取得に失敗しました", r);
+  const headers = ["No", "API 名", "ラベル", "ネームスペース", "UI 種別", "ナビゲーション", "説明"];
   const rows = (r.data.records || []).map((a, i) => ({
     "No": i + 1,
     "API 名": a.DeveloperName,
     "ラベル": a.MasterLabel,
-    "Namespace": a.NamespacePrefix || "",
-    "UI種別": a.UiType || "",
-    "ナビ": a.NavType || "",
+    "ネームスペース": a.NamespacePrefix || "(なし: カスタム)",
+    "UI 種別": uiTypeMap[a.UiType] || a.UiType || "",
+    "ナビゲーション": navTypeMap[a.NavType] || a.NavType || "",
     "説明": a.Description || "",
   }));
 
@@ -816,21 +837,34 @@ async function buildAppList({ host, sid, apiVersion }) {
     host, sid, apiVersion,
     soql: `SELECT Id, ApplicationId, Label, Name, Type, IsVisible, IsAccessible, SortOrder FROM AppMenuItem ORDER BY SortOrder NULLS LAST, Label LIMIT 200`,
   });
-  const menuHeaders = ["No", "ラベル", "Name", "Type", "可視", "アクセス可", "Order"];
+  const menuHeaders = ["No", "ラベル", "API 名", "種別", "App Launcher 表示", "アクセス可", "並び順"];
   const menuRows = m.ok ? (m.data.records || []).map((x, i) => ({
-    "No": i + 1, "ラベル": x.Label || "", "Name": x.Name || "",
-    "Type": x.Type || "", "可視": x.IsVisible ? "○" : "", "アクセス可": x.IsAccessible ? "○" : "",
-    "Order": x.SortOrder == null ? "" : x.SortOrder,
+    "No": i + 1,
+    "ラベル": x.Label || "",
+    "API 名": x.Name || "",
+    "種別": menuTypeMap[x.Type] || x.Type || "",
+    "App Launcher 表示": x.IsVisible ? "○ 表示" : "− 非表示",
+    "アクセス可": x.IsAccessible ? "○" : "−",
+    "並び順": x.SortOrder == null ? "" : x.SortOrder,
   })) : [];
 
+  const legend = [
+    ["アプリケーションとは", "Salesforce で機能をまとめた『画面パッケージ』。タブ構成・ユーティリティバー・ナビ種別等を定義"],
+    ["AppDefinition", "全アプリのメタデータ。Classic / Lightning / 管理パッケージ提供分を含む"],
+    ["AppMenuItem", "App Launcher (9 つの点アイコン) にユーザが見るリスト。並び順や表示/非表示を制御"],
+    ["UI 種別", "Aloha = Classic UI、Lightning = Lightning Experience"],
+    ["ナビゲーション", "標準ナビ = 通常のタブ表示、コンソール = サブタブ・ホバーで複数レコード並行操作"],
+  ];
+
   return {
-    title: "アプリケーション一覧 (Lightning Apps)",
+    title: "アプリケーション一覧 (Lightning + Classic)",
     type: "appList",
     sections: [
-      { heading: "AppDefinition (Lightning + Classic)", headers, rows },
-      ...(menuRows.length ? [{ heading: "AppMenuItem (ユーザー表示順)", headers: menuHeaders, rows: menuRows }] : []),
+      { heading: "0. 凡例", kvRows: legend },
+      { heading: "1. AppDefinition (組織内全アプリ)", headers, rows },
+      ...(menuRows.length ? [{ heading: "2. AppMenuItem (App Launcher 表示順)", headers: menuHeaders, rows: menuRows }] : []),
     ],
-    note: `合計 ${rows.length} アプリ`,
+    note: `合計 ${rows.length} アプリ / AppMenuItem の「並び順」はプロファイル単位で別途上書き可能`,
   };
 }
 
@@ -949,16 +983,44 @@ async function buildFlowDetail({ host, sid, apiVersion, obj }) {
   }
 
   const meta = flow.Metadata || {};
+  // ProcessType を日本語+原文に
+  const processTypeMap = {
+    "AutoLaunchedFlow": "自動起動フロー (Autolaunched)",
+    "Flow": "画面フロー (Screen)",
+    "Workflow": "ワークフロー (Workflow Rule)",
+    "InvocableProcess": "プロセスビルダー (Invocable Process)",
+    "LoginFlow": "ログインフロー",
+    "Survey": "アンケート (Survey)",
+    "ActionPlan": "アクションプラン",
+  };
+  const statusMap = { "Active": "○ アクティブ", "Draft": "下書き", "Obsolete": "廃止", "InvalidDraft": "無効な下書き" };
   const summary = [
-    ["Flow API 名", obj],
-    ["ラベル", flow.MasterLabel],
-    ["ProcessType", flow.ProcessType],
-    ["Status", flow.Status],
-    ["Version", flow.VersionNumber],
-    ["Description", flow.Description || ""],
+    ["フロー API 名", obj],
+    ["ラベル (画面表示)", flow.MasterLabel],
+    ["種別 (ProcessType)", processTypeMap[flow.ProcessType] || flow.ProcessType],
+    ["状態 (Status)", statusMap[flow.Status] || flow.Status],
+    ["バージョン", flow.VersionNumber],
+    ["説明", flow.Description || ""],
   ];
 
-  const sections = [{ heading: "1. サマリ", kvRows: summary }];
+  // 凡例 (要素種別の業務向け説明)
+  const legend = [
+    ["変数 (variables)", "フロー実行中に値を保持する箱。Input/Output 指定で外部から値を受け渡し可能"],
+    ["定数 (constants)", "実行中に変化しない固定値。料率や閾値などのマジックナンバー定義に"],
+    ["計算式 (formulas)", "他要素を組み合わせて値を算出する式。SUM/IF/CASE 等の関数が使用可"],
+    ["分岐 (decisions)", "If/Then 条件で実行経路を分岐させる要素。複数アウトカム可"],
+    ["代入 (assignments)", "変数やレコード項目に値を設定/加減算する要素"],
+    ["レコード作成/更新/取得/削除", "標準/カスタムオブジェクトに対する CRUD 操作要素"],
+    ["画面 (screens)", "Screen Flow でユーザに入力させる画面定義。コンポーネント (Input/Display) の集合"],
+    ["ループ (loops)", "コレクション (List) を順に処理するループ要素"],
+    ["サブフロー (subflows)", "別フローを呼び出して結果を取得する要素 (フロー再利用)"],
+    ["アクション呼び出し (actionCalls)", "メール送信・Apex 呼び出し・Quick Action 等の外部アクション"],
+  ];
+
+  const sections = [
+    { heading: "0. 凡例 (フロー要素の意味)", kvRows: legend },
+    { heading: "1. サマリ", kvRows: summary },
+  ];
 
   // 各要素を整理 (Salesforce Flow metadata の代表要素のみ)
   const collect = (arr, headers, mapFn, title) => {
@@ -970,63 +1032,63 @@ async function buildFlowDetail({ host, sid, apiVersion, obj }) {
     });
   };
 
-  collect(meta.variables, ["No", "name", "dataType", "isCollection", "isInput", "isOutput"],
-    (v) => ({ name: v.name, dataType: v.dataType, isCollection: v.isCollection ? "○" : "", isInput: v.isInput ? "○" : "", isOutput: v.isOutput ? "○" : "" }),
+  collect(meta.variables, ["No", "API 名", "データ型", "コレクション", "入力", "出力"],
+    (v) => ({ "API 名": v.name, "データ型": v.dataType, "コレクション": v.isCollection ? "○" : "", "入力": v.isInput ? "○" : "", "出力": v.isOutput ? "○" : "" }),
     "2. 変数 (variables)");
 
-  collect(meta.constants, ["No", "name", "dataType", "value"],
-    (c) => ({ name: c.name, dataType: c.dataType, value: c.value && c.value.stringValue || "" }),
+  collect(meta.constants, ["No", "API 名", "データ型", "値"],
+    (c) => ({ "API 名": c.name, "データ型": c.dataType, "値": c.value && c.value.stringValue || "" }),
     "3. 定数 (constants)");
 
-  collect(meta.formulas, ["No", "name", "dataType", "expression"],
-    (f) => ({ name: f.name, dataType: f.dataType, expression: f.expression }),
+  collect(meta.formulas, ["No", "API 名", "データ型", "計算式"],
+    (f) => ({ "API 名": f.name, "データ型": f.dataType, "計算式": f.expression }),
     "4. 計算式 (formulas)");
 
-  collect(meta.decisions, ["No", "name", "label", "defaultConnectorLabel"],
-    (d) => ({ name: d.name, label: d.label, defaultConnectorLabel: d.defaultConnectorLabel || "" }),
+  collect(meta.decisions, ["No", "API 名", "ラベル", "既定経路ラベル"],
+    (d) => ({ "API 名": d.name, "ラベル": d.label, "既定経路ラベル": d.defaultConnectorLabel || "" }),
     "5. 分岐 (decisions)");
 
-  collect(meta.assignments, ["No", "name", "label", "assignmentItemsCount"],
-    (a) => ({ name: a.name, label: a.label || "", assignmentItemsCount: (a.assignmentItems || []).length }),
+  collect(meta.assignments, ["No", "API 名", "ラベル", "代入項目数"],
+    (a) => ({ "API 名": a.name, "ラベル": a.label || "", "代入項目数": (a.assignmentItems || []).length }),
     "6. 代入 (assignments)");
 
-  collect(meta.recordCreates, ["No", "name", "label", "object"],
-    (x) => ({ name: x.name, label: x.label || "", object: x.object }),
+  collect(meta.recordCreates, ["No", "API 名", "ラベル", "対象オブジェクト"],
+    (x) => ({ "API 名": x.name, "ラベル": x.label || "", "対象オブジェクト": x.object }),
     "7. レコード作成 (recordCreates)");
 
-  collect(meta.recordUpdates, ["No", "name", "label", "object"],
-    (x) => ({ name: x.name, label: x.label || "", object: x.object }),
+  collect(meta.recordUpdates, ["No", "API 名", "ラベル", "対象オブジェクト"],
+    (x) => ({ "API 名": x.name, "ラベル": x.label || "", "対象オブジェクト": x.object }),
     "8. レコード更新 (recordUpdates)");
 
-  collect(meta.recordLookups, ["No", "name", "label", "object", "getFirstRecordOnly"],
-    (x) => ({ name: x.name, label: x.label || "", object: x.object, getFirstRecordOnly: x.getFirstRecordOnly ? "○" : "" }),
+  collect(meta.recordLookups, ["No", "API 名", "ラベル", "対象オブジェクト", "先頭 1 件のみ"],
+    (x) => ({ "API 名": x.name, "ラベル": x.label || "", "対象オブジェクト": x.object, "先頭 1 件のみ": x.getFirstRecordOnly ? "○" : "" }),
     "9. レコード取得 (recordLookups)");
 
-  collect(meta.recordDeletes, ["No", "name", "label", "object"],
-    (x) => ({ name: x.name, label: x.label || "", object: x.object }),
+  collect(meta.recordDeletes, ["No", "API 名", "ラベル", "対象オブジェクト"],
+    (x) => ({ "API 名": x.name, "ラベル": x.label || "", "対象オブジェクト": x.object }),
     "10. レコード削除 (recordDeletes)");
 
-  collect(meta.screens, ["No", "name", "label", "fieldCount"],
-    (x) => ({ name: x.name, label: x.label || "", fieldCount: (x.fields || []).length }),
+  collect(meta.screens, ["No", "API 名", "ラベル", "画面項目数"],
+    (x) => ({ "API 名": x.name, "ラベル": x.label || "", "画面項目数": (x.fields || []).length }),
     "11. 画面 (screens)");
 
-  collect(meta.loops, ["No", "name", "label", "collectionReference"],
-    (x) => ({ name: x.name, label: x.label || "", collectionReference: x.collectionReference || "" }),
+  collect(meta.loops, ["No", "API 名", "ラベル", "対象コレクション"],
+    (x) => ({ "API 名": x.name, "ラベル": x.label || "", "対象コレクション": x.collectionReference || "" }),
     "12. ループ (loops)");
 
-  collect(meta.subflows, ["No", "name", "label", "flowName"],
-    (x) => ({ name: x.name, label: x.label || "", flowName: x.flowName }),
+  collect(meta.subflows, ["No", "API 名", "ラベル", "呼び出し先フロー"],
+    (x) => ({ "API 名": x.name, "ラベル": x.label || "", "呼び出し先フロー": x.flowName }),
     "13. サブフロー (subflows)");
 
-  collect(meta.actionCalls, ["No", "name", "label", "actionName", "actionType"],
-    (x) => ({ name: x.name, label: x.label || "", actionName: x.actionName, actionType: x.actionType }),
+  collect(meta.actionCalls, ["No", "API 名", "ラベル", "アクション名", "アクション種別"],
+    (x) => ({ "API 名": x.name, "ラベル": x.label || "", "アクション名": x.actionName, "アクション種別": x.actionType }),
     "14. アクション呼び出し (actionCalls)");
 
   return {
     title: `フロー設計図: ${flow.MasterLabel} (${obj}) v${flow.VersionNumber}`,
     type: "flowDetail",
     sections,
-    note: `Salesforce Flow metadata から各要素を抽出。要素 0 件のセクションは省略。`,
+    note: `Salesforce Flow metadata から各要素を抽出 / 要素 0 件のセクションは省略 / Status=Draft の場合は最新の保存版を表示`,
   };
 }
 
@@ -1421,23 +1483,27 @@ async function buildObjectPermMatrix({ host, sid, apiVersion, progress = () => {
     title: "オブジェクト権限マトリクス",
     type: "objectPermMatrix",
     sections: [
-      { heading: "凡例", kvRows: [
-        ["記号", "意味 (順: Create/Read/Update/Delete/ViewAll/ModifyAll)"],
-        ["CRUDVM", "全権限あり (Create + Read + Update + Delete + ViewAll + ModifyAll)"],
-        ["-R----", "読取のみ"],
-        ["------", "権限なし"],
-        ["👤", "プロファイル"],
-        ["🔑", "権限セット"],
+      { heading: "0. 凡例", kvRows: [
+        ["オブジェクト権限とは", "ユーザがオブジェクト全体に対して『作成/参照/更新/削除/全件参照/全件修正』をどこまで許可されているかの設定"],
+        ["セル形式", "6 文字で表現。順に C=作成 / R=参照 / U=更新 / D=削除 / V=全件参照 / M=全件修正"],
+        ["CRUDVM", "全権限あり (システム管理者相当)"],
+        ["CRUD--", "通常の CRUD のみ (他人レコードは共有設定に従う)"],
+        ["-R----", "参照のみ (読み取り専用)"],
+        ["------", "権限なし (アクセス不可)"],
+        ["V (ViewAll)", "共有設定を無視して全件参照可。データレポート/監査用途のプロファイルで利用"],
+        ["M (ModifyAll)", "共有設定を無視して全件修正/削除可。誤付与はリスク大、システム管理者相当の権限"],
+        ["👤 列", "プロファイル単位 (ユーザに 1 つ適用)"],
+        ["🔑 列", "権限セット単位 (複数加算可)"],
       ]},
-      { heading: "サマリ", kvRows: [
+      { heading: "1. サマリ", kvRows: [
         ["対象オブジェクト数", String(objList.length)],
         ["プロファイル数", String(cols.filter((c) => c.isProfile).length)],
         ["権限セット数", String(cols.filter((c) => !c.isProfile).length)],
         ["ObjectPermissions レコード数", String(allRecs.length)],
       ]},
-      { heading: "マトリクス", headers, rows },
+      { heading: "2. マトリクス", headers, rows },
     ],
-    note: "セル形式: [C][R][U][D][V][M]  C=Create R=Read U=Edit D=Delete V=ViewAllRecords M=ModifyAllRecords。各位置に文字があれば true、ハイフンなら false。",
+    note: "Excel で開き B2 セルでウィンドウ枠固定すると左 2 列と先頭行が常時可視で見やすいです。V/M 権限の付与状況を年次監査で確認してください。",
   };
 }
 function fmtDate(s) {

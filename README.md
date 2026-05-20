@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.17.0 (2026-05-20 14:15)** — 🚨 ユーザー要望 Phase 7: ObjectPermMatrix / FlsReport / AppList / FlowDetail 業務化:
+  - **🐛 buildObjectPermMatrix**: 凡例を 10 項目に拡充 (CRUDVM 6 文字の意味、ViewAll/ModifyAll のリスク説明、CRUD-- 等の代表パターン)、note に Excel B2 ウィンドウ枠固定の Tips
+  - **🐛 buildFlsReport**: 凡例セクション 7 項目 (FLS とは / 👤🔑 列マーカー / 必須項目の挙動 / 除外条件)、note を業務向け文言に
+  - **🐛 buildAppList**: UiType/NavType/AppMenuItem.Type を日本語マップ (Aloha=Classic UI、Console=コンソール、TabSet=Salesforce アプリ等)、凡例 5 項目、IsVisible を「○ 表示/− 非表示」に
+  - **🐛 buildFlowDetail**: 凡例セクション 10 項目 (各要素種別の業務向け説明)、ProcessType/Status を日本語化、全 13 セクションの列名を日本語に (`name`→`API 名`、`dataType`→`データ型`、`object`→`対象オブジェクト`、`isInput`→`入力` 等)
 - **v2.16.0 (2026-05-20 14:10)** — 🚨 ユーザー要望 Phase 6: プロファイル/権限セット/カスタム設定/FLS マトリクス + README 解説:
   - **🐛 buildProfileList**: ユーザ種別 (UserType) 8 種類を日本語+原文併記、凡例セクション 4 項目追加 (プロファイルとは / ライセンス / ユーザ種別 / 設計指針)。Spring '26 のプロファイル機能廃止予告も note に
   - **🐛 buildPermSetList**: 列名業務化 (「ラベル (画面表示名)」「ネームスペース」「種別」)、IsCustom を「カスタム/標準/パッケージ」に、凡例 5 項目追加
