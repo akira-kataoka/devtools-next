@@ -1,3 +1,12 @@
+/*
+ * カラーパレット (panel.css と同期 — 統一されたダーク UI)
+ * --bg/bg2       : 背景の 2 階層 (最暗 → カード)
+ * --fg/fg-dim    : 文字色 (主/副)
+ * --accent       : Salesforce ブルー (主要アクション)
+ * --accent-2     : アクセントホバー時の濃色
+ * --ok/warn/err  : 緑 / オレンジ / 赤 (toast / pill)
+ * --line         : 罫線
+ */
 :root {
   --bg: #0b1220;
   --bg2: #111a2e;

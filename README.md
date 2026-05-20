@@ -17,6 +17,10 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.54.0 (2026-05-20 17:20)** — 🚨 ユーザー要望 Phase 44: CSS カラーパレット ドキュメント化:
+  - **🎨 css/panel.css :root 変数ブロック**: 各 CSS 変数 (--bg/bg2/bg3 / --fg/fg-dim / --accent/accent-2 / --ok/warn/err / --line) の役割を 7 行コメントで明示
+  - **🎨 css/popup.css :root 変数ブロック**: panel.css と同期した同様の役割コメント追加 (色定義の意図が後から参照可能)
+  - **🛡 background.js readDiskVersion**: 既に try/catch + null フォールバック実装済を確認 (追加対応不要)
 - **v2.53.0 (2026-05-20 17:15)** — 🚨 ユーザー要望 Phase 43: inline() XSS サニタイズ確認 + ドキュメント:
   - **🛡 design-docs.js inline()**: XSS 対策のコメントを明示化。esc() で HTML エンティティを先にエスケープしてから、安全な範囲のみ Markdown 記法を許可 (code/bold/italic のみ、link [text](url) と img ![](url) は意図的に未サポート — 設計書本文に URL 埋め込み経路がないため)。挙動変更なし、XSS リスク評価の証跡として説明コメントを保存
 - **v2.52.0 (2026-05-20 17:10)** — 🚨 ユーザー要望 Phase 42: markdownToHtml テーブル th tooltip + 自動更新仕組み:
