@@ -361,7 +361,9 @@ async function buildFlowList({ host, sid, apiVersion }) {
     const headers = ["No", "ラベル", "API 名", "種別", "状態", "バージョン"];
     const rows = (r2.data.records || []).map((f, i) => ({
       "No": i + 1, "ラベル": f.MasterLabel, "API 名": f.Definition ? f.Definition.DeveloperName : "",
-      "種別": processTypeLabel(f.ProcessType), "状態": f.Status === "Active" ? "アクティブ" : (f.Status || ""), "バージョン": f.VersionNumber,
+      "種別": processTypeLabel(f.ProcessType),
+      "状態": f.Status === "Active" ? "○ アクティブ" : (f.Status === "Draft" ? "下書き" : (f.Status === "Obsolete" ? "廃止" : (f.Status || ""))),
+      "バージョン": f.VersionNumber != null ? `v${f.VersionNumber}` : "",
     }));
     return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${fmtNum(rows.length)} 件 / 種別と状態は業務用語で表記しています` };
   }
@@ -371,8 +373,8 @@ async function buildFlowList({ host, sid, apiVersion }) {
     "ラベル": f.MasterLabel,
     "API 名": f.DeveloperName,
     "種別": processTypeLabel(f.ProcessType),
-    "アクティブ": f.IsActive ? "○" : "",
-    "バージョン": f.VersionNumber,
+    "アクティブ": f.IsActive ? "○ 稼働中" : "− 停止",
+    "バージョン": f.VersionNumber != null ? `v${f.VersionNumber}` : "",
     "説明": f.Description || "",
     "更新日": fmtDate(f.LastModifiedDate),
   }));
@@ -869,7 +871,7 @@ async function buildAppList({ host, sid, apiVersion }) {
     "種別": menuTypeMap[x.Type] || x.Type || "",
     "App Launcher 表示": x.IsVisible ? "○ 表示" : "− 非表示",
     "アクセス可": x.IsAccessible ? "○" : "−",
-    "並び順": x.SortOrder == null ? "" : x.SortOrder,
+    "並び順": x.SortOrder == null ? "" : fmtNum(x.SortOrder),
   })) : [];
 
   const legend = [
@@ -1462,10 +1464,10 @@ async function buildFieldPermMatrix({ host, sid, apiVersion, obj, progress = () 
       { heading: "凡例", kvRows: legend },
       { heading: "サマリ", kvRows: [
         ["対象オブジェクト", obj],
-        ["対象フィールド数", String(allFields.length)],
-        ["プロファイル数", String(cols.filter((c) => c.isProfile).length)],
-        ["権限セット数", String(cols.filter((c) => !c.isProfile).length)],
-        ["FieldPermissions レコード数", String(allRecs.length)],
+        ["対象フィールド数", fmtNum(allFields.length) + " 項目"],
+        ["プロファイル数", fmtNum(cols.filter((c) => c.isProfile).length) + " 件"],
+        ["権限セット数", fmtNum(cols.filter((c) => !c.isProfile).length) + " 件"],
+        ["FieldPermissions レコード数", fmtNum(allRecs.length) + " 件"],
       ]},
       { heading: "マトリクス", headers, rows },
     ],
@@ -1556,10 +1558,10 @@ async function buildObjectPermMatrix({ host, sid, apiVersion, progress = () => {
         ["🔑 列", "権限セット単位 (複数加算可)"],
       ]},
       { heading: "1. サマリ", kvRows: [
-        ["対象オブジェクト数", String(objList.length)],
-        ["プロファイル数", String(cols.filter((c) => c.isProfile).length)],
-        ["権限セット数", String(cols.filter((c) => !c.isProfile).length)],
-        ["ObjectPermissions レコード数", String(allRecs.length)],
+        ["対象オブジェクト数", fmtNum(objList.length) + " 件"],
+        ["プロファイル数", fmtNum(cols.filter((c) => c.isProfile).length) + " 件"],
+        ["権限セット数", fmtNum(cols.filter((c) => !c.isProfile).length) + " 件"],
+        ["ObjectPermissions レコード数", fmtNum(allRecs.length) + " 件"],
       ]},
       { heading: "2. マトリクス", headers, rows },
     ],

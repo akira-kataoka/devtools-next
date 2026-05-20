@@ -17,6 +17,12 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.60.0 (2026-05-20 19:39)** — 🚨 ユーザー要望 Phase 51: 残設計書の桁数・値表記を改善:
+  - **🐛 buildFieldPermMatrix サマリ**: 「対象フィールド数 / プロファイル数 / 権限セット数 / FieldPermissions レコード数」を 3 桁区切り + 「N 項目」「N 件」単位付きに
+  - **🐛 buildObjectPermMatrix サマリ**: 同様に 4 サマリ項目を 3 桁区切り + 単位付きに
+  - **🐛 buildFlowList**: アクティブ列を「○ 稼働中 / − 停止」に絵文字付き、バージョンを `v2` 形式に統一、フォールバック (FlowDefinitionView 不可組織) も同様に
+  - **🐛 buildAppList AppMenuItem 並び順**: SortOrder を 3 桁区切り表示に
+  - **🧪 panel.js Limits ダッシュボード**: 既に toLocaleString 利用済を確認、追加対応不要
 - **v2.59.0 (2026-05-20 19:35)** — 🚨 ユーザー要望 Phase 50 (待機解除): 設計書のカラム名・値・桁数を改善:
   - **🔢 design-docs.js fmtNum / fmtBytes ヘルパー追加**: 数値 3 桁区切り (12,345) / バイトサイズ自動切替 (1,023 B → 12.1 KB → 1.18 MB → 2.50 GB) 共通関数を導入
   - **🐛 buildApexClassList**: コード行数を 3 桁区切り表示 (12345 → "12,345")、API バージョンを "v62.0" 表記、Status を絵文字付き (○ 有効 / − 無効 / ✗ 削除済)、「作成日」列追加、note に **総コード行数の集計** 「総コード行数: 1,234,567 行」を追加 (Apex Limit 試算用)
