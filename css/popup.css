@@ -36,6 +36,15 @@ html, body {
   resize: both;
   overflow: auto;
 }
+/* v3.25.0: popup 開閉時の fade-in アニメーション (3 モード UI 体験統一 — Phase 111 mini-panel + Phase 112 panel ビューと同じ Material 風カーブ) */
+body { animation: popupFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes popupFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  body { animation: none; }
+}
 
 /* v2.78.0: 抜本簡素化に伴う最上部の大型 CTA「全画面で開く」ボタン
    初めてのユーザーにも一目で主要動線が分かるよう、アイコン + タイトル + 補助テキスト + 矢印を横並びに配置 */
