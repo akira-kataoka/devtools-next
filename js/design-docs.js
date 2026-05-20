@@ -114,20 +114,27 @@ function fieldTypeJa(type, referenceTo) {
 // v2.98.0: 設計書の表紙セクション共通生成 (プロジェクト成果物品質)
 // 全設計書冒頭に挿入する標準セクション
 function makeCoverSection(opts) {
-  // opts: { docTitle, target, orgHost, userName, version, revision }
+  // opts: { docTitle, target, orgHost, userName, version, revision, docId, classification }
+  // v3.28.0: 業務文書として管理しやすいよう、文書管理 ID・機密区分・利用目的・配布対象を追加
   const now = new Date();
   const pad = (n) => String(n).padStart(2, "0");
   const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  // 文書管理 ID: DOC-YYYYMMDD-HHmmss-<orgHost prefix> 形式で自動付番 (プロジェクト管理ツールへ登録時に便利)
+  const orgPrefix = String(opts.orgHost || "").split(".")[0].replace(/[^a-zA-Z0-9-]/g, "").slice(0, 12) || "ORG";
+  const docId = opts.docId || `DOC-${now.getFullYear()}${pad(now.getMonth()+1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}-${orgPrefix}`;
   return {
     heading: "📄 表紙",
     kvRows: [
-      ["設計書", opts.docTitle || ""],
+      ["文書管理 ID", docId],
+      ["設計書名", opts.docTitle || ""],
       ["対象", opts.target || ""],
       ["対象組織", opts.orgHost || ""],
+      ["機密区分", opts.classification || "社内限定 (Confidential)"],
       ["作成者", opts.userName || "(SOAP 認証ユーザ)"],
       ["作成日時", dateStr],
-      ["拡張機能 Ver", opts.version || "DevToolsNext v2.98+"],
+      ["拡張機能 Ver", opts.version || "DevToolsNext v3.28+"],
       ["改訂履歴", opts.revision || `初版 / ${dateStr} 自動生成`],
+      ["注意事項", "本設計書は組織内のメタデータをそのまま反映しています。配布前に機密項目 (個人情報・契約金額等) が含まれていないかご確認ください。"],
     ],
   };
 }
