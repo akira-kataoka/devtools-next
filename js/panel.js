@@ -217,6 +217,8 @@ function setupDesignPicker() {
       input.style.opacity = "1";
       attachPicker("designObj", kind, { title: "候補から選択" });
     }
+    // v3.74.0: type 別履歴チップを表示
+    renderDesignObjHistory(type);
   };
   sel.addEventListener("change", refresh);
   refresh();
@@ -262,6 +264,44 @@ function formatApex(input) {
     .replace(/\x01STR(\d+)\x01/g, (_, i) => placeholders[+i])
     .replace(/\x01CMT(\d+)\x01/g, (_, i) => placeholders[+i]);
   return working;
+}
+
+// v3.74.0: 設計書「対象」入力履歴 — type 別に直近 5 件まで chrome.storage 永続化
+const DESIGN_OBJ_HIST_KEY = "sfdtDesignObjHist";
+async function pushDesignObjHistory(type, obj) {
+  const norm = String(obj || "").trim();
+  if (!norm || !type) return;
+  try {
+    const data = await chrome.storage.local.get(DESIGN_OBJ_HIST_KEY);
+    const map = (data[DESIGN_OBJ_HIST_KEY] && typeof data[DESIGN_OBJ_HIST_KEY] === "object") ? data[DESIGN_OBJ_HIST_KEY] : {};
+    const list = Array.isArray(map[type]) ? map[type] : [];
+    map[type] = [norm, ...list.filter((v) => v !== norm)].slice(0, 5);
+    await chrome.storage.local.set({ [DESIGN_OBJ_HIST_KEY]: map });
+    renderDesignObjHistory(type);
+  } catch {}
+}
+async function renderDesignObjHistory(type) {
+  const row = document.getElementById("designObjHistRow");
+  if (!row) return;
+  if (!type) { row.innerHTML = ""; return; }
+  try {
+    const data = await chrome.storage.local.get(DESIGN_OBJ_HIST_KEY);
+    const map = (data[DESIGN_OBJ_HIST_KEY] && typeof data[DESIGN_OBJ_HIST_KEY] === "object") ? data[DESIGN_OBJ_HIST_KEY] : {};
+    const list = Array.isArray(map[type]) ? map[type] : [];
+    if (!list.length) { row.innerHTML = ""; return; }
+    row.innerHTML = `<span class="design-obj-hist-label">${escape(type)} の最近の対象:</span>` + list.map((v) => {
+      return `<button class="design-obj-hist-chip" data-obj="${escape(v)}" title="クリックで「${escape(v)}」を designObj に投入して ▶ 生成">${escape(v)}</button>`;
+    }).join("");
+    row.querySelectorAll(".design-obj-hist-chip").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const obj = btn.dataset.obj;
+        const input = document.getElementById("designObj");
+        if (input) input.value = obj;
+        const genBtn = document.getElementById("btnDesignGen");
+        if (genBtn) genBtn.click();
+      });
+    });
+  } catch {}
 }
 
 // v3.63.0: SOQL 整形ヘルパー — キーワード大文字化 + 主節改行
@@ -2820,6 +2860,8 @@ async function doGenerateDesign() {
       meta.innerHTML = `<span class="pill warn">結果 0 件</span> <span class="meta">${escape(result.title)}: 該当データなし</span> ${dt}ms / 形式=${format}`;
     } else {
       meta.innerHTML = `<span class="pill ok">${result.title}</span> <span class="pill">${result.sections.length} シート / ${totalRows} 行</span> ${dt}ms / 形式=${format}`;
+      // v3.74.0: 生成成功時に「対象」入力を履歴に追加 (chrome.storage 永続化)
+      if (obj) pushDesignObjHistory(type, obj);
       // ダウンロードボタンを目立たせる (生成成功時)
       const dlBtn = document.getElementById("btnDesignDownload");
       if (dlBtn) {

@@ -743,6 +743,22 @@ td.cell-nested { word-break: break-word; }
 }
 .soql-hist-chip:hover { background: var(--ok); color: #fff; border-color: var(--ok); }
 .soql-hist-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* v3.74.0: 設計書「対象」入力履歴チップ — type 別に chrome.storage 永続化 */
+.design-obj-hist-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; font-size: 10px; padding: 2px 0; }
+.design-obj-hist-row:empty { display: none; }
+.design-obj-hist-label { color: var(--fg-dim); font-weight: 600; margin-right: 4px; }
+.design-obj-hist-chip {
+  background: rgba(243,156,18,0.10);
+  border: 1px solid rgba(243,156,18,0.30);
+  color: var(--warn);
+  padding: 2px 8px; border-radius: 10px;
+  font-size: 10px; cursor: pointer;
+  font-family: ui-monospace, Consolas, monospace;
+  max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.design-obj-hist-chip:hover { background: var(--warn); color: #fff; border-color: var(--warn); }
+.design-obj-hist-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 /* v3.44.0: 設計書プレビュー内 <code> を業務文書らしい体裁に — 例: 「ApexClass」「FieldPermissions」等の API 名強調 */
 .design-preview code {
   background: rgba(27,150,255,0.10);
