@@ -3278,10 +3278,11 @@ function recordsTable(records) {
   // v2.97.0: 全表共通の検索フィルタ (ユーザー要望「ログイン履歴と他の表もソート・検索できるように」)
   // テーブル直上に検索 input を追加、入力で行 textContent.toLowerCase().includes(q) でフィルタ
   const tableId = "tbl_" + Math.random().toString(36).slice(2, 8);
+  // v3.7.0: placeholder と件数表示をより業務利用しやすい文言に
   const searchInput = `<div class="table-filter-row" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11px;color:var(--fg-dim)">
-    <span>🔍</span>
-    <input class="table-filter-input" data-target="${tableId}" placeholder="表内を検索 (全列対象 / リアルタイム絞り込み / Esc でクリア)" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:4px 8px;border-radius:4px;font-size:11px" />
-    <span class="table-filter-count" data-target="${tableId}">${records.length} 件</span>
+    <span title="🔍 表内検索 — 全列を対象にリアルタイム絞込み、Esc でクリア、各列ヘッダのクリックでソート (昇順→降順→元順)">🔍</span>
+    <input class="table-filter-input" data-target="${tableId}" placeholder="表内を絞り込む… (全列対象 / Esc でクリア / 列ヘッダクリックでソート)" title="全列を対象にリアルタイム絞込みします。Esc でクリア。列ヘッダクリックでソート (昇順→降順→元順)" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:4px 8px;border-radius:4px;font-size:11px" />
+    <span class="table-filter-count" data-target="${tableId}" title="表示中件数 / 全件数">${records.length} 件</span>
   </div>`;
   const head = `<tr>${headers.map((h) => `<th class="sortable" data-col="${escape(h)}" title="クリックで ${escape(h)} 列をソート (昇順→降順→元順)">${escape(h)}</th>`).join("")}</tr>`;
   // SF ID 形式判定 (15/18桁 英数字、ただし純数値や URL は除外)
