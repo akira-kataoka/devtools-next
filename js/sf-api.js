@@ -201,7 +201,7 @@ export async function getUserInfo({ host, sid, apiVersion = "62.0" }) {
     ok: false,
     status: r1.status,
     data: r1.data,
-    error: `userinfo unavailable: chatter=${r1.status}, oauth2=${r2.status}`,
+    error: `ユーザ情報を取得できませんでした (chatter HTTP ${r1.status} / oauth2 HTTP ${r2.status})`,
   };
 }
 

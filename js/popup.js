@@ -154,16 +154,16 @@ function bindEvents() {
 }
 
 async function refreshSession() {
-  setStatus("⏳ セッション取得中…");
+  setStatus("⏳ セッション情報を取得しています…");
   const active = await getActiveSfTab();
   if (!active) {
     setBadge("非SF", false);
     fillInfo({});
     setStatus(
-      "⚠️ Salesforce タブが見つかりません\n" +
-      "  1. Salesforce (Lightning または Classic) のタブを開く\n" +
-      "  2. ログインを完了させる\n" +
-      "  3. このボタン ⟳ を再度押す"
+      "⚠️ Salesforce のタブが見つかりません\n" +
+      "  1. Salesforce (Lightning または Classic) のタブを開いてください\n" +
+      "  2. ログインを完了させてください\n" +
+      "  3. このボタン (⟳) を再度クリックしてください"
     );
     return;
   }
@@ -177,10 +177,10 @@ async function refreshSession() {
     fillInfo({ host: state.host });
     setStatus(
       `⚠️ sid Cookie が見つかりません (host: ${state.host})\n` +
-      `  1. ${state.host} のタブで一度ログインを確認\n` +
-      `  2. ブラウザを最近再起動した場合はセッションが失われている可能性\n` +
-      `  3. もしくは ${state.apiHost} 側で直接開いて再試行\n` +
-      `  → 解決後にこの ⟳ ボタンを押してください`
+      `  1. ${state.host} のタブでログイン状態をご確認ください\n` +
+      `  2. ブラウザを最近再起動した場合はセッションが失われている可能性があります\n` +
+      `  3. または ${state.apiHost} 側で直接開いて再度お試しください\n` +
+      `  → 解決後にこの ⟳ ボタンをクリックしてください`
     );
     return;
   }
@@ -194,7 +194,7 @@ async function refreshSession() {
     state.userId = ui.data.user_id;
     userMsg = ui.data.preferred_username || ui.data.email || "";
   } else {
-    userMsg = `⚠️ userinfo 失敗 HTTP ${ui.status}: ${JSON.stringify(ui.data).substring(0, 100)}`;
+    userMsg = `⚠️ ユーザ情報の取得に失敗しました (HTTP ${ui.status}): ${JSON.stringify(ui.data).substring(0, 100)}`;
   }
   setBadge("接続OK", true);
   fillInfo({
@@ -291,14 +291,14 @@ async function doSoql() {
   const soql = document.getElementById("soqlText").value.trim();
   const tooling = document.getElementById("soqlTooling").checked;
   if (!soql) { toast("⚠ クエリを入力してください", { kind: "warn" }); return; }
-  setStatus("SOQL 実行中…");
+  setStatus("⏳ SOQL を実行しています…");
   const t0 = performance.now();
   const r = await runSoql({ host: state.host, sid: state.sid, soql, apiVersion: state.apiVersion, tooling });
   const dt = Math.round(performance.now() - t0);
   if (!r.ok) {
     document.getElementById("soqlMeta").textContent = `❌ HTTP ${r.status} — ${formatError(r.data)}`;
     document.getElementById("soqlResult").innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;
-    setStatus("失敗");
+    setStatus("❌ 実行に失敗しました");
     state.lastRecords = null;
     await pushHistory({ soql, tooling, ok: false, count: 0, ms: dt, status: r.status });
     return;
@@ -404,7 +404,7 @@ async function togglePinAt(index) {
   });
   await chrome.storage.local.set({ [HISTORY_KEY]: hist });
   await renderHistory();
-  toast(hist[0] && hist[0].pinned ? "📌 ピン留めしました" : "ピンを外しました", { kind: "ok" });
+  toast(hist[0] && hist[0].pinned ? "📌 ピン留めしました" : "📌 ピンを外しました", { kind: "ok" });
 }
 
 async function clearHistory() {
@@ -413,12 +413,12 @@ async function clearHistory() {
   const kept = hist.filter((h) => h.pinned);
   await chrome.storage.local.set({ [HISTORY_KEY]: kept });
   await renderHistory();
-  toast(kept.length ? `🗑 ピン留め ${kept.length} 件を残してクリア` : "🗑 履歴をクリアしました", { kind: "warn" });
+  toast(kept.length ? `🗑 ピン留め ${kept.length} 件を残し、その他の履歴を削除しました` : "🗑 履歴をすべて削除しました", { kind: "warn" });
 }
 
 // ====== クイックログイン (Login as User) ======
 async function searchUsersForLogin() {
-  if (!state.sid) { toast("⚠ 先に SF に接続してください", { kind: "warn" }); return; }
+  if (!state.sid) { toast("⚠ 先に Salesforce タブへ接続してください", { kind: "warn" }); return; }
   const term = document.getElementById("loginAsSearch").value.trim();
   const result = document.getElementById("loginAsResult");
   result.innerHTML = `<div class="meta">検索中…</div>`;
@@ -629,7 +629,7 @@ async function doParseId() {
 async function openIdInOrg() {
   const raw = document.getElementById("idInput").value.trim();
   if (!/^[a-zA-Z0-9]{15,18}$/.test(raw)) { toast("⚠ 有効な ID を入力してください", { kind: "warn" }); return; }
-  if (!state.host) { toast("⚠ SF タブが必要です", { kind: "warn" }); return; }
+  if (!state.host) { toast("⚠ Salesforce のタブで実行してください", { kind: "warn" }); return; }
   chrome.tabs.create({ url: `https://${state.host}/${raw}` });
 }
 
@@ -639,7 +639,7 @@ async function doApiCall() {
   const path = document.getElementById("apiPath").value.trim();
   const body = document.getElementById("apiBody").value.trim();
   if (!path) { toast("⚠ パスを入力してください", { kind: "warn" }); return; }
-  setStatus("API 呼び出し中…");
+  setStatus("⏳ API を呼び出しています…");
   const t0 = performance.now();
   const r = await sfFetch({
     host: state.host, sid: state.sid, path, method,
@@ -648,7 +648,7 @@ async function doApiCall() {
   const dt = Math.round(performance.now() - t0);
   document.getElementById("apiMeta").textContent = `${r.ok ? "✅" : "❌"} HTTP ${r.status} / ${dt}ms`;
   document.getElementById("apiResult").textContent = JSON.stringify(r.data, null, 2);
-  setStatus(r.ok ? "OK" : "失敗");
+  setStatus(r.ok ? "✓ 成功しました" : "❌ 失敗しました");
 }
 
 function renderLinks() {
@@ -684,7 +684,7 @@ function renderLinks() {
   const root = document.getElementById("linkList");
   root.innerHTML = "";
   const openLink = (path) => {
-    if (!state.host) { toast("⚠ SF タブが必要です", { kind: "warn" }); return; }
+    if (!state.host) { toast("⚠ Salesforce のタブで実行してください", { kind: "warn" }); return; }
     const lhost = state.host.endsWith(".lightning.force.com")
       ? state.host
       : state.host.replace(/\.my\.salesforce\.com$/, ".lightning.force.com");

@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.24.0 (2026-05-20 14:50)** — 🚨 ユーザー要望 Phase 14: popup setStatus / toast / sf-api userinfo error 文言:
+  - **🐛 popup.js setStatus**: 「セッション取得中…」→「セッション情報を取得しています…」、「SOQL 実行中…」→「⏳ SOQL を実行しています…」、「API 呼び出し中…」→「⏳ API を呼び出しています…」、「OK/失敗」→「✓ 成功しました/❌ 失敗しました」、SF タブ未検出・sid Cookie 不在のヘルプ文を ですます調 詳細化
+  - **🐛 popup.js toast**: 「ピンを外しました」も絵文字付きに、「ピン留め N 件を残してクリア」→「ピン留め N 件を残し、その他の履歴を削除しました」、「先に SF に接続してください」「SF タブが必要です」→「Salesforce のタブで実行してください」等
+  - **🐛 popup.js userinfo エラー文言**: 英語残存「userinfo 失敗 HTTP」→「ユーザ情報の取得に失敗しました (HTTP)」
+  - **🐛 sf-api.js getUserInfo フォールバック**: 英語残存「userinfo unavailable: chatter=X, oauth2=Y」→「ユーザ情報を取得できませんでした (chatter HTTP X / oauth2 HTTP Y)」
 - **v2.23.0 (2026-05-20 14:45)** — 🚨 ユーザー要望 Phase 13: throw new Error / panelToast 文言総点検:
   - **🐛 design-docs.js**: "unknown design type: ..." → "未対応の設計書タイプです: ..." (英語残存を撲滅)
   - **🐛 picker.js**: "親オブジェクトが必要です" → "項目を取得するには、先に親オブジェクトを指定してください"、"LWC 取得失敗" → "LWC コンポーネントの取得に失敗しました"、"User 取得失敗" → "ユーザ一覧の取得に失敗しました"
