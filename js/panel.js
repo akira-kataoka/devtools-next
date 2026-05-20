@@ -98,6 +98,7 @@ async function init() {
     initHeader();
     attachAllPickers();
     setupDesignPicker();
+    setupDesignTypeFilter();
     // 検索系入力欄に ✕ クリア共通化
     ["inspectFilter", "exFieldFilter", "csFilter", "exObj", "descObj", "apiObj", "inspectRef"].forEach(attachClearButton);
     // v2.93.0: リフレッシュ時の直前 view 復元 (ユーザー要望「リフレッシュしても前のページ状態を残して」)
@@ -127,6 +128,40 @@ async function init() {
     console.error("[DevToolsNext] init error:", e);
     if (orgInfo) orgInfo.innerHTML = `<span class="pill err" title="${escape((e && e.stack) || String(e))}">初期化失敗: ${escape((e && e.message) || String(e))}</span>`;
   }
+}
+
+// v3.53.0: 設計書 22 種を絞り込む検索ボックス
+function setupDesignTypeFilter() {
+  const filter = document.getElementById("designTypeFilter");
+  const sel = document.getElementById("designType");
+  if (!filter || !sel) return;
+  // 起動時に option 一覧を保持 (絞込み復元用)
+  const allOptions = Array.from(sel.options).map((o) => ({ value: o.value, text: o.textContent }));
+  const refresh = () => {
+    const q = (filter.value || "").toLowerCase().trim();
+    const current = sel.value;
+    const matched = q ? allOptions.filter((o) => o.text.toLowerCase().includes(q) || o.value.toLowerCase().includes(q)) : allOptions;
+    sel.innerHTML = "";
+    matched.forEach((o) => {
+      const opt = document.createElement("option");
+      opt.value = o.value;
+      opt.textContent = o.text;
+      sel.appendChild(opt);
+    });
+    // 元の選択を可能なら復元、無理なら先頭を選択
+    if (matched.some((o) => o.value === current)) sel.value = current;
+    else if (matched.length) {
+      sel.value = matched[0].value;
+      // 種別が変わったので setupDesignPicker のロジック (placeholder/disable) を再評価
+      sel.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    // 検索結果メタ
+    filter.title = `${allOptions.length} 種類中 ${matched.length} 件マッチ`;
+  };
+  filter.addEventListener("input", refresh);
+  filter.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") { filter.value = ""; refresh(); }
+  });
 }
 
 // 設計書タイプによって Picker の種類を切り替える + 入力不要タイプでは Picker トリガを隠す
