@@ -2189,7 +2189,30 @@ function sortTableByTh(th) {
 }
 function stringify(v) {
   if (v == null) return "";
-  if (typeof v === "object") return JSON.stringify(v);
+  if (typeof v === "object") {
+    // SF ネストリレーション (例 Account.Owner) は { attributes:{...}, Name:"...", ... } で来る
+    // attributes を除いた表示可能項目を Name / Subject / Id 優先で平坦化
+    if (v.attributes && typeof v.attributes === "object") {
+      const fields = Object.keys(v).filter((k) => k !== "attributes");
+      // 子レコード集合 (totalSize/done/records) の場合は件数表示
+      if (v.records && Array.isArray(v.records)) {
+        return `[${v.records.length} 件のサブクエリ]`;
+      }
+      // 代表項目: Name / Subject / Title / DeveloperName / Id の順に優先
+      const prefer = ["Name", "Subject", "Title", "DeveloperName", "MasterLabel", "FullName"];
+      for (const p of prefer) {
+        if (fields.includes(p) && v[p] != null) {
+          // Id も併記 (短縮)
+          const id = fields.includes("Id") && v.Id ? ` [${String(v.Id).substring(0, 18)}]` : "";
+          return `${stringify(v[p])}${id}`;
+        }
+      }
+      // 該当なしなら最初の非 attributes キーを使う
+      if (fields.length) return `${fields[0]}=${stringify(v[fields[0]])}`;
+      return "{}";
+    }
+    return JSON.stringify(v);
+  }
   return String(v);
 }
 function escape(s) {

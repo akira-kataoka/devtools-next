@@ -4,6 +4,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.61.0 (2026-05-20 09:25)** — SOQL ネストリレーション値の平坦化表示:
+  - **🐛 SOQL ネストリレーション (例 `Account.Owner.Name`) のセル表示改善**: 従来 `{"attributes":{...},"Name":"Akira Kataoka","Id":"005..."}` のような raw JSON 表示 → `Akira Kataoka [005xx0000000abc]` 形式に平坦化。代表項目 (`Name` / `Subject` / `Title` / `DeveloperName` / `MasterLabel` / `FullName`) の順に優先抽出 + Id 併記 (18 桁短縮)
+  - **🐛 SOQL サブクエリ (`(SELECT ... FROM Contacts)`) は `[N 件のサブクエリ]` 表示**: 子レコード集合 `{totalSize, done, records:[]}` を件数で表現、ノイズ削減
+  - **🧪 ChangeSet ID セル click**: メタデータ ID (01p ApexClass / 30E Flow) を Inspector で開けて便利と判断、修正不要
+  - **🧪 Inspector フィールド数表示**: `meta.innerHTML` に `<span class="pill">${fieldCount} 項目 / 値あり ${filledCount}</span>` で既に実装済 (Inspector Reloaded 相当)
 - **v1.60.0 (2026-05-20 09:20)** — 🎉 累計60リリース節目 - 結果テーブル ID セルクリックで Inspector ジャンプ:
   - **✨ SOQL/describe/metadata/logs/ChangeSet 全 grid テーブルで ID 列を自動検出**: 15/18桁 英数字 + 英字 + 数字を含むセルを `.cell-id` 化、🔍 絵文字プレフィクス付き表示
   - **✨ ID セル single-click で Inspector に瞬時ジャンプ**: `inspectRef` 入力欄に値セット → `switchToView("inspector")` → `doInspect()` 自動実行 + toast `🔍 <id> を Inspector で開く`。**Inspector Reloaded の「Show all data on record」UX 相当を独自実装**
