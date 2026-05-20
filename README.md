@@ -7,6 +7,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.92.0 (2026-05-20 12:00)** — Limits CSV 使用率列を数値化 + to18CharId 検証:
+  - **🐛 `exportLimitsCsv()` 使用率列を `"85%"` → `85` (数値) に変更**: 列名も `使用率` → `使用率(%)` に明示。**Excel/Sheets で数値ソート/条件付き書式が機能** (従来は文字列 `"85%"` で数値扱いされなかった)
+  - **🧪 `to18CharId` の Salesforce 公式アルゴリズム準拠を確認**: 15 桁を 5 文字 × 3 グループに分割、各グループ大文字 bit map で 32 文字テーブル参照 → 末尾 3 桁生成 (sf-api.js:217)。修正不要
 - **v1.91.0 (2026-05-20 11:55)** — 🎊 累計 100 サイクル達成 - Login CSV 日時整形 + README 記念ヘッダー:
   - **🐛 `exportLoginCsv()` の LoginTime を `YYYY-MM-DD HH:mm` 整形**: 従来 `2026-05-20T03:45:00.000+0000` ISO 形式のまま CSV 出力 → Excel で日時として認識されず文字列扱い。整形後は Excel で日時列として並び替え/フィルタ可能 (Inspector v1.36.0 と同パターン)
   - **📖 README 先頭に「100 サイクル達成」記念ヘッダー追加**: 自律改善ループの節目を可視化
