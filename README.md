@@ -8,6 +8,13 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.7.0 (2026-05-20 13:15)** — ✨ ユーザー要望: Salesforce ページ上 mini-panel (別タブ無し作業):
+  - **✨ SF ページ右下に floating launcher button (🛠) を inject**: `content.js` 拡張、shadow DOM で SF Lightning の CSS と分離。**SF タブを離れずに SOQL 実行可能**
+  - **✨ mini-panel オーバーレイ (SOQL Phase 1)**: launcher クリックで 480px 幅パネル展開 / SOQL textarea + ▶ 実行 / Ctrl+Enter ショートカット / 結果テーブル表示 / IME ガード / ネスト平坦化対応
+  - **✨ ヘッダ ↗ ボタンでフルパネル新タブ起動**: 詳細機能 (Inspector / 設計書 / Limits 等) はフルパネルで継続
+  - **🔒 セキュリティ**: shadow DOM で SF page CSS と完全分離、`chrome.runtime.sendMessage` 経由で background.js の `sfdt:getSession` + `sfdt:soql` を呼出 (content_script 側で sid 直接アクセス不要、CSP 順守)
+  - **多重 inject ガード**: `document.getElementById("__sfdt_root")` で SPA navigation で content_script が再評価されても launcher は 1 つだけ
+  - **Phase 2 予定**: Inspector / Picker / Apex 等を mini-panel に追加
 - **v2.6.0 (2026-05-20 13:10)** — ✨ ユーザー要望: オブジェクト入力補完 (datalist):
   - **✨ 5 オブジェクト入力欄に共通 datalist 補完**: `#exObj` / `#apiObj` / `#descObj` / `#designObj` / `#inspectRef` (※ inspectRef は除外、ID 入力欄のため) に `list="dl-sobjects"` 追加。**入力中に sObject 名と日本語ラベルの候補ドロップダウンが出る** (例: 「Op」入力 → `Opportunity — 商談` 補完)
   - **✨ `refreshSObjectDatalist()`**: reconnect 成功後に `describe global` を呼んで queryable sObject 一覧を取得 → `_datalistObjsCached` メモ化 → `<option value="API 名" label="API 名 — ラベル">` で datalist を更新。**Picker と独立のキャッシュ**で軽量
