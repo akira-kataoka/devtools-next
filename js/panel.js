@@ -1847,31 +1847,33 @@ function renderInspectorFields() {
 
     shown++;
     let valHtml;
+    // v2.99.0: 編集可フラグ - 編集可フィールドは値セルをクリックで編集モードに
+    // updateable=true かつ createable=true かつ計算項目でない場合のみ
+    const isEditable = f.updateable && !f.calculated && f.type !== "reference" && f.type !== "id" && !SYSTEM_FIELDS.has(f.name);
+    const editAttr = isEditable ? ` data-editable="true" data-field-name="${escape(f.name)}" data-field-type="${escape(f.type)}" title="クリックで編集 (Enter で保存 / Esc で取消)"` : "";
+    const editCls = isEditable ? " editable" : "";
     if (isNull) {
-      valHtml = `<div class="fval null" title="値が設定されていません (null)">(空)</div>`;
+      valHtml = `<div class="fval null${editCls}"${editAttr}>${isEditable ? "(空 - クリックして編集)" : "(空)"}</div>`;
     } else if (typeof v === "boolean") {
-      valHtml = `<div class="fval bool-${v ? "true" : "false"}" title="raw 値: ${v}">${v ? "✓ はい (true)" : "✗ いいえ (false)"}</div>`;
+      valHtml = `<div class="fval bool-${v ? "true" : "false"}${editCls}"${editAttr}>${v ? "✓ はい (true)" : "✗ いいえ (false)"}</div>`;
     } else if ((f.type === "int" || f.type === "double" || f.type === "currency" || f.type === "percent") && typeof v === "number") {
-      // 3桁区切り + 通貨/パーセントなどのヒント
       const formatted = v.toLocaleString("ja-JP");
       const unit = f.type === "currency" ? " ¥" : (f.type === "percent" ? " %" : "");
-      valHtml = `<div class="fval" title="raw 値: ${escape(String(v))}">${escape(formatted)}${escape(unit)}</div>`;
+      valHtml = `<div class="fval${editCls}"${editAttr} data-raw="${escape(String(v))}">${escape(formatted)}${escape(unit)}</div>`;
     } else if ((f.type === "date" || f.type === "datetime") && typeof v === "string") {
-      // ISO 文字列を読みやすく整形 (date: YYYY-MM-DD, datetime: YYYY-MM-DD HH:mm)
       let display = v;
       const m = v.match(/^(\d{4}-\d{2}-\d{2})(?:T(\d{2}:\d{2}))?/);
-      if (m) {
-        display = f.type === "datetime" && m[2] ? `${m[1]} ${m[2]}` : m[1];
-      }
-      valHtml = `<div class="fval" title="ISO raw 値: ${escape(v)}">${escape(display)}</div>`;
-      // 参照先オブジェクト名を describe から取得 (KeyPrefix 逆引きに頼らない確実な方法)
+      if (m) display = f.type === "datetime" && m[2] ? `${m[1]} ${m[2]}` : m[1];
+      valHtml = `<div class="fval${editCls}"${editAttr} data-raw="${escape(v)}">${escape(display)}</div>`;
+    } else if (f.type === "reference" && typeof v === "string") {
+      // 参照項目は編集不可。ジャンプリンクのみ
       const refObj = (f.referenceTo || [])[0] || "";
       const refLabel = refObj ? `<span class="ref-target-label">→ ${escape(refObj)}</span>` : "";
       valHtml = `<div class="fval ref" data-id="${escape(v)}" data-ref-obj="${escape(refObj)}" title="クリックで ${escape(refObj || "参照先")} のレコードを Inspector で開きます">${escape(v)}${refLabel}</div>`;
     } else if (typeof v === "object") {
       valHtml = `<div class="fval">${escape(JSON.stringify(v))}</div>`;
     } else {
-      valHtml = `<div class="fval">${escape(String(v))}</div>`;
+      valHtml = `<div class="fval${editCls}"${editAttr}>${escape(String(v))}</div>`;
     }
 
     const flags = [];
@@ -1915,11 +1917,97 @@ function renderInspectorFields() {
     el.addEventListener("click", () => {
       const id = el.dataset.id;
       const refObj = el.dataset.refObj || "";
-      // refObj が分かっていれば <Object>:<Id> 形式で確実に渡す。空の場合は ID 単独 → doInspect が KeyPrefix 逆引き
       document.getElementById("inspectRef").value = refObj ? `${refObj}:${id}` : id;
       doInspect();
     });
   });
+
+  // v2.99.0: 編集可フィールドのクリックハンドラ (ユーザー要望「レコード詳細では項目も更新できるように」)
+  root.querySelectorAll(".fval.editable").forEach((el) => {
+    el.addEventListener("click", (e) => {
+      if (el.dataset.editing === "true") return;
+      e.stopPropagation();
+      enterInspectorEditMode(el);
+    });
+  });
+}
+
+// v2.99.0: Inspector 編集モード突入
+function enterInspectorEditMode(el) {
+  const fieldName = el.dataset.fieldName;
+  const fieldType = el.dataset.fieldType;
+  const rawVal = el.dataset.raw || el.textContent;
+  el.dataset.editing = "true";
+  el.dataset.original = el.innerHTML;
+  // 入力タイプを決定
+  let inputType = "text";
+  if (fieldType === "boolean") {
+    el.innerHTML = `<select class="inline-edit"><option value="true">true</option><option value="false">false</option></select>
+      <button class="inline-save" title="保存 (PATCH)">✓</button><button class="inline-cancel" title="取消 (Esc)">✗</button>`;
+    const sel = el.querySelector("select");
+    sel.value = /yes|true|✓/.test(el.dataset.original) ? "true" : "false";
+    sel.focus();
+  } else {
+    if (fieldType === "double" || fieldType === "int" || fieldType === "currency" || fieldType === "percent") inputType = "number";
+    else if (fieldType === "date") inputType = "date";
+    else if (fieldType === "datetime") inputType = "datetime-local";
+    else if (fieldType === "email") inputType = "email";
+    else if (fieldType === "url") inputType = "url";
+    else if (fieldType === "textarea") inputType = "textarea";
+    const inp = inputType === "textarea"
+      ? `<textarea class="inline-edit" rows="3" style="width:60%">${escape(rawVal === "(空 - クリックして編集)" ? "" : rawVal)}</textarea>`
+      : `<input class="inline-edit" type="${inputType}" value="${escape(rawVal === "(空 - クリックして編集)" ? "" : (fieldType === "datetime" ? rawVal.replace(/\..*$/, "").substring(0, 16) : rawVal))}" style="width:60%" />`;
+    el.innerHTML = `${inp}<button class="inline-save" title="保存 (PATCH)">✓</button><button class="inline-cancel" title="取消 (Esc)">✗</button>`;
+    const inputEl = el.querySelector(".inline-edit");
+    inputEl.focus();
+    if (inputEl.select) inputEl.select();
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); saveInspectorEdit(el); }
+      else if (e.key === "Escape") { e.preventDefault(); cancelInspectorEdit(el); }
+    });
+  }
+  el.querySelector(".inline-save").addEventListener("click", (e) => { e.stopPropagation(); saveInspectorEdit(el); });
+  el.querySelector(".inline-cancel").addEventListener("click", (e) => { e.stopPropagation(); cancelInspectorEdit(el); });
+}
+
+function cancelInspectorEdit(el) {
+  el.innerHTML = el.dataset.original || "";
+  delete el.dataset.editing;
+  delete el.dataset.original;
+}
+
+async function saveInspectorEdit(el) {
+  const fieldName = el.dataset.fieldName;
+  const fieldType = el.dataset.fieldType;
+  const inputEl = el.querySelector(".inline-edit");
+  if (!inputEl) return;
+  let newVal = inputEl.value;
+  // 型変換
+  if (fieldType === "boolean") newVal = newVal === "true";
+  else if (fieldType === "double" || fieldType === "currency" || fieldType === "percent") newVal = newVal === "" ? null : Number(newVal);
+  else if (fieldType === "int") newVal = newVal === "" ? null : parseInt(newVal, 10);
+  else if (newVal === "") newVal = null;
+
+  const saveBtn = el.querySelector(".inline-save");
+  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "⏳"; }
+
+  const body = JSON.stringify({ [fieldName]: newVal });
+  const r = await sfFetch({
+    host: state.host, sid: state.sid,
+    path: `/services/data/v${state.apiVersion}/sobjects/${encodeURIComponent(inspectState.obj)}/${encodeURIComponent(inspectState.id)}`,
+    method: "PATCH", body,
+  });
+  if (!r.ok) {
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = "✓"; }
+    panelToast(`❌ 保存失敗 (HTTP ${r.status}): ${formatError(r.data)}`, { kind: "err" });
+    return;
+  }
+  // 成功 → state を更新して再描画
+  inspectState.record[fieldName] = newVal;
+  delete el.dataset.editing;
+  delete el.dataset.original;
+  panelToast(`✓ ${fieldName} を更新しました`, { kind: "ok" });
+  renderInspectorFields();
 }
 
 function openInspectedInOrg() {

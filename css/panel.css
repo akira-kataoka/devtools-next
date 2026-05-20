@@ -978,6 +978,31 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .lim-col-pin:hover { opacity: 1; }
 .limit-row.pinned .lim-col-pin { color: var(--warn); opacity: 1; }
 .lim-en { display: block; font-size: 9px; color: var(--fg-dim); font-family: ui-monospace, Consolas, monospace; opacity: 0.7; margin-top: 1px; }
+
+/* v2.99.0: Inspector 編集モード (ユーザー要望「項目も更新できるように」) */
+.fval.editable { cursor: pointer; transition: background 0.1s; }
+.fval.editable:hover { background: rgba(27,150,255,0.08); outline: 1px dashed var(--accent); }
+.fval.editable[data-editing="true"] {
+  background: rgba(27,150,255,0.12);
+  outline: 1px solid var(--accent);
+  padding: 4px;
+}
+.inline-edit {
+  background: var(--bg); color: var(--fg);
+  border: 1px solid var(--accent); border-radius: 4px;
+  padding: 3px 6px; font-size: 11px;
+  width: 60%;
+}
+.inline-edit:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+.inline-save, .inline-cancel {
+  background: transparent; border: 1px solid var(--line);
+  color: var(--fg); padding: 2px 8px; border-radius: 4px;
+  cursor: pointer; font-size: 11px; margin-left: 4px;
+}
+.inline-save { color: var(--ok); border-color: rgba(46,204,113,0.4); }
+.inline-save:hover { background: var(--ok); color: #fff; }
+.inline-cancel { color: var(--err); border-color: rgba(255,107,107,0.4); }
+.inline-cancel:hover { background: var(--err); color: #fff; }
 /* Limits 結果テーブル: 幅 600px 未満 (popup や狭幅 panel) で 1 行 縦並びに退化 */
 @media (max-width: 600px) {
   .limit-row { grid-template-columns: 1fr; gap: 2px; padding: 6px 8px; }
