@@ -318,7 +318,7 @@ async function buildProfileList({ host, sid, apiVersion }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. プロファイル", headers, rows },
     ],
-    note: `合計 ${fmtNum(records.length)} 件 / 内部ユーザ向け ${fmtNum(internalCount)} 件 / 外部 (コミュニティ/Experience Cloud) ユーザ向け ${fmtNum(externalCount)} 件 / ライセンス別: ${licBreakdown}`,
+    note: `合計 ${fmtNum(records.length)} 件 / 内部ユーザ向け ${fmtNum(internalCount)} 件 / 外部 (コミュニティ/Experience Cloud) ユーザ向け ${fmtNum(externalCount)} 件 / ライセンス別: ${licBreakdown}。**業務担当者向け**: 本一覧は組織で利用中の全プロファイルです。新規ユーザー作成時の参考、未使用プロファイル整理 (棚卸し)、年次セキュリティ監査時の権限主体洗い出し等にご活用ください。詳細権限を確認するには「プロファイル/権限セット 詳細レポート」を選択してください。`,
   };
 }
 
@@ -368,7 +368,7 @@ async function buildPermSetList({ host, sid, apiVersion }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. PermissionSet", headers, rows },
     ],
-    note: `合計 ${fmtNum(records.length)} 件 (プロファイル付随を除外) / カスタム ${fmtNum(customCount)} 件・標準/パッケージ ${fmtNum(packagedCount)} 件 / 自組織 ${fmtNum(localCount)} 件・パッケージ由来 ${fmtNum(externalNsCount)} 件 / ライセンス別: ${psLicBreakdown} — 権限セットグループの中身は別途確認が必要`,
+    note: `合計 ${fmtNum(records.length)} 件 (プロファイル付随を除外) / カスタム ${fmtNum(customCount)} 件・標準/パッケージ ${fmtNum(packagedCount)} 件 / 自組織 ${fmtNum(localCount)} 件・パッケージ由来 ${fmtNum(externalNsCount)} 件 / ライセンス別: ${psLicBreakdown}。**業務担当者向け**: 権限セットはプロファイルに加えて付与する追加権限の単位です。役割ベースのアクセス管理 (RBAC) 設計時の参考、組織再編時の権限再設計、未使用権限セット棚卸し等にご活用ください。権限セットグループの中身は別途確認が必要です。`,
   };
 }
 
@@ -419,7 +419,7 @@ async function buildApexClassList({ host, sid, apiVersion }) {
       { heading: "0. 凡例", kvRows: acLegend },
       { heading: "1. Apex クラス", headers, rows },
     ],
-    note: `合計 ${fmtNum(records.length)} 件 (unmanaged + installedEditable のみ) / ステータス: 有効 ${fmtNum(activeCount)} 件・無効 ${fmtNum(inactiveCount)} 件・削除済 ${fmtNum(deletedCount)} 件 / ネームスペース: 自組織 ${fmtNum(acLocalCount)} 件・パッケージ由来 ${fmtNum(acExtCount)} 件 / 総コードサイズ: ${fmtBytes(totalLength)} (Apex Limit 6 MB に対する使用率: 約 ${fmtPercent(totalLength / (6 * 1024 * 1024))})`,
+    note: `合計 ${fmtNum(records.length)} 件 (unmanaged + installedEditable のみ) / 有効 ${fmtNum(activeCount)} 件・無効 ${fmtNum(inactiveCount)} 件・削除済 ${fmtNum(deletedCount)} 件 / ネームスペース: 自組織 ${fmtNum(acLocalCount)} 件・パッケージ由来 ${fmtNum(acExtCount)} 件 / 総コードサイズ: ${fmtBytes(totalLength)} (Apex Limit 6 MB に対する使用率: 約 ${fmtPercent(totalLength / (6 * 1024 * 1024))})。**業務担当者向け**: 本一覧は組織のカスタム Apex コード資産です。**Apex Limit 使用率が 80% を超えたら**未使用クラス整理を検討してください。バージョンアップ前の互換性チェック、保守引継ぎ、外部ベンダ実装の棚卸しに活用できます。`,
   };
 }
 
@@ -480,7 +480,7 @@ async function buildApexTriggerList({ host, sid, apiVersion }) {
       { heading: "0. 凡例 / トリガイベント略号", headers: legendHeaders, rows: legendRows },
       { heading: "1. Apex トリガ一覧", headers, rows },
     ],
-    note: `合計 ${fmtNum(records.length)} 件 / 対象オブジェクト ${fmtNum(objCount)} 種類 / ステータス: 有効 ${fmtNum(activeCount)} 件・無効 ${fmtNum(inactiveCount)} 件・削除済 ${fmtNum(deletedCount)} 件 / 総コードサイズ: ${fmtBytes(totalSize)} / イベント発火件数: ${evtSummary}`,
+    note: `合計 ${fmtNum(records.length)} 件 / 対象オブジェクト ${fmtNum(objCount)} 種類 / 有効 ${fmtNum(activeCount)} 件・無効 ${fmtNum(inactiveCount)} 件・削除済 ${fmtNum(deletedCount)} 件 / 総コードサイズ: ${fmtBytes(totalSize)} / イベント発火: ${evtSummary}。**業務担当者向け**: Apex トリガはレコード保存時 (before/after insert/update/delete) に自動実行されるサーバー側ロジックです。データ整合性に直結するため、データ移行時の停止判断、Bulk API 制限の影響範囲、業務イベント (受注確定/承認等) との関連把握にご活用ください。`,
   };
 }
 
@@ -609,7 +609,7 @@ async function buildValidationRuleList({ host, sid, apiVersion, obj }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. ValidationRule", headers, rows },
     ],
-    note: `合計 ${fmtNum(rows.length)} 件 / 有効 ${fmtNum(activeCount)} 件 (${fmtPercent(activeRate)}) / 無効 ${fmtNum(inactiveCount)} 件 / 表示位置: 項目直下 ${fmtNum(fieldLevelCount)} 件・ページ上部 ${fmtNum(pageLevelCount)} 件 — 無効ルールも本一覧には含まれます (Setup では既定で非表示)`,
+    note: `合計 ${fmtNum(rows.length)} 件 / 有効 ${fmtNum(activeCount)} 件 (${fmtPercent(activeRate)}) / 無効 ${fmtNum(inactiveCount)} 件 / 表示位置: 項目直下 ${fmtNum(fieldLevelCount)} 件・ページ上部 ${fmtNum(pageLevelCount)} 件。**業務担当者向け**: 入力規則はレコード保存時のチェックロジックです (誤入力防止)。データ移行で大量更新する際に一時無効化が必要なルールの洗い出し、業務ルール変更時の影響範囲確認、Excel 等の外部一括投入時の検討資料にご活用ください。無効ルールも本一覧に含まれます (Setup では既定で非表示)。`,
   };
 }
 
@@ -652,7 +652,7 @@ async function buildRecordTypeList({ host, sid, apiVersion, obj }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. RecordType", headers, rows },
     ],
-    note: `合計 ${fmtNum(rows.length)} 件 / 対象オブジェクト ${fmtNum(objCount)} 種類 / 有効 ${fmtNum(activeCount)} 件 (${fmtPercent(activeRate)}) / 無効 ${fmtNum(inactiveCount)} 件 / 営業プロセス連携あり ${fmtNum(bpLinked)} 件 — 無効レコードタイプも本一覧には含まれます`,
+    note: `合計 ${fmtNum(rows.length)} 件 / 対象オブジェクト ${fmtNum(objCount)} 種類 / 有効 ${fmtNum(activeCount)} 件 (${fmtPercent(activeRate)}) / 無効 ${fmtNum(inactiveCount)} 件 / 営業プロセス連携あり ${fmtNum(bpLinked)} 件。**業務担当者向け**: レコードタイプは「同じオブジェクトを業務別に使い分け」るための仕組み (例: Account を「個人」「法人」に分ける)。ページレイアウト切替、ピックリスト値切替、業務プロセス (営業ステージ) 切替の前提資料となります。新業務プロセス導入や組織再編時の見直し対象洗い出しに活用できます。無効レコードタイプも含みます。`,
   };
 }
 
@@ -693,7 +693,7 @@ async function buildFieldSetList({ host, sid, apiVersion, obj }) {
       { heading: "0. 凡例", kvRows: fsLegend },
       { heading: "1. FieldSet", headers, rows },
     ],
-    note: `合計 ${fmtNum(records.length)} 件 / FieldSet は LWC/VF から動的に項目セットを参照するために利用されます — 削除前に Setup の使用箇所参照を必ず確認してください`,
+    note: `合計 ${fmtNum(records.length)} 件。**業務担当者向け**: FieldSet (フィールドセット) は管理者が画面に表示する項目を後から変更できる仕組みです。開発者が予め FieldSet を組み込んだ画面・帳票を、管理者が項目追加・並び替え・削除できます。**削除前注意**: LWC/Visualforce 画面から参照されている場合、削除すると画面エラーになります。Setup > オブジェクトマネージャ > 該当オブジェクト > フィールドセット で使用箇所を必ず確認してください。`,
   };
 }
 
@@ -734,7 +734,7 @@ async function buildCustomSettingList({ host, sid, apiVersion }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. CustomSetting", headers, rows },
     ],
-    note: `合計 ${fmtNum(rows.length)} 件 / List 型 ${fmtNum(listCount)} 件 / Hierarchy 型 ${fmtNum(hierarchyCount)} 件 — Salesforce は新規実装にカスタムメタデータ型を推奨 (本一覧は既存資産確認用)`,
+    note: `合計 ${fmtNum(rows.length)} 件 / List 型 ${fmtNum(listCount)} 件 / Hierarchy 型 ${fmtNum(hierarchyCount)} 件。**業務担当者向け**: カスタム設定は組織共通のマスタ値 (税率、定数、フラグ等) を保持する仕組みです。**Salesforce は新規実装にカスタムメタデータ型を推奨** (デプロイ可能・キャッシュ可能のため)。本一覧は既存資産確認・移行計画作成に使ってください。Hierarchy 型はユーザー別/プロファイル別の上書き値があるため、ユーザー個別設定の洗い出しに有用です。`,
   };
 }
 
@@ -1282,7 +1282,7 @@ async function buildAccessControl({ host, sid, apiVersion }) {
       { heading: "2. 共有設計上の注意 (非公開 / 親従属)", headers: sharingHeaders, rows: sharingRows },
       { heading: "3. ロール階層 (UserRole)", headers: roleHeaders, rows: roleRows },
     ],
-    note: `OWD ${fmtNum(owdRows.length)} 件 / ロール ${fmtNum(roleRows.length)} 件 / 共有ルールの詳細は Metadata API (SharingRules) からのみ取得可能なため、本設計書には含まれていません`,
+    note: `OWD ${fmtNum(owdRows.length)} 件 / ロール ${fmtNum(roleRows.length)} 件。**業務担当者向け**: 本設計書はレコードレベルアクセス制御 (誰がどのレコードを見られるか) の基盤を示します。**OWD (組織共通の既定共有設定)** = 全レコードの初期共有レベル / **ロール階層** = 上司は部下のレコードを参照可能。年次セキュリティ監査、組織再編時の権限見直し、機微情報 (人事/契約) 取扱範囲の確認に活用してください。共有ルール詳細は Metadata API (SharingRules) で別途取得が必要です。`,
   };
 }
 
@@ -1929,7 +1929,7 @@ async function buildObjectPermMatrix({ host, sid, apiVersion, progress = () => {
       })()},
       { heading: "2. マトリクス", headers, rows },
     ],
-    note: "Excel で開き B2 セルでウィンドウ枠固定すると左 2 列と先頭行が常時可視で見やすいです。V/M 権限の付与状況を年次監査で確認してください。",
+    note: "**業務担当者向け**: Excel で開き B2 セルでウィンドウ枠固定すると左 2 列と先頭行が常時可視で見やすくなります。**用途**: オブジェクト権限 (CRUD + ViewAll/ModifyAll) の年次監査、内部統制 (J-SOX) 監査対応、新規プロファイル/権限セット設計時のリファレンス、組織再編時の権限再評価。**V (ViewAllRecords) / M (ModifyAllRecords) は高権限**のため、システム管理者・特権ユーザーのみ付与されているか必ず確認してください。",
   };
 }
 function fmtDate(s) {
