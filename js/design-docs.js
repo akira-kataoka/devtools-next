@@ -104,9 +104,9 @@ async function buildObjectDef({ host, sid, apiVersion, obj }) {
     "API 名": f.name,
     "表示名": f.label,
     "データ型": f.type,
-    "桁/精度": f.type === "string" || f.type === "textarea" || f.type === "email" || f.type === "phone" || f.type === "url"
-      ? String(f.length || "")
-      : (f.precision != null && f.scale != null ? `${f.precision},${f.scale}` : ""),
+    "桁/精度": (f.type === "string" || f.type === "textarea" || f.type === "email" || f.type === "phone" || f.type === "url")
+      ? (f.length ? `${fmtNum(f.length)} 文字` : "")
+      : (f.precision != null && f.scale != null ? `精度 ${f.precision} / 小数 ${f.scale}` : ""),
     "必須": !f.nillable && !f.defaultedOnCreate && f.createable ? "○" : "",
     "一意": f.unique ? "○" : "",
     "外部ID": f.externalId ? "○" : "",
@@ -125,7 +125,7 @@ async function buildObjectDef({ host, sid, apiVersion, obj }) {
   const meta = [
     ["API 名", d.name],
     ["ラベル", d.label],
-    ["カスタム", d.custom ? "Yes" : "No"],
+    ["カスタム", d.custom ? "○ カスタム" : "− 標準"],
     ["キー Prefix", d.keyPrefix || ""],
     ["項目数", String(fields.length)],
     ["レコードタイプ", String((d.recordTypeInfos || []).filter((r) => !r.master).length)],
@@ -786,7 +786,7 @@ async function buildFlsReport({ host, sid, apiVersion, obj, progress = () => {} 
     else m.noAccess.push(name);
   }
 
-  const headers = ["No", "API 名", "ラベル", "型", "必須", "編集可 (Edit)", "参照のみ (Read)", "アクセス無し (--)"];
+  const headers = ["No", "API 名", "ラベル", "型", "必須", "編集可 (Edit) 件数", "編集可 (Edit) 内訳", "参照のみ (Read) 件数", "参照のみ (Read) 内訳", "アクセス無し 件数"];
   const rows = allFields.map((f, i) => {
     const m = map.get(f.name) || { read: [], edit: [], noAccess: [] };
     return {
@@ -795,9 +795,11 @@ async function buildFlsReport({ host, sid, apiVersion, obj, progress = () => {} 
       "ラベル": f.label,
       "型": f.type,
       "必須": f.required ? "○" : "",
-      "編集可 (Edit)": m.edit.sort().join("\n"),
-      "参照のみ (Read)": m.read.sort().join("\n"),
-      "アクセス無し (--)": m.noAccess.sort().join("\n"),
+      "編集可 (Edit) 件数": fmtNum(m.edit.length),
+      "編集可 (Edit) 内訳": m.edit.sort().join("\n"),
+      "参照のみ (Read) 件数": fmtNum(m.read.length),
+      "参照のみ (Read) 内訳": m.read.sort().join("\n"),
+      "アクセス無し 件数": fmtNum(m.noAccess.length),
     };
   });
 
@@ -982,7 +984,7 @@ async function buildAccessControl({ host, sid, apiVersion }) {
       { heading: "2. 共有設計上の注意 (非公開 / 親従属)", headers: sharingHeaders, rows: sharingRows },
       { heading: "3. ロール階層 (UserRole)", headers: roleHeaders, rows: roleRows },
     ],
-    note: `OWD ${owdRows.length} 件 / ロール ${roleRows.length} 件 / 共有ルールの詳細は Metadata API (SharingRules) からのみ取得可能なため、本設計書には含まれていません`,
+    note: `OWD ${fmtNum(owdRows.length)} 件 / ロール ${fmtNum(roleRows.length)} 件 / 共有ルールの詳細は Metadata API (SharingRules) からのみ取得可能なため、本設計書には含まれていません`,
   };
 }
 
@@ -1337,7 +1339,7 @@ async function buildLwcDetail({ host, sid, apiVersion, obj }) {
     title: `LWC 設計図: ${b.MasterLabel} (${b.DeveloperName})`,
     type: "lwcDetail",
     sections,
-    note: `バンドル内ファイル ${fileRows.length} 件 / 「App Builder に公開」が ○ の場合は管理者が Lightning ページに配置可能です`,
+    note: `バンドル内ファイル ${fmtNum(fileRows.length)} 件 / 「App Builder に公開」が ○ の場合は管理者が Lightning ページに配置可能です`,
   };
 }
 

@@ -17,6 +17,11 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.61.0 (2026-05-20 19:43)** — 🚨 ユーザー要望 Phase 52: FLS レポート / ObjectDef 桁/精度 / AccessControl 件数:
+  - **🐛 buildFlsReport**: 列を「編集可 (Edit) 件数 / 編集可 (Edit) 内訳 / 参照のみ (Read) 件数 / 参照のみ (Read) 内訳 / アクセス無し 件数」に拡張。各項目が何件のプロファイル/権限セットでどのアクセス許可になっているか一目で分かる
+  - **🐛 buildObjectDef 桁/精度列**: 「123」→「123 文字」、「10,2」→「精度 10 / 小数 2」と単位付きに、カスタム列「Yes/No」→「○ カスタム / − 標準」絵文字付き
+  - **🐛 buildAccessControl**: OWD/ロール件数を 3 桁区切り (fmtNum) に
+  - **🐛 buildLwcDetail バンドル内ファイル件数**: 3 桁区切り (fmtNum)
 - **v2.60.0 (2026-05-20 19:39)** — 🚨 ユーザー要望 Phase 51: 残設計書の桁数・値表記を改善:
   - **🐛 buildFieldPermMatrix サマリ**: 「対象フィールド数 / プロファイル数 / 権限セット数 / FieldPermissions レコード数」を 3 桁区切り + 「N 項目」「N 件」単位付きに
   - **🐛 buildObjectPermMatrix サマリ**: 同様に 4 サマリ項目を 3 桁区切り + 単位付きに
