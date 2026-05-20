@@ -17,7 +17,13 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
-- **v2.71.0 (2026-05-20 21:00)** — 🚨 Phase 62: 設計書 note サマリ追加 + a11y (aria-live/role/aria-current) 強化:
+- **v2.72.0 (2026-05-20 20:08)** — 🚨 Phase 63: picker.js ARIA listbox 化 + 残設計書 note サマリ拡充:
+  - **♿ picker.js**: 検索 input に `role="combobox"` + `aria-controls` + `aria-autocomplete="list"` + `aria-expanded="true"`、`.picker-list` に `role="listbox"` + `aria-label`、各 `.picker-row` に `role="option"` + `aria-selected` + ユニーク id、ヘッダ行は `role="presentation"`、選択行 id を `aria-activedescendant` でスクリーンリーダーに伝達、件数カウンタを `role="status" aria-live="polite"` 化 — 9 種類すべての Picker (sobject / field / profile / permset / apexClass / flow / user / lwc / changeset 等) で a11y 大幅改善
+  - **🐛 buildApexTriggerList note**: 「対象オブジェクト N 種類 / 有効 X 件・無効 Y 件・削除済 Z 件 / 総コードサイズ M / イベント発火件数 BI/AI/BU/AU/BD/AD/AUD」と詳細サマリ
+  - **🐛 buildFlowList note**: 「種別内訳: 自動起動フロー X 件 / 画面フロー Y 件 / ワークフロー Z 件 / ...」+ Workflow/Process Builder の件数があれば「⚠ 廃止予定 (フロー移行推奨)」を自動付記
+  - **🐛 buildFlowList フォールバック note**: FlowDefinitionView 非対応 org でも種別サマリ表示
+  - **🐛 buildAppList note**: 「AppDefinition N 件 (Lightning X / Classic Y) / AppMenuItem 種別内訳: TabSet A / Connected B / ServiceProvider C / Network D (表示 V / 非表示 H)」と UI 種別と App Launcher 表示状態を集計
+- **v2.71.0 (2026-05-20 20:03)** — 🚨 Phase 62: 設計書 note サマリ追加 + a11y (aria-live/role/aria-current) 強化:
   - **🐛 buildValidationRuleList note**: 「有効 N 件 (XX.X%) / 無効 M 件 / 項目直下 K 件・ページ上部 L 件」と稼働状況と表示位置内訳を集計
   - **🐛 buildRecordTypeList note**: 「対象オブジェクト N 種類 / 有効 X 件 (XX.X%) / 無効 Y 件 / 営業プロセス連携あり Z 件」と組織全体の RT 分布を可視化
   - **🐛 buildCustomSettingList note**: 「List 型 N 件 / Hierarchy 型 M 件」の型別件数を分けて表記

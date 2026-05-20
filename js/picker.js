@@ -213,6 +213,9 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
     // フォーカス復元用に元の active 要素を記憶
     const focusReturnTarget = document.activeElement;
 
+    // v2.72.0: 各 picker インスタンスにユニーク ID を発番し ARIA aria-controls / aria-activedescendant に利用
+    const pickerInstanceId = "p" + Math.random().toString(36).slice(2, 9);
+
     // モーダル DOM 構築
     const overlay = document.createElement("div");
     overlay.className = "picker-overlay";
@@ -225,13 +228,13 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
         </div>
         <div class="picker-toolbar">
           <div class="picker-search-wrap">
-            <input class="picker-search" placeholder="${escape(def.placeholder)}" autofocus aria-label="候補検索" maxlength="200" />
+            <input class="picker-search" placeholder="${escape(def.placeholder)}" autofocus aria-label="候補検索" maxlength="200" role="combobox" aria-controls="picker-list-${pickerInstanceId}" aria-expanded="true" aria-autocomplete="list" />
             <button class="picker-clear" type="button" title="検索キーワードをクリアします" aria-label="検索をクリア">✕</button>
           </div>
-          <span class="picker-count meta">読み込み中…</span>
+          <span class="picker-count meta" role="status" aria-live="polite" aria-atomic="true">読み込み中…</span>
           <button class="picker-reload mini-btn" title="再取得">⟳</button>
         </div>
-        <div class="picker-list"></div>
+        <div class="picker-list" id="picker-list-${pickerInstanceId}" role="listbox" aria-label="${escape(def.title)}" tabindex="-1"></div>
       </div>
     `;
     document.body.appendChild(overlay);
@@ -315,9 +318,10 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
         ? ` <span style="color:var(--accent)">(⏱${recentCount} ★${favCount})</span>` : "";
       $count.innerHTML = `${filtered.length} / ${items.length} 件${breakdown}`;
       $list.innerHTML = "";
-      // ヘッダ
+      // ヘッダ (a11y: 視覚的にはテーブル見出しだが listbox の子としては presentation 扱いにする)
       const hdr = document.createElement("div");
       hdr.className = "picker-row header";
+      hdr.setAttribute("role", "presentation");
       hdr.title = "上から: ⏱ 最近選択 / ★ お気に入り / その他 順で並んでいます (検索時は除外)";
       hdr.innerHTML = def.columns.map((c) => `<div title="${escape(c)}">${escape(c)}</div>`).join("");
       $list.appendChild(hdr);
@@ -325,8 +329,13 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
         const row = document.createElement("div");
         const isRecent = recentSet.has(it.value);
         const isFav = favSet.has(it.value);
-        row.className = "picker-row" + (idx === selectedIdx ? " selected" : "") +
+        const isSelected = idx === selectedIdx;
+        row.className = "picker-row" + (isSelected ? " selected" : "") +
           (isRecent ? " is-recent" : "") + (isFav ? " is-fav" : "");
+        // v2.72.0: ARIA listbox/option パターン
+        row.setAttribute("role", "option");
+        row.setAttribute("aria-selected", isSelected ? "true" : "false");
+        row.id = `${pickerInstanceId}-opt-${idx}`;
         const badge = isRecent ? '<span class="picker-badge recent" title="最近選択">⏱</span>' :
                       isFav ? '<span class="picker-badge fav" title="お気に入り">★</span>' : "";
         row.innerHTML = it.row.map((c, i) =>
@@ -339,10 +348,18 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
         });
         $list.appendChild(row);
       });
+      // v2.72.0: スクリーンリーダーに現在のアクティブ option を通知
+      const activeRow = $list.querySelector(".picker-row.selected");
+      if (activeRow && activeRow.id) {
+        $input.setAttribute("aria-activedescendant", activeRow.id);
+      } else {
+        $input.removeAttribute("aria-activedescendant");
+      }
       if (!filtered.length) {
         const empty = document.createElement("div");
         empty.className = "meta";
         empty.style.padding = "12px";
+        empty.setAttribute("role", "presentation");
         empty.textContent = "該当なし";
         $list.appendChild(empty);
       }

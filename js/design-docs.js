@@ -308,8 +308,9 @@ async function buildApexTriggerList({ host, sid, apiVersion }) {
   });
   if (!r.ok) throw apiError("Apex トリガ一覧の取得に失敗しました", r);
   const statusLabel = (s) => ({ "Active": "○ 有効", "Inactive": "− 無効", "Deleted": "✗ 削除済" }[s] || s);
+  const records = r.data.records || [];
   const headers = ["No", "トリガ名", "対象オブジェクト", "BI", "AI", "BU", "AU", "BD", "AD", "AUD", "ステータス", "コードサイズ", "更新日"];
-  const rows = (r.data.records || []).map((p, i) => ({
+  const rows = records.map((p, i) => ({
     "No": i + 1,
     "トリガ名": p.Name,
     "対象オブジェクト": p.TableEnumOrId,
@@ -324,6 +325,19 @@ async function buildApexTriggerList({ host, sid, apiVersion }) {
     "コードサイズ": p.LengthWithoutComments != null ? fmtBytes(p.LengthWithoutComments) : "",
     "更新日": fmtDate(p.LastModifiedDate),
   }));
+  // v2.72.0: note サマリ - 有効/無効/削除済 別件数 + イベント別発火件数 + 対象オブジェクト数 + 総コードサイズ
+  const activeCount = records.filter((p) => p.Status === "Active").length;
+  const inactiveCount = records.filter((p) => p.Status === "Inactive").length;
+  const deletedCount = records.filter((p) => p.Status === "Deleted").length;
+  const objCount = new Set(records.map((p) => p.TableEnumOrId)).size;
+  const totalSize = records.reduce((sum, p) => sum + (Number(p.LengthWithoutComments) || 0), 0);
+  const evt = (key) => records.filter((p) => p[key]).length;
+  const evtSummary = [
+    `BI ${fmtNum(evt("UsageBeforeInsert"))}`, `AI ${fmtNum(evt("UsageAfterInsert"))}`,
+    `BU ${fmtNum(evt("UsageBeforeUpdate"))}`, `AU ${fmtNum(evt("UsageAfterUpdate"))}`,
+    `BD ${fmtNum(evt("UsageBeforeDelete"))}`, `AD ${fmtNum(evt("UsageAfterDelete"))}`,
+    `AUD ${fmtNum(evt("UsageAfterUndelete"))}`,
+  ].join(" / ");
   // v2.14.0: 凡例セクションを別途追加 (業務担当向け)
   const legendHeaders = ["略号", "意味"];
   const legendRows = [
@@ -342,7 +356,7 @@ async function buildApexTriggerList({ host, sid, apiVersion }) {
       { heading: "0. 凡例 / トリガイベント略号", headers: legendHeaders, rows: legendRows },
       { heading: "1. Apex トリガ一覧", headers, rows },
     ],
-    note: `合計 ${fmtNum(rows.length)} 件 / Before/After × Insert/Update/Delete/Undelete の発火タイミング表となっています`,
+    note: `合計 ${fmtNum(records.length)} 件 / 対象オブジェクト ${fmtNum(objCount)} 種類 / ステータス: 有効 ${fmtNum(activeCount)} 件・無効 ${fmtNum(inactiveCount)} 件・削除済 ${fmtNum(deletedCount)} 件 / 総コードサイズ: ${fmtBytes(totalSize)} / イベント発火件数: ${evtSummary}`,
   };
 }
 
@@ -377,17 +391,26 @@ async function buildFlowList({ host, sid, apiVersion }) {
       soql: `SELECT Id, MasterLabel, ProcessType, Status, VersionNumber, Definition.DeveloperName FROM Flow WHERE Status='Active' ORDER BY MasterLabel LIMIT 500`,
     });
     if (!r2.ok) throw apiError("フロー一覧の取得に失敗しました (フォールバック)", r2);
+    const r2records = r2.data.records || [];
     const headers = ["No", "ラベル", "API 名", "種別", "状態", "バージョン"];
-    const rows = (r2.data.records || []).map((f, i) => ({
+    const rows = r2records.map((f, i) => ({
       "No": i + 1, "ラベル": f.MasterLabel, "API 名": f.Definition ? f.Definition.DeveloperName : "",
       "種別": processTypeLabel(f.ProcessType),
       "状態": f.Status === "Active" ? "○ アクティブ" : (f.Status === "Draft" ? "下書き" : (f.Status === "Obsolete" ? "廃止" : (f.Status || ""))),
       "バージョン": f.VersionNumber != null ? `v${f.VersionNumber}` : "",
     }));
-    return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${fmtNum(rows.length)} 件 / 種別と状態は業務用語で表記しています` };
+    // v2.72.0: フォールバック側にも種別サマリを追加
+    const r2types = {};
+    r2records.forEach((f) => {
+      const key = f.ProcessType || "(未分類)";
+      r2types[key] = (r2types[key] || 0) + 1;
+    });
+    const r2breakdown = Object.keys(r2types).sort().map((t) => `${processTypeLabel(t)} ${fmtNum(r2types[t])} 件`).join(" / ");
+    return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${fmtNum(rows.length)} 件 / 種別内訳: ${r2breakdown} — 種別と状態は業務用語で表記しています` };
   }
+  const records = r.data.records || [];
   const headers = ["No", "ラベル", "API 名", "種別", "アクティブ", "バージョン", "説明", "更新日"];
-  const rows = (r.data.records || []).map((f, i) => ({
+  const rows = records.map((f, i) => ({
     "No": i + 1,
     "ラベル": f.MasterLabel,
     "API 名": f.DeveloperName,
@@ -397,7 +420,26 @@ async function buildFlowList({ host, sid, apiVersion }) {
     "説明": fmtTrunc(f.Description || "", 200),
     "更新日": fmtDate(f.LastModifiedDate),
   }));
-  return { title: "フロー一覧 (アクティブのみ)", type: "flowList", sections: [{ heading: "フロー", headers, rows }], note: `合計 ${fmtNum(rows.length)} 件 / 種別は業務用語と原文を併記しています。Process Builder は Salesforce 公式アナウンスにより段階的に廃止予定です` };
+  // v2.72.0: note サマリ - 種別別件数を集計 (Process Builder 廃止予告とセットで業務影響把握)
+  const typeBuckets = {};
+  records.forEach((f) => {
+    const key = f.ProcessType || "(未分類)";
+    typeBuckets[key] = (typeBuckets[key] || 0) + 1;
+  });
+  const typeBreakdown = Object.keys(typeBuckets).sort()
+    .map((t) => `${processTypeLabel(t)} ${fmtNum(typeBuckets[t])} 件`)
+    .join(" / ");
+  const wfCount = typeBuckets["Workflow"] || 0;
+  const pbCount = typeBuckets["InvocableProcess"] || 0;
+  const legacyNote = (wfCount || pbCount)
+    ? ` / ⚠ 廃止予定: Workflow ${fmtNum(wfCount)} 件・Process Builder ${fmtNum(pbCount)} 件 (フロー移行推奨)`
+    : "";
+  return {
+    title: "フロー一覧 (アクティブのみ)",
+    type: "flowList",
+    sections: [{ heading: "フロー", headers, rows }],
+    note: `合計 ${fmtNum(records.length)} 件 / 種別内訳: ${typeBreakdown}${legacyNote} — Process Builder は Salesforce 公式アナウンスにより段階的に廃止予定です`,
+  };
 }
 
 // ============ 入力規則一覧 ============
@@ -909,8 +951,9 @@ async function buildAppList({ host, sid, apiVersion }) {
     soql: `SELECT Id, DeveloperName, MasterLabel, NamespacePrefix, UiType, NavType, ProfileId, Description FROM AppDefinition ORDER BY MasterLabel LIMIT 500`,
   });
   if (!r.ok) throw apiError("アプリケーション定義の取得に失敗しました", r);
+  const appRecords = r.data.records || [];
   const headers = ["No", "API 名", "ラベル", "ネームスペース", "UI 種別", "ナビゲーション", "説明"];
-  const rows = (r.data.records || []).map((a, i) => ({
+  const rows = appRecords.map((a, i) => ({
     "No": i + 1,
     "API 名": a.DeveloperName,
     "ラベル": a.MasterLabel,
@@ -926,7 +969,8 @@ async function buildAppList({ host, sid, apiVersion }) {
     soql: `SELECT Id, ApplicationId, Label, Name, Type, IsVisible, IsAccessible, SortOrder FROM AppMenuItem ORDER BY SortOrder NULLS LAST, Label LIMIT 200`,
   });
   const menuHeaders = ["No", "ラベル", "API 名", "種別", "App Launcher 表示", "アクセス可", "並び順"];
-  const menuRows = m.ok ? (m.data.records || []).map((x, i) => ({
+  const menuRecords = m.ok ? (m.data.records || []) : [];
+  const menuRows = menuRecords.map((x, i) => ({
     "No": i + 1,
     "ラベル": x.Label || "",
     "API 名": x.Name || "",
@@ -934,7 +978,7 @@ async function buildAppList({ host, sid, apiVersion }) {
     "App Launcher 表示": x.IsVisible ? "○ 表示" : "− 非表示",
     "アクセス可": x.IsAccessible ? "○" : "−",
     "並び順": x.SortOrder == null ? "" : fmtNum(x.SortOrder),
-  })) : [];
+  }));
 
   const legend = [
     ["アプリケーションとは", "Salesforce で機能をまとめた『画面パッケージ』。タブ構成・ユーティリティバー・ナビ種別等を定義"],
@@ -952,7 +996,26 @@ async function buildAppList({ host, sid, apiVersion }) {
       { heading: "1. AppDefinition (組織内全アプリ)", headers, rows },
       ...(menuRows.length ? [{ heading: "2. AppMenuItem (App Launcher 表示順)", headers: menuHeaders, rows: menuRows }] : []),
     ],
-    note: `AppDefinition ${fmtNum(rows.length)} 件 / AppMenuItem ${fmtNum(menuRows.length)} 件 / 「並び順」はプロファイル単位で別途上書き可能`,
+    note: (() => {
+      // v2.72.0: note サマリ拡充 - UI 種別 (Aloha/Lightning) と AppMenuItem 表示/非表示 + 種別別件数
+      const lightning = appRecords.filter((a) => a.UiType === "Lightning").length;
+      const aloha = appRecords.filter((a) => a.UiType === "Aloha").length;
+      const otherUi = appRecords.length - lightning - aloha;
+      const visibleMenu = menuRecords.filter((x) => x.IsVisible).length;
+      const hiddenMenu = menuRecords.length - visibleMenu;
+      const menuTypes = {};
+      menuRecords.forEach((x) => {
+        const k = x.Type || "(未分類)";
+        menuTypes[k] = (menuTypes[k] || 0) + 1;
+      });
+      const menuTypeBreakdown = Object.keys(menuTypes).sort()
+        .map((t) => `${menuTypeMap[t] || t} ${fmtNum(menuTypes[t])} 件`)
+        .join(" / ");
+      const menuSummary = menuRecords.length
+        ? ` / AppMenuItem 種別内訳: ${menuTypeBreakdown} (表示 ${fmtNum(visibleMenu)} / 非表示 ${fmtNum(hiddenMenu)})`
+        : "";
+      return `AppDefinition ${fmtNum(appRecords.length)} 件 (Lightning ${fmtNum(lightning)} / Classic ${fmtNum(aloha)}${otherUi ? ` / その他 ${fmtNum(otherUi)}` : ""}) / AppMenuItem ${fmtNum(menuRecords.length)} 件${menuSummary} — 「並び順」はプロファイル単位で別途上書き可能`;
+    })(),
   };
 }
 
