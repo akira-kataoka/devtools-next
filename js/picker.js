@@ -384,7 +384,9 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
         selectedIdx = Math.max(selectedIdx - 10, 0);
         render(); scrollToSelected();
       } else if (e.key === "Enter") {
+        // Enter も伝播ガード (背景 form submit や global keydown を防ぐ)
         e.preventDefault();
+        e.stopPropagation();
         const sel = $list.querySelector(".picker-row.selected");
         if (sel) sel.click();
       } else if (e.key === "Escape") {

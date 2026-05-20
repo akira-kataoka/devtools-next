@@ -4,6 +4,8 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.83.0 (2026-05-20 11:15)** — Picker Enter にも伝播ガード追加:
+  - **🐛 Picker `Enter` キーで `stopPropagation()` 追加**: Esc と同じ防御パターン。背景 view の form submit やグローバル keydown (Ctrl+Alt+I 等) に Enter が流出しない。**選択確定後の意図しないグローバル KBSC 発火を予防**
 - **v1.82.0 (2026-05-20 11:10)** — Picker Esc 伝播ガード + Tab Shift キー除外:
   - **🐛 Picker Esc に `preventDefault()` + `stopPropagation()`**: 背景の view やグローバル keydown (Ctrl+Alt+I 等) に Esc が流出しないようガード。**Picker close 後に意図しないグローバル KBSC が発火しない**
   - **🐛 enableTabToSpaces に `shiftKey` 除外追加**: 従来 `altKey/ctrlKey/metaKey` のみ除外 → Shift+Tab を奪っていた → **アクセシビリティ標準の Shift+Tab 逆方向 focus 移動が正しく動作**。コメントに「修飾キー時はブラウザ標準挙動に委譲」を明記
