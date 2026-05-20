@@ -434,6 +434,7 @@ function bindEvents() {
     });
   });
   // v2.84.0: API URL ビルダー / REST 探索の使い方ガイドの「例チップ」クリックで入力欄を埋める
+  // v2.85.0: 変更セットクイックスタート (data-quickset) も同じハンドラに統合
   document.querySelectorAll(".api-example-chip").forEach((chip) => {
     chip.addEventListener("click", () => {
       // API URL ビルダー用
@@ -452,6 +453,25 @@ function bindEvents() {
         if (m) m.value = chip.dataset.restMethod;
         if (p) p.value = chip.dataset.restPath || "";
         panelToast(`📋 例を入力欄に設定しました。「送信」ボタンをクリックして実行してください`, { kind: "ok" });
+      }
+      // v2.85.0: 変更セットクイックスタート (data-quickset で複数メタデータ型を一括ロード)
+      if (chip.dataset.quickset) {
+        const presets = {
+          apex: ["ApexClass", "ApexTrigger"],
+          flow: ["Flow"],
+          perm: ["Profile", "PermissionSet"],
+          lwc: ["LightningComponentBundle"],
+        };
+        const types = presets[chip.dataset.quickset] || [];
+        if (!types.length) return;
+        const csType = document.getElementById("csType");
+        const csLoadBtn = document.getElementById("btnCsLoadCandidates");
+        if (csType && csLoadBtn) {
+          // 最初の型を選んでロード (複数型の連続ロードは将来実装)
+          csType.value = types[0];
+          csLoadBtn.click();
+          panelToast(`🚀 「${types.join(" + ")}」の候補を読み込んでいます…`, { kind: "ok" });
+        }
       }
     });
   });

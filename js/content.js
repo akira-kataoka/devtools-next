@@ -120,6 +120,24 @@ function flashToast(text) {
       .result td { padding: 3px 6px; border-bottom: 1px solid #1f2c46; vertical-align: top; max-width: 200px; word-break: break-word; }
       .err { color: #ff6b6b; }
       .ok { color: #2ecc71; }
+      /* v2.85.0 Team M: 現在ページレコード即操作 */
+      .quick-row {
+        display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+        padding: 8px 10px; margin-bottom: 8px;
+        background: rgba(27,150,255,0.06);
+        border: 1px solid #1f2c46; border-left: 3px solid #1b96ff;
+        border-radius: 6px;
+        font-size: 11px;
+      }
+      .quick-label { color: #9fb0c9; font-weight: 700; }
+      .quick-info { color: #1b96ff; font-family: ui-monospace, Consolas, monospace; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .quick-btn {
+        background: transparent; border: 1px solid #1f2c46;
+        color: #1b96ff; padding: 3px 8px; border-radius: 4px;
+        cursor: pointer; font-size: 11px;
+      }
+      .quick-btn:hover { background: #1b96ff; color: #fff; border-color: #1b96ff; }
+      .quick-btn:disabled { opacity: 0.4; cursor: default; }
     </style>
     <button class="launcher" id="lnch" title="DevToolsNext のミニパネルを開く (Salesforce 上で簡易 SOQL を実行できます)" aria-label="DevToolsNext ミニパネルを開く">🛠</button>
     <div class="panel" id="pnl" role="dialog" aria-label="DevToolsNext ミニパネル">
@@ -130,10 +148,18 @@ function flashToast(text) {
         <button class="hdr-close" id="cls" title="ミニパネルを閉じます" aria-label="ミニパネルを閉じる">✕</button>
       </div>
       <div class="body">
+        <!-- v2.85.0 Team M: 現在ページのレコード即操作ボタン (URL から自動抽出) -->
+        <div class="quick-row" id="quickRow">
+          <span class="quick-label">📍 現在のレコード:</span>
+          <span class="quick-info" id="quickInfo">--</span>
+          <button class="quick-btn" id="qCopyId" title="現在ページのレコード ID をクリップボードにコピー">📋 ID コピー</button>
+          <button class="quick-btn" id="qOpenNew" title="現在のレコードを新しいタブで開く">↗ 新タブ</button>
+        </div>
         <textarea id="qry" placeholder="SELECT Id, Name FROM Account LIMIT 5" spellcheck="false">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 5</textarea>
         <div class="row">
-          <button class="hdr-close" id="useId" title="現在のページのレコード ID を WHERE Id='...' でクエリに挿入します" style="border-color:#1b96ff;color:#1b96ff">📋 ID 挿入</button>
-          <button class="hdr-close" id="copyCsv" title="クエリ結果を CSV としてクリップボードにコピーします">📋 CSV</button>
+          <button class="hdr-close" id="useId" title="現在のページのレコード ID を WHERE Id='...' でクエリに挿入します" style="border-color:#1b96ff;color:#1b96ff">📋 ID をクエリに挿入</button>
+          <button class="hdr-close" id="copyCsv" title="クエリ結果を CSV としてクリップボードにコピーします">📋 CSV コピー</button>
+          <button class="hdr-close" id="dlCsv" title="クエリ結果を CSV ファイルとしてダウンロードします">📥 CSV DL</button>
           <span class="meta" id="mta">Ctrl+Enter でクエリを実行できます</span>
           <button class="primary" id="run">▶ 実行</button>
         </div>
@@ -150,15 +176,76 @@ function flashToast(text) {
   const openFullBtn = $("opn");
   const useIdBtn = $("useId");
   const copyCsvBtn = $("copyCsv");
+  const dlCsvBtn = $("dlCsv");
+  const qCopyIdBtn = $("qCopyId");
+  const qOpenNewBtn = $("qOpenNew");
+  const quickInfo = $("quickInfo");
   const qry = $("qry");
   const runBtn = $("run");
   const meta = $("mta");
   const res = $("res");
   let lastRecs = []; // v2.10.0: CSV コピー用に最終結果保持
 
+  // v2.85.0 Team M: パネルを開いた時に現在ページの ID を quick-row に表示
+  const updateQuickInfo = () => {
+    const info = extractRecordContext();
+    if (info && info.id) {
+      quickInfo.textContent = `${info.obj || "?"}:${info.id}`;
+      qCopyIdBtn.disabled = false;
+      qOpenNewBtn.disabled = false;
+    } else {
+      quickInfo.textContent = "(レコードページ以外 — 詳細画面で利用可能)";
+      qCopyIdBtn.disabled = true;
+      qOpenNewBtn.disabled = true;
+    }
+  };
+  qCopyIdBtn.addEventListener("click", () => {
+    const info = extractRecordContext();
+    if (!info || !info.id) return;
+    navigator.clipboard.writeText(info.id).then(() => {
+      meta.innerHTML = `<span class="ok">📋 レコード ID をコピーしました: ${info.id}</span>`;
+    });
+  });
+  qOpenNewBtn.addEventListener("click", () => {
+    const info = extractRecordContext();
+    if (!info || !info.id) return;
+    const url = `${location.origin}/lightning/r/${info.obj || "Account"}/${info.id}/view`;
+    window.open(url, "_blank");
+    meta.innerHTML = `<span class="ok">↗ 新しいタブで開きました: ${info.obj || "?"}:${info.id}</span>`;
+  });
+  dlCsvBtn.addEventListener("click", () => {
+    if (!lastRecs.length) {
+      meta.innerHTML = `<span class="err">⚠ 先にクエリを実行してください</span>`;
+      return;
+    }
+    // 簡易 CSV 変換 (content.js は外部依存を持たない設計のためインライン実装)
+    const cols = new Set();
+    lastRecs.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
+    const headers = Array.from(cols);
+    const esc = (v) => {
+      if (v == null) return "";
+      const s = typeof v === "object" ? JSON.stringify(v) : String(v);
+      return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = [headers.join(","), ...lastRecs.map((r) => headers.map((h) => esc(r[h])).join(","))].join("\r\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `soql-mini-${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    meta.innerHTML = `<span class="ok">📥 CSV ダウンロード: ${lastRecs.length} 件</span>`;
+  });
+
   launcher.addEventListener("click", () => {
     panel.classList.toggle("open");
-    if (panel.classList.contains("open")) setTimeout(() => qry.focus(), 30);
+    if (panel.classList.contains("open")) {
+      updateQuickInfo();
+      setTimeout(() => qry.focus(), 30);
+    }
   });
   closeBtn.addEventListener("click", () => panel.classList.remove("open"));
   openFullBtn.addEventListener("click", () => {
