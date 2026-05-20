@@ -276,6 +276,8 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
       cache.delete(cacheKey);
       scrollMemory.delete(cacheKey);
       $count.textContent = "⏳ 再取得中…";
+      // v2.75.0: スクリーンリーダーに「読み込み中」を通知
+      $list.setAttribute("aria-busy", "true");
       try {
         items = await def.load({ host, sid, apiVersion, parentObject });
         cache.set(cacheKey, items);
@@ -284,6 +286,7 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
         render();
         if ($list) $list.scrollTop = 0;
       } catch (e) { $count.textContent = "❌ 失敗: " + (e.message || e); }
+      finally { $list.setAttribute("aria-busy", "false"); }
     });
 
     let selectedIdx = 0;
@@ -416,13 +419,17 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
 
     // 初回ロード
     if (!items) {
+      // v2.75.0: 初回 fetch 中も aria-busy で SR に通知
+      $list.setAttribute("aria-busy", "true");
       try {
         items = await def.load({ host, sid, apiVersion, parentObject });
         cache.set(cacheKey, items);
       } catch (e) {
         $count.textContent = "ロード失敗: " + (e.message || e);
+        $list.setAttribute("aria-busy", "false");
         return;
       }
+      $list.setAttribute("aria-busy", "false");
     }
     render();
     // 前回のスクロール位置を復元 (同一 kind 連続オープン時の利便性)

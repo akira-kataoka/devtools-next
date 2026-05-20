@@ -17,6 +17,11 @@ SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカッ
 - [既知の前提・制約](#既知の前提制約)
 
 ## 更新履歴
+- **v2.75.0 (2026-05-20 20:28)** — 🚨 Phase 66: ChangeSet lockBtn + Picker aria-busy + popup タップターゲット拡大:
+  - **🐛 panel.js csOnModeChange**: ChangeSet ロードボタンを `lockBtn("btnCsLoad")` + try/finally で確実に解除、Tooling SOQL 実行中の二重クリック・モード切替を防止
+  - **♿ picker.js aria-busy**: 初回ロード時と「再取得」ボタン押下時の両方で `$list.setAttribute("aria-busy", "true")` を設定し、終了時に "false" に戻す — スクリーンリーダーで「読み込み中」状態が伝達される
+  - **🎨 popup.css .ico タップターゲット拡大**: 26x26 → 32x32 px、flex 中央配置 + font-size 14px で絵文字アイコンの視認性向上 (⟳ ⬆ ⚙)
+  - **🎨 popup.css .mini ボタン**: padding 2px→4px 拡大 + min-height 22px 確保で誤クリック予防 (履歴クリア・copy ボタン等)
 - **v2.74.0 (2026-05-20 20:24)** — 🚨 Phase 65: exLoadFields lockBtn DRY + Picker コントラスト + apexClassList/fieldSetList 凡例追加:
   - **🐛 panel.js exLoadFields**: 二重クリック防止のため `lockBtn("btnExLoadFields")` ヘルパーで disabled 化、入力空時のヒントを pill warn に統一、成功/失敗双方で確実に unlock
   - **🎨 panel.css picker-row 選択強調**: `.picker-row.selected, .picker-row[aria-selected="true"]` の背景透明度を 0.15 → 0.28 に強化 + `inset box-shadow` で輪郭明確化 — キーボード操作時に現在ハイライト中の候補が一目でわかるよう視認性向上

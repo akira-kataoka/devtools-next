@@ -536,14 +536,20 @@ async function csOnModeChange() {
   const mode = document.getElementById("csMode").value;
   document.getElementById("csBuilderArea").classList.toggle("hidden", mode !== "builder");
   document.getElementById("csListArea").classList.toggle("hidden", mode === "builder");
-  if (mode === "builder") {
-    // 何もしない (既存状態維持)
-  } else if (mode === "outboundList") {
-    await csListOutbound();
-  } else if (mode === "inboundList") {
-    await csListInbound();
-  } else if (mode === "deployStatus") {
-    await csListDeployStatus();
+  // v2.75.0: ChangeSet ロードボタンを実行中無効化 (Tooling SOQL は時間がかかる場合あり、二重実行防止)
+  const unlock = lockBtn("btnCsLoad");
+  try {
+    if (mode === "builder") {
+      // 何もしない (既存状態維持)
+    } else if (mode === "outboundList") {
+      await csListOutbound();
+    } else if (mode === "inboundList") {
+      await csListInbound();
+    } else if (mode === "deployStatus") {
+      await csListDeployStatus();
+    }
+  } finally {
+    unlock();
   }
 }
 
