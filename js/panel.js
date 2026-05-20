@@ -1987,6 +1987,31 @@ async function reconnect() {
   document.getElementById("orgInfo").innerHTML =
     `<span class="env-badge ${envClass}" title="${envLabel === "SBX" ? "Sandbox" : envLabel === "DEV" ? "Developer/Scratch" : "Production (本番)"}">${envLabel}</span> ` +
     `Org: ${escape(state.orgId)} @ ${escape(state.apiHost)}`;
+  // v2.6.0: 接続成功後に sObject 一覧を datalist に流し込み (オブジェクト入力欄の補完用)
+  refreshSObjectDatalist();
+}
+
+// v2.6.0: 全オブジェクト入力欄 (#exObj, #apiObj, #descObj, #designObj) で list="dl-sobjects" を参照
+// describe global の結果をキャッシュして option を生成、再接続時のみ更新
+let _datalistObjsCached = null;
+async function refreshSObjectDatalist() {
+  if (!state.sid || !state.host) return;
+  const dl = document.getElementById("dl-sobjects");
+  if (!dl) return;
+  try {
+    if (!_datalistObjsCached) {
+      const r = await sfFetch({ host: state.host, sid: state.sid,
+        path: `/services/data/v${state.apiVersion}/sobjects/` });
+      if (!r.ok || !r.data || !Array.isArray(r.data.sobjects)) return;
+      _datalistObjsCached = r.data.sobjects
+        .filter((s) => s.queryable)
+        .map((s) => ({ name: s.name, label: s.label }));
+    }
+    // option 形式: value=API 名 / label="API 名 — ラベル" でラベルも補完候補に表示
+    dl.innerHTML = _datalistObjsCached
+      .map((s) => `<option value="${escape(s.name)}" label="${escape(s.label || s.name)}">`)
+      .join("");
+  } catch (e) { console.warn("[DevToolsNext] datalist refresh failed:", e); }
 }
 
 // レースガード: 連続実行された時、古いリクエストの結果を捨てる

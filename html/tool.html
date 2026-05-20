@@ -160,7 +160,7 @@
 
       <div class="view hidden" data-view="dataexport">
         <div class="toolbar">
-          <input id="exObj" placeholder="オブジェクト API 名 (例: Account)" style="flex:1;max-width:240px" />
+          <input id="exObj" placeholder="オブジェクト API 名 (例: Account)" list="dl-sobjects" autocomplete="off" style="flex:1;max-width:240px" />
           <button id="btnExLoadFields">フィールド読込</button>
           <span class="grow"></span>
           <label class="inspector-opt"><input type="checkbox" id="exTooling" /> Tooling API</label>
@@ -200,7 +200,7 @@
 
       <div class="view hidden" data-view="apiurl">
         <div class="toolbar">
-          <input id="apiObj" placeholder="オブジェクト API 名 (例: Account)" style="max-width:200px" />
+          <input id="apiObj" placeholder="オブジェクト API 名 (例: Account)" list="dl-sobjects" autocomplete="off" style="max-width:200px" />
           <select id="apiOp">
             <option value="describe">describe (オブジェクト)</option>
             <option value="describeGlobal">describe (グローバル / 全オブジェクト)</option>
@@ -269,7 +269,7 @@ System.debug('Now: ' + System.now());</textarea>
 
       <div class="view hidden" data-view="describe">
         <div class="toolbar">
-          <input id="descObj" placeholder="オブジェクト API 名 (例: Account)" />
+          <input id="descObj" placeholder="オブジェクト API 名 (例: Account)" list="dl-sobjects" autocomplete="off" />
           <button id="btnDescribe" class="primary">取得</button>
         </div>
         <div id="describeResult" class="grid"></div>
@@ -443,7 +443,7 @@ System.debug('Now: ' + System.now());</textarea>
             <option value="lwcDetail">★ LWC 設計図</option>
             <option value="erDiagram">ER 図 (Mermaid)</option>
           </select>
-          <input id="designObj" placeholder="オブジェクト API 名 / プロファイル名 / @PermSet名" />
+          <input id="designObj" placeholder="オブジェクト API 名 / プロファイル名 / @PermSet名" list="dl-sobjects" autocomplete="off" />
           <select id="designFormat">
             <option value="excel">Excel (.xls / SpreadsheetML) ⚠ 大量行は遅い</option>
             <option value="markdown">Markdown</option>
@@ -470,6 +470,9 @@ System.debug('Now: ' + System.now());</textarea>
       </div>
     </section>
   </div>
+
+  <!-- v2.6.0: オブジェクト名入力欄共通の datalist (Picker キャッシュから動的生成) -->
+  <datalist id="dl-sobjects"></datalist>
 
   <script src="../js/panel.js" type="module"></script>
 </body>

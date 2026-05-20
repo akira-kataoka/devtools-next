@@ -8,6 +8,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.6.0 (2026-05-20 13:10)** — ✨ ユーザー要望: オブジェクト入力補完 (datalist):
+  - **✨ 5 オブジェクト入力欄に共通 datalist 補完**: `#exObj` / `#apiObj` / `#descObj` / `#designObj` / `#inspectRef` (※ inspectRef は除外、ID 入力欄のため) に `list="dl-sobjects"` 追加。**入力中に sObject 名と日本語ラベルの候補ドロップダウンが出る** (例: 「Op」入力 → `Opportunity — 商談` 補完)
+  - **✨ `refreshSObjectDatalist()`**: reconnect 成功後に `describe global` を呼んで queryable sObject 一覧を取得 → `_datalistObjsCached` メモ化 → `<option value="API 名" label="API 名 — ラベル">` で datalist を更新。**Picker と独立のキャッシュ**で軽量
+  - **動作**: ブラウザネイティブの datalist 機能なので **キーボード ↑↓ 選択 / マウスクリック選択** すべて OS の標準 UX、特別な実装不要。type-ahead (前方一致) + 部分マッチも自動
 - **v2.5.0 (2026-05-20 13:05)** — ✨ ユーザー要望: サイドメニュー折りたたみ機能:
   - **✨ サイドナビ ◀ トグルで 38px に折りたたみ / ▶ で 180px に展開**: `chrome.storage.local.sideCollapsed` で状態保存、リロード後も維持。**panel.html / tool.html の両方に適用**
   - **折りたたみ時の表現**: nav-btn の文字を非表示 (font-size:0) し ::first-letter で絵文字のみ表示、nav-sep は `—` プレースホルダで区切り維持。**画面横幅を最大化したいときに有効**
