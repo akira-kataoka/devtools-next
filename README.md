@@ -4,6 +4,9 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v1.84.0 (2026-05-20 11:20)** — README に Picker close 経路 5 パターン表追加:
+  - **📖 Picker close 経路一覧テーブル**: 行クリック / Enter / Esc / ✕ / 背景クリックの 5 経路、各経路の close 値・伝播ガード・後処理 (scrollMemory 保存・focus 戻し・resolve) を整理。**v1.74.0/1.82.0/1.83.0 で追加された防御コードの根拠が一覧で参照可能**
+  - **🧪 Picker 矢印キー / 行クリック / 背景クリック の伝播**: 現状の実装で問題なし (Arrow は preventDefault のみで OK、行クリックは overlay click と `e.target === overlay` 判定で区別) → 修正不要
 - **v1.83.0 (2026-05-20 11:15)** — Picker Enter にも伝播ガード追加:
   - **🐛 Picker `Enter` キーで `stopPropagation()` 追加**: Esc と同じ防御パターン。背景 view の form submit やグローバル keydown (Ctrl+Alt+I 等) に Enter が流出しない。**選択確定後の意図しないグローバル KBSC 発火を予防**
 - **v1.82.0 (2026-05-20 11:10)** — Picker Esc 伝播ガード + Tab Shift キー除外:
@@ -684,6 +687,22 @@ Picker モーダルのアクセシビリティ確認:
    - Picker close 後、`document.activeElement` が **元のトリガボタン** (例 `btnPickObject`) に戻る
    - DevTools Console で `document.activeElement.id` を確認
 5. **detached 防御 (v1.74.0)**: Org 切替で input が再生成されたケースでも、エラーなく Picker は閉じる (`document.body.contains` チェック)
+
+#### Picker close 経路一覧 (v1.83.0+)
+
+| 経路 | トリガ | close 値 | 伝播ガード |
+|---|---|---|---|
+| 行クリック | マウスクリックで `.picker-row:not(.header)` | 選択行の value | overlay click は `e.target === overlay` 判定で誤発火しない |
+| Enter キー | `$input` keydown で `e.key === "Enter"` | 選択行の value (`sel.click()`) | `preventDefault` + `stopPropagation` (v1.83.0) |
+| Esc キー | `$input` keydown で `e.key === "Escape"` | `null` (キャンセル) | `preventDefault` + `stopPropagation` (v1.82.0) |
+| ✕ ボタン | `.picker-close` クリック | `null` | (overlay 外側 click と区別) |
+| 背景クリック | `.picker-overlay` 自身のクリック | `null` | `e.target === overlay` で背景のみ |
+
+各 close 後の処理:
+1. `scrollMemory` に `$list.scrollTop` を保存 (同 kind 再表示時に復元)
+2. `document.body.classList.remove("picker-open")`
+3. `focusReturnTarget` に focus 戻し (DOM 接続確認、v1.74.0)
+4. `resolve(val)` で `await showPicker()` を解決
 
 ### 🧪 401 INVALID_SESSION_ID テスト手順
 
