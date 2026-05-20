@@ -8,6 +8,11 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.8.0 (2026-05-20 13:20)** — mini-panel に「📋 ID 挿入」ボタン:
+  - **✨ 現在ページの URL から sObject + RecordId を自動抽出して SOQL に挿入**: `extractRecordContext()` で `/lightning/r/Object/Id/view` / `?address=%2F<Id>` / pathname の 3 段階フォールバック (Inspector「現在タブから取得」と同パターン)
+  - **「📋 ID 挿入」クリック → `SELECT Id, Name FROM <Object> WHERE Id = '<id>' LIMIT 1` を textarea にセット**: SF 画面内で「このレコードのフィールド全部見たい」が 1 クリックで実現
+  - **抽出失敗時**: `⚠ 現ページからレコード ID を抽出できません` 警告表示
+  - **成功時**: `📋 Account:001xx0000... を挿入` ok 表示
 - **v2.7.0 (2026-05-20 13:15)** — ✨ ユーザー要望: Salesforce ページ上 mini-panel (別タブ無し作業):
   - **✨ SF ページ右下に floating launcher button (🛠) を inject**: `content.js` 拡張、shadow DOM で SF Lightning の CSS と分離。**SF タブを離れずに SOQL 実行可能**
   - **✨ mini-panel オーバーレイ (SOQL Phase 1)**: launcher クリックで 480px 幅パネル展開 / SOQL textarea + ▶ 実行 / Ctrl+Enter ショートカット / 結果テーブル表示 / IME ガード / ネスト平坦化対応

@@ -116,6 +116,7 @@ function flashToast(text) {
       <div class="body">
         <textarea id="qry" placeholder="SELECT Id, Name FROM Account LIMIT 5" spellcheck="false">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 5</textarea>
         <div class="row">
+          <button class="hdr-close" id="useId" title="現在ページのレコード ID を WHERE Id='...' で挿入" style="border-color:#1b96ff;color:#1b96ff">📋 ID 挿入</button>
           <span class="meta" id="mta">Ctrl+Enter で実行</span>
           <button class="primary" id="run">▶ 実行</button>
         </div>
@@ -130,6 +131,7 @@ function flashToast(text) {
   const panel = $("pnl");
   const closeBtn = $("cls");
   const openFullBtn = $("opn");
+  const useIdBtn = $("useId");
   const qry = $("qry");
   const runBtn = $("run");
   const meta = $("mta");
@@ -152,6 +154,39 @@ function flashToast(text) {
     if (e.isComposing || e.keyCode === 229) return;
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") runBtn.click();
   });
+
+  // v2.8.0: 現在ページから ID + sObject を抽出して WHERE Id='...' を挿入
+  useIdBtn.addEventListener("click", () => {
+    const info = extractRecordContext();
+    if (!info) {
+      meta.innerHTML = `<span class="err">⚠ 現ページからレコード ID を抽出できません (レコード詳細ページで再試行)</span>`;
+      return;
+    }
+    // SELECT Id, Name FROM <Object> WHERE Id = '<id>' 形式で生成 (既存 textarea は置換)
+    const tpl = `SELECT Id, Name FROM ${info.obj || "Account"} WHERE Id = '${info.id}' LIMIT 1`;
+    qry.value = tpl;
+    qry.focus();
+    meta.innerHTML = `<span class="ok">📋 ${info.obj || "?"}:${info.id} を挿入</span>`;
+  });
+  function extractRecordContext() {
+    const href = location.href;
+    // Lightning record: /lightning/r/<Object>/<Id>/view
+    let m = href.match(/\/lightning\/r\/([^/]+)\/([a-zA-Z0-9]{15,18})/);
+    if (m) return { obj: m[1], id: m[2] };
+    // Setup ?address=%2F<Id>
+    try {
+      const u = new URL(href);
+      const addr = u.searchParams.get("address");
+      if (addr) {
+        const am = addr.match(/([a-zA-Z0-9]{15,18})/);
+        if (am) return { obj: null, id: am[1] };
+      }
+      // pathname
+      m = u.pathname.match(/\/([a-zA-Z0-9]{15,18})(?:\/|$)/);
+      if (m) return { obj: null, id: m[1] };
+    } catch {}
+    return null;
+  }
 
   runBtn.addEventListener("click", async () => {
     const soql = qry.value.trim();
