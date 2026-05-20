@@ -604,21 +604,21 @@ function formatError(d) {
 async function doParseId() {
   const raw = document.getElementById("idInput").value.trim();
   if (!/^[a-zA-Z0-9]{15,18}$/.test(raw)) {
-    document.getElementById("idResult").innerHTML = `<div class="meta">15 または 18 桁の英数字を入力してください</div>`;
+    document.getElementById("idResult").innerHTML = `<div class="meta">15 桁または 18 桁の英数字 ID を入力してください</div>`;
     return;
   }
   const id15 = raw.substring(0, 15);
   const id18 = to18CharId(id15);
   const prefix = raw.substring(0, 3);
   const objGuess = lookupPrefix(raw);
-  const recordUrl = state.host ? `https://${state.host}/${raw}` : "(SF未接続)";
+  const recordUrl = state.host ? `https://${state.host}/${raw}` : "(Salesforce に未接続)";
 
   document.getElementById("idResult").innerHTML = `
-    <div class="kv"><span>15桁</span><code>${escape(id15)}</code></div>
-    <div class="kv"><span>18桁</span><code>${escape(id18 || "-")}</code><button class="mini" id="cp18">copy</button></div>
-    <div class="kv"><span>Prefix</span><code>${escape(prefix)}</code></div>
-    <div class="kv"><span>推定Object</span><code>${escape(objGuess || "-")}</code></div>
-    <div class="kv"><span>レコードURL</span><code>${escape(recordUrl)}</code></div>
+    <div class="kv"><span>15 桁 ID</span><code>${escape(id15)}</code></div>
+    <div class="kv"><span>18 桁 ID</span><code>${escape(id18 || "-")}</code><button class="mini" id="cp18" title="18 桁 ID をクリップボードにコピーします">コピー</button></div>
+    <div class="kv"><span>Key Prefix (先頭 3 文字)</span><code>${escape(prefix)}</code></div>
+    <div class="kv"><span>推定オブジェクト</span><code>${escape(objGuess || "-")}</code></div>
+    <div class="kv"><span>レコード URL</span><code>${escape(recordUrl)}</code></div>
   `;
   const cp = document.getElementById("cp18");
   if (cp) cp.addEventListener("click", () => {

@@ -8,6 +8,10 @@ Salesforce 開発者向けユーティリティ拡張機能 (Manifest V3)。
 SOQL 実行 / レコードID 解析 / REST API 探索 / Setup ショートカット / Tooling API 経由のメタデータ一覧と Debug ログ閲覧 / **匿名 Apex 実行** / **Login History ビュー** / **設計書ジェネレータ (Excel / Markdown / HTML / CSV / TSV / Mermaid ER 図)** などを、ログイン済みタブの **Session ID (sid Cookie)** を借用して直接実行します。
 
 ## 更新履歴
+- **v2.28.0 (2026-05-20 15:10)** — 🚨 ユーザー要望 Phase 18: キーボードショートカット toast / Inspector ドリル / parseId 結果:
+  - **🐛 panel.js キーボードショートカット (Ctrl+Alt+I/Q/A/L/R/D)**: 切替時 toast を「inspector ビューに切り替え」→「🔍 レコード Inspector ビューに切り替えました」のように絵文字付き正式名称に統一 (6 ビュー)
+  - **🐛 panel.js Inspector cell-id クリック**: tooltip 文言を「Click: Inspector で開く / ダブルクリック: コピー」→「クリックで Inspector に表示します / ダブルクリックでクリップボードにコピーします」に ですます調 詳細化、toast「Inspector で開く」→「Inspector で開きます」
+  - **🐛 popup.js parseId() 結果表示**: 「15桁/18桁/Prefix/推定Object/レコードURL」→「15 桁 ID / 18 桁 ID / Key Prefix (先頭 3 文字) / 推定オブジェクト / レコード URL」に業務化、コピーボタン文字を「copy」→「コピー」、(SF未接続)→「(Salesforce に未接続)」、エラー文言詳細化
 - **v2.27.0 (2026-05-20 15:05)** — 🚨 ユーザー要望 Phase 17: ナビボタンアイコン統一 + 便利リンク日本語化:
   - **🐛 panel.html / tool.html ナビボタン全 13 個に絵文字プレフィックス統一**: 「SOQL クエリ」→「🔎 SOQL クエリ」、「Apex 実行」→「🟧 Apex 実行」、「REST 探索」→「🌐 REST 探索」、「Describe」→「📖 Describe」、「Limits ダッシュボード」→「📊 Limits ダッシュボード」、「Debug Logs」→「📜 Debug ログ」、「Login History」→「🔐 ログイン履歴」、「Metadata 一覧」→「📦 メタデータ一覧」、「変更セット」→「🔧 変更セット」、「設計書ジェネレータ」→「📋 設計書ジェネレータ」、各ボタンに機能説明 title 追加
   - **🐛 tool.html CSS**: 重複していた `.nav-btn[data-view="X"]::before { content: ... }` 13 ルールを削除し、`::first-letter` 単一ルールに集約。テキストに絵文字プレフィックスが入ったため二重表示問題を回避

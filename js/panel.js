@@ -355,11 +355,15 @@ function bindEvents() {
     // contenteditable 要素も入力フィールド扱い (Mermaid Live Editor 風コードエディタ等)
     if (t && t.isContentEditable) return;
     const map = { "i": "inspector", "q": "soql", "a": "apex", "l": "limits", "r": "rest", "d": "design" };
+    const labelMap = {
+      "inspector": "🔍 レコード Inspector", "soql": "🔎 SOQL クエリ", "apex": "🟧 Apex 実行",
+      "limits": "📊 Limits ダッシュボード", "rest": "🌐 REST 探索", "design": "📋 設計書ジェネレータ",
+    };
     const view = map[e.key.toLowerCase()];
     if (view) {
       e.preventDefault();
       switchToView(view);
-      panelToast(`⌨ ${view} ビューに切り替えました`, { kind: "ok" });
+      panelToast(`⌨ ${labelMap[view] || view} ビューに切り替えました`, { kind: "ok" });
     }
   });
 
@@ -2200,7 +2204,7 @@ function recordsTable(records) {
       const classes = "cell-copyable" + (idCell ? " cell-id" : "") + (isNested ? " cell-nested" : "");
       // ネストセルは tooltip に整形 JSON プレビュー (max 280 文字)
       let tip;
-      if (idCell) tip = "Click: Inspector で開く  /  ダブルクリック: コピー";
+      if (idCell) tip = "クリックで Inspector に表示します  /  ダブルクリックでクリップボードにコピーします";
       else if (isNested) {
         const pretty = JSON.stringify(raw, null, 2);
         const preview = pretty.length > 280 ? pretty.substring(0, 280) + "\n…(切詰)" : pretty;
@@ -2236,7 +2240,7 @@ function recordsTable(records) {
           document.getElementById("inspectRef").value = id;
           switchToView("inspector");
           doInspect();
-          panelToast(`🔍 ${id} を Inspector で開く`, { kind: "ok" });
+          panelToast(`🔍 ${id} を Inspector で開きます`, { kind: "ok" });
         }, 220);
       });
       td.addEventListener("dblclick", () => {
