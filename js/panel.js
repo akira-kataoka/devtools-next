@@ -903,6 +903,35 @@ function bindEvents() {
   });
   $on("btnInspectBack", "click", inspectGoBack);
   $on("btnInspectOpenInOrg", "click", openInspectedInOrg);
+  // v3.66.0: 現在 Inspector で開いているレコードを SOQL ビューに展開
+  $on("btnInspectToSoql", "click", () => {
+    if (!inspectState.obj || !inspectState.id) {
+      panelToast("⚠ Inspector でレコードを開いてから実行してください", { kind: "warn" });
+      return;
+    }
+    // describe.fields から主要な項目 (Id / Name / メイン Lookup) を選択して SOQL を構築
+    const describe = inspectState.describe || {};
+    const fields = describe.fields || [];
+    // 表示対象 (queryable + 主要な型) を選ぶ。多すぎるとパフォーマンス低下するため Id / Name / 上位 8 項目に絞る
+    const PREFERRED_TYPES = new Set(["id", "string", "reference", "picklist", "boolean", "date", "datetime", "currency", "double", "int"]);
+    const picked = [];
+    for (const f of fields) {
+      if (picked.length >= 10) break;
+      if (f.name === "Id" || f.name === "Name") { picked.push(f.name); continue; }
+      if (f.custom) continue; // カスタム項目は後でまとめて (順序維持)
+      if (!PREFERRED_TYPES.has(f.type)) continue;
+      if (/Address$/.test(f.name)) continue; // BillingAddress 等の compound field は SOQL で取得できない
+      picked.push(f.name);
+    }
+    // 重複除去 + Id 必須
+    const cols = ["Id", ...picked.filter((c) => c !== "Id")];
+    const uniqueCols = Array.from(new Set(cols)).slice(0, 10);
+    const soql = `SELECT ${uniqueCols.join(", ")}\nFROM ${inspectState.obj}\nWHERE Id = '${inspectState.id}'\nLIMIT 1`;
+    const ta = document.getElementById("soqlText");
+    if (ta) ta.value = soql;
+    switchToView("soql");
+    panelToast(`🔎 SOQL を生成しました (${inspectState.obj} ${uniqueCols.length} 項目)。Ctrl+Enter で実行`, { kind: "ok" });
+  });
   $on("btnInspectExportJson", "click", () => exportInspect("json"));
   $on("btnInspectExportCsv", "click", () => exportInspect("csv"));
   $on("btnInspectCopyJson", "click", async () => {
