@@ -146,6 +146,9 @@ async function init() {
       window._sfdtInitialScopeFromQuery = params.get("scope") || null;
       // v3.193.0 Phase 283: ?type=<メタデータ型> 対応 — metadata ビュー起動時に型を選択 + 自動実行
       window._sfdtInitialTypeFromQuery = params.get("type") || null;
+      // v3.194.0 Phase 284: ?target=&format= 対応 — design ビュー起動時に種類/対象/形式を投入 + 自動生成
+      window._sfdtInitialTargetFromQuery = params.get("target") || null;
+      window._sfdtInitialFormatFromQuery = params.get("format") || null;
     } catch {}
     // v2.93.0: リフレッシュ時の直前 view 復元 (ユーザー要望「リフレッシュしても前のページ状態を残して」)
     try {
@@ -179,6 +182,36 @@ async function init() {
             if (tryRun() || waited >= 5000) clearInterval(iv);
           }, 250);
         }
+      }
+    }
+    // v3.194.0 Phase 284: ?type=&target=&format= が指定されかつ design view なら、各 input を投入 + 接続済みなら自動生成
+    if (initialViewFromQuery === "design" && (window._sfdtInitialTypeFromQuery || window._sfdtInitialTargetFromQuery || window._sfdtInitialFormatFromQuery)) {
+      const typeSel = document.getElementById("designType");
+      const objInp = document.getElementById("designObj");
+      const fmtSel = document.getElementById("designFormat");
+      if (typeSel && window._sfdtInitialTypeFromQuery) {
+        const t = String(window._sfdtInitialTypeFromQuery);
+        if (Array.from(typeSel.options).some((o) => o.value === t)) typeSel.value = t;
+      }
+      if (objInp && window._sfdtInitialTargetFromQuery) objInp.value = String(window._sfdtInitialTargetFromQuery);
+      if (fmtSel && window._sfdtInitialFormatFromQuery) {
+        const f = String(window._sfdtInitialFormatFromQuery);
+        if (Array.from(fmtSel.options).some((o) => o.value === f)) fmtSel.value = f;
+      }
+      // 接続済みなら自動生成
+      const tryRun = () => {
+        if (state.sid) {
+          try { const btn = document.getElementById("btnDesignGen"); if (btn) btn.click(); } catch {}
+          return true;
+        }
+        return false;
+      };
+      if (!tryRun()) {
+        let waited = 0;
+        const iv = setInterval(() => {
+          waited += 250;
+          if (tryRun() || waited >= 5000) clearInterval(iv);
+        }, 250);
       }
     }
     // v3.193.0 Phase 283: ?type= が指定されかつ metadata view なら、型を選択 + 接続済みなら自動実行
@@ -1137,6 +1170,24 @@ function bindEvents() {
       const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
       await navigator.clipboard.writeText(url);
       panelToast(`🔗 ${inspectState.obj || "?"}:${inspectState.id} の Inspector リンクをコピー`, { kind: "ok" });
+    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+  });
+  // v3.194.0 Phase 284: 設計書 🔗 リンク (?view=design&type=&target=&format=)
+  $on("btnDesignCopyLink", "click", async () => {
+    const typeSel = document.getElementById("designType");
+    const objInp = document.getElementById("designObj");
+    const fmtSel = document.getElementById("designFormat");
+    const type = typeSel ? typeSel.value : "";
+    const target = objInp ? (objInp.value || "").trim() : "";
+    const format = fmtSel ? fmtSel.value : "";
+    if (!type) { panelToast("⚠ 設計書の種類を選択してください", { kind: "warn" }); return; }
+    try {
+      const qp = new URLSearchParams({ view: "design", type });
+      if (target) qp.set("target", target);
+      if (format) qp.set("format", format);
+      const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
+      await navigator.clipboard.writeText(url);
+      panelToast(`🔗 設計書リンクをコピー (${type}${target ? ` / ${target}` : ""})`, { kind: "ok" });
     } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
   });
   // v3.193.0 Phase 283: メタデータ一覧 🔗 リンク (?view=metadata&type=)
