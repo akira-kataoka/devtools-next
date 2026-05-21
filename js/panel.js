@@ -4080,6 +4080,10 @@ function openBulkInsertDialog() {
           <span style="width:120px;">External Id 項目:</span>
           <input id="bulkInsertExtId" type="text" placeholder="例: MyExternalId__c / Account_External_Id__c (Salesforce 側で External ID 属性が ON の項目)" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:6px 8px;border-radius:var(--r-tag);" />
         </label>
+        <label style="display:flex;align-items:center;gap:8px;color:var(--accent);font-weight:600;">
+          <input type="checkbox" id="bulkInsertUseBulkApi" />
+          <span>📦 Bulk API v2 を使う (200 件超え推奨、非同期ジョブとして実行 — 完了まで自動ポーリング)</span>
+        </label>
         <label style="display:flex;flex-direction:column;gap:4px;">
           <span>CSV (1 行目はヘッダ = フィールド API 名・カンマ区切り):</span>
           <textarea id="bulkInsertCsv" rows="10" placeholder="INSERT 例:&#10;Name,Industry,Phone&#10;Acme Corp,Technology,03-1234-5678&#10;Beta Inc,Manufacturing,06-9876-5432&#10;&#10;UPDATE 例 (Id 列必須):&#10;Id,Industry,Phone&#10;0011x00000abc,Healthcare,03-9999-0000&#10;&#10;UPSERT 例 (External Id 列必須):&#10;ExtId__c,Name,Phone&#10;EXT-001,Acme Corp,03-1234-5678&#10;&#10;💡 値にカンマを含む場合は &quot;...&quot; で囲む / 空欄は NULL 扱い / Boolean は true/false" style="background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:8px;border-radius:var(--r-tag);font:11px/1.5 ui-monospace,Consolas,monospace;resize:vertical;"></textarea>
@@ -4179,6 +4183,7 @@ async function doBulkInsert() {
   const obj = document.getElementById("bulkInsertObj").value.trim();
   const extId = (document.getElementById("bulkInsertExtId").value || "").trim();
   const csv = document.getElementById("bulkInsertCsv").value;
+  const useBulkApi = document.getElementById("bulkInsertUseBulkApi").checked;
   const resultEl = document.getElementById("bulkInsertResult");
   if (!obj) { resultEl.innerHTML = `<span style="color:var(--warn)">⚠ 対象オブジェクト名を入力してください</span>`; return; }
   if (op === "upsert" && !extId) { resultEl.innerHTML = `<span style="color:var(--warn)">⚠ UPSERT には External Id 項目名が必要です</span>`; return; }
@@ -4188,7 +4193,10 @@ async function doBulkInsert() {
   if (op === "upsert" && !headers.includes(extId)) { resultEl.innerHTML = `<span style="color:var(--warn)">⚠ UPSERT には CSV ヘッダに「${escape(extId)}」列が必要です</span>`; return; }
   // 2 段階確認
   const opLabel = op === "insert" ? "INSERT" : (op === "update" ? "UPDATE" : `UPSERT (Ext Id: ${extId})`);
-  if (!window.confirm(`⚠ ${records.length} 件のレコードを ${obj} に ${opLabel} します\n\n本番組織では実データが変更されます。続行しますか?`)) return;
+  const apiNote = useBulkApi ? "\n\n📦 Bulk API v2 (非同期ジョブ) で実行します。完了まで自動ポーリングします。" : "";
+  if (!window.confirm(`⚠ ${records.length} 件のレコードを ${obj} に ${opLabel} します${apiNote}\n\n本番組織では実データが変更されます。続行しますか?`)) return;
+  // v3.116.0 Phase 206: Bulk API v2 分岐
+  if (useBulkApi) { return doBulkInsertViaBulkApi(op, obj, extId, csv, opLabel); }
   const apiVer = state.apiVersion || "62.0";
   let success = 0, failed = 0;
   const errors = [];
@@ -4233,6 +4241,86 @@ async function doBulkInsert() {
       ${successIds.length ? `<div style="margin-top:4px;color:var(--fg-dim);">${idLabel} (先頭 5 件): ${successIds.slice(0, 5).map((id) => `<code>${escape(id)}</code>`).join(", ")}${successIds.length > 5 ? ` …他 ${successIds.length - 5} 件` : ""}</div>` : ""}
       ${errors.length ? `<details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--err);">❌ エラー詳細 (${errors.length} 件)</summary><pre style="font-size:9px;white-space:pre-wrap;color:var(--err);margin-top:4px;">${escape(errors.slice(0, 20).join("\n"))}${errors.length > 20 ? `\n…他 ${errors.length - 20} 件` : ""}</pre></details>` : ""}
     </div>`;
+}
+
+// v3.116.0 Phase 206: Bulk API v2 連携 (200 件超えの大量データ用、非同期ジョブ)
+// Composite API は 1 コール 200 件上限なので、それを超えると Bulk API v2 が必須
+// フロー: Job 作成 → CSV upload → Close → ポーリング → 結果取得
+async function doBulkInsertViaBulkApi(op, obj, extId, csvText, opLabel) {
+  const apiVer = state.apiVersion || "62.0";
+  const resultEl = document.getElementById("bulkInsertResult");
+  const sf = (path, method, body, headers) => sfFetch({ host: state.host, sid: state.sid, path, method, body, headers });
+  try {
+    // 1) Job 作成
+    resultEl.innerHTML = `<span class="pill loading">⏳ Bulk API v2 Job 作成中…</span>`;
+    const jobBody = {
+      object: obj,
+      operation: op, // insert / update / upsert / delete
+      contentType: "CSV",
+      lineEnding: "LF",
+    };
+    if (op === "upsert") jobBody.externalIdFieldName = extId;
+    const jobRes = await sf(`/services/data/v${apiVer}/jobs/ingest`, "POST", jobBody);
+    if (!jobRes.ok || !jobRes.data || !jobRes.data.id) {
+      resultEl.innerHTML = `<span style="color:var(--err)">❌ Job 作成失敗: ${escape(JSON.stringify(jobRes.data).substring(0, 300))}</span>`;
+      return;
+    }
+    const jobId = jobRes.data.id;
+    resultEl.innerHTML = `<span class="pill loading">⏳ CSV データ送信中 (Job ${jobId})…</span>`;
+    // 2) CSV upload (PUT text/csv)
+    const uploadRes = await sf(`/services/data/v${apiVer}/jobs/ingest/${jobId}/batches`, "PUT", csvText, { "Content-Type": "text/csv" });
+    if (!uploadRes.ok) {
+      resultEl.innerHTML = `<span style="color:var(--err)">❌ CSV upload 失敗 (Job ${jobId}): ${escape(JSON.stringify(uploadRes.data).substring(0, 300))}</span>`;
+      return;
+    }
+    // 3) Job Close (state: UploadComplete)
+    resultEl.innerHTML = `<span class="pill loading">⏳ Job をクローズして処理開始 (Job ${jobId})…</span>`;
+    const closeRes = await sf(`/services/data/v${apiVer}/jobs/ingest/${jobId}`, "PATCH", { state: "UploadComplete" });
+    if (!closeRes.ok) {
+      resultEl.innerHTML = `<span style="color:var(--err)">❌ Job Close 失敗 (Job ${jobId}): ${escape(JSON.stringify(closeRes.data).substring(0, 300))}</span>`;
+      return;
+    }
+    // 4) ポーリング (5 秒間隔、最大 5 分)
+    const t0 = Date.now();
+    const maxMs = 5 * 60 * 1000;
+    let jobInfo = null;
+    while (Date.now() - t0 < maxMs) {
+      await new Promise((r) => setTimeout(r, 5000));
+      const elapsed = Math.round((Date.now() - t0) / 1000);
+      resultEl.innerHTML = `<span class="pill loading">⏳ Job 処理中… (経過 ${elapsed}s, 5 分でタイムアウト) — <a href="https://${state.host}/lightning/setup/AsyncApiJobStatus/home" target="_blank" style="color:var(--accent);">Setup でジョブ状態を確認</a></span>`;
+      const infoRes = await sf(`/services/data/v${apiVer}/jobs/ingest/${jobId}`, "GET");
+      if (!infoRes.ok) {
+        resultEl.innerHTML = `<span style="color:var(--err)">❌ Job ステータス取得失敗 (Job ${jobId}): ${escape(JSON.stringify(infoRes.data).substring(0, 300))}</span>`;
+        return;
+      }
+      jobInfo = infoRes.data;
+      if (jobInfo.state === "JobComplete" || jobInfo.state === "Failed" || jobInfo.state === "Aborted") break;
+    }
+    if (!jobInfo || (jobInfo.state !== "JobComplete" && jobInfo.state !== "Failed")) {
+      resultEl.innerHTML = `<span style="color:var(--warn)">⚠ Job タイムアウト (5 分) — Setup でジョブ状態を直接ご確認ください (Job ${jobId})</span>`;
+      return;
+    }
+    // 5) 結果サマリ
+    const total = jobInfo.numberRecordsProcessed || 0;
+    const failed = jobInfo.numberRecordsFailed || 0;
+    const success = total - failed;
+    const kind = failed === 0 ? "ok" : (success > 0 ? "warn" : "err");
+    panelToast(`📦 Bulk API ${opLabel} 完了: 成功 ${success} 件 / 失敗 ${failed} 件 (Job ${jobId})`, { kind });
+    resultEl.innerHTML = `
+      <div style="background:var(--bg);padding:8px;border-radius:var(--r-sm);border:1px solid ${failed === 0 ? "var(--ok)" : "var(--warn)"};margin-top:6px;">
+        <div><strong>Job Id:</strong> <code>${escape(jobId)}</code> / <strong>State:</strong> <code>${escape(jobInfo.state)}</code></div>
+        <div><strong>✓ 成功:</strong> ${success} 件 / <strong style="color:var(--err)">✗ 失敗:</strong> ${failed} 件 (合計 ${total} 件処理)</div>
+        <div><strong>処理時間:</strong> ${jobInfo.totalProcessingTime || 0}ms (Apex CPU 時間内訳: ${jobInfo.apexProcessingTime || 0}ms / API 処理時間: ${jobInfo.apiActiveProcessingTime || 0}ms)</div>
+        <div style="margin-top:6px;">
+          <a href="https://${state.host}/services/data/v${apiVer}/jobs/ingest/${jobId}/successfulResults" target="_blank" style="color:var(--ok);">✓ 成功 CSV ダウンロード</a> /
+          <a href="https://${state.host}/services/data/v${apiVer}/jobs/ingest/${jobId}/failedResults" target="_blank" style="color:var(--err);">✗ 失敗 CSV ダウンロード</a> /
+          <a href="https://${state.host}/services/data/v${apiVer}/jobs/ingest/${jobId}/unprocessedrecords" target="_blank" style="color:var(--fg-dim);">未処理 CSV</a>
+        </div>
+        <div style="margin-top:4px;color:var(--fg-dim);font-size:9px;">💡 結果 CSV は API 経由のため Authorization Bearer ヘッダ付きの fetch でないと取得できません。Setup → ジョブの状況 から GUI で確認 ⤴</div>
+      </div>`;
+  } catch (e) {
+    resultEl.innerHTML = `<span style="color:var(--err)">❌ Bulk API エラー: ${escape(String(e && e.message || e))}</span>`;
+  }
 }
 
 // th クリックで in-place ソート (asc → desc → unsort トグル)
