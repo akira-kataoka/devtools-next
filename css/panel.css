@@ -6,10 +6,15 @@
   table th sticky          : 1   (Inspector header, grid 列見出し)
   design-preview h3 sticky : 2
   design-preview h2 sticky : 3   (section header > table th)
+  design-toolbar sticky    : 4   (Phase 90, 設計書ビューツールバー)
+  admin-table th sticky    : 5   (Phase 346, admin ダッシュボード)
+  popup result th sticky   : 5   (popup.css L298)
+  .limit-row.header sticky : 10  (Phase 199/222, Limits ダッシュボード — 強化 box-shadow)
   Picker overlay           : 99999 (modal)
   .panel-toast / .toast    : 99999 (toast 通知)
   ──────────────────────────────────────────────────
   Sticky 同士の干渉が起きた場合は上記階層を参照
+  (Phase 377 で Phase 199/222/346/90 の実態を反映)
 */
 /*
  * v3.90.0 Phase 180: デザイントークン導入 (CSS 余白統一の第 1 弾)
