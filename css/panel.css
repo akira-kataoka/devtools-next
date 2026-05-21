@@ -1880,3 +1880,49 @@ details.admin-howto .admin-howto-steps {
 }
 details.admin-howto .admin-howto-steps li { margin-bottom: 2px; }
 details.admin-howto .admin-howto-steps strong { color: var(--fg); }
+
+/* ============================================================================
+ * v3.133.0 Phase 222 (Team L): Limits 画面の UX 改善 (ユーザー要望 3 件)
+ *   1. 「問題なし」表示の縦余白圧縮 (limit-card → 1 行)
+ *   2. sticky 列ヘッダの視認性 (背景濃色化・影強化・コントラスト UP)
+ *   3. admin ダッシュボードと表示統一感
+ * ============================================================================ */
+
+/* (1) 問題なしの 1 行ミニメッセージ */
+.limits-summary.limits-summary-ok {
+  display: block;          /* grid 解除 */
+  padding: 6px 12px;
+  margin: 4px 0;
+}
+.limits-summary-ok-line {
+  display: inline-block;
+  padding: 6px 14px;
+  background: rgba(46,204,113,0.12);
+  border: 1px solid rgba(46,204,113,0.35);
+  border-left: 4px solid var(--ok);
+  border-radius: var(--r-md);
+  color: #6ee7b7;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* (2) sticky ヘッダのコントラスト・影強化 — Phase 199 の改善を更に強化 */
+.limit-row.header {
+  /* 既存: background #0d1933 / accent text */
+  /* 追加: 二重影で浮き感、上部の罫線で「ここまでヘッダ」を明示 */
+  background: linear-gradient(180deg, #112144 0%, #0a1530 100%);
+  color: #82c8ff;          /* accent より少し明るい */
+  text-shadow: 0 0 4px rgba(0,0,0,0.4);
+  border-top: 1px solid var(--accent);
+  border-bottom: 3px solid var(--accent);
+  box-shadow:
+    0 6px 12px rgba(0,0,0,0.7),
+    0 1px 0 rgba(255,255,255,0.06) inset,
+    0 -1px 0 var(--accent) inset;
+  letter-spacing: 0.02em;
+}
+
+/* (3) admin と Limits の表組み統一感: hover, パディング、罫線 */
+.limit-row:not(.header):hover {
+  background: linear-gradient(90deg, rgba(27,150,255,0.10), rgba(27,150,255,0.04));
+}

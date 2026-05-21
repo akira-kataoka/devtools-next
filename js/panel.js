@@ -2406,6 +2406,7 @@ function renderLimitsList() {
   });
 
   // サマリカード (危険な 5 件)
+  // v3.133.0 Phase 222 (Team L): ユーザー要望「問題なし表示が縦余白を取り過ぎ」 → 1 行コンパクト化
   const critical = rows.filter((r) => r.pct >= 70).slice(0, 5);
   const sumEl = document.getElementById("limitsSummary");
   if (critical.length) {
@@ -2418,8 +2419,11 @@ function renderLimitsList() {
         <div class="sub">${r.used.toLocaleString()} / ${r.max.toLocaleString()} <span style="opacity:0.7">(${status})</span></div>
       </div>`;
     }).join("");
+    sumEl.classList.remove("limits-summary-ok");
   } else {
-    sumEl.innerHTML = `<div class="limit-card"><div class="title">健全</div><div class="val" style="color:var(--ok)">✓ 問題なし</div><div class="sub">使用率 70% を超える項目はありません</div></div>`;
+    // Phase 222: 1 行ミニメッセージに圧縮 (旧 limit-card より大幅に縦余白削減)
+    sumEl.innerHTML = `<span class="limits-summary-ok-line">✓ 問題なし — 使用率 70% を超える項目はありません (全 ${Object.keys(lastLimitsData).length} 項目を確認)</span>`;
+    sumEl.classList.add("limits-summary-ok");
   }
 
   // 一覧 (列クリックでソート、★ ピン留めトグル)
