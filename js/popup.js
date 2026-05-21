@@ -292,6 +292,9 @@ function bindEvents() {
   // v3.221.0 Phase 311: 📊 使用状況 (Limits) を全画面で開く — 管理者の主要ニーズ「組織制限を一目で確認」
   const btnOpenLimits = document.getElementById("btnOpenLimits");
   if (btnOpenLimits) btnOpenLimits.addEventListener("click", () => openToolView("limits"));
+  // v3.232.0 Phase 322: 🟧 Apex 実行を全画面で開く — 開発者の主要ニーズ「匿名 Apex でデータ操作・調査」
+  const btnOpenApex = document.getElementById("btnOpenApex");
+  if (btnOpenApex) btnOpenApex.addEventListener("click", () => openToolView("apex"));
 
   document.querySelectorAll("[data-act]").forEach((btn) => {
     btn.addEventListener("click", () => runQuickAction(btn.dataset.act));
