@@ -7063,8 +7063,12 @@ async function doAdminUnfreezeUser(userId, userName) {
   const userLogin = ((findR.data || {}).records || [])[0];
   if (!userLogin) { panelToast(`❌ 該当する UserLogin が見つかりません (UserId=${userId})`, { kind: "err" }); return; }
   if (!userLogin.IsFrozen) { panelToast(`✓ ユーザー「${userName}」は既に凍結解除されています`, { kind: "ok" }); doAdminFrozen(); return; }
-  // 2. 確認ダイアログ
-  const ok = window.confirm(`ユーザー「${userName}」(UserId=${userId}) の凍結を解除しますか？\n\nUserLogin (${userLogin.Id}) の IsFrozen を false に更新します。\nこの操作は本番組織でも即時反映されます。`);
+  // 2. 確認ダイアログ (v3.203.0 Phase 293: PROD 強化警告)
+  const prodHeader = state.isProd
+    ? `🚨🚨 本番組織 (PROD) で凍結解除 🚨🚨\n対象組織: ${state.host || "?"}\n\n`
+    : "";
+  const prodFooter = state.isProd ? "\n\n(セキュリティ影響: 凍結解除後はユーザーが即座にログイン可能になります)" : "";
+  const ok = window.confirm(`${prodHeader}ユーザー「${userName}」(UserId=${userId}) の凍結を解除しますか？\n\nUserLogin (${userLogin.Id}) の IsFrozen を false に更新します。\nこの操作は本番組織でも即時反映されます。${prodFooter}`);
   if (!ok) return;
   // 3. PATCH /sobjects/UserLogin/<Id>
   const patchR = await sfFetch({
