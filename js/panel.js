@@ -2398,8 +2398,28 @@ function renderLimitsList() {
       <div class="limit-pct ${cls}">${r.pct}%</div>
     </div>`);
   }
-  // v3.112.0 Phase 202: /limits API で取得できない固定上限の解説セクション (ユーザー要望「動的ダッシュボード上限なども使用状況に入れて」)
-  html.push(renderHardcodedLimitsSection());
+  // v3.127.0 Phase 217: API で取得できない固定上限を同じ一覧に統合表示 (ユーザー要望「分けないでください」)
+  // Phase 202 で details で分離していたが、ユーザー要望により API 上限と同じテーブルに混在
+  const filterText = (document.getElementById("limitsFilter")?.value || "").toLowerCase();
+  for (const g of HARDCODED_LIMITS_GROUPS) {
+    for (const it of g.items) {
+      // 検索フィルタ対応
+      if (filterText) {
+        const hay = (it.ja + " " + g.title + " " + it.value + " " + it.desc).toLowerCase();
+        if (!hay.includes(filterText)) continue;
+      }
+      const tooltipName = `${escape(it.ja)} (${escape(g.title)})\\n${escape(it.desc)}`;
+      html.push(`<div class="limit-row hardcoded-row" style="background:rgba(243,156,18,0.05);border-left:3px solid var(--warn);padding-left:7px;">
+        <div class="lim-col-pin" title="API で取得できない固定上限 (Phase 202 起源・Phase 217 で統合)">📌</div>
+        <div class="limit-name lim-col-name" title="${tooltipName}">${escape(it.ja)}<span class="lim-en" style="color:var(--warn);opacity:0.8;">${escape(g.title)}</span></div>
+        <div style="color:var(--fg-dim);" title="API では取得不可">—</div>
+        <div style="color:var(--fg-dim);" title="API では取得不可">—</div>
+        <div style="font-size:10px;color:var(--ok);font-weight:600;">${escape(it.value)}</div>
+        <div class="limit-bar-wrap" style="background:transparent;"><div style="font-size:9px;color:var(--fg-dim);padding:1px 6px;line-height:1.3;">${escape(it.desc.substring(0, 60))}${it.desc.length > 60 ? "…" : ""}</div></div>
+        <div style="color:var(--fg-dim);font-size:10px;" title="固定上限のため使用率算出不可">N/A</div>
+      </div>`);
+    }
+  }
   root.innerHTML = html.join("");
   // 列ソートクリックハンドラ
   root.querySelectorAll(".lim-sortable").forEach((el) => {
@@ -2415,8 +2435,8 @@ function renderLimitsList() {
 }
 
 // v3.112.0 Phase 202: /limits API では返らない Salesforce 固定上限の解説 (Apex ガバナ / Dashboard / Email / ViewState)
-function renderHardcodedLimitsSection() {
-  const groups = [
+// v3.127.0 Phase 217: モジュールトップレベル定数化 (renderLimitsList から参照するため、ユーザー要望「分けないで」対応)
+const HARDCODED_LIMITS_GROUPS = [
     {
       title: "🟧 Apex ガバナ制限 (同期トランザクション)",
       items: [
@@ -2485,7 +2505,12 @@ function renderHardcodedLimitsSection() {
         { ja: "Flow タイムアウト", value: "Screen Flow: 通常 30 秒以内推奨", desc: "ユーザー対話型は応答性確保のため長時間処理は非同期化" },
       ],
     },
-  ];
+];
+
+// v3.127.0 Phase 217: 旧 renderHardcodedLimitsSection は API 上限と同じ一覧へ統合のため deprecated (ユーザー要望「分けないで」)
+// 関数定義は保持 (renderLimitsList 呼出が削除されているため未使用、Phase 218 以降で完全削除予定)
+function renderHardcodedLimitsSection() {
+  const groups = HARDCODED_LIMITS_GROUPS;
   let html = `<details class="hardcoded-limits" style="margin-top:12px; background:var(--bg2); border:1px solid var(--accent); border-radius:var(--r-lg); overflow:hidden;">
     <summary style="padding:10px 14px; cursor:pointer; user-select:none; background:linear-gradient(180deg, rgba(27,150,255,0.12) 0%, var(--bg2) 100%); color:var(--accent); font-weight:700; font-size:12px; display:flex; align-items:center; gap:6px;">
       <span style="font-size:14px;">📌</span>
