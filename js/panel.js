@@ -1095,6 +1095,14 @@ function bindEvents() {
       doAdminShowLicenseUsers(apiName);
       return;
     }
+    // v3.139.0 Phase 229: 代理ログイン (Login as User) — admin の凍結 / MFA 未設定者 / ライセンス使用者 リストから直接実行
+    const loginAs = e.target.closest && e.target.closest(".admin-action-login-as");
+    if (loginAs) {
+      const userId = loginAs.dataset.userId;
+      const userName = loginAs.dataset.userName || "";
+      adminLoginAsUser(userId, userName);
+      return;
+    }
   });
   // 設計書
   $on("btnDesignGen", "click", doGenerateDesign);
@@ -5302,7 +5310,23 @@ const adminState = {
   frozen: null,
   mfa: null,
   packages: null,
+  lastLoadedAt: null,
 };
+
+// v3.139.0 Phase 229: Login as User URL ヘルパー (popup.js loginAsUser の panel 版)
+// state.orgId と userId (15 桁) から Salesforce 標準の代理ログイン URL を組み立てて新タブで開く
+function adminLoginAsUser(userId, userName) {
+  if (!state.host || !state.orgId) {
+    panelToast("⚠ セッション情報未取得 — 先に再接続してください", { kind: "warn" });
+    return;
+  }
+  if (!userId) { panelToast("⚠ ユーザー ID が指定されていません", { kind: "warn" }); return; }
+  const orgId15 = String(state.orgId).substring(0, 15);
+  const uid15 = String(userId).substring(0, 15);
+  const url = `https://${state.apiHost}/servlet/servlet.su?oid=${orgId15}&suorgadminid=${uid15}&retURL=%2Flightning%2F&targetURL=%2Flightning%2F`;
+  window.open(url, "_blank", "noopener");
+  panelToast(`👤 ${userName || userId} として代理ログインしています…`, { kind: "ok" });
+}
 
 function adminSetCardLoading(elId, label) {
   const el = document.getElementById(elId);
@@ -5357,14 +5381,22 @@ async function doAdminLicenses() {
   const rows = recs.map((rec) => {
     const total = Number(rec.TotalLicenses) || 0;
     const used = Number(rec.UsedLicenses) || 0;
+    const remaining = total - used;
     const ratio = total > 0 ? used / total : 0;
     const apiName = rec.Name || "";
+    // v3.139.0 Phase 229: 残席数が 5 席未満で総数 > 0 のものは「即追加調達」アラート
+    const remainingLabel = remaining.toLocaleString("ja-JP");
+    const remainingHtml = (total > 0 && remaining < 5 && remaining >= 0)
+      ? `<span style="color:var(--err);font-weight:700" title="残席 ${remainingLabel} 席 — 即追加調達検討">${remainingLabel} 席 ⚠</span>`
+      : (total > 0 && remaining < 10)
+        ? `<span style="color:var(--warn)" title="残席 ${remainingLabel} 席 — 注意水準">${remainingLabel} 席</span>`
+        : remainingLabel;
     return {
       "ライセンス": rec.MasterLabel || rec.Name,
       "API 名": apiName,
       "総数": total.toLocaleString("ja-JP"),
       "使用中": used.toLocaleString("ja-JP"),
-      "残り": (total - used).toLocaleString("ja-JP"),
+      "残り": { __html: remainingHtml },
       "使用率": { __html: adminPctBarHtml(used, total) },
       "状態": rec.Status === "Active" ? "○ 有効" : rec.Status,
       "アクション": { __html: total > 0 ? `<button class="admin-action-license-detail admin-row-action" data-api-name="${escape(apiName)}" title="このライセンスを使用中の全ユーザーを抽出表示します (Profile.UserLicense 経由)">👥 使用者を見る</button>` : "" },
@@ -5378,9 +5410,19 @@ async function doAdminLicenses() {
     const u = Number(r.UsedLicenses) || 0;
     return t > 0 && u / t >= 0.9;
   }).length;
-  const alertHtml = criticalCount > 0
-    ? `<div class="admin-alert admin-alert-err">⚠ 使用率 90% 超のライセンスが <strong>${criticalCount} 件</strong> あります — 早急に追加調達 / 棚卸しが必要です</div>`
-    : "";
+  // v3.139.0 Phase 229: 残席 5 席未満の即追加調達アラート (criticalCount より厳しい条件)
+  const urgentLicenses = recs.filter((r) => {
+    const t = Number(r.TotalLicenses) || 0;
+    const u = Number(r.UsedLicenses) || 0;
+    return t > 0 && (t - u) < 5 && (t - u) >= 0;
+  });
+  const urgentLabels = urgentLicenses.map((r) => `${r.MasterLabel || r.Name} (残 ${(Number(r.TotalLicenses) || 0) - (Number(r.UsedLicenses) || 0)})`).slice(0, 3).join(", ");
+  const urgentExtra = urgentLicenses.length > 3 ? ` 他 ${urgentLicenses.length - 3} 件` : "";
+  const alertHtml = urgentLicenses.length > 0
+    ? `<div class="admin-alert admin-alert-err">🚨 残席 5 席未満のライセンスが <strong>${urgentLicenses.length} 件</strong>: ${escape(urgentLabels)}${escape(urgentExtra)} — <strong>即追加調達を検討</strong>してください</div>`
+    : (criticalCount > 0
+      ? `<div class="admin-alert admin-alert-err">⚠ 使用率 90% 超のライセンスが <strong>${criticalCount} 件</strong> あります — 早急に追加調達 / 棚卸しが必要です</div>`
+      : "");
   const headers = ["ライセンス", "API 名", "総数", "使用中", "残り", "使用率", "状態", "アクション"];
   document.getElementById("adminLicensesResult").innerHTML =
     alertHtml +
@@ -5523,15 +5565,22 @@ async function doAdminFrozen() {
     };
   }
   const recs = (r.data && r.data.records) || [];
-  const rows = recs.map((rec) => ({
-    "氏名": rec.User ? rec.User.Name : "",
-    "ユーザ名": rec.User ? rec.User.Username : "",
-    "メール": rec.User ? rec.User.Email : "",
-    "プロファイル": rec.User && rec.User.Profile ? rec.User.Profile.Name : "(未設定)",
-    "IsActive": rec.User && rec.User.IsActive ? "○ 有効" : "− 無効",
-    "User Id": rec.UserId,
-    "アクション": { __html: `<button class="admin-action-unfreeze admin-row-action" data-user-id="${escape(rec.UserId || "")}" data-user-name="${escape(rec.User ? rec.User.Name : "")}" title="このユーザーの凍結を解除します (UserLogin.IsFrozen = false を Composite API で UPDATE、確認ダイアログあり)">🔓 凍結解除</button>` },
-  }));
+  // v3.139.0 Phase 229: アクション列に「代理ログイン」を併設 (凍結解除後の動作確認用)
+  const rows = recs.map((rec) => {
+    const uid = rec.UserId || "";
+    const uname = rec.User ? rec.User.Name : "";
+    const unfreezeBtn = `<button class="admin-action-unfreeze admin-row-action" data-user-id="${escape(uid)}" data-user-name="${escape(uname)}" title="このユーザーの凍結を解除します (UserLogin.IsFrozen = false)">🔓 凍結解除</button>`;
+    const loginAsBtn = `<button class="admin-action-login-as admin-row-action" data-user-id="${escape(uid)}" data-user-name="${escape(uname)}" title="このユーザーとして代理ログインします (新タブで Salesforce にアクセス、要 ModifyAllData / Modify All Users 権限)">👤 代理ログイン</button>`;
+    return {
+      "氏名": uname,
+      "ユーザ名": rec.User ? rec.User.Username : "",
+      "メール": rec.User ? rec.User.Email : "",
+      "プロファイル": rec.User && rec.User.Profile ? rec.User.Profile.Name : "(未設定)",
+      "IsActive": rec.User && rec.User.IsActive ? "○ 有効" : "− 無効",
+      "User Id": uid,
+      "アクション": { __html: `<div style="display:flex;gap:4px;flex-wrap:wrap">${unfreezeBtn}${loginAsBtn}</div>` },
+    };
+  });
   adminState.frozen = rows;
   const headers = ["氏名", "ユーザ名", "メール", "プロファイル", "IsActive", "User Id", "アクション"];
   const hint = recs.length
@@ -5591,14 +5640,16 @@ async function doAdminListMfaMissing() {
   if (!userR.ok) { adminSetCardError("adminMfaResult", userR.status, userR.data); return; }
   const allActive = (userR.data || {}).records || [];
   const missing = allActive.filter((u) => !mfaUserIds.has(u.Id));
+  // v3.139.0 Phase 229: 代理ログイン列を追加
   const rows = missing.slice(0, 500).map((u) => ({
     "氏名": u.Name,
     "ユーザ名": u.Username,
     "メール": u.Email || "",
     "プロファイル": u.Profile ? u.Profile.Name : "(未設定)",
     "最終ログイン": u.LastLoginDate ? String(u.LastLoginDate).substring(0, 10) : "未ログイン",
+    "アクション": { __html: `<button class="admin-action-login-as admin-row-action" data-user-id="${escape(u.Id || "")}" data-user-name="${escape(u.Name || "")}" title="このユーザーとして代理ログイン (要 ModifyAllUsers 権限) → MFA セットアップ画面に直接案内可">👤 代理ログイン</button>` },
   }));
-  const headers = ["氏名", "ユーザ名", "メール", "プロファイル", "最終ログイン"];
+  const headers = ["氏名", "ユーザ名", "メール", "プロファイル", "最終ログイン", "アクション"];
   const summary = `<div class="admin-card-summary admin-card-warn">⚠ MFA 未設定アクティブ内部ユーザー: <strong>${missing.length}</strong> 名 / 全アクティブ内部 ${allActive.length} 名 (${allActive.length ? ((missing.length / allActive.length) * 100).toFixed(1) : 0}%)</div>`;
   const note = `<div class="meta" style="padding:6px 8px;font-size:11px;color:var(--fg-dim)">※ Salesforce はすべての内部ユーザーに MFA を必須化しています (2022/02 以降)。未設定者は要督促。<br>※ 表示は最大 500 名まで。全件は「📥 サマリ CSV」で出力できます。</div>`;
   document.getElementById("adminMfaResult").innerHTML = summary + note + adminTableHtml(headers, rows);
@@ -5620,6 +5671,7 @@ async function doAdminShowLicenseUsers(apiName) {
     return;
   }
   const recs = (r.data || {}).records || [];
+  // v3.139.0 Phase 229: モーダル内のユーザー行にも代理ログインボタン
   const rows = recs.map((u) => ({
     "氏名": u.Name,
     "ユーザ名": u.Username,
@@ -5627,8 +5679,9 @@ async function doAdminShowLicenseUsers(apiName) {
     "プロファイル": u.Profile ? u.Profile.Name : "",
     "最終ログイン": u.LastLoginDate ? String(u.LastLoginDate).substring(0, 10) : "未ログイン",
     "状態": u.IsActive ? "○ 有効" : "− 無効",
+    "アクション": { __html: `<button class="admin-action-login-as admin-row-action" data-user-id="${escape(u.Id || "")}" data-user-name="${escape(u.Name || "")}" title="このユーザーとして代理ログイン (新タブ)">👤 代理ログイン</button>` },
   }));
-  const headers = ["氏名", "ユーザ名", "メール", "プロファイル", "最終ログイン", "状態"];
+  const headers = ["氏名", "ユーザ名", "メール", "プロファイル", "最終ログイン", "状態", "アクション"];
   const summary = `<div class="admin-card-summary">合計 <strong>${recs.length}</strong> 名 (アクティブのみ・最大 1000 件)</div>`;
   adminUpdateModalBody(summary + adminTableHtml(headers, rows, { compact: true }));
 }
@@ -5803,7 +5856,13 @@ async function doAdminLoadAll() {
   await doAdminMfa();
   await doAdminPackages();
   const dt = Math.round(performance.now() - t0);
-  if (meta) meta.innerHTML = `<span class="pill ok">✓ すべて取得完了</span> <span class="meta">${dt} ms</span>`;
+  // v3.139.0 Phase 229: 最終取得時刻を保存・表示
+  adminState.lastLoadedAt = new Date();
+  const timeStr = adminState.lastLoadedAt.toLocaleString("ja-JP");
+  if (meta) meta.innerHTML = `<span class="pill ok">✓ すべて取得完了</span> <span class="meta">${dt} ms / 取得時刻: ${escape(timeStr)}</span> <button class="admin-row-action" id="btnAdminReload" title="6 カードを再取得します" style="margin-left:6px">🔄 再取得</button>`;
+  // 再取得ボタンに動的にイベント
+  const reload = document.getElementById("btnAdminReload");
+  if (reload) reload.addEventListener("click", () => doAdminLoadAll());
   panelToast(`✓ ユーザー・ライセンス管理 6 カードを取得しました (${dt} ms)`, { kind: "ok" });
 }
 
