@@ -3934,7 +3934,7 @@ async function refreshCurrentUserId() {
       state.userId = ui.data.user_id;
       console.log("[DevToolsNext] state.userId cached:", state.userId);
     }
-  } catch (e) { console.log("[DevToolsNext] userId fetch failed (ignored):", e); }
+  } catch (e) { console.warn("[DevToolsNext] userId fetch failed (ignored):", e); }
 }
 
 // =====================================================================
@@ -4294,7 +4294,7 @@ function downloadEvidence(md, baseName) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
   // v3.128.0 Phase 218: Markdown と同時に Salesforce タブの PNG スクリーンショットも保存 (ユーザー要望「エビデンス取得は画像の取得としたい」)
-  captureScreenshotPng(baseName).catch((e) => console.log("[evidence] screenshot failed (ignored):", e));
+  captureScreenshotPng(baseName).catch((e) => console.warn("[evidence] screenshot failed (ignored):", e));
 }
 
 // v3.128.0 Phase 218: chrome.tabs.captureVisibleTab で Salesforce タブの PNG スクリーンショットを取得 → ダウンロード

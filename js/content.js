@@ -647,7 +647,7 @@ function flashToast(text) {
         sessionUser = { id: r.data.id, username: r.data.username, name: r.data.displayName };
         console.log("[DevToolsNext] mini-panel sessionUser loaded:", sessionUser.username);
       }
-    } catch (e) { console.log("[DevToolsNext] mini-panel sessionUser fetch failed (ignored):", e); }
+    } catch (e) { console.warn("[DevToolsNext] mini-panel sessionUser fetch failed (ignored):", e); }
   }
   closeBtn.addEventListener("click", () => panel.classList.remove("open"));
   openFullBtn.addEventListener("click", () => {

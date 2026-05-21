@@ -613,7 +613,7 @@ async function showRecentLoginUsers() {
       });
     });
   } catch (e) {
-    console.log("[popup] showRecentLoginUsers failed:", e);
+    console.warn("[popup] showRecentLoginUsers failed:", e);
   }
 }
 
