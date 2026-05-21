@@ -1087,6 +1087,7 @@ function bindEvents() {
   });
 
   // v3.129.0 Phase 219 (Team U): ユーザー・ライセンス管理ダッシュボード
+  $on("btnAdminOrgInfo", "click", doAdminOrgInfo);
   $on("btnAdminLicenses", "click", doAdminLicenses);
   $on("btnAdminPermSetLicenses", "click", doAdminPermSetLicenses);
   $on("btnAdminUserStats", "click", doAdminUserStats);
@@ -5331,6 +5332,7 @@ async function doGlobalSearch() {
 // SOQL/Apex テンプレート内に埋もれていた機能を専用画面化。各カードは独立して取得可。
 // =============================================================================
 const adminState = {
+  orgInfo: null,
   licenses: null,
   permsetLicenses: null,
   userStats: null,
@@ -5394,6 +5396,97 @@ function adminTableHtml(headers, rows, opts = {}) {
     return `<td>${escape(v == null ? "" : String(v))}</td>`;
   }).join("")}</tr>`).join("");
   return `<table class="${cls}"><thead><tr>${headHtml}</tr></thead><tbody>${rowsHtml}</tbody></table>`;
+}
+
+// v3.144.0 Phase 234: 組織情報サマリ — Organization SOQL + Limits API でストレージ使用量
+async function doAdminOrgInfo() {
+  if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
+  adminSetCardLoading("adminOrgInfoResult", "組織情報を取得中…");
+  // 1. Organization SOQL
+  const orgR = await runSoql({
+    host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+    soql: `SELECT Id, Name, OrganizationType, InstanceName, IsSandbox, LanguageLocaleKey, TimeZoneSidKey, DefaultCurrencyIsoCode, FiscalYearStartMonth, CreatedDate, NamespacePrefix, TrialExpirationDate, MonthlyPageViewsEntitlement, MonthlyPageViewsUsed FROM Organization LIMIT 1`,
+  });
+  if (!orgR.ok) { adminSetCardError("adminOrgInfoResult", orgR.status, orgR.data); return; }
+  const org = ((orgR.data || {}).records || [])[0] || {};
+  // 2. Limits API でストレージ使用量を取得
+  let limits = null;
+  try {
+    const limR = await sfFetch({ host: state.host, sid: state.sid, path: `/services/data/v${state.apiVersion}/limits` });
+    if (limR.ok) limits = limR.data;
+  } catch (e) { console.warn("[admin] Limits fetch failed:", e); }
+
+  adminState.orgInfo = { org, limits };
+
+  // エディション業務用表記マップ
+  const editionMap = {
+    "Developer Edition": "Developer (開発者・無料)",
+    "Enterprise Edition": "Enterprise (大規模企業向け)",
+    "Unlimited Edition": "Unlimited (上位)",
+    "Performance Edition": "Performance",
+    "Professional Edition": "Professional (中小規模)",
+    "Group Edition": "Group (小規模)",
+    "Essentials Edition": "Essentials (Starter)",
+    "Trial Edition": "Trial (試用)",
+  };
+
+  // 月別マップ (FiscalYearStartMonth)
+  const monthMap = { 1: "1月", 2: "2月", 3: "3月", 4: "4月 (日本会計年度)", 5: "5月", 6: "6月", 7: "7月", 8: "8月", 9: "9月", 10: "10月", 11: "11月", 12: "12月" };
+
+  const envBadge = org.IsSandbox
+    ? '<span class="pill" style="background:rgba(243,156,18,0.15);color:var(--warn);border:1px solid var(--warn)">⚠ Sandbox</span>'
+    : '<span class="pill" style="background:rgba(239,68,68,0.15);color:var(--err);border:1px solid var(--err)">🚨 Production (本番)</span>';
+
+  // ストレージ使用量カード (Limits API から)
+  let storageHtml = "";
+  if (limits) {
+    const ds = limits.DataStorageMB || {};
+    const fs = limits.FileStorageMB || {};
+    const dsTotal = Number(ds.Max) || 0;
+    const dsUsed = (Number(ds.Max) || 0) - (Number(ds.Remaining) || 0);
+    const fsTotal = Number(fs.Max) || 0;
+    const fsUsed = (Number(fs.Max) || 0) - (Number(fs.Remaining) || 0);
+    storageHtml = `<div class="admin-card-subtitle">💾 ストレージ使用量</div>
+      <div class="admin-stat-grid">
+        <div class="admin-stat ${dsTotal > 0 && dsUsed / dsTotal >= 0.9 ? "admin-stat-warn" : ""}">
+          <div class="admin-stat-label">データストレージ</div>
+          <div class="admin-stat-value" style="font-size:13px">${dsUsed.toLocaleString("ja-JP")} / ${dsTotal.toLocaleString("ja-JP")} MB</div>
+          ${adminPctBarHtml(dsUsed, dsTotal)}
+        </div>
+        <div class="admin-stat ${fsTotal > 0 && fsUsed / fsTotal >= 0.9 ? "admin-stat-warn" : ""}">
+          <div class="admin-stat-label">ファイルストレージ</div>
+          <div class="admin-stat-value" style="font-size:13px">${fsUsed.toLocaleString("ja-JP")} / ${fsTotal.toLocaleString("ja-JP")} MB</div>
+          ${adminPctBarHtml(fsUsed, fsTotal)}
+        </div>
+      </div>`;
+  } else {
+    storageHtml = `<div class="meta" style="padding:8px;font-size:11px;color:var(--fg-dim)">※ ストレージ使用量の取得に失敗しました (Limits API 権限不足の可能性)</div>`;
+  }
+
+  // 基本情報 KV
+  const kv = [
+    ["組織名", `<strong>${escape(org.Name || "—")}</strong>`],
+    ["組織 ID", `<code style="font-family:ui-monospace,Consolas,monospace">${escape(org.Id || "—")}</code>`],
+    ["エディション", editionMap[org.OrganizationType] || (org.OrganizationType || "—")],
+    ["環境種別", envBadge],
+    ["インスタンス", escape(org.InstanceName || "—")],
+    ["ネームスペース", escape(org.NamespacePrefix || "(なし)")],
+    ["言語", escape(org.LanguageLocaleKey || "—")],
+    ["タイムゾーン", escape(org.TimeZoneSidKey || "—")],
+    ["既定通貨", escape(org.DefaultCurrencyIsoCode || "—")],
+    ["会計年度開始月", monthMap[org.FiscalYearStartMonth] || String(org.FiscalYearStartMonth || "—")],
+    ["組織作成日", org.CreatedDate ? String(org.CreatedDate).substring(0, 10) : "—"],
+  ];
+  if (org.TrialExpirationDate) {
+    kv.push(["⚠ Trial 期限", `<span style="color:var(--warn);font-weight:700">${escape(String(org.TrialExpirationDate).substring(0, 10))} — 試用期間中の組織</span>`]);
+  }
+  if (org.MonthlyPageViewsEntitlement) {
+    const pvUsed = Number(org.MonthlyPageViewsUsed) || 0;
+    const pvTotal = Number(org.MonthlyPageViewsEntitlement) || 0;
+    kv.push(["月間 PV 使用量 (Communities)", `${pvUsed.toLocaleString("ja-JP")} / ${pvTotal.toLocaleString("ja-JP")} (${pvTotal > 0 ? ((pvUsed / pvTotal) * 100).toFixed(1) : 0}%)`]);
+  }
+  const kvHtml = `<table class="admin-table compact"><tbody>${kv.map(([k, v]) => `<tr><td style="font-weight:600;width:30%">${escape(k)}</td><td>${v}</td></tr>`).join("")}</tbody></table>`;
+  document.getElementById("adminOrgInfoResult").innerHTML = kvHtml + storageHtml;
 }
 
 async function doAdminLicenses() {
@@ -5929,9 +6022,10 @@ async function doAdminPackages() {
 async function doAdminLoadAll() {
   if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
   const meta = document.getElementById("adminMeta");
-  if (meta) meta.innerHTML = `<span class="pill loading">6 カードを順次取得中…</span>`;
+  if (meta) meta.innerHTML = `<span class="pill loading">7 カードを順次取得中…</span>`;
   const t0 = performance.now();
   // 順次実行 (並列だと UserLogin の参照などで 401 になりやすい組織あり)
+  await doAdminOrgInfo();
   await doAdminLicenses();
   await doAdminPermSetLicenses();
   await doAdminUserStats();
@@ -5946,7 +6040,7 @@ async function doAdminLoadAll() {
   // 再取得ボタンに動的にイベント
   const reload = document.getElementById("btnAdminReload");
   if (reload) reload.addEventListener("click", () => doAdminLoadAll());
-  panelToast(`✓ ユーザー・ライセンス管理 6 カードを取得しました (${dt} ms)`, { kind: "ok" });
+  panelToast(`✓ ユーザー・ライセンス管理 7 カードを取得しました (${dt} ms)`, { kind: "ok" });
 }
 
 function adminExportCsv() {

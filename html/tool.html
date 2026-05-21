@@ -605,7 +605,7 @@ System.debug('Now: ' + System.now());</textarea>
         <details class="admin-howto collapsible-help" title="使い方ガイドを表示 / 非表示 (折りたたみ)">
           <summary>💡 使い方 (クリックで展開)<span class="collapse-hint">▼</span></summary>
           <ol class="admin-howto-steps">
-            <li><strong>① 「▶ すべて取得」</strong> — 6 種類の管理データを Salesforce から取得 (本番組織でも参照のみで安全)</li>
+            <li><strong>① 「▶ すべて取得」</strong> — 7 種類の管理データを Salesforce から取得 (本番組織でも参照のみで安全)</li>
             <li><strong>② 各カード確認</strong> — 使用率 90% 超ライセンス・凍結ユーザー・MFA 未設定者等が一覧に</li>
             <li><strong>③ アクション</strong> — 「🔓 凍結解除」「👥 使用者を見る」「🚨 未設定者を抽出」等で即操作</li>
             <li><strong>④ 「📥 サマリ CSV」</strong> — 全カードを 1 ファイルでダウンロード</li>
@@ -623,6 +623,18 @@ System.debug('Now: ' + System.now());</textarea>
         <div id="adminMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
 
         <div class="admin-grid">
+          <!-- v3.144.0 Phase 234: 組織情報サマリカード -->
+          <div class="admin-card">
+            <div class="admin-card-hdr">
+              <h3 class="admin-card-title">🏢 組織情報サマリ</h3>
+              <button class="mini-btn" id="btnAdminOrgInfo" title="Organization オブジェクト + Limits から組織基本情報を取得">取得</button>
+            </div>
+            <div class="admin-card-desc">エディション / Sandbox 判定 / インスタンス / ストレージ使用量 / 通貨・タイムゾーン等の組織基本情報を 1 画面で確認。</div>
+            <div id="adminOrgInfoResult" class="admin-card-body">
+              <div class="empty-state" style="padding:24px 12px">取得ボタンをクリックすると、<strong>組織エディション / 環境種別 / ストレージ容量 / 通貨・言語・タイムゾーン</strong> を表示します。</div>
+            </div>
+          </div>
+
           <div class="admin-card">
             <div class="admin-card-hdr">
               <h3 class="admin-card-title">📊 ユーザーライセンス使用状況</h3>
