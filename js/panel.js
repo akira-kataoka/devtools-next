@@ -1061,6 +1061,14 @@ function bindEvents() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doGlobalSearch(); }
   });
 
+  // v3.138.0 Phase 228 (Team U2): レコード抽出モード切替タブ (SOQL ⇄ 項目選択)
+  document.querySelectorAll(".extract-mode-tab[data-go]").forEach((b) => {
+    b.addEventListener("click", () => {
+      const target = b.dataset.go;
+      if (target) switchToView(target);
+    });
+  });
+
   // v3.129.0 Phase 219 (Team U): ユーザー・ライセンス管理ダッシュボード
   $on("btnAdminLicenses", "click", doAdminLicenses);
   $on("btnAdminPermSetLicenses", "click", doAdminPermSetLicenses);

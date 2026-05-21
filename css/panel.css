@@ -1997,3 +1997,40 @@ details.search-group[open] summary {
   padding: 8px;
   overflow-x: auto;
 }
+
+/* ============================================================================
+ * v3.138.0 Phase 228 (Team U2): レコード抽出モード切替タブ (SOQL ⇄ 項目選択)
+ * ============================================================================ */
+.extract-mode-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px 12px 0;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+}
+.extract-mode-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  border-bottom: none;
+  color: var(--fg-dim);
+  padding: 6px 14px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  transition: background 0.12s ease, color 0.12s ease;
+  position: relative;
+  top: 1px;
+}
+.extract-mode-tab:hover {
+  background: rgba(27,150,255,0.08);
+  color: var(--fg);
+}
+.extract-mode-tab.active {
+  background: var(--bg2);
+  border-color: var(--line);
+  border-bottom: 1px solid var(--bg2);
+  color: var(--accent);
+  cursor: default;
+}
+.extract-mode-tab.active:hover { background: var(--bg2); }
