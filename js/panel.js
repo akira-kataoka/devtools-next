@@ -144,6 +144,8 @@ async function init() {
       // v3.191.0 Phase 281: ?kw=<検索ワード>&scope=<standard|extended|all> 対応 — search ビュー起動時に検索を自動実行
       window._sfdtInitialKwFromQuery = params.get("kw") || null;
       window._sfdtInitialScopeFromQuery = params.get("scope") || null;
+      // v3.193.0 Phase 283: ?type=<メタデータ型> 対応 — metadata ビュー起動時に型を選択 + 自動実行
+      window._sfdtInitialTypeFromQuery = params.get("type") || null;
     } catch {}
     // v2.93.0: リフレッシュ時の直前 view 復元 (ユーザー要望「リフレッシュしても前のページ状態を残して」)
     try {
@@ -171,6 +173,28 @@ async function init() {
         };
         if (!tryRun()) {
           // sid 未取得 — 接続完了後リトライ (最大 5 秒)
+          let waited = 0;
+          const iv = setInterval(() => {
+            waited += 250;
+            if (tryRun() || waited >= 5000) clearInterval(iv);
+          }, 250);
+        }
+      }
+    }
+    // v3.193.0 Phase 283: ?type= が指定されかつ metadata view なら、型を選択 + 接続済みなら自動実行
+    if (window._sfdtInitialTypeFromQuery && initialViewFromQuery === "metadata") {
+      const typeVal = String(window._sfdtInitialTypeFromQuery);
+      const sel = document.getElementById("mdType");
+      if (sel && Array.from(sel.options).some((o) => o.value === typeVal || o.text === typeVal)) {
+        sel.value = typeVal;
+        const tryRun = () => {
+          if (state.sid) {
+            try { const btn = document.getElementById("btnMetadata"); if (btn) btn.click(); } catch {}
+            return true;
+          }
+          return false;
+        };
+        if (!tryRun()) {
           let waited = 0;
           const iv = setInterval(() => {
             waited += 250;
@@ -1113,6 +1137,17 @@ function bindEvents() {
       const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
       await navigator.clipboard.writeText(url);
       panelToast(`🔗 ${inspectState.obj || "?"}:${inspectState.id} の Inspector リンクをコピー`, { kind: "ok" });
+    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+  });
+  // v3.193.0 Phase 283: メタデータ一覧 🔗 リンク (?view=metadata&type=)
+  $on("btnMetadataCopyLink", "click", async () => {
+    const sel = document.getElementById("mdType");
+    const type = sel ? sel.value : "";
+    if (!type) { panelToast("⚠ メタデータ型を選択してください", { kind: "warn" }); return; }
+    try {
+      const url = chrome.runtime.getURL(`html/tool.html?view=metadata&type=${encodeURIComponent(type)}`);
+      await navigator.clipboard.writeText(url);
+      panelToast(`🔗 ${type} メタデータリンクをコピーしました`, { kind: "ok" });
     } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
   });
   $on("btnRest", "click", doRest);
