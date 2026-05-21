@@ -644,7 +644,7 @@ System.debug('Now: ' + System.now());</textarea>
           <div class="admin-card">
             <div class="admin-card-hdr">
               <h3 class="admin-card-title">🏢 組織情報サマリ</h3>
-              <button class="mini-btn" id="btnAdminOrgInfo" title="Organization オブジェクト + Limits から組織基本情報を取得">取得</button>
+              <button class="mini-btn" id="btnAdminOrgInfo" aria-label="組織情報サマリを取得" title="Organization オブジェクト + Limits から組織基本情報を取得">取得</button>
               <button class="mini-btn admin-action-storage-detail" title="📁 ファイル種別 (PDF/Excel/画像 等) 別のストレージ使用量を集計 (Phase 235)">📁 ストレージ詳細</button>
             </div>
             <div class="admin-card-desc">エディション / Sandbox 判定 / インスタンス / ストレージ使用量 / 通貨・タイムゾーン等の組織基本情報を 1 画面で確認。</div>
@@ -656,7 +656,7 @@ System.debug('Now: ' + System.now());</textarea>
           <div class="admin-card">
             <div class="admin-card-hdr">
               <h3 class="admin-card-title">📊 ユーザーライセンス使用状況</h3>
-              <button class="mini-btn" id="btnAdminLicenses" title="UserLicense の TotalLicenses vs UsedLicenses を取得">取得</button>
+              <button class="mini-btn" id="btnAdminLicenses" aria-label="ユーザーライセンス使用状況を取得" title="UserLicense の TotalLicenses vs UsedLicenses を取得">取得</button>
             </div>
             <div class="admin-card-desc">どのライセンスに何席残っているか即把握。年次更新前のライセンス調達判断、未使用ライセンスの棚卸しに使用。</div>
             <div id="adminLicensesResult" class="admin-card-body">
@@ -667,7 +667,7 @@ System.debug('Now: ' + System.now());</textarea>
           <div class="admin-card">
             <div class="admin-card-hdr">
               <h3 class="admin-card-title">🔑 権限セットライセンス</h3>
-              <button class="mini-btn" id="btnAdminPermSetLicenses" title="PermissionSetLicense の使用率と有効期限">取得</button>
+              <button class="mini-btn" id="btnAdminPermSetLicenses" aria-label="権限セットライセンス使用状況を取得" title="PermissionSetLicense の使用率と有効期限">取得</button>
             </div>
             <div class="admin-card-desc">Sales Cloud / Service Cloud などのアドオンライセンスの使用率と有効期限を表示。期限切れ前に再契約判断。</div>
             <div id="adminPermSetLicensesResult" class="admin-card-body">
@@ -678,7 +678,7 @@ System.debug('Now: ' + System.now());</textarea>
           <div class="admin-card">
             <div class="admin-card-hdr">
               <h3 class="admin-card-title">👥 ユーザー集計</h3>
-              <button class="mini-btn" id="btnAdminUserStats" title="アクティブ・非アクティブ・凍結ユーザー数およびプロファイル分布を集計">取得</button>
+              <button class="mini-btn" id="btnAdminUserStats" aria-label="ユーザー集計を取得" title="アクティブ・非アクティブ・凍結ユーザー数およびプロファイル分布を集計">取得</button>
               <button class="mini-btn admin-action-inactive-users" data-days="30" title="30 日以上ログインなしのアクティブユーザーを抽出 (Phase 230)">⏰ 30日未活動</button>
               <button class="mini-btn admin-action-inactive-users" data-days="90" title="90 日以上ログインなしのアクティブユーザーを抽出 (退職予定者特定)">⏰ 90日未活動</button>
             </div>
@@ -691,7 +691,7 @@ System.debug('Now: ' + System.now());</textarea>
           <div class="admin-card">
             <div class="admin-card-hdr">
               <h3 class="admin-card-title">❄️ 凍結ユーザー一覧</h3>
-              <button class="mini-btn" id="btnAdminFrozen" title="UserLogin.IsFrozen=true のユーザー一覧">取得</button>
+              <button class="mini-btn" id="btnAdminFrozen" aria-label="凍結ユーザー一覧を取得" title="UserLogin.IsFrozen=true のユーザー一覧">取得</button>
             </div>
             <div class="admin-card-desc">退職予定者の一時凍結・休職対応・不正アクセス疑い時の緊急ロック対象を一覧で確認。</div>
             <div id="adminFrozenResult" class="admin-card-body">
@@ -702,7 +702,7 @@ System.debug('Now: ' + System.now());</textarea>
           <div class="admin-card">
             <div class="admin-card-hdr">
               <h3 class="admin-card-title">🛡️ MFA 設定状況</h3>
-              <button class="mini-btn" id="btnAdminMfa" title="TwoFactorMethodsInfo の取得 — ユーザー別 MFA 方式">取得</button>
+              <button class="mini-btn" id="btnAdminMfa" aria-label="MFA 設定状況を取得" title="TwoFactorMethodsInfo の取得 — ユーザー別 MFA 方式">取得</button>
               <button class="mini-btn admin-action-mfa-missing" title="🚨 MFA を設定していないアクティブな内部ユーザーのみを抽出します">🚨 未設定者を抽出</button>
             </div>
             <div class="admin-card-desc">MFA を未設定のユーザー特定にも活用。Salesforce 強制要件 (内部ユーザの MFA) のコンプライアンス監査資料。</div>
@@ -714,7 +714,7 @@ System.debug('Now: ' + System.now());</textarea>
           <div class="admin-card">
             <div class="admin-card-hdr">
               <h3 class="admin-card-title">🔌 インストールパッケージ</h3>
-              <button class="mini-btn" id="btnAdminPackages" title="InstalledSubscriberPackage (Tooling) — AppExchange / 管理パッケージの状況">取得</button>
+              <button class="mini-btn" id="btnAdminPackages" aria-label="インストールパッケージ一覧を取得" title="InstalledSubscriberPackage (Tooling) — AppExchange / 管理パッケージの状況">取得</button>
             </div>
             <div class="admin-card-desc">AppExchange パッケージ・社内 ManagedPackage 一覧をバージョン付きで表示。バージョンアップ前の互換性把握に。</div>
             <div id="adminPackagesResult" class="admin-card-body">
