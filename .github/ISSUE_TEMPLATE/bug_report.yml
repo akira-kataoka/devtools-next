@@ -13,7 +13,7 @@ body:
     attributes:
       label: 拡張バージョン
       description: popup / panel ヘッダの `vX.Y.Z` バッジを記載
-      placeholder: 例 v3.56.0
+      placeholder: 例 v3.284.0
     validations:
       required: true
 
@@ -34,7 +34,7 @@ body:
     id: env
     attributes:
       label: 対象組織の環境
-      description: ENV バッジの色で判別 (緑=SBX / オレンジ=DEV / 赤パルス=PROD)
+      description: ENV バッジの色で判別 (オレンジ=SBX / 緑=DEV / 赤パルス=PROD、Phase 375 で README 表記と整合)
       options:
         - Sandbox (SBX)
         - Developer / Scratch (DEV)
