@@ -872,6 +872,34 @@ function bindEvents() {
   // Describe / REST / Metadata / Logs / Limits
   $on("btnDescribe", "click", doDescribe);
   $on("btnRest", "click", doRest);
+  // v3.125.0 Phase 215: REST クイック実行 (Method+Path 自動セット + 即実行、ユーザー要望「ボタン実行で SF に投げる」)
+  $on("restTemplate", "change", (e) => {
+    const key = e.target.value;
+    if (!key) return;
+    const apiVer = state.apiVersion || "62.0";
+    const REST_QUICK = {
+      limits: { method: "GET", path: `/services/data/v${apiVer}/limits` },
+      userinfo: { method: "GET", path: `/services/data/v${apiVer}/chatter/users/me` },
+      org: { method: "GET", path: `/services/data/v${apiVer}/sobjects/Organization` },
+      sobjects: { method: "GET", path: `/services/data/v${apiVer}/sobjects` },
+      installed_packages: { method: "GET", path: `/services/data/v${apiVer}/tooling/sobjects/InstalledSubscriberPackage` },
+      async_jobs: { method: "GET", path: `/services/data/v${apiVer}/tooling/sobjects/AsyncApexJob` },
+      bulk_jobs: { method: "GET", path: `/services/data/v${apiVer}/jobs/ingest` },
+      versions: { method: "GET", path: `/services/data` },
+    };
+    const tpl = REST_QUICK[key];
+    if (!tpl) return;
+    const m = document.getElementById("restMethod");
+    const p = document.getElementById("restPath");
+    const b = document.getElementById("restBody");
+    if (m) m.value = tpl.method;
+    if (p) p.value = tpl.path;
+    if (b) b.value = ""; // GET なので body クリア
+    e.target.value = "";
+    panelToast(`📡 REST クイック実行: ${tpl.method} ${tpl.path}`, { kind: "ok" });
+    // 即実行
+    doRest();
+  });
   $on("btnMetadata", "click", doMetadataList);
   // v3.78.0: メタデータ型を変えた瞬間に永続化 (一覧取得を押さなくても次回起動時に復元される)
   $on("mdType", "change", (e) => { saveMdType(e.target.value); });
