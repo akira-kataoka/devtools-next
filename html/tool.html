@@ -98,10 +98,10 @@
     <section class="main">
       <!-- v2.77.0: ホームダッシュボード -->
       <div class="view" data-view="home">
-        <div class="home-hero">
-          <h1 class="home-title">🚀 DevToolsNext へようこそ</h1>
+        <details class="home-hero collapsible-help">
+          <summary><h1 class="home-title" style="display:inline">🚀 DevToolsNext</h1><span class="collapse-hint">▼ 説明を表示</span></summary>
           <p class="home-subtitle">Salesforce 開発・運用に必要な機能を 1 つにまとめた拡張機能です。下のカードをクリックして始めてください。</p>
-        </div>
+        </details>
         <div class="home-grid" role="list" aria-label="主要 6 機能">
           <button class="home-card" data-go="soql" role="listitem" aria-label="SOQL クエリ" title="SOQL を書いてレコードを検索 / CSV エクスポート (Tooling API 対応)">
             <div class="home-card-icon" aria-hidden="true">🔎</div>
@@ -143,9 +143,14 @@
             <button class="home-mini-card" data-go="login" title="ユーザのログイン履歴を取得">🔐 ログイン履歴</button>
           </div>
         </div>
-        <div class="home-tips" title="キーボードショートカット: Ctrl+Alt+Q=SOQL / I=Inspector / A=Apex / L=Limits / R=REST / D=設計書 ／ Ctrl+Enter=実行 ／ Esc=閉じる ／ ↑↓=候補移動 ／ オブジェクト入力欄クリックで日本語ラベル付き候補ピッカー">
-          <span style="font-size: 11px; color: var(--fg-dim)">💡 <kbd>Ctrl+Enter</kbd> 実行 ／ <kbd>Esc</kbd> 閉じる ／ <kbd>Ctrl+Alt+Q/I/A/L/R/D</kbd> ビュー切替 (詳細はマウスホバー)</span>
-        </div>
+        <details class="home-tips collapsible-help">
+          <summary>💡 ショートカット<span class="collapse-hint">▼</span></summary>
+          <div style="padding:6px 4px;font-size:11px;color:var(--fg-dim);line-height:1.8">
+            <div><kbd>Ctrl+Enter</kbd> 実行 ／ <kbd>Esc</kbd> 閉じる</div>
+            <div><kbd>Ctrl+Alt+Q</kbd> SOQL ／ <kbd>I</kbd> レコード確認 ／ <kbd>A</kbd> Apex ／ <kbd>L</kbd> 使用状況 ／ <kbd>R</kbd> REST ／ <kbd>D</kbd> 設計書</div>
+            <div><kbd>↑↓</kbd> 候補移動 ／ オブジェクト入力欄クリックで日本語ラベル付き候補ピッカー</div>
+          </div>
+        </details>
       </div>
 
       <div class="view hidden" data-view="soql">
