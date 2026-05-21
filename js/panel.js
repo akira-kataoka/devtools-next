@@ -1181,6 +1181,20 @@ function bindEvents() {
   });
   $on("btnInspectBack", "click", inspectGoBack);
   $on("btnInspectOpenInOrg", "click", openInspectedInOrg);
+  // v3.156.0 Phase 246: Inspector で表示中のレコード ID を 1 クリックでコピー (mini-panel と整合)
+  $on("btnInspectCopyId", "click", async () => {
+    if (!inspectState.id) {
+      panelToast("⚠ Inspector でレコードを開いてから実行してください", { kind: "warn" });
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(inspectState.id);
+      const obj = inspectState.obj || "?";
+      panelToast(`📋 レコード ID をコピーしました: ${obj}:${inspectState.id}`, { kind: "ok" });
+    } catch (e) {
+      panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
+    }
+  });
   // v3.66.0: 現在 Inspector で開いているレコードを SOQL ビューに展開
   $on("btnInspectToSoql", "click", () => {
     if (!inspectState.obj || !inspectState.id) {
