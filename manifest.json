@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "DevToolsNext",
-  "version": "3.228.0",
-  "description": "Salesforce 開発者向け次世代ユーティリティ拡張 (DevToolsNext)。SOQL/Apex 実行、レコード Inspector、データエクスポート、API URL ビルダー、Login as User、Login History、👥 ユーザー・ライセンス管理ダッシュボード (Phase 219)、設計書 23 種類 (組織全体スナップショット含む、Phase 240)、Limits ダッシュボード、自動アップデート、設定エクスポート/インポートを提供します。",
+  "version": "3.229.0",
+  "description": "Salesforce 開発者向け次世代ユーティリティ拡張 (DevToolsNext)。SOQL/Apex 実行、レコード Inspector、データエクスポート、API URL ビルダー、Login as User、Login History、👥 ユーザー・ライセンス管理ダッシュボード (Phase 219)、設計書 21 種類 (組織全体スナップショット含む、Phase 240)、Limits ダッシュボード、自動アップデート、設定エクスポート/インポートを提供します。",
   "default_locale": "ja",
   "permissions": [
     "cookies",
