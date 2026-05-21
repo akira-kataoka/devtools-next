@@ -51,8 +51,8 @@
   /* スペーシング (4px ベース) */
   --sp-0: 2px; --sp-1: 4px; --sp-2: 6px; --sp-3: 8px;
   --sp-4: 10px; --sp-5: 12px; --sp-6: 16px; --sp-7: 24px;
-  /* 角丸 (v3.93.0 Phase 183: チップ/ピル用 --r-pill 12px 追加 — 4 箇所 12px が使われていたため) */
-  --r-xs: 3px; --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px; --r-pill: 12px;
+  /* 角丸 (v3.94.0 Phase 184: --r-tag 5px 追加 — フォーム input / list-item / コード preview で 6 箇所使われていたため) */
+  --r-xs: 3px; --r-sm: 4px; --r-tag: 5px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px; --r-pill: 12px;
 }
 * { box-sizing: border-box; }
 html, body {
@@ -119,7 +119,7 @@ html, body {
 .grow { flex: 1; }
 button {
   background: var(--bg3); color: var(--fg); border: 1px solid var(--line);
-  padding: 5px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; font-weight: 600;
+  padding: 5px 10px; border-radius: var(--r-tag); font-size: 11px; cursor: pointer; font-weight: 600;
   transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
 }
 button:hover { border-color: var(--accent); }
@@ -138,7 +138,7 @@ button.dl-running {
 button.dl-running:hover { background: var(--err) !important; }
 input, select, textarea {
   background: #0a1224; color: var(--fg); border: 1px solid var(--line);
-  border-radius: 5px; padding: 5px 8px;
+  border-radius: var(--r-tag); padding: 5px 8px;
   font: 11px/1.4 ui-monospace, Consolas, monospace; outline: none;
 }
 input:focus, select:focus, textarea:focus { border-color: var(--accent); }
@@ -914,7 +914,7 @@ td.cell-nested { word-break: break-word; }
   /* 用紙設定 (Chrome / Firefox 対応): A4 縦、ヘッダ/フッタは余白控えめ */
   @page { size: A4; margin: 14mm 12mm; }
 }
-.design-preview pre { background: #0a1224; padding: var(--sp-3); border-radius: 5px; overflow: auto; font: 11px ui-monospace, Consolas, monospace; }
+.design-preview pre { background: #0a1224; padding: var(--sp-3); border-radius: var(--r-tag); overflow: auto; font: 11px ui-monospace, Consolas, monospace; }
 .design-preview ul, .design-preview ol { padding-left: 20px; }
 .design-preview p { line-height: 1.7; }
 #apiBuildHelp { line-height: 1.7; }
@@ -1212,7 +1212,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .picker-search {
   flex: 1;
   background: #0a1224; color: var(--fg);
-  border: 1px solid var(--line); border-radius: 5px;
+  border: 1px solid var(--line); border-radius: var(--r-tag);
   padding: 7px 30px 7px 10px; font-size: 12px;
 }
 .picker-search:focus { border-color: var(--accent); outline: none; }

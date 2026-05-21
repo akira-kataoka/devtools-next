@@ -25,8 +25,8 @@
   /* スペーシング (4px ベース) — panel.css と完全同期 */
   --sp-0: 2px; --sp-1: 4px; --sp-2: 6px; --sp-3: 8px;
   --sp-4: 10px; --sp-5: 12px; --sp-6: 16px; --sp-7: 24px;
-  /* 角丸 — panel.css と完全同期 (v3.93.0 Phase 183: --r-pill 12px 追加) */
-  --r-xs: 3px; --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px; --r-pill: 12px;
+  /* 角丸 — panel.css と完全同期 (v3.94.0 Phase 184: --r-tag 5px 追加) */
+  --r-xs: 3px; --r-sm: 4px; --r-tag: 5px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px; --r-pill: 12px;
 }
 * { box-sizing: border-box; }
 /* v2.78.0: popup 幅 460→480 拡大 + リサイズ可能化試行
@@ -383,7 +383,7 @@ details.links-group:not([open]) > a { display: none; }
   padding: var(--sp-2) var(--sp-3);
   background: #0a1224;
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: var(--r-tag);
   cursor: pointer;
   font-size: 11px;
 }
@@ -408,7 +408,7 @@ details.links-group:not([open]) > a { display: none; }
 .history { display: flex; flex-direction: column; gap: 4px; max-height: 200px; overflow: auto; }
 .history-item {
   display: flex; align-items: center; gap: 6px;
-  background: #0a1224; border: 1px solid var(--line); border-radius: 5px;
+  background: #0a1224; border: 1px solid var(--line); border-radius: var(--r-tag);
   padding: 5px 8px; cursor: pointer;
   font: 10px/1.4 ui-monospace, Consolas, monospace;
 }
