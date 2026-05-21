@@ -1141,6 +1141,53 @@ function bindEvents() {
     btn.textContent = "📜 全ログ表示";
     panelToast(`💬 USER_DEBUG ${matched.length} 行を抽出しました (元 ${lines.length} 行)`, { kind: "ok" });
   });
+  // v3.164.0 Phase 254: Apex Debug ログから「リミット消費」行のみを抽出 (LIMIT_USAGE / cumulative_limit_usage / SOQL queries / CPU time / Heap / DML / Email)
+  $on("btnApexLimitsOnly", "click", () => {
+    const resultEl = document.getElementById("apexResult");
+    if (!resultEl) return;
+    const btn = document.getElementById("btnApexLimitsOnly");
+    const pressed = btn.getAttribute("aria-pressed") === "true";
+    if (pressed) {
+      if (_apexFullLog != null) resultEl.textContent = _apexFullLog;
+      btn.setAttribute("aria-pressed", "false");
+      btn.textContent = "📊 リミット消費";
+      panelToast("📜 全ログ表示に戻しました", { kind: "ok" });
+      return;
+    }
+    const full = resultEl.textContent || "";
+    if (!full.trim()) { panelToast("📭 抽出する Apex ログがありません (まず Apex を実行してください)", { kind: "warn" }); return; }
+    // 他フィルタ ON なら復元してから処理
+    ["btnApexErrorsOnly", "btnApexDebugOnly"].forEach((id) => {
+      const b = document.getElementById(id);
+      if (b && b.getAttribute("aria-pressed") === "true") {
+        if (_apexFullLog != null) resultEl.textContent = _apexFullLog;
+        b.setAttribute("aria-pressed", "false");
+        b.textContent = id === "btnApexErrorsOnly" ? "⚠ エラーのみ" : "💬 DEBUG のみ";
+      }
+    });
+    if (_apexFullLog == null) _apexFullLog = full;
+    const fullNow = resultEl.textContent || "";
+    const lines = fullNow.split(/\r?\n/);
+    // リミット消費行のパターン:
+    // - LIMIT_USAGE_FOR_NS|(default)|... (ガバナ消費サマリ)
+    // - Number of SOQL queries: 5 out of 100
+    // - Maximum CPU time: 2345 out of 10000
+    // - Maximum heap size: 1234 out of 6000000
+    // - Number of DML statements: 0 out of 150
+    // - Number of Email Invocations: 0 out of 10
+    // - cumulative_limit_usage (匿名 Apex 末尾の集計)
+    const LIM_RE = /LIMIT_USAGE_FOR_NS|cumulative_limit_usage|Number of (SOQL queries|DML statements|DML rows|query rows|Future calls|Mobile Apex push calls|Email Invocations|Aggregate queries|SOSL queries|callouts|chained Apex jobs)|Maximum (CPU time|heap size|stack depth)|Number of (Async)? ?Apex |LIMIT_USAGE_FOR|^[\s|]*\* /i;
+    const matched = lines.filter((l) => LIM_RE.test(l));
+    if (!matched.length) {
+      panelToast("📭 リミット消費行が見つかりませんでした (まず Apex を実行 + Debug ログを有効化してください)", { kind: "warn" });
+      return;
+    }
+    resultEl.textContent = `===== 📊 リミット消費 (${matched.length} / ${lines.length} 行) =====\n` + matched.join("\n") +
+      `\n\n===== 「📊 リミット消費」ボタンを再クリックで全ログ表示に戻る =====\n💡 ヒント: 「Number of SOQL queries: 5 out of 100」のような行で消費率を確認 — 80% 超は要最適化検討`;
+    btn.setAttribute("aria-pressed", "true");
+    btn.textContent = "📜 全ログ表示";
+    panelToast(`📊 リミット消費 ${matched.length} 行を抽出しました (元 ${lines.length} 行)`, { kind: "ok" });
+  });
   $on("btnRestCopy", "click", async () => {
     const resultEl = document.getElementById("restResult");
     const txt = (resultEl && resultEl.textContent) || "";
