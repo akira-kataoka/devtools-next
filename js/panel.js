@@ -2344,6 +2344,8 @@ function renderLimitsList() {
       <div class="limit-pct ${cls}">${r.pct}%</div>
     </div>`);
   }
+  // v3.112.0 Phase 202: /limits API で取得できない固定上限の解説セクション (ユーザー要望「動的ダッシュボード上限なども使用状況に入れて」)
+  html.push(renderHardcodedLimitsSection());
   root.innerHTML = html.join("");
   // 列ソートクリックハンドラ
   root.querySelectorAll(".lim-sortable").forEach((el) => {
@@ -2356,6 +2358,107 @@ function renderLimitsList() {
   // ピン留めのみ表示トグル
   const chkPin = document.getElementById("chkPinnedOnly");
   if (chkPin) chkPin.addEventListener("change", () => toggleLimitPinnedOnly());
+}
+
+// v3.112.0 Phase 202: /limits API では返らない Salesforce 固定上限の解説 (Apex ガバナ / Dashboard / Email / ViewState)
+function renderHardcodedLimitsSection() {
+  const groups = [
+    {
+      title: "🟧 Apex ガバナ制限 (同期トランザクション)",
+      items: [
+        { ja: "SOQL クエリ数", value: "100 回", desc: "1 トランザクション内で発行できる SELECT 数。SOQL for ループや Map による事前取得で削減" },
+        { ja: "SOQL 取得レコード数", value: "50,000 行", desc: "全 SOQL の累計取得行数。LIMIT 句で意図的に絞る、Aggregate で件数だけ取る等で回避" },
+        { ja: "DML ステートメント", value: "150 回", desc: "insert / update / delete / upsert / merge / undelete の合計回数。Bulkify (List 単位で 1 回) が原則" },
+        { ja: "DML 処理レコード行数", value: "10,000 行", desc: "全 DML の累計処理行数。大量更新は Batch Apex (200/batch) や Bulk API へ" },
+        { ja: "ヒープサイズ", value: "6 MB", desc: "変数・コレクション等が消費できるメモリ。大量 List はループ後 clear() で解放、SOQL も SELECT 列を最小化" },
+        { ja: "CPU 時間", value: "10,000 ms (10 秒)", desc: "Apex 実行に費やせる CPU 時間。SOQL/DML 時間は含まない (待機時間扱い)" },
+        { ja: "コールアウト数", value: "100 回", desc: "外部 HTTP/REST/SOAP 呼出回数の上限" },
+        { ja: "コールアウト合計時間", value: "120 秒", desc: "全コールアウトの実行時間合計。タイムアウトはエンドポイント側設定にも依存" },
+        { ja: "PUSH 通知メソッド数", value: "10 回", desc: "Mobile Push に送信できる回数" },
+      ],
+    },
+    {
+      title: "🟧🌙 Apex ガバナ制限 (非同期: Batch / @future / Queueable)",
+      items: [
+        { ja: "SOQL クエリ数", value: "200 回", desc: "非同期は同期の 2 倍。Batch の execute() ごとに上限はリセット" },
+        { ja: "DML 処理レコード行数", value: "10,000 行", desc: "同期と同じ。Batch の scope (200/batch) を超えてもこの上限が優先" },
+        { ja: "ヒープサイズ", value: "12 MB", desc: "同期 (6 MB) の 2 倍" },
+        { ja: "CPU 時間", value: "60,000 ms (60 秒)", desc: "同期 (10 秒) の 6 倍。重い計算は非同期化で回避" },
+        { ja: "Batch Apex 同時実行", value: "5 個", desc: "Holding 状態を含まずに Queued + Processing 状態の Batch ジョブ数" },
+        { ja: "Queueable チェイン", value: "無制限 (Sandbox: 5 回)", desc: "本番は無制限だが、Sandbox では同期テストから 5 回まで" },
+      ],
+    },
+    {
+      title: "📊 ダッシュボード / レポート (Edition 依存)",
+      items: [
+        { ja: "動的ダッシュボード", value: "Enterprise: 5 / Performance/Unlimited: 10 / Developer: 3", desc: "ユーザコンテキストで動的に表示するダッシュボード数。Spring '24 で上限変更" },
+        { ja: "スケジュールダッシュボード更新", value: "Enterprise/Unlimited: 200 / Performance: 200", desc: "スケジュール登録できる総数 (Lightning Experience)" },
+        { ja: "ダッシュボードコンポーネント", value: "25 個 / ダッシュボード", desc: "1 ダッシュボードに配置できるコンポーネント数" },
+        { ja: "ダッシュボードフィルタ", value: "3 個 / ダッシュボード", desc: "1 ダッシュボードに設定できるフィルタ数" },
+        { ja: "レポート行数上限", value: "2,000 行 (Web 表示) / 5,000 行 (Lightning 詳細レポート)", desc: "エクスポート時は 100,000 行までだが Web 表示はこの上限" },
+      ],
+    },
+    {
+      title: "📧 メール / Workflow",
+      items: [
+        { ja: "Apex 単一メール", value: "1,000 件 / 24 時間", desc: "Apex から sendMail で外部宛に送信できる件数 (内部ユーザ宛は無制限)" },
+        { ja: "Workflow / Process Builder メール", value: "ベース 5,000 件 + ユーザ単価", desc: "24 時間内の組織全体送信上限。Email Alert + Approval Process 等の合計" },
+        { ja: "1 トランザクション内メール", value: "10 件 (Workflow), 1 件 (Approval/Apex)", desc: "1 つの DML の中で送信できる件数" },
+        { ja: "Email-to-Case", value: "ライセンス依存", desc: "受信ドメイン × ライセンス数で計算 (Customer Service Cloud)" },
+      ],
+    },
+    {
+      title: "🌐 Visualforce / Lightning",
+      items: [
+        { ja: "Visualforce ViewState", value: "170 KB", desc: "1 ページの ViewState 上限。大量のコンポーネント・apex:repeat の retain は注意" },
+        { ja: "Visualforce レンダリング時間", value: "120 秒", desc: "1 ページの最大レンダリング時間" },
+        { ja: "Lightning Web Component イベント", value: "ライフサイクル制限", desc: "@api で渡せるプロパティは plain object 推奨 (proxy が深いと遅い)" },
+      ],
+    },
+    {
+      title: "📦 ストレージ / 容量 (Edition 依存)",
+      items: [
+        { ja: "データストレージ ベース", value: "Enterprise/Unlimited: 10 GB + ユーザ単価", desc: "/limits API DataStorageMB で実数値を確認できる" },
+        { ja: "ファイルストレージ ベース", value: "Enterprise/Unlimited: 10 GB + ユーザ単価", desc: "/limits API FileStorageMB で実数値を確認できる" },
+        { ja: "Big Object", value: "1 兆レコード (理論上)", desc: "AsyncSOQL でのみクエリ可能。実質的なハード上限は契約とアーキテクチャ" },
+      ],
+    },
+    {
+      title: "🔄 Flow / Process",
+      items: [
+        { ja: "アクティブなフローバージョン", value: "1 個 / フロー定義", desc: "Auto-Launched / Record-Trigger は同時に 1 バージョンのみ Active" },
+        { ja: "1 トランザクション SOQL/DML", value: "Apex と合算", desc: "Flow も内部的に Apex を実行するため、Apex ガバナと共有" },
+        { ja: "Flow タイムアウト", value: "Screen Flow: 通常 30 秒以内推奨", desc: "ユーザー対話型は応答性確保のため長時間処理は非同期化" },
+      ],
+    },
+  ];
+  let html = `<details class="hardcoded-limits" style="margin-top:12px; background:var(--bg2); border:1px solid var(--accent); border-radius:var(--r-lg); overflow:hidden;">
+    <summary style="padding:10px 14px; cursor:pointer; user-select:none; background:linear-gradient(180deg, rgba(27,150,255,0.12) 0%, var(--bg2) 100%); color:var(--accent); font-weight:700; font-size:12px; display:flex; align-items:center; gap:6px;">
+      <span style="font-size:14px;">📌</span>
+      <span>API で取得できない固定上限 (Apex ガバナ / Dashboard / Email 等) — クリックで展開</span>
+    </summary>
+    <div style="padding:8px 12px 14px;">`;
+  html += `<div class="meta" style="margin-bottom:8px; padding:6px 8px; background:var(--bg); border-left:3px solid var(--accent); border-radius:var(--r-sm); font-size:10px;">
+    💡 これらは <code>/services/data/v62.0/limits</code> API では返らない固定値です。
+    Edition (Developer / Enterprise / Performance / Unlimited) や Spring 25 リリースで変動する可能性があるため、<a href="https://developer.salesforce.com/docs/atlas.en-us.salesforce_app_limits_cheatsheet.meta/salesforce_app_limits_cheatsheet/" target="_blank" style="color:var(--accent);">公式チートシート</a> も参照してください。
+  </div>`;
+  for (const g of groups) {
+    html += `<details style="margin:6px 0; background:#0a1224; border:1px solid var(--line); border-radius:var(--r-sm);" open>
+      <summary style="padding:6px 10px; cursor:pointer; user-select:none; color:var(--fg); font-weight:600; font-size:11px;">${escape(g.title)} (${g.items.length} 項目)</summary>
+      <div style="padding:4px 10px 8px;">`;
+    for (const it of g.items) {
+      html += `<div style="display:grid; grid-template-columns:160px 1fr; gap:8px; padding:4px 0; border-bottom:1px dashed var(--line); font-size:11px;">
+        <div style="color:var(--accent); font-weight:600;">${escape(it.ja)}</div>
+        <div>
+          <div style="color:var(--ok); font-weight:600; font-size:11px;">${escape(it.value)}</div>
+          <div style="color:var(--fg-dim); font-size:10px; margin-top:2px; line-height:1.5;">${escape(it.desc)}</div>
+        </div>
+      </div>`;
+    }
+    html += `</div></details>`;
+  }
+  html += `</div></details>`;
+  return html;
 }
 
 function exportLimitsCsv() {
