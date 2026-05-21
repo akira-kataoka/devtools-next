@@ -4283,11 +4283,36 @@ async function doDescribe() {
     return;
   }
   const fields = (r.data && r.data.fields) || [];
-  document.getElementById("describeResult").innerHTML = recordsTable(
+  // v3.184.0 Phase 274: 項目統計サマリ (組織監査・ガバナンス用途) + custom 列追加
+  const d = r.data || {};
+  const total = fields.length;
+  const customCount = fields.filter((f) => f.custom).length;
+  const requiredCount = fields.filter((f) => !f.nillable && !f.defaultedOnCreate && f.createable).length;
+  const uniqueCount = fields.filter((f) => f.unique).length;
+  const formulaCount = fields.filter((f) => f.calculated).length;
+  const picklistCount = fields.filter((f) => f.type === "picklist" || f.type === "multipicklist").length;
+  const lookupCount = fields.filter((f) => f.type === "reference").length;
+  const summary = `<div class="describe-summary" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 4px;font-size:11px">
+    <span class="pill" style="background:var(--accent);color:#fff" title="オブジェクトラベル / API 名">📋 ${escape(d.label || obj)} <span style="opacity:0.85">(${escape(d.name || obj)})</span></span>
+    <span class="pill" title="全項目数">📐 全 ${total} 項目</span>
+    <span class="pill" title="カスタム項目数 (__c)">🔧 カスタム ${customCount}</span>
+    <span class="pill" title="必須項目数 (非 nillable かつ作成可能)">⚠ 必須 ${requiredCount}</span>
+    <span class="pill" title="ユニーク制約のある項目数">🔑 ユニーク ${uniqueCount}</span>
+    <span class="pill" title="数式項目数 (calculated)">∑ 数式 ${formulaCount}</span>
+    <span class="pill" title="選択リスト項目数 (picklist + multipicklist)">📋 選択リスト ${picklistCount}</span>
+    <span class="pill" title="参照型項目数 (reference / lookup)">🔗 参照 ${lookupCount}</span>
+    ${d.createable ? `<span class="pill ok" title="作成可能">＋作成 OK</span>` : `<span class="pill warn" title="作成不可">＋作成 ×</span>`}
+    ${d.updateable ? `<span class="pill ok" title="更新可能">✎更新 OK</span>` : `<span class="pill warn" title="更新不可">✎更新 ×</span>`}
+    ${d.deletable ? `<span class="pill ok" title="削除可能">🗑削除 OK</span>` : `<span class="pill warn" title="削除不可">🗑削除 ×</span>`}
+    ${d.queryable ? `<span class="pill ok" title="SOQL クエリ可能">🔎 query OK</span>` : ""}
+    ${d.custom ? `<span class="pill" title="カスタムオブジェクト">🏷️ カスタムオブジェクト</span>` : ""}
+  </div>`;
+  document.getElementById("describeResult").innerHTML = summary + recordsTable(
     fields.map((f) => ({
       name: f.name, label: f.label, type: f.type,
       length: f.length, required: !f.nillable && !f.defaultedOnCreate,
-      unique: f.unique, picklist: (f.picklistValues || []).length || "",
+      unique: f.unique, custom: f.custom ? "✓" : "",
+      picklist: (f.picklistValues || []).length || "",
       referenceTo: (f.referenceTo || []).join(","),
     }))
   );
