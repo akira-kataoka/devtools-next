@@ -871,10 +871,12 @@ async function buildFieldSetList({ host, sid, apiVersion, obj }) {
 }
 
 // ============ カスタム設定一覧 ============
-async function buildCustomSettingList({ host, sid, apiVersion }) {
+// v3.136.0 Phase 226 (Team D): 各カスタム設定の「レコード件数」を追加 (ユーザー要望「業務品質まで強化」)
+async function buildCustomSettingList({ host, sid, apiVersion, progress = () => {} }) {
+  progress("カスタム設定メタデータを取得中...");
   const r = await runSoql({
     host, sid, apiVersion, tooling: true,
-    soql: `SELECT Id, DeveloperName, MasterLabel, CustomSettingsType, Description FROM CustomObject WHERE CustomSettingsType != null ORDER BY DeveloperName LIMIT 500`,
+    soql: `SELECT Id, DeveloperName, MasterLabel, CustomSettingsType, Description, NamespacePrefix FROM CustomObject WHERE CustomSettingsType != null ORDER BY DeveloperName LIMIT 500`,
   });
   if (!r.ok) throw apiError("カスタム設定の取得に失敗しました", r);
   const typeMap = {
@@ -882,32 +884,77 @@ async function buildCustomSettingList({ host, sid, apiVersion }) {
     "Hierarchy": "Hierarchy 型 (組織/プロファイル/ユーザ毎に上書き可)",
   };
   const records = r.data.records || [];
-  const headers = ["No", "API 名", "ラベル", "種別", "説明"];
-  const rows = records.map((c, i) => ({
-    "No": i + 1,
-    "API 名": c.DeveloperName + "__c",
-    "ラベル": c.MasterLabel,
-    "種別": typeMap[c.CustomSettingsType] || c.CustomSettingsType,
-    "説明": fmtTrunc(c.Description || "", 200),
-  }));
+
+  // Phase 226: 各カスタム設定のレコード件数を COUNT() で取得
+  // 大量の COUNT クエリを直列で投げる (1 件あたり ~100ms 程度、500 件で 50 秒最悪)
+  // 業務利用上 200 件程度想定、進捗表示で許容
+  progress(`各カスタム設定のレコード件数を取得中... (${records.length} 件)`);
+  const recordCounts = new Map(); // DeveloperName(+ns) → record count
+  const errors = new Map();        // DeveloperName → error msg
+  for (let i = 0; i < records.length; i++) {
+    const c = records[i];
+    const apiName = (c.NamespacePrefix ? c.NamespacePrefix + "__" : "") + c.DeveloperName + "__c";
+    progress(`レコード件数を取得中 (${i + 1}/${records.length}): ${apiName}`);
+    try {
+      const cr = await runSoql({
+        host, sid, apiVersion,
+        soql: `SELECT COUNT() FROM ${apiName}`,
+      });
+      if (cr.ok) {
+        recordCounts.set(apiName, cr.data.totalSize != null ? cr.data.totalSize : 0);
+      } else {
+        errors.set(apiName, `HTTP ${cr.status}`);
+        recordCounts.set(apiName, null); // 取得失敗
+      }
+    } catch (e) {
+      errors.set(apiName, e.message || String(e));
+      recordCounts.set(apiName, null);
+    }
+  }
+
+  const headers = ["No", "API 名", "ラベル", "種別", "ネームスペース", "レコード件数", "状態", "説明"];
+  const rows = records.map((c, i) => {
+    const apiName = (c.NamespacePrefix ? c.NamespacePrefix + "__" : "") + c.DeveloperName + "__c";
+    const cnt = recordCounts.get(apiName);
+    const stateLabel = cnt == null
+      ? "✗ 取得失敗"
+      : cnt === 0
+        ? "△ 空 (未使用候補)"
+        : "○ 利用中";
+    return {
+      "No": i + 1,
+      "API 名": apiName,
+      "ラベル": c.MasterLabel,
+      "種別": typeMap[c.CustomSettingsType] || c.CustomSettingsType,
+      "ネームスペース": c.NamespacePrefix || "(なし: カスタム)",
+      "レコード件数": cnt == null ? "—" : fmtNum(cnt),
+      "状態": stateLabel,
+      "説明": fmtTrunc(c.Description || "", 200),
+    };
+  });
   const legend = [
     ["カスタム設定とは", "Apex/フロー/数式から高速にアクセスできるキー値ストア。標準オブジェクトより SOQL Limit を消費しない"],
     ["List 型", "組織全体で共通の定数表 (例: 国コード、税率テーブル)。レコードに『Name』だけがキー"],
     ["Hierarchy 型", "組織 → プロファイル → ユーザの順で上書き可能。ユーザ毎に異なる値を返したい時に使用 (例: API キー)"],
+    ["レコード件数", "各カスタム設定オブジェクトに登録されているレコード数 (COUNT() で取得)。0 件は未使用候補"],
+    ["状態", "○ 利用中 = レコードあり / △ 空 = レコード 0 件 (削除候補) / ✗ 取得失敗 = SOQL 権限不足の可能性"],
     ["カスタムメタデータとの違い", "カスタム設定はレコード=データ、カスタムメタデータはレコード=メタ定義 (デプロイ可能)。新規実装は CustomMetadata 推奨"],
   ];
-  // v2.71.0: note サマリで List 型 / Hierarchy 型 別件数を集計
+  // サマリ集計
   const listCount = records.filter((c) => c.CustomSettingsType === "List").length;
   const hierarchyCount = records.filter((c) => c.CustomSettingsType === "Hierarchy").length;
+  const emptyCount = Array.from(recordCounts.values()).filter((v) => v === 0).length;
+  const failedCount = Array.from(recordCounts.values()).filter((v) => v == null).length;
+  const totalRecords = Array.from(recordCounts.values()).filter((v) => v != null).reduce((s, v) => s + v, 0);
   return {
-    title: "カスタム設定一覧",
+    title: "カスタム設定一覧 (レコード件数付き)",
     type: "customSettingList",
     sections: [
       makeCoverSection({ docTitle: "カスタム設定一覧", target: "組織全体 (全 CustomSetting)", orgHost: host, revision: "初版" }),
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. CustomSetting", headers, rows },
     ],
-    note: `合計 ${fmtNum(rows.length)} 件 / List 型 ${fmtNum(listCount)} 件 / Hierarchy 型 ${fmtNum(hierarchyCount)} 件。**業務担当者向け**: カスタム設定は組織共通のマスタ値 (税率、定数、フラグ等) を保持する仕組みです。**Salesforce は新規実装にカスタムメタデータ型を推奨** (デプロイ可能・キャッシュ可能のため)。本一覧は既存資産確認・移行計画作成に使ってください。Hierarchy 型はユーザー別/プロファイル別の上書き値があるため、ユーザー個別設定の洗い出しに有用です。`,
+    note: `合計 ${fmtNum(rows.length)} 件 / List 型 ${fmtNum(listCount)} 件 / Hierarchy 型 ${fmtNum(hierarchyCount)} 件 / 全レコード数 ${fmtNum(totalRecords)} 件 / **空 (0 件) ${fmtNum(emptyCount)} 件 (削除候補)** / 取得失敗 ${fmtNum(failedCount)} 件。**業務担当者向け**: 「状態」列で △ 空 のカスタム設定は実利用されていない可能性が高く、削除候補です。**Salesforce は新規実装にカスタムメタデータ型を推奨** (デプロイ可能・キャッシュ可能のため)。本一覧は既存資産確認・移行計画作成・棚卸し用途にご活用ください。Hierarchy 型はユーザー別/プロファイル別の上書き値があるため、ユーザー個別設定の洗い出しに有用です。`,
   };
 }
 
@@ -1346,6 +1393,58 @@ async function buildAppList({ host, sid, apiVersion }) {
     "並び順": x.SortOrder == null ? "" : fmtNum(x.SortOrder),
   }));
 
+  // v3.136.0 Phase 226 (Team D): プロファイル別の AppMenuItem 表示制御を AppMenuItemPicker から取得
+  // 各 Profile (= PermissionSet IsOwnedByProfile=true) が「どのアプリを表示できるか」を確認
+  // AppMenuItem (Lightning Apps) の Profile 毎の上書き設定は AppDefinition + Profile の組合せで決まる
+  // ここでは Profile 数 × アプリ数の概要を提供
+  let appProfileRows = [];
+  try {
+    const profR = await runSoql({
+      host, sid, apiVersion,
+      soql: `SELECT Id, Name FROM Profile ORDER BY Name LIMIT 200`,
+    });
+    // PermissionSetApplicationVisibility (Tooling) — プロファイル/権限セット別の App 可視性
+    const psavR = await sfFetch({
+      host, sid,
+      path: `/services/data/v${apiVersion}/tooling/query/?q=` + encodeURIComponent(
+        `SELECT Parent.Id, Parent.Label, Parent.Profile.Name, Parent.IsOwnedByProfile, Application, Visible, IsDefault FROM PermissionSetApplicationVisibility ORDER BY Parent.Profile.Name, Application LIMIT 5000`
+      ),
+    });
+    if (psavR.ok) {
+      // App ごとの「可視 Profile / 不可視 Profile」を集計
+      const appVisMap = new Map(); // Application(API名) → { visibleProfiles: Set, hiddenProfiles: Set, defaultApp: Set }
+      for (const rec of (psavR.data.records || [])) {
+        if (!rec.Parent || !rec.Parent.IsOwnedByProfile) continue;
+        const profName = rec.Parent.Profile ? rec.Parent.Profile.Name : "?";
+        const appName = rec.Application;
+        if (!appVisMap.has(appName)) appVisMap.set(appName, { visible: new Set(), hidden: new Set(), defaultIn: new Set() });
+        const entry = appVisMap.get(appName);
+        if (rec.Visible) entry.visible.add(profName); else entry.hidden.add(profName);
+        if (rec.IsDefault) entry.defaultIn.add(profName);
+      }
+      // appRecords 順に並べる
+      appProfileRows = appRecords
+        .filter((a) => appVisMap.has(a.DeveloperName) || appVisMap.has(a.NamespacePrefix ? `${a.NamespacePrefix}__${a.DeveloperName}` : a.DeveloperName))
+        .map((a, i) => {
+          const key = appVisMap.has(a.DeveloperName) ? a.DeveloperName : `${a.NamespacePrefix}__${a.DeveloperName}`;
+          const entry = appVisMap.get(key) || { visible: new Set(), hidden: new Set(), defaultIn: new Set() };
+          const visList = Array.from(entry.visible).sort().slice(0, 10).join(", ") + (entry.visible.size > 10 ? ` ...(他 ${entry.visible.size - 10})` : "");
+          const hidList = Array.from(entry.hidden).sort().slice(0, 5).join(", ") + (entry.hidden.size > 5 ? ` ...(他 ${entry.hidden.size - 5})` : "");
+          const defList = Array.from(entry.defaultIn).sort().join(", ");
+          return {
+            "No": i + 1,
+            "アプリ API 名": a.DeveloperName,
+            "ラベル": a.MasterLabel,
+            "可視 Profile 数": fmtNum(entry.visible.size),
+            "可視 Profile (先頭10)": visList || "(無し)",
+            "デフォルト指定 Profile": defList || "(無し)",
+            "非可視 Profile 数": fmtNum(entry.hidden.size),
+          };
+        });
+    }
+  } catch (e) { console.warn("[buildAppList] Profile 別取得失敗:", e); }
+  const appProfileHeaders = ["No", "アプリ API 名", "ラベル", "可視 Profile 数", "可視 Profile (先頭10)", "デフォルト指定 Profile", "非可視 Profile 数"];
+
   const legend = [
     ["アプリケーションとは", "Salesforce で機能をまとめた『画面パッケージ』。タブ構成・ユーティリティバー・ナビ種別等を定義"],
     ["AppDefinition", "全アプリのメタデータ。Classic / Lightning / 管理パッケージ提供分を含む"],
@@ -1355,13 +1454,14 @@ async function buildAppList({ host, sid, apiVersion }) {
   ];
 
   return {
-    title: "アプリケーション一覧 (Lightning + Classic)",
+    title: "アプリケーション一覧 (Lightning + Classic + Profile 別可視性)",
     type: "appList",
     sections: [
       makeCoverSection({ docTitle: "アプリケーション一覧", target: "組織全体 (Lightning + Classic)", orgHost: host, revision: "初版" }),
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. AppDefinition (組織内全アプリ)", headers, rows },
       ...(menuRows.length ? [{ heading: "2. AppMenuItem (App Launcher 表示順)", headers: menuHeaders, rows: menuRows }] : []),
+      ...(appProfileRows.length ? [{ heading: "3. Profile 別 アプリ可視性 (Phase 226 追加)", headers: appProfileHeaders, rows: appProfileRows }] : []),
     ],
     note: (() => {
       // v2.72.0: note サマリ拡充 - UI 種別 (Aloha/Lightning) と AppMenuItem 表示/非表示 + 種別別件数
@@ -1446,12 +1546,76 @@ async function buildAccessControl({ host, sid, apiVersion }) {
   const sharingHeaders = ["No", "オブジェクト", "内部 OWD", "外部 OWD", "備考"];
   const sharingRows = sharingObjs.map((r, i) => ({
     "No": i + 1,
-    "オブジェクト": r["オブジェクト"],
+    "オブジェクト": r["オブジェクト名"] || r["API 名"],
     "内部 OWD": r["内部共有 (OWD)"],
     "外部 OWD": r["外部共有 (OWD)"],
     "備考": (r["内部共有 (OWD)"] === "Private" ? "Private のため共有ルール推奨" :
              r["内部共有 (OWD)"] === "ControlledByParent" ? "親レコードに従属" : ""),
   }));
+
+  // v3.136.0 Phase 226 (Team D): 4. Group / Queue (Public Group + Queue + Personal Group)
+  // Salesforce では Group オブジェクトに 5 種類が混在:
+  //   - Regular (Public Group), Queue, Role, RoleAndSubordinates, AllCustomerPortal 等
+  // Type 別に分類し、所属メンバー件数も集計
+  const groupTypeMap = {
+    "Regular": "Public Group (パブリックグループ)",
+    "Queue": "Queue (キュー)",
+    "Role": "Role (ロール経由)",
+    "RoleAndSubordinates": "Role + 部下 (階層下)",
+    "RoleAndSubordinatesInternal": "Role + 部下 (内部のみ)",
+    "AllCustomerPortal": "全カスタマーポータルユーザー",
+    "PRMOrganization": "PRM 組織",
+    "Manager": "マネージャ",
+    "ManagerAndSubordinatesInternal": "マネージャ + 部下 (内部)",
+    "Organization": "組織全体",
+    "Territory": "Territory",
+    "TerritoryAndSubordinates": "Territory + 部下",
+  };
+  let groupRows = [], queueRows = [];
+  try {
+    const grpR = await runSoql({
+      host, sid, apiVersion,
+      soql: `SELECT Id, Name, DeveloperName, Type, RelatedId, OwnerId, Email FROM Group ORDER BY Type, Name LIMIT 500`,
+    });
+    if (grpR.ok) {
+      const allGroups = (grpR.data.records || []);
+      // Public Group (Regular) — 業務的に最も重要
+      groupRows = allGroups.filter((g) => g.Type === "Regular").map((g, i) => ({
+        "No": i + 1,
+        "Group 名 (Label)": g.Name,
+        "API 名 (DeveloperName)": g.DeveloperName || "",
+        "Email": g.Email || "",
+        "Group Id": g.Id,
+      }));
+      // Queue — 業務 (Case / Lead) で頻繁に使用
+      queueRows = allGroups.filter((g) => g.Type === "Queue").map((g, i) => ({
+        "No": i + 1,
+        "Queue 名 (Label)": g.Name,
+        "API 名 (DeveloperName)": g.DeveloperName || "",
+        "Email": g.Email || "",
+        "Queue Id": g.Id,
+      }));
+    }
+  } catch (e) { console.warn("[accessControl] Group fetch failed:", e); }
+
+  // 5. Group 構成メンバー (GroupMember から派生、各 Group のメンバー数を集計)
+  let memberCountMap = new Map();
+  try {
+    const memR = await runSoql({
+      host, sid, apiVersion,
+      soql: `SELECT GroupId, COUNT(Id) cnt FROM GroupMember GROUP BY GroupId LIMIT 5000`,
+    });
+    if (memR.ok) {
+      for (const rec of (memR.data.records || [])) {
+        if (rec.GroupId) memberCountMap.set(rec.GroupId, Number(rec.cnt) || 0);
+      }
+    }
+  } catch (e) { console.warn("[accessControl] GroupMember count failed:", e); }
+  // Public Group / Queue 行に メンバー数を追記
+  groupRows.forEach((r) => { r["メンバー数"] = fmtNum(memberCountMap.get(r["Group Id"]) || 0); });
+  queueRows.forEach((r) => { r["メンバー数"] = fmtNum(memberCountMap.get(r["Queue Id"]) || 0); });
+  const groupHeaders = ["No", "Group 名 (Label)", "API 名 (DeveloperName)", "Email", "メンバー数", "Group Id"];
+  const queueHeaders = ["No", "Queue 名 (Label)", "API 名 (DeveloperName)", "Email", "メンバー数", "Queue Id"];
 
   // 凡例 (v2.12.0: 業務担当者の理解のための略語/値の説明)
   const legendHeaders = ["項目", "意味"];
@@ -1462,20 +1626,26 @@ async function buildAccessControl({ host, sid, apiVersion }) {
     { "項目": "Public Read/Write", "意味": "全ユーザが参照・編集可能" },
     { "項目": "Controlled By Parent", "意味": "親レコードのアクセス権限に従う (例: 取引先責任者)" },
     { "項目": "Sharing Rules", "意味": "OWD で制限したレコードを追加共有する補完ルール (本設計書では Metadata API 必須のため未取得)" },
+    { "項目": "Public Group", "意味": "ユーザー・ロール・他グループを束ねる任意グループ。共有ルール / 一括メール / フォルダ共有等で使用" },
+    { "項目": "Queue", "意味": "Case / Lead / カスタムオブジェクトのレコード一時受け皿。担当者が引き取るまでキュー所有 (Phase 226 追加)" },
     { "項目": "PermSet 上乗せ", "意味": "プロファイル + Permission Set の合算で実効権限が決まる" },
   ];
 
+  const sections = [
+    makeCoverSection({ docTitle: "アクセスコントロール定義書", target: "組織全体 (OWD / 共有設定 / ロール階層 / Group・Queue)", orgHost: host, revision: "初版" }),
+    { heading: "0. 凡例 / 略語の説明", headers: legendHeaders, rows: legendRows },
+    { heading: "1. 組織共通の既定共有設定 (OWD)", headers: owdHeaders, rows: owdRows },
+    { heading: "2. 共有設計上の注意 (非公開 / 親従属)", headers: sharingHeaders, rows: sharingRows },
+    { heading: "3. ロール階層 (UserRole)", headers: roleHeaders, rows: roleRows },
+  ];
+  if (groupRows.length) sections.push({ heading: "4. Public Group (パブリックグループ)", headers: groupHeaders, rows: groupRows });
+  if (queueRows.length) sections.push({ heading: "5. Queue (キュー)", headers: queueHeaders, rows: queueRows });
+
   return {
-    title: "アクセスコントロール定義書",
+    title: "アクセスコントロール定義書 (Group / Queue 含む)",
     type: "accessControl",
-    sections: [
-      makeCoverSection({ docTitle: "アクセスコントロール定義書", target: "組織全体 (OWD / 共有設定 / ロール階層)", orgHost: host, revision: "初版" }),
-      { heading: "0. 凡例 / 略語の説明", headers: legendHeaders, rows: legendRows },
-      { heading: "1. 組織共通の既定共有設定 (OWD)", headers: owdHeaders, rows: owdRows },
-      { heading: "2. 共有設計上の注意 (非公開 / 親従属)", headers: sharingHeaders, rows: sharingRows },
-      { heading: "3. ロール階層 (UserRole)", headers: roleHeaders, rows: roleRows },
-    ],
-    note: `OWD ${fmtNum(owdRows.length)} 件 / ロール ${fmtNum(roleRows.length)} 件。**業務担当者向け**: 本設計書はレコードレベルアクセス制御 (誰がどのレコードを見られるか) の基盤を示します。**OWD (組織共通の既定共有設定)** = 全レコードの初期共有レベル / **ロール階層** = 上司は部下のレコードを参照可能。年次セキュリティ監査、組織再編時の権限見直し、機微情報 (人事/契約) 取扱範囲の確認に活用してください。共有ルール詳細は Metadata API (SharingRules) で別途取得が必要です。`,
+    sections,
+    note: `OWD ${fmtNum(owdRows.length)} 件 / ロール ${fmtNum(roleRows.length)} 件 / Public Group ${fmtNum(groupRows.length)} 件 / Queue ${fmtNum(queueRows.length)} 件。**業務担当者向け**: 本設計書はレコードレベルアクセス制御 (誰がどのレコードを見られるか) の基盤を示します。**OWD** = 全レコードの初期共有レベル / **ロール階層** = 上司は部下のレコードを参照可能 / **Public Group** = 共有ルール対象を柔軟に組合せ / **Queue** = Case/Lead の担当未定レコードの受け皿 (担当が拾うまで Queue が所有)。年次セキュリティ監査、組織再編時の権限見直し、機微情報 (人事/契約) 取扱範囲の確認に活用してください。共有ルール詳細 (CriteriaBasedSharingRule 等) は Metadata API で別途取得が必要です。`,
   };
 }
 
