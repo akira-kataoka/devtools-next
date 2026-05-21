@@ -1,8 +1,8 @@
 # Salesforce DevTool (Chrome / Edge 拡張)  v3.x
 
-> 🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊 **Phase 290 マイルストーン達成 — v3 系 200 連続リリース!** (2026-05-22) — 通算 400+ リリース、サイクル 1-290 完遂
-> v3.0.0 (Phase 90) → **v3.200.0 (Phase 290)** を継続的自律改修ループで磨き上げ。**🎊 v3 系 200 連続リリース完遂!**
-> **URL クエリ統一 9 種 + 🔗 リンク 7 箇所 + 📝 MD コピー 14 箇所 + PROD 2 段階防御 (視覚警告 + 動作ゲート)**
+> 🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊 **Phase 300 マイルストーン達成 — v3 系 210 連続リリース!!** (2026-05-22) — 通算 410+ リリース、サイクル 1-300 完遂 🎯
+> v3.0.0 (Phase 90) → **v3.210.0 (Phase 300)** を継続的自律改修ループで磨き上げ。**🎊 v3 系 210 連続リリース完遂!**
+> **URL クエリ統一 12 種 + 🔗 リンク 10 箇所 + 📝 MD コピー 14 箇所 + PROD 2 段階防御 × 6 経路 (Apex/REST/Bulk DELETE/Bulk DML/Inspector PATCH/凍結解除)**
 > **GitHub Governance 完成** — CI / Issue / PR / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT すべて整備
 > **Inspector ↔ SOQL 双方向ナビ** (Phase 155-157) + **SQL/Apex 整形** (Phase 153-154) + **SOQL/Apex テンプレート挿入** (Phase 159-160) すべて完成
 > 🎯 **Phase 219-250 新機能群完成 (2026-05-21〜22)**:
@@ -72,14 +72,16 @@
 > - **Phase 261-270**: v3.171-3.180 📝 **REST API レスポンス「MD コピー」** (Phase 261) / 📝 **Apex 実行結果「MD コピー」** (Phase 262) / 📝 **mini-panel SOQL 結果「MD」テーブルコピー** (3 モード整合性、Phase 263) / 📝 **Limits 画面「MD コピー」** (Phase 264) / 📝 **ログイン履歴「MD コピー」** (セキュリティ監査向け、Phase 265) / 📝 **メタデータ一覧「MD コピー」** (Phase 266) / 📝 **Apex Debug ログ「MD コピー」+ 汎用関数化 (Markdown 10 箇所目 🎊)** (Phase 267) / 📊 **Apex 実行結果「ガバナ消費サマリ pill」自動表示** (Phase 268) / 📋 **Inspector「全項目 MD」コピー** (バグ報告/監査資料用、Phase 269) / 🎊🎊 **v3 系 180 連続リリース達成 + マイルストーン記念** (Phase 270)
 > - **Phase 271-280**: v3.181-3.190 📝 **admin モーダルに「📝 MD」コピー (使用者/ストレージ/未活動)** (Phase 271) / 📝 **グローバル検索結果に「📝 全 MD」(オブジェクト別セクション)** (Phase 272) / 📋📝 **API URL ビルダー実行結果に「📋/📝」+ サイズ表示** (Phase 273) / 📐 **Describe ビューに項目統計サマリ pill + custom 列 + 権限 pill (組織監査向け)** (Phase 274) / 📝 **Describe ビューに「📝 設計書 MD」コピー (タイトル + 統計 + 全項目表)** (Phase 275) / 📐 **mini-panel に「📐 構造」ボタン + URL `?obj=` で describe 自動実行** (Phase 276) / 📐 **popup に「📐 オブジェクト構造」追加で 4 入口統一完成** (Phase 277) / 🔎 **Inspector に `?id=` URL クエリ + mini-panel「🔎 Inspector」ボタン** (Phase 278) / ↗ **SOQL ビューに `?q=` URL クエリ + mini-panel「↗ 全画面で実行」ボタン** (Phase 279) / 🎊🎊🎊 **v3 系 190 連続リリース達成 + マイルストーン記念** (Phase 280)
 > - **Phase 281-290**: v3.191-3.200 🔗 **グローバル検索に `?kw=` URL クエリ + 「🔗 リンクコピー」ボタン** (Phase 281) / 🔗 **SOQL/Describe/Inspector に「🔗 リンク」ボタン横展開** (Phase 282) / 🔗 **メタデータ一覧に `?type=` URL クエリ + 「🔗 リンク」** (Phase 283) / 🔗 **設計書ビューに `?type=&target=&format=` URL クエリ + 「🔗 リンク」** (Phase 284) / 🔗 **REST API ビューに `?method=&path=&body=` URL クエリ + 「🔗 リンク」(GET のみ auto-fire、POST/PATCH/DELETE は安全のため投入のみ)** (Phase 285) / 📚 **README に「URL クエリ統一パターン 9 種」セクション追加** (Phase 286) / 📐 **Home に「📐 オブジェクト構造」ミニカード追加 (4 入口統一の補完)** (Phase 287) / ⚠ **mini-panel に ENV (Sandbox/PROD) バッジ追加 — PROD はパルスアニメーション (誤操作防止)** (Phase 288) / 🛡️ **PROD 環境での破壊的操作に confirm ダイアログ (Apex DML / REST POST/PATCH/DELETE) — 2 段階防御完成** (Phase 289) / 🎊🎊🎊🎊 **v3 系 200 連続リリース達成 + マイルストーン記念** (Phase 290)
+> - **Phase 291-300**: v3.201-3.210 🛡️ **SOQL Bulk DELETE / Bulk DML (CSV→DML) に PROD 警告強化** (Phase 291) / 🛡️ **Inspector インライン編集 (PATCH) に PROD 確認 — PROD 防御 5 経路完成** (Phase 292) / 🛡️ **admin 凍結解除 (UserLogin PATCH) に PROD 警告強化 — PROD 防御 6 経路完成** (Phase 293) / 📚 **README に「PROD 誤操作防止 2 段階防御 × 6 経路」セクション追加** (Phase 294) / 🔗 **Apex ビューに `?code=` URL クエリ + 「🔗 リンク」(auto-fire 無効、投入のみ)** (Phase 295) / 📚 **README URL クエリ表を 9 → 10 種に更新** (Phase 296) / 🔐 **ログイン履歴に `?view=login&limit=&status=` URL クエリ + 「🔗 リンク」(セキュリティ監査向け)** (Phase 297) / 🌐 **API URL ビルダーに `?op=&apiObj=&apiId=` URL クエリ + 「🔗 リンク」** (Phase 298) / 📚 **README URL クエリ表を 10 → 12 種に更新** (Phase 299) / 🎊🎊🎊🎊🎊 **v3 系 210 連続リリース達成 + マイルストーン記念** (Phase 300)
 >
-> ## 📈 累計実績 (Phase 290 時点)
-> - **リリース数**: v1 系 + v2 系 100 リリース + **🎊 v3 系 200 リリース** = **400+ リリース**
-> - **GitHub push 数**: **450+ コミット**
+> ## 📈 累計実績 (Phase 300 時点) 🎯
+> - **リリース数**: v1 系 + v2 系 100 リリース + **🎊 v3 系 210 リリース** = **410+ リリース**
+> - **GitHub push 数**: **460+ コミット**
 > - **対応ユーザー報告**: **100+ 件** (UX 改善 / 機能追加 / バグ修正)
-> - **URL クエリ統一パターン**: **9 種** (`?view=admin/search/describe&obj/inspector&id&obj/soql&q/search&kw&scope/metadata&type/design&type&target&format/rest&method&path&body`)
-> - **🔗 リンクコピーボタン**: **7 箇所** (search/SOQL/describe/inspector/metadata/design/rest)
-> - **PROD 2 段階防御**: 視覚警告 (ENV badge パルス) + 動作ゲート (confirm ダイアログ)
+> - **URL クエリ統一パターン**: **12 種完成** (admin/search/search&kw/describe/inspector/soql/metadata/design/rest/apex/login/apiurl)
+> - **🔗 リンクコピーボタン**: **10 箇所完成** (search/SOQL/describe/inspector/metadata/design/rest/apex/login/apiurl)
+> - **📝 MD コピーボタン**: **14 箇所** (REST/Apex/SOQL x3/Limits/ログイン履歴/メタデータ/Debug ログ/Inspector x3/admin モーダル/グローバル検索/API URL ビルダー/Describe 設計書)
+> - **PROD 2 段階防御 × 6 経路**: 視覚警告 (ENV badge パルス) + 動作ゲート (confirm ダイアログ) — Apex/REST/Bulk DELETE/Bulk DML/Inspector PATCH/凍結解除
 > - **CRITICAL バグ修正**: 8 件 (runBtn 二重宣言 / addEventListener null セーフ x2 / Flow メタデータ取得 / Limits ReferenceError / ログイン履歴 WHERE filterable / var(--muted) 未定義変数 + Markdown bold 見えない不具合 / **メタデータ一覧 CustomObject Name 列 INVALID_FIELD (Phase 219)** / **chrome.storage キー名不一致 2 バグ (Phase 190)**)
 > - **業務担当者向け磨き**: 設計書 23/23 種 note + 凡例 + 章番号 chip + 文書管理 ID + 機密区分 + 環境バッジ + ロール別 FAQ 19 問 + トラブルシューティング 13 症状 + PDF 保存手順 + アンインストール手順
 > - **a11y 実績**: 3 モード fade-in アニメーション統一、prefers-reduced-motion 対応、focus-visible/aria-label 全面適用、PROD バッジ警告パルス、`.pill.loading` 統一スピナー、ソート `⇅` マーカー、**admin モーダルのフォーカス trap (Phase 231)**
