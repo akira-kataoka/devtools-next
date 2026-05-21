@@ -421,6 +421,27 @@ function fillInfo({ host = "-", orgId = "-", userId = "-", session = "-" }) {
   const sEl = document.getElementById("info-session");
   sEl.textContent = session && session !== "-" ? session.substring(0, 24) + "…" : "-";
   sEl.title = session;
+  // v3.243.0 Phase 333: ENV バッジ (Sandbox/PROD/DEV) を popup ヘッダーに表示 — 3 モード ENV 表示 100% 統一
+  const envBadge = document.getElementById("popupEnvBadge");
+  if (envBadge && host && host !== "-") {
+    let envLabel = "PROD", envClass = "env-prod", envTitle = "";
+    if (/\.sandbox\./.test(host)) {
+      envLabel = "🧪 Sandbox"; envClass = "env-sandbox";
+      envTitle = `Sandbox 環境 (${host}) — テスト用組織です。本番影響なし`;
+    } else if (/\.develop\./.test(host) || /\.scratch\./.test(host)) {
+      envLabel = "🔧 Dev"; envClass = "env-dev";
+      envTitle = `Developer / Scratch 組織 (${host}) — 学習・検証用途`;
+    } else {
+      envLabel = "⚠ PROD"; envClass = "env-prod";
+      envTitle = `本番組織 (Production) — ${host} — UPDATE/DELETE 操作は実データに影響します。慎重に！`;
+    }
+    envBadge.textContent = envLabel;
+    envBadge.title = envTitle;
+    envBadge.className = `popup-env-badge ${envClass}`;
+    envBadge.style.display = "";
+  } else if (envBadge) {
+    envBadge.style.display = "none";
+  }
 }
 
 function setBadge(label, ok) {

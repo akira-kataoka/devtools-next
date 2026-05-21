@@ -470,3 +470,37 @@ details.links-group:not([open]) > a { display: none; }
   border-color: rgba(27,150,255,0.6);
 }
 .cta-mini:focus-visible { outline: 2px solid #1b96ff; outline-offset: 1px; }
+
+/* v3.243.0 Phase 333: ENV バッジ (Sandbox/PROD/DEV) — 3 モード ENV 表示 100% 統一 */
+.popup-env-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  margin-left: 4px;
+  cursor: help;
+}
+.popup-env-badge.env-sandbox {
+  background: rgba(243,156,18,0.15);
+  color: #f39c12;
+  border: 1px solid rgba(243,156,18,0.4);
+}
+.popup-env-badge.env-dev {
+  background: rgba(46,204,113,0.18);
+  color: #2ecc71;
+  border: 1px solid rgba(46,204,113,0.4);
+}
+.popup-env-badge.env-prod {
+  background: rgba(255,107,107,0.22);
+  color: #ff6b6b;
+  border: 1px solid rgba(255,107,107,0.6);
+  animation: popupEnvProdPulse 2.4s ease-in-out infinite;
+}
+@keyframes popupEnvProdPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,107,0.0); }
+  50% { box-shadow: 0 0 0 4px rgba(255,107,107,0.18); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .popup-env-badge.env-prod { animation: none; }
+}
