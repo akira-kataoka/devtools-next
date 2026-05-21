@@ -456,12 +456,13 @@ function setStatus(msg) {
 }
 
 function toast(msg, opts = {}) {
+  // v3.302.0 Phase 392: duration を 1800ms (panel.js panelToast / content.js flashToast と統一) で 3 モード toast 整合性磨き
   document.querySelectorAll(".toast").forEach((t) => t.remove());
   const el = document.createElement("div");
   el.className = "toast" + (opts.kind ? " " + opts.kind : "");
   el.textContent = msg;
   document.body.appendChild(el);
-  setTimeout(() => el.remove(), 1600);
+  setTimeout(() => el.remove(), opts.duration || 1800);
 }
 
 function showDevToolsHelp() {
