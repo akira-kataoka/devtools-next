@@ -27,20 +27,7 @@
       .side:hover .nav-btn { font-size: 12px; text-align: left; padding: 9px 12px; }
       .side:hover .nav-sep { font-size: 11px; text-align: left; padding: 12px 10px 4px; }
 
-      /* 折りたたみ中のホバーツールチップ (右側にラベル表示) */
-      .side:not(:hover) .nav-btn:hover::after {
-        content: attr(data-tooltip);
-        position: absolute;
-        left: 60px; top: 50%; transform: translateY(-50%);
-        background: var(--bg);
-        border: 1px solid var(--accent);
-        color: var(--fg);
-        padding: 4px 10px; border-radius: 4px;
-        font-size: 11px; white-space: nowrap;
-        z-index: 1000;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-        pointer-events: none;
-      }
+      /* 折りたたみ中のホバーラベルは title 属性 (ブラウザ標準ツールチップ) で代替 — data-tooltip CSS rule は属性未設定で機能していなかったため Phase 196 で撤去 */
     }
     @media (max-width: 700px) {
       .hdr .brand { font-size: 12px; }
