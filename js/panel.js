@@ -788,6 +788,8 @@ function bindEvents() {
       apex_classes: `// Tooling API: 左の「Tooling API を使用」にチェックしてから実行\nSELECT Id, Name, NamespacePrefix, ApiVersion, Status, LengthWithoutComments, LastModifiedDate, LastModifiedBy.Name\nFROM ApexClass\nORDER BY LastModifiedDate DESC\nLIMIT 50`,
       custom_fields: `// Tooling API: 左の「Tooling API を使用」にチェックしてから実行\nSELECT Id, DeveloperName, EntityDefinition.QualifiedApiName, DataType, Length, LastModifiedDate\nFROM CustomField\nWHERE EntityDefinition.QualifiedApiName = 'Account'\nORDER BY DeveloperName\nLIMIT 100`,
       last_modified: `SELECT Id, Name, LastModifiedDate, LastModifiedBy.Name\nFROM Account\nWHERE LastModifiedDate = LAST_N_DAYS:7\nORDER BY LastModifiedDate DESC\nLIMIT 50`,
+      // v3.117.0 Phase 207: 設定変更履歴 (Setup Audit Trail) — 標準 API、保持期間 180 日 (Field Audit Trail 未購入の場合)
+      setup_audit_trail: `// Setup Audit Trail (設定変更履歴) — 保持期間 180 日 / Field Audit Trail を購入していない場合\nSELECT Id, Action, Section, Display, CreatedBy.Name, CreatedDate, DelegateUser\nFROM SetupAuditTrail\nORDER BY CreatedDate DESC\nLIMIT 200`,
     };
     const code = TEMPLATES[key];
     if (!code) return;
