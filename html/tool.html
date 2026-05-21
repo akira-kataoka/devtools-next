@@ -507,13 +507,32 @@ System.debug('Now: ' + System.now());</textarea>
 
       <div class="view hidden" data-view="metadata">
         <div class="toolbar">
-          <select id="mdType" title="一覧を取得するメタデータ型を選択してください (Phase 309 で 15 種に拡張)">
-            <option>ApexClass</option><option>ApexTrigger</option><option>Flow</option>
-            <option>CustomObject</option><option>PermissionSet</option><option>Profile</option>
-            <option>StaticResource</option><option>LightningComponentBundle</option>
-            <option>AuraDefinitionBundle</option><option>ValidationRule</option>
-            <option>EmailTemplate</option><option>Dashboard</option><option>Report</option>
-            <option>CustomField</option><option>RecordType</option>
+          <select id="mdType" title="一覧を取得するメタデータ型 (Phase 317 で 5 カテゴリ optgroup 化、計 15 種)">
+            <optgroup label="🟧 Apex 系">
+              <option>ApexClass</option>
+              <option>ApexTrigger</option>
+            </optgroup>
+            <optgroup label="🔄 自動化">
+              <option>Flow</option>
+              <option>ValidationRule</option>
+            </optgroup>
+            <optgroup label="📋 オブジェクト構造">
+              <option>CustomObject</option>
+              <option>CustomField</option>
+              <option>RecordType</option>
+            </optgroup>
+            <optgroup label="🎨 UI コンポーネント">
+              <option>LightningComponentBundle</option>
+              <option>AuraDefinitionBundle</option>
+              <option>StaticResource</option>
+              <option>EmailTemplate</option>
+            </optgroup>
+            <optgroup label="🔑 権限・レポート">
+              <option>Profile</option>
+              <option>PermissionSet</option>
+              <option>Dashboard</option>
+              <option>Report</option>
+            </optgroup>
           </select>
           <button id="btnMetadata" class="primary" title="選択したメタデータ型の一覧を Tooling API から取得します">一覧取得</button>
           <button id="btnMetadataCopyMd" title="📝 メタデータ一覧を Markdown 形式でコピー (Phase 266)">📝 MD コピー</button>
