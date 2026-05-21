@@ -289,6 +289,9 @@ function bindEvents() {
   // v3.187.0 Phase 277: 📐 オブジェクト構造 (describe) を全画面で開く — 4 入口統一達成 (popup ⇄ mini-panel ⇄ panel ⇄ tool)
   const btnOpenDescribe = document.getElementById("btnOpenDescribe");
   if (btnOpenDescribe) btnOpenDescribe.addEventListener("click", () => openToolView("describe"));
+  // v3.221.0 Phase 311: 📊 使用状況 (Limits) を全画面で開く — 管理者の主要ニーズ「組織制限を一目で確認」
+  const btnOpenLimits = document.getElementById("btnOpenLimits");
+  if (btnOpenLimits) btnOpenLimits.addEventListener("click", () => openToolView("limits"));
 
   document.querySelectorAll("[data-act]").forEach((btn) => {
     btn.addEventListener("click", () => runQuickAction(btn.dataset.act));
