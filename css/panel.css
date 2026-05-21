@@ -2145,3 +2145,20 @@ mark.search-hl {
   color: #fff;
   border-color: var(--err);
 }
+
+/* v3.169.0 Phase 259: 設計書 過去履歴 chip (1 件目は緑強調、2-5 件目は薄い blue) */
+.design-recent-chip {
+  background: linear-gradient(180deg, rgba(27,150,255,0.10), rgba(27,150,255,0.03));
+  border: 1px solid rgba(27,150,255,0.35);
+  color: #93c5fd;
+  margin-left: 4px;
+  font-weight: 500;
+  font-size: 11px;
+  padding: 3px 10px;
+}
+.design-recent-chip:hover {
+  background: rgba(27,150,255,0.22);
+  border-color: var(--accent);
+  color: #fff;
+}
+.design-last-chip-row { flex-wrap: wrap; }

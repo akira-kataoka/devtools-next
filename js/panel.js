@@ -167,45 +167,61 @@ async function init() {
 
 // v3.53.0: 設計書 22 種を絞り込む検索ボックス
 // v3.158.0 Phase 248: 設計書「直前生成」chip を designMeta 上部に表示し、ワンクリックで再生成
+// v3.169.0 Phase 259: 過去 5 件履歴に拡張 (sfdtRecentDesigns、最新を sfdtLastDesign に維持)
 async function renderDesignLastChip() {
   try {
-    const { sfdtLastDesign } = await chrome.storage.local.get("sfdtLastDesign");
+    const data = await chrome.storage.local.get(["sfdtLastDesign", "sfdtRecentDesigns"]);
     const row = document.getElementById("designLastChipRow");
     if (!row) return;
-    if (!sfdtLastDesign || !sfdtLastDesign.type) { row.innerHTML = ""; return; }
-    const last = sfdtLastDesign;
+    // 過去 5 件履歴を優先、なければ単体 sfdtLastDesign をフォールバック (旧互換)
+    let recent = Array.isArray(data.sfdtRecentDesigns) ? data.sfdtRecentDesigns : [];
+    if (!recent.length && data.sfdtLastDesign && data.sfdtLastDesign.type) {
+      recent = [data.sfdtLastDesign];
+    }
+    if (!recent.length) { row.innerHTML = ""; return; }
     const sel = document.getElementById("designType");
-    const typeLabel = (() => {
-      if (!sel) return last.type;
-      const opt = Array.from(sel.options).find((o) => o.value === last.type);
-      return opt ? opt.textContent.replace(/^[★⭐]\s*/, "") : last.type;
-    })();
-    const objPart = last.obj ? ` / 対象: ${escape(last.obj)}` : "";
-    const fmtPart = last.format ? ` / 形式: ${escape(last.format)}` : "";
-    const elapsed = last.ts ? Math.round((Date.now() - last.ts) / 60000) : null;
-    const elapsedLabel = elapsed != null ? (elapsed < 60 ? ` (${elapsed} 分前)` : ` (${Math.floor(elapsed / 60)} 時間前)`) : "";
-    row.innerHTML = `<button id="btnDesignReRun" class="design-last-chip" title="直前生成と同じ条件 (type / 対象 / 形式) で 1 クリック再生成。生成日時から経過した時間も併記">
-      🔄 直前生成を再実行: ${escape(typeLabel)}${objPart}${fmtPart}${elapsedLabel}
-    </button><button id="btnDesignReRunClear" class="design-last-chip-clear" title="直前生成履歴を削除します — 機密設計書 (FLS / プロファイル詳細 / 組織全体スナップショット) を生成した後、共用 PC で履歴を残したくない場合に (Phase 249)">✕</button>`;
-    const btn = document.getElementById("btnDesignReRun");
-    if (btn) btn.addEventListener("click", () => {
-      // type / obj / format を UI に復元
-      if (sel) sel.value = last.type;
-      if (sel) sel.dispatchEvent(new Event("change", { bubbles: true }));
-      const objEl = document.getElementById("designObj");
-      const fmtEl = document.getElementById("designFormat");
-      if (objEl) objEl.value = last.obj || "";
-      if (fmtEl && last.format) fmtEl.value = last.format;
-      doGenerateDesign();
+    const typeLabelOf = (typeKey) => {
+      if (!sel) return typeKey;
+      const opt = Array.from(sel.options).find((o) => o.value === typeKey);
+      return opt ? opt.textContent.replace(/^[★⭐]\s*/, "") : typeKey;
+    };
+    const elapsedLabelOf = (ts) => {
+      if (!ts) return "";
+      const min = Math.round((Date.now() - ts) / 60000);
+      return min < 60 ? ` (${min}分前)` : ` (${Math.floor(min / 60)}h前)`;
+    };
+    // 最大 5 件を chip でレンダリング
+    const chipsHtml = recent.slice(0, 5).map((d, i) => {
+      const typeLabel = typeLabelOf(d.type);
+      const objPart = d.obj ? ` / 対象: ${escape(d.obj)}` : "";
+      const fmtPart = d.format ? ` / ${escape(d.format)}` : "";
+      const isFirst = i === 0;
+      const cls = isFirst ? "design-last-chip" : "design-last-chip design-recent-chip";
+      const titleAttr = isFirst ? "直前生成と同じ条件で 1 クリック再生成" : "過去履歴: クリックで同条件再生成";
+      return `<button class="${cls}" data-idx="${i}" data-type="${escape(d.type)}" data-obj="${escape(d.obj || "")}" data-format="${escape(d.format || "")}" title="${escape(titleAttr)}">
+        ${isFirst ? "🔄" : "📜"} ${escape(typeLabel)}${objPart}${fmtPart}${elapsedLabelOf(d.ts)}
+      </button>`;
+    }).join("");
+    row.innerHTML = chipsHtml + `<button id="btnDesignReRunClear" class="design-last-chip-clear" title="生成履歴を全削除します (機密配慮)">✕</button>`;
+    // 各 chip のクリックハンドラ
+    row.querySelectorAll(".design-last-chip").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (sel) sel.value = btn.dataset.type;
+        if (sel) sel.dispatchEvent(new Event("change", { bubbles: true }));
+        const objEl = document.getElementById("designObj");
+        const fmtEl = document.getElementById("designFormat");
+        if (objEl) objEl.value = btn.dataset.obj || "";
+        if (fmtEl && btn.dataset.format) fmtEl.value = btn.dataset.format;
+        doGenerateDesign();
+      });
     });
-    // v3.159.0 Phase 249: 履歴クリアボタン (機密配慮、共用 PC 対応)
     const clearBtn = document.getElementById("btnDesignReRunClear");
     if (clearBtn) clearBtn.addEventListener("click", async () => {
       try {
-        await chrome.storage.local.remove("sfdtLastDesign");
+        await chrome.storage.local.remove(["sfdtLastDesign", "sfdtRecentDesigns"]);
         row.innerHTML = "";
-        panelToast("✓ 直前生成履歴を削除しました", { kind: "ok" });
-      } catch (e) { console.warn("[design] last clear failed", e); }
+        panelToast("✓ 設計書生成履歴 (過去 5 件) を削除しました", { kind: "ok" });
+      } catch (e) { console.warn("[design] history clear failed", e); }
     });
   } catch (e) { console.warn("[design] last chip render failed", e); }
 }
@@ -2996,8 +3012,15 @@ async function doGenerateDesign() {
     // v3.134.0 Phase 223 (Team H): 設計書生成成功時、対象オブジェクト名を最近使った候補に push
     if (obj && /^[A-Za-z][A-Za-z0-9_]*$/.test(obj)) pushRecentObject(obj);
     // v3.158.0 Phase 248: 「直前生成」を chrome.storage に保存 (再生成ボタンで利用)
+    // v3.169.0 Phase 259: 過去 5 件履歴 (sfdtRecentDesigns) も維持。最新を sfdtLastDesign に保持 (旧互換)
     try {
-      chrome.storage.local.set({ sfdtLastDesign: { type, obj, format, ts: Date.now() } });
+      const entry = { type, obj, format, ts: Date.now() };
+      const prev = await chrome.storage.local.get("sfdtRecentDesigns");
+      const list = Array.isArray(prev.sfdtRecentDesigns) ? prev.sfdtRecentDesigns : [];
+      // 重複排除 (同じ type + obj + format は 1 件に、最新を先頭)
+      const sig = (e) => `${e.type}|${e.obj || ""}|${e.format || ""}`;
+      const next = [entry, ...list.filter((e) => sig(e) !== sig(entry))].slice(0, 5);
+      await chrome.storage.local.set({ sfdtLastDesign: entry, sfdtRecentDesigns: next });
     } catch {}
     renderDesignLastChip();
     const dt = Math.round(performance.now() - t0);
