@@ -2,7 +2,7 @@
 
 > 🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊 **Phase 340 マイルストーン達成 — v3 系 250 連続リリース!!!!!** (2026-05-22) — 通算 450+ リリース、サイクル 1-340 完遂 🎯
 > v3.0.0 (Phase 90) → **v3.250.0 (Phase 340)** を継続的自律改修ループで磨き上げ。**🎊 v3 系 250 連続リリース完遂!**
-> **設計書 21 種類整合性完成 (Phase 318-319、実装数確認 + 全方位修正) + 6 系統クイック実行拡充 (Phase 305-344、23 新規 templates/types) + 6 系統 templates/types グルーピング (Phase 313-344、108 templates × 26 カテゴリ)** + 既存資産 (URL クエリ 12 / 🔗 リンク 10 / 📝 MD 14 / PROD 防御 6 経路) 維持
+> **設計書 21 種類整合性完成 (Phase 318-319、実装数確認 + 全方位修正) + 6 系統クイック実行拡充 (Phase 305-344、23 新規 templates/types) + 6 系統 templates/types グルーピング (Phase 313-344、108 templates × 26 カテゴリ)** + 既存資産 (URL クエリ 12 / 🔗 リンク 10 / 📝 MD 9 機能種別 × 2 モード / PROD 防御 6 経路) 維持
 > **GitHub Governance 完成** — CI / Issue / PR / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT すべて整備
 > **Inspector ↔ SOQL 双方向ナビ** (Phase 155-157) + **SQL/Apex 整形** (Phase 153-154) + **SOQL/Apex テンプレート挿入** (Phase 159-160) すべて完成
 > 🎯 **Phase 219-250 新機能群完成 (2026-05-21〜22)**:
@@ -85,7 +85,7 @@
 > - **対応ユーザー報告**: **100+ 件** (UX 改善 / 機能追加 / バグ修正)
 > - **URL クエリ統一パターン**: **12 種完成**
 > - **🔗 リンクコピーボタン**: **10 箇所完成**
-> - **📝 MD コピーボタン**: **14 箇所**
+> - **📝 MD コピーボタン**: **9 機能種別** (Inspect / Apex / Describe / REST / Metadata / Logs / Login / Limits / API URL ビルダー) × 2 モード (panel + tool) = **18 ボタン + 動的生成 1 = 19+ 箇所** (Phase 356 で 14→9×2 実数化)
 > - **PROD 2 段階防御 × 6 経路** 維持
 > - **6 系統クイック実行 (Phase 305-344 拡充)**: REST 11 / mini-panel SOQL 13 / Apex 20 / panel SOQL 28 / metadata 15 / 設計書 21 = **108 templates/types**
 > - **設計書 21 種類整合性**: 実装 (design-docs.js 21 case) + UI 案内文 (Phase 301/319) + README 業務解説 (Phase 302/319) + 手動テストガイド (Phase 303/319) + CONTRIBUTING/コメント (Phase 304/319) — Phase 318 で 23 種誤り発見後、Phase 319 で全方位修正
