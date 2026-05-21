@@ -3782,9 +3782,18 @@ async function doRest() {
   if (!r.ok) {
     displayApiError(meta, r.status, r.data, `REST ${method}`);
   } else {
-    meta.innerHTML = `<span class="pill ok">HTTP ${r.status}</span> ${dt}ms`;
+    // v3.135.0 Phase 225 (Team R): メソッド + パス + サイズも表示してレスポンス全体を即把握可能に
+    const bodySize = r.raw ? r.raw.length : 0;
+    const sizeLabel = bodySize < 1024 ? `${bodySize} B` : `${(bodySize / 1024).toFixed(1)} KB`;
+    meta.innerHTML = `<span class="pill ok">HTTP ${r.status}</span> <span class="pill" title="HTTP メソッド">${escape(method)}</span> <span class="pill" title="リクエストパス">${escape(path.length > 60 ? path.substring(0, 60) + "…" : path)}</span> <span class="meta">${dt}ms / ${sizeLabel}</span>`;
   }
-  document.getElementById("restResult").textContent = JSON.stringify(r.data, null, 2);
+  // Phase 225 改善: 空レスポンス (204 No Content / DELETE 成功) でも親切メッセージ
+  const resultEl = document.getElementById("restResult");
+  if (r.data == null || (typeof r.data === "string" && !r.data)) {
+    resultEl.textContent = `// HTTP ${r.status} ${r.ok ? "✓ 成功" : "✗ 失敗"} — レスポンス本文なし (${method === "DELETE" ? "DELETE 成功は通常 204 No Content" : "API 仕様"})`;
+  } else {
+    resultEl.textContent = typeof r.data === "object" ? JSON.stringify(r.data, null, 2) : String(r.data);
+  }
   // v3.77.0: 履歴に push (HTTP ステータスに関わらず — 失敗 URL の再試行も業務上有用)
   pushRestHistory({ method, path, body });
 }

@@ -297,6 +297,7 @@ async function buildObjectDef({ host, sid, apiVersion, obj }) {
 }
 
 // ============ プロファイル一覧 ============
+// v3.135.0 Phase 225 (Team D): 「割当ユーザー数」「アクティブ割当数」追加 (棚卸し用)
 async function buildProfileList({ host, sid, apiVersion }) {
   const r = await runSoql({
     host, sid, apiVersion,
@@ -315,16 +316,52 @@ async function buildProfileList({ host, sid, apiVersion }) {
     "SelfService": "セルフサービス (SelfService)",
   };
   const records = r.data.records || [];
-  const headers = ["No", "プロファイル名", "ライセンス", "ユーザ種別", "説明", "作成日", "更新日"];
-  const rows = records.map((p, i) => ({
-    "No": i + 1,
-    "プロファイル名": p.Name,
-    "ライセンス": p.UserLicense ? p.UserLicense.Name : "(なし)",
-    "ユーザ種別": userTypeMap[p.UserType] || p.UserType || "",
-    "説明": fmtTrunc(p.Description || "", 200),
-    "作成日": fmtDate(p.CreatedDate),
-    "更新日": fmtDate(p.LastModifiedDate),
-  }));
+
+  // Phase 225: 各プロファイルの割当ユーザー数を集計 (全 / アクティブ)
+  // SOQL: SELECT ProfileId, COUNT(Id), SUM(CASE WHEN IsActive THEN 1 ELSE 0) — SOQL に CASE 無いので 2 クエリで取得
+  const profileCounts = new Map(); // ProfileId → {total, active}
+  try {
+    const allR = await runSoql({
+      host, sid, apiVersion,
+      soql: `SELECT ProfileId, COUNT(Id) cnt FROM User GROUP BY ProfileId`,
+    });
+    if (allR.ok) {
+      for (const rec of (allR.data.records || [])) {
+        if (rec.ProfileId) profileCounts.set(rec.ProfileId, { total: Number(rec.cnt) || 0, active: 0 });
+      }
+    }
+    const actR = await runSoql({
+      host, sid, apiVersion,
+      soql: `SELECT ProfileId, COUNT(Id) cnt FROM User WHERE IsActive = true GROUP BY ProfileId`,
+    });
+    if (actR.ok) {
+      for (const rec of (actR.data.records || [])) {
+        if (rec.ProfileId) {
+          const existing = profileCounts.get(rec.ProfileId) || { total: 0, active: 0 };
+          existing.active = Number(rec.cnt) || 0;
+          profileCounts.set(rec.ProfileId, existing);
+        }
+      }
+    }
+  } catch (e) { console.warn("[buildProfileList] user count fetch failed:", e); }
+
+  const headers = ["No", "プロファイル名", "ライセンス", "ユーザ種別", "割当全ユーザー", "アクティブ", "未使用", "説明", "作成日", "更新日"];
+  const rows = records.map((p, i) => {
+    const cnt = profileCounts.get(p.Id) || { total: 0, active: 0 };
+    const isUnused = cnt.active === 0;
+    return {
+      "No": i + 1,
+      "プロファイル名": p.Name,
+      "ライセンス": p.UserLicense ? p.UserLicense.Name : "(なし)",
+      "ユーザ種別": userTypeMap[p.UserType] || p.UserType || "",
+      "割当全ユーザー": fmtNum(cnt.total),
+      "アクティブ": fmtNum(cnt.active),
+      "未使用": isUnused && cnt.total === 0 ? "○ 完全未使用" : (isUnused ? "△ 全員無効" : ""),
+      "説明": fmtTrunc(p.Description || "", 200),
+      "作成日": fmtDate(p.CreatedDate),
+      "更新日": fmtDate(p.LastModifiedDate),
+    };
+  });
   const legend = [
     ["プロファイルとは", "ユーザ作成時に必須となる権限の母体。ユーザ毎にちょうど 1 つ割当てる (権限セットと違い複数割当不可)"],
     ["ライセンス", "プロファイルが紐づく UserLicense。Salesforce / Salesforce Platform / Customer Community 等が代表"],
@@ -350,11 +387,17 @@ async function buildProfileList({ host, sid, apiVersion }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. プロファイル", headers, rows },
     ],
-    note: `合計 ${fmtNum(records.length)} 件 / 内部ユーザ向け ${fmtNum(internalCount)} 件 / 外部 (コミュニティ/Experience Cloud) ユーザ向け ${fmtNum(externalCount)} 件 / ライセンス別: ${licBreakdown}。**業務担当者向け**: 本一覧は組織で利用中の全プロファイルです。新規ユーザー作成時の参考、未使用プロファイル整理 (棚卸し)、年次セキュリティ監査時の権限主体洗い出し等にご活用ください。詳細権限を確認するには「プロファイル/権限セット 詳細レポート」を選択してください。`,
+    note: (() => {
+      const unusedFull = records.filter((p) => { const c = profileCounts.get(p.Id) || { total: 0, active: 0 }; return c.total === 0; }).length;
+      const unusedActive = records.filter((p) => { const c = profileCounts.get(p.Id) || { total: 0, active: 0 }; return c.total > 0 && c.active === 0; }).length;
+      const totalActive = Array.from(profileCounts.values()).reduce((s, c) => s + c.active, 0);
+      return `合計 ${fmtNum(records.length)} 件 / 内部ユーザ向け ${fmtNum(internalCount)} 件 / 外部 ${fmtNum(externalCount)} 件 / ライセンス別: ${licBreakdown} / 全アクティブユーザー ${fmtNum(totalActive)} 名 / **完全未使用 ${fmtNum(unusedFull)} 件** / 全員無効 ${fmtNum(unusedActive)} 件。**業務担当者向け**: 「未使用」列が「○ 完全未使用」のプロファイルは即削除候補、「△ 全員無効」は割当履歴あり (誰かいたが今は無効) のため監査対象。新規ユーザー作成時の参考、年次セキュリティ監査時の権限主体洗い出しに活用してください。詳細権限は「プロファイル/権限セット 詳細レポート」で確認可能。`;
+    })(),
   };
 }
 
 // ============ 権限セット一覧 ============
+// v3.135.0 Phase 225 (Team D): 「割当ユーザー数」「割当グループ数」追加 (棚卸し用)
 async function buildPermSetList({ host, sid, apiVersion }) {
   const r = await runSoql({
     host, sid, apiVersion,
@@ -362,7 +405,22 @@ async function buildPermSetList({ host, sid, apiVersion }) {
   });
   if (!r.ok) throw apiError("権限セットの取得に失敗しました", r);
   const records = r.data.records || [];
-  const headers = ["No", "API 名", "ラベル (画面表示名)", "ライセンス", "ネームスペース", "種別", "説明", "更新日"];
+
+  // Phase 225: PermissionSet 別の割当ユーザー数 (PermissionSetAssignment 経由)
+  const psAssignCounts = new Map(); // PermissionSetId → user count (直接割当)
+  try {
+    const aR = await runSoql({
+      host, sid, apiVersion,
+      soql: `SELECT PermissionSetId, COUNT(Id) cnt FROM PermissionSetAssignment WHERE PermissionSetId != null GROUP BY PermissionSetId LIMIT 500`,
+    });
+    if (aR.ok) {
+      for (const rec of (aR.data.records || [])) {
+        if (rec.PermissionSetId) psAssignCounts.set(rec.PermissionSetId, Number(rec.cnt) || 0);
+      }
+    }
+  } catch (e) { console.warn("[buildPermSetList] PSA count failed:", e); }
+
+  const headers = ["No", "API 名", "ラベル (画面表示名)", "ライセンス", "ネームスペース", "種別", "割当ユーザー数", "説明", "更新日"];
   const rows = records.map((p, i) => ({
     "No": i + 1,
     "API 名": p.Name,
@@ -370,6 +428,7 @@ async function buildPermSetList({ host, sid, apiVersion }) {
     "ライセンス": p.License ? p.License.Name : "(なし: 機能限定)",
     "ネームスペース": p.NamespacePrefix || "(なし: カスタム)",
     "種別": p.IsCustom ? "カスタム" : "標準/パッケージ",
+    "割当ユーザー数": fmtNum(psAssignCounts.get(p.Id) || 0),
     "説明": fmtTrunc(p.Description || "", 200),
     "更新日": fmtDate(p.LastModifiedDate),
   }));
@@ -400,7 +459,11 @@ async function buildPermSetList({ host, sid, apiVersion }) {
       { heading: "0. 凡例", kvRows: legend },
       { heading: "1. PermissionSet", headers, rows },
     ],
-    note: `合計 ${fmtNum(records.length)} 件 (プロファイル付随を除外) / カスタム ${fmtNum(customCount)} 件・標準/パッケージ ${fmtNum(packagedCount)} 件 / 自組織 ${fmtNum(localCount)} 件・パッケージ由来 ${fmtNum(externalNsCount)} 件 / ライセンス別: ${psLicBreakdown}。**業務担当者向け**: 権限セットはプロファイルに加えて付与する追加権限の単位です。役割ベースのアクセス管理 (RBAC) 設計時の参考、組織再編時の権限再設計、未使用権限セット棚卸し等にご活用ください。権限セットグループの中身は別途確認が必要です。`,
+    note: (() => {
+      const unusedPS = records.filter((p) => (psAssignCounts.get(p.Id) || 0) === 0).length;
+      const totalAssign = Array.from(psAssignCounts.values()).reduce((s, c) => s + c, 0);
+      return `合計 ${fmtNum(records.length)} 件 (プロファイル付随を除外) / カスタム ${fmtNum(customCount)} 件・標準/パッケージ ${fmtNum(packagedCount)} 件 / 自組織 ${fmtNum(localCount)} 件・パッケージ由来 ${fmtNum(externalNsCount)} 件 / ライセンス別: ${psLicBreakdown} / 全割当数 ${fmtNum(totalAssign)} / **未割当 ${fmtNum(unusedPS)} 件** (棚卸し候補)。**業務担当者向け**: 「割当ユーザー数」が 0 の PermissionSet は削除候補。役割ベースのアクセス管理 (RBAC) 設計時の参考、組織再編時の権限再設計、未使用権限セット棚卸しに活用してください。**注**: PermissionSetGroup 経由の間接割当は本数値に含まれません (PermissionSetGroupComponent を別途確認)。`;
+    })(),
   };
 }
 
@@ -700,43 +763,110 @@ async function buildRecordTypeList({ host, sid, apiVersion, obj }) {
 }
 
 // ============ FieldSet 一覧 ============
+// v3.135.0 Phase 225 (Team D): 「中身項目リスト」と「含む項目数」を追加 (ユーザー要望「設計書を業務品質まで」)
 async function buildFieldSetList({ host, sid, apiVersion, obj }) {
   requireInput(obj, "オブジェクト API 名 (例: Account)");
+  // 1. describe API から fieldSets を取得 — 各 FieldSet の displayedFields (画面表示項目) を含む
   const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
   if (!r.ok) throw apiError(`オブジェクト '${obj}' の describe 取得に失敗しました`, r);
-  const sets = (r.data.namedLayoutInfos || r.data.fieldSets) ? (r.data.fieldSets || []) : [];
-  // describe レスポンスに FieldSet は無いため、Tooling FieldSet を引く
+  const describeSets = Array.isArray(r.data.fieldSets) ? r.data.fieldSets : [];
+  // FieldSet name → displayedFields のマップを作る (Phase 225 強化点)
+  const setFieldsMap = new Map();
+  for (const fs of describeSets) {
+    const name = fs.name || "";
+    const displayed = Array.isArray(fs.displayedFields) ? fs.displayedFields : [];
+    setFieldsMap.set(name, displayed);
+  }
+
+  // 2. Tooling API から FieldSet メタ (Label / Description / ネームスペース) を取得
   const tr = await runSoql({
     host, sid, apiVersion, tooling: true,
-    soql: `SELECT Id, DeveloperName, MasterLabel, Description, EntityDefinition.QualifiedApiName FROM FieldSet WHERE EntityDefinition.QualifiedApiName='${obj.replace(/'/g, "\\'")}' ORDER BY DeveloperName LIMIT 200`,
+    soql: `SELECT Id, DeveloperName, MasterLabel, Description, NamespacePrefix, EntityDefinition.QualifiedApiName FROM FieldSet WHERE EntityDefinition.QualifiedApiName='${obj.replace(/'/g, "\\'")}' ORDER BY DeveloperName LIMIT 200`,
   });
   if (!tr.ok) throw apiError("フィールドセットの取得に失敗しました", tr);
-  const headers = ["No", "API 名", "ラベル", "説明"];
   const records = tr.data.records || [];
-  const rows = records.map((fs, i) => ({
-    "No": i + 1,
-    "API 名": fs.DeveloperName,
-    "ラベル": fs.MasterLabel,
-    "説明": fmtTrunc(fs.Description || "", 200),
-  }));
-  // v2.74.0: 凡例セクション追加 (FieldSet の使い方を業務担当向けに解説)
+
+  // 3. 一覧表: API 名 / ラベル / ネームスペース / 含む項目数 / 必須項目数 / 説明
+  const headers = ["No", "API 名", "ラベル", "ネームスペース", "含む項目数", "必須項目数", "説明"];
+  const rows = records.map((fs, i) => {
+    // describe の fieldSets は ネームスペース付き名前で索引される場合あり (Namespace__Name)
+    const ns = fs.NamespacePrefix || "";
+    const lookupName = ns ? `${ns}__${fs.DeveloperName}` : fs.DeveloperName;
+    const fields = setFieldsMap.get(lookupName) || setFieldsMap.get(fs.DeveloperName) || [];
+    const requiredCount = fields.filter((f) => f.required || f.dbRequired).length;
+    return {
+      "No": i + 1,
+      "API 名": fs.DeveloperName,
+      "ラベル": fs.MasterLabel || "",
+      "ネームスペース": ns || "(なし)",
+      "含む項目数": fmtNum(fields.length),
+      "必須項目数": fmtNum(requiredCount),
+      "説明": fmtTrunc(fs.Description || "", 150),
+    };
+  });
+
+  // 4. 中身項目リスト (各 FieldSet 別) — 1 シートで全 FieldSet × 全項目を縦持ち
+  const detailHeaders = ["No", "FieldSet", "順序", "項目 API 名", "ラベル", "型", "必須", "DB必須"];
+  const detailRows = [];
+  let cnt = 0;
+  for (const fs of records) {
+    const ns = fs.NamespacePrefix || "";
+    const lookupName = ns ? `${ns}__${fs.DeveloperName}` : fs.DeveloperName;
+    const fields = setFieldsMap.get(lookupName) || setFieldsMap.get(fs.DeveloperName) || [];
+    fields.forEach((f, idx) => {
+      cnt++;
+      detailRows.push({
+        "No": cnt,
+        "FieldSet": fs.DeveloperName,
+        "順序": idx + 1,
+        "項目 API 名": f.field || f.name || "",
+        "ラベル": f.label || "",
+        "型": f.type ? fieldTypeJa(f.type, (f.referenceTo || [])[0]) : "",
+        "必須": f.required ? "○" : "",
+        "DB必須": f.dbRequired ? "○" : "",
+      });
+    });
+  }
+
+  // 5. 凡例セクション
   const fsLegend = [
     ["フィールドセットとは", "オブジェクト内の複数項目を 1 つの名前付きセットにまとめる仕組み。LWC/VF/Apex から動的に「表示すべき項目」を取得できる"],
     ["主な用途 (LWC)", "lightning-record-edit-form の field-set 指定や、テーブルの動的列構築で使う。管理者が画面を変更してもコードは変更不要"],
     ["主な用途 (Visualforce)", "<apex:repeat> や <apex:pageBlockTable> で動的にフィールドを描画する際のループソース"],
-    ["管理画面", "Setup → オブジェクト → フィールドセット で作成・並び替えが可能。プロジェクトでは『画面 = FieldSet 1 件』で管理することが多い"],
-    ["注意点", "削除時は依存する LWC/VF/Apex のコンパイルエラーになる可能性あり。事前に Setup の 『どこで使用されているか』 を確認すること"],
+    ["含む項目数", "描画時に表示される displayedFields の件数 (describe API より取得)"],
+    ["必須項目数", "FieldSet 内で「必須」フラグ付きの項目数 (UI 入力必須)"],
+    ["DB必須", "オブジェクト定義側で必須 (nillable=false) の項目"],
+    ["管理画面", "Setup → オブジェクト → フィールドセット で作成・並び替えが可能"],
+    ["注意点", "削除時は依存する LWC/VF/Apex のコンパイルエラーになる可能性あり"],
   ];
-  // ネームスペース有無で組織側 / パッケージ由来を判別 (FieldSet テーブルには直接 NamespacePrefix が無いため API 名から推測しない方針 - 集計のみ件数)
+
+  // 6. サマリ (note 用)
+  const totalFieldsCount = detailRows.length;
+  const emptyFsCount = records.filter((fs) => {
+    const ns = fs.NamespacePrefix || "";
+    const lookupName = ns ? `${ns}__${fs.DeveloperName}` : fs.DeveloperName;
+    const fields = setFieldsMap.get(lookupName) || setFieldsMap.get(fs.DeveloperName) || [];
+    return fields.length === 0;
+  }).length;
+  const nsCount = new Set(records.map((fs) => fs.NamespacePrefix || "(自組織)")).size;
+
+  const sections = [
+    makeCoverSection({ docTitle: "フィールドセット一覧", target: obj, orgHost: host, revision: "初版" }),
+    { heading: "0. 凡例", kvRows: fsLegend },
+    { heading: "1. FieldSet (一覧)", headers, rows },
+  ];
+  // 中身項目リストを別シート (Excel ではシート別に分かれる)
+  if (detailRows.length) {
+    sections.push({ heading: "2. FieldSet 別 含まれる項目", headers: detailHeaders, rows: detailRows });
+  } else if (records.length) {
+    sections.push({ heading: "2. FieldSet 別 含まれる項目", kvRows: [["注意", "describe API から含まれる項目を取得できませんでした。Setup → オブジェクト → フィールドセット で確認してください。"]] });
+  }
+
   return {
     title: `フィールドセット一覧: ${obj}`,
     type: "fieldSetList",
-    sections: [
-      makeCoverSection({ docTitle: "フィールドセット一覧", target: obj, orgHost: host, revision: "初版" }),
-      { heading: "0. 凡例", kvRows: fsLegend },
-      { heading: "1. FieldSet", headers, rows },
-    ],
-    note: `合計 ${fmtNum(records.length)} 件。**業務担当者向け**: FieldSet (フィールドセット) は管理者が画面に表示する項目を後から変更できる仕組みです。開発者が予め FieldSet を組み込んだ画面・帳票を、管理者が項目追加・並び替え・削除できます。**削除前注意**: LWC/Visualforce 画面から参照されている場合、削除すると画面エラーになります。Setup > オブジェクトマネージャ > 該当オブジェクト > フィールドセット で使用箇所を必ず確認してください。`,
+    sections,
+    note: `合計 ${fmtNum(records.length)} 件 / 全項目数 ${fmtNum(totalFieldsCount)} 件${emptyFsCount ? ` / 空 FieldSet ${fmtNum(emptyFsCount)} 件 (要見直し候補)` : ""} / ネームスペース ${fmtNum(nsCount)} 種類。**業務担当者向け**: FieldSet は管理者が画面表示項目を後から変更できる仕組みです。シート「2. FieldSet 別 含まれる項目」で各 FieldSet がどの項目を持つか確認可能。**棚卸し用途**: 空 FieldSet (0 項目) は LWC/VF 側で参照されていれば不要、参照無しなら削除候補。**削除前注意**: LWC/Visualforce 画面から参照されている場合、削除すると画面エラーになります。Setup > オブジェクトマネージャ > 該当オブジェクト > フィールドセット で使用箇所を必ず確認してください。`,
   };
 }
 
