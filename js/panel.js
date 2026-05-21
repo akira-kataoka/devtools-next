@@ -1327,6 +1327,31 @@ function bindEvents() {
       panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
     }
   });
+  // v3.165.0 Phase 255: 「[Name](URL) 形式の Markdown リンク」をコピー
+  $on("btnInspectCopyMd", "click", async () => {
+    if (!inspectState.id) {
+      panelToast("⚠ Inspector でレコードを開いてから実行してください", { kind: "warn" });
+      return;
+    }
+    const obj = inspectState.obj || "Record";
+    const id = inspectState.id;
+    // 表示名は Name / Subject / Title / CaseNumber 等のフォールバック
+    const rec = inspectState.record || {};
+    const displayName = rec.Name || rec.Subject || rec.Title || rec.CaseNumber || rec.DeveloperName || id;
+    // Salesforce Lightning URL を組み立て (apiHost は my.salesforce.com 形式なので lightning.force.com に変換)
+    const lhost = state.host && state.host.endsWith(".lightning.force.com")
+      ? state.host
+      : (state.host || "").replace(/\.my\.salesforce\.com$/, ".lightning.force.com");
+    const url = `https://${lhost}/lightning/r/${obj}/${id}/view`;
+    // Markdown リンク + 補足情報 (Object 種別 + 短縮 ID 18桁)
+    const md = `[${displayName}](${url}) — ${obj} \`${id}\``;
+    try {
+      await navigator.clipboard.writeText(md);
+      panelToast(`📝 Markdown リンクをコピーしました: ${displayName}`, { kind: "ok" });
+    } catch (e) {
+      panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
+    }
+  });
   // v3.66.0: 現在 Inspector で開いているレコードを SOQL ビューに展開
   $on("btnInspectToSoql", "click", () => {
     if (!inspectState.obj || !inspectState.id) {
