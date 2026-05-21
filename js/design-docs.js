@@ -113,7 +113,7 @@ function fieldTypeJa(type, referenceTo) {
 
 // v2.98.0: 設計書の表紙セクション共通生成 (プロジェクト成果物品質)
 // 全設計書冒頭に挿入する標準セクション
-// v3.37.0: 設計書生成中の組織コンテキスト (orgId / envLabel) — 22 builder への引数追加を避けるため module-level に保持
+// v3.37.0: 設計書生成中の組織コンテキスト (orgId / envLabel) — 21 builder への引数追加を避けるため module-level に保持 (Phase 318-319 で実装数 21 を確認、Phase 363 でコメント表記訂正)
 let _designCtx = { orgId: null, envLabel: null };
 
 function makeCoverSection(opts) {
