@@ -1281,6 +1281,44 @@ function bindEvents() {
   $on("btnLoginCsv", "click", exportLoginCsv);
   // v3.175.0 Phase 265: ログイン履歴 Markdown コピー (Markdown 機能 8 箇所目)
   $on("btnLoginCopyMd", "click", copyLoginHistoryMd);
+  // v3.176.0 Phase 266: メタデータ一覧 Markdown コピー (Markdown 機能 9 箇所目)
+  $on("btnMetadataCopyMd", "click", async () => {
+    const resultEl = document.getElementById("metadataResult");
+    const table = resultEl ? resultEl.querySelector("table") : null;
+    if (!table) {
+      panelToast("📭 メタデータ一覧が未取得です。先に「一覧取得」を押してください", { kind: "warn" });
+      return;
+    }
+    // 既存テーブルから直接 thead/tbody を Markdown 化 (recordsTable() の動的テーブル構造に依存)
+    const ths = Array.from(table.querySelectorAll("thead th"));
+    const headers = ths.map((th) => th.textContent.trim()).filter((h) => h && !["", "選択"].includes(h));
+    // ID 列を除外 (Markdown では冗長)
+    const trs = Array.from(table.querySelectorAll("tbody tr"));
+    const lines = [];
+    const mdType = (document.getElementById("mdType") || {}).value || "metadata";
+    lines.push(`## メタデータ一覧: ${mdType}`);
+    lines.push("");
+    lines.push(`_取得日時: ${new Date().toLocaleString("ja-JP")} / 件数: ${trs.length}_`);
+    lines.push("");
+    lines.push("| " + headers.map((h) => h.replace(/\|/g, "\\|")).join(" | ") + " |");
+    lines.push("|" + headers.map(() => "---").join("|") + "|");
+    for (const tr of trs) {
+      const tds = Array.from(tr.querySelectorAll("td"));
+      // header と同数のセルを取り出し、各セルのテキスト
+      const cells = tds.slice(0, headers.length + 2); // 先頭にチェックボックス列があるかもしれない
+      // ヘッダー数だけ末尾から取り出す (チェックボックス列除外)
+      const adjusted = cells.length > headers.length ? cells.slice(cells.length - headers.length) : cells;
+      const row = adjusted.slice(0, headers.length).map((td) => (td.textContent || "").trim().replace(/\|/g, "\\|").replace(/\r?\n/g, " "));
+      while (row.length < headers.length) row.push("");
+      lines.push("| " + row.join(" | ") + " |");
+    }
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      panelToast(`📝 メタデータ一覧 Markdown をコピーしました (${trs.length} 件)`, { kind: "ok" });
+    } catch (e) {
+      panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
+    }
+  });
 
   // v3.137.0 Phase 227 (Team G2): グローバル検索 (SOSL)
   $on("btnSearch", "click", doGlobalSearch);
