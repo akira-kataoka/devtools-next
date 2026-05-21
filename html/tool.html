@@ -374,28 +374,38 @@
 
       <div class="view hidden" data-view="apex">
         <div class="toolbar">
-          <select id="apexTemplate" title="よく使う匿名 Apex のサンプルを選んでエディタへ挿入します (上書きされます — 元のコードは「📋 結果コピー」等で先に控えてから)">
-            <option value="">📝 サンプル挿入…</option>
-            <option value="userinfo">👤 現在ユーザー情報を表示</option>
-            <option value="limits">📊 ガバナ制限の使用状況を確認</option>
-            <option value="latest_account">🏢 最新の取引先 1 件を取得</option>
-            <option value="delete_test">🗑️ Test% 取引先を削除 (要注意)</option>
-            <option value="batch_run">🔄 バッチ実行のサンプル</option>
-            <option value="schedule_check">⏰ スケジュール済みジョブを確認</option>
-            <option value="schema_count">📐 SObject 数・カスタムオブジェクト数 (組織複雑度)</option>
-            <option value="org_info">🏢 組織情報サマリ (Edition / 通貨 / TZ)</option>
-            <option value="profile_summary">👥 プロファイル別アクティブユーザー数 (ガバナンス監査)</option>
-            <option value="apex_governor_test">🧪 Apex ガバナ消費の実態確認</option>
-            <option value="abort_all_jobs">🛑 全 CronTrigger キャンセル (要注意・コメント化)</option>
-            <option value="bulk_freeze_users">❄️ ユーザー一括凍結 (UserLogin.IsFrozen 一覧+UPDATE)</option>
-            <option value="bulk_unfreeze_users">🔓 ユーザー一括凍結解除</option>
-            <option value="bulk_deactivate_users">🚫 ユーザー一括無効化 (IsActive=false, ライセンス開放)</option>
-            <option value="large_files_cleanup">📁 大型 ContentVersion 削除候補抽出 (50 MB 超 Top 50)</option>
-            <option value="old_attachment_cleanup">🗑️ 古い Attachment 削除候補抽出 (365 日未更新 Top 200)</option>
-            <option value="empty_records_cleanup">🧹 空の Account 削除候補抽出 (関連 0 件 + 1 年活動なし)</option>
-            <option value="count_record_types">📋 RecordType 数の SObject 別集計 (Phase 307)</option>
-            <option value="list_named_credentials">🔌 NamedCredential 一覧 (外部 API 連携監査、Phase 307)</option>
-            <option value="recent_login_failures">🚨 過去 24h 失敗ログイン集計 (セキュリティ監査、Phase 307)</option>
+          <select id="apexTemplate" title="よく使う匿名 Apex のサンプル (Phase 315 で 5 カテゴリ optgroup 化、計 20 種)">
+            <option value="">📝 サンプル挿入… (20 種、5 カテゴリ)</option>
+            <optgroup label="🔍 基本確認">
+              <option value="userinfo">👤 現在ユーザー情報を表示</option>
+              <option value="limits">📊 ガバナ制限の使用状況を確認</option>
+              <option value="org_info">🏢 組織情報サマリ (Edition / 通貨 / TZ)</option>
+              <option value="schema_count">📐 SObject 数・カスタムオブジェクト数 (組織複雑度)</option>
+            </optgroup>
+            <optgroup label="🏢 業務 SOQL">
+              <option value="latest_account">🏢 最新の取引先 1 件を取得</option>
+              <option value="profile_summary">👥 プロファイル別アクティブユーザー数 (ガバナンス監査)</option>
+            </optgroup>
+            <optgroup label="🟧 開発・テスト・運用">
+              <option value="delete_test">🗑️ Test% 取引先を削除 (要注意)</option>
+              <option value="batch_run">🔄 バッチ実行のサンプル</option>
+              <option value="schedule_check">⏰ スケジュール済みジョブを確認</option>
+              <option value="apex_governor_test">🧪 Apex ガバナ消費の実態確認</option>
+            </optgroup>
+            <optgroup label="🛡️ ユーザー管理・凍結">
+              <option value="bulk_freeze_users">❄️ ユーザー一括凍結 (UserLogin.IsFrozen 一覧+UPDATE)</option>
+              <option value="bulk_unfreeze_users">🔓 ユーザー一括凍結解除</option>
+              <option value="bulk_deactivate_users">🚫 ユーザー一括無効化 (IsActive=false, ライセンス開放)</option>
+              <option value="abort_all_jobs">🛑 全 CronTrigger キャンセル (要注意・コメント化)</option>
+            </optgroup>
+            <optgroup label="🚨 監査・ストレージ削減">
+              <option value="count_record_types">📋 RecordType 数の SObject 別集計 (Phase 307)</option>
+              <option value="list_named_credentials">🔌 NamedCredential 一覧 (外部 API 連携監査、Phase 307)</option>
+              <option value="recent_login_failures">🚨 過去 24h 失敗ログイン集計 (セキュリティ監査、Phase 307)</option>
+              <option value="large_files_cleanup">📁 大型 ContentVersion 削除候補抽出 (50 MB 超 Top 50)</option>
+              <option value="old_attachment_cleanup">🗑️ 古い Attachment 削除候補抽出 (365 日未更新 Top 200)</option>
+              <option value="empty_records_cleanup">🧹 空の Account 削除候補抽出 (関連 0 件 + 1 年活動なし)</option>
+            </optgroup>
           </select>
           <select id="apexSaved"></select>
           <button id="btnLoadApex">読込</button>
