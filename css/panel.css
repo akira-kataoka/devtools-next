@@ -1278,41 +1278,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .picker-trigger:hover { border-color: var(--accent); background: rgba(27,150,255,0.1); }
 
-/* ==== 変更セット / package.xml ==== */
-.changeset-layout {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
-  flex: 1; min-height: 0;
-}
-.changeset-left, .changeset-right {
-  display: flex; flex-direction: column; gap: 6px;
-  background: var(--bg2); border: 1px solid var(--line); border-radius: var(--r-md);
-  padding: var(--sp-3); min-height: 0;
-}
-.changeset-list {
-  flex: 1; overflow: auto; min-height: 180px;
-  background: #0a1224; border: 1px solid var(--line); border-radius: var(--r-sm);
-  padding: var(--sp-1);
-}
-.changeset-list-item {
-  display: flex; align-items: center; gap: 4px;
-  padding: 3px 6px; font: 10px ui-monospace, Consolas, monospace;
-  cursor: pointer;
-  border-bottom: 1px solid #1f2c46;
-}
-.changeset-list-item:hover { background: #112042; }
-.changeset-list-item.selected { background: rgba(27,150,255,0.1); }
-.changeset-list-item .cs-name { color: var(--accent); flex: 1; }
-.changeset-list-item .cs-meta { color: var(--fg-dim); font-size: 9px; }
-.changeset-list-item .cs-type-badge {
-  background: var(--bg3); color: var(--fg-dim);
-  padding: var(--sp-hair) var(--sp-2); border-radius: var(--r-md); font-size: 9px;
-}
-.changeset-list-item .cs-remove {
-  background: rgba(255,107,107,0.15); color: var(--err);
-  padding: var(--sp-hair) var(--sp-2); border-radius: var(--r-sm); cursor: pointer;
-  font-size: 10px;
-}
-
 /* ==== Limits ダッシュボード ==== */
 .limits-summary {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -1509,11 +1474,4 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   border: 1px solid var(--line);
   border-left: 3px solid var(--accent);
   border-radius: var(--r-lg);
-}
-.home-tips-title { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
-.home-tips-list { margin: 0; padding-left: 20px; font-size: 11px; line-height: 1.8; color: var(--fg-dim); }
-.home-tips-list kbd {
-  background: #142447; border: 1px solid var(--line);
-  padding: var(--sp-hair) 5px; border-radius: var(--r-xs); font-size: 10px; color: var(--accent);
-  font-family: ui-monospace, Consolas, monospace;
 }

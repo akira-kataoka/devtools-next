@@ -199,8 +199,6 @@ details.card[open] > :last-child { padding-bottom: 10px; }
 .mini { font-size: 10px; padding: var(--sp-1) var(--sp-3); min-height: 22px; border-radius: var(--r-sm); border: 1px solid var(--line); background: transparent; color: var(--fg-dim); cursor: pointer; }
 .mini:hover { color: var(--fg); border-color: var(--accent); }
 
-.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-
 /* v2.83.0 Team F: クイックアクションを大型 2 行カード型に */
 .quick-grid {
   display: grid;
@@ -408,29 +406,6 @@ details.links-group:not([open]) > a { display: none; }
   padding: 3px 8px; border-radius: var(--r-sm); font-size: 10px; font-weight: 700;
   white-space: nowrap;
 }
-
-.history { display: flex; flex-direction: column; gap: 4px; max-height: 200px; overflow: auto; }
-.history-item {
-  display: flex; align-items: center; gap: 6px;
-  background: #0a1224; border: 1px solid var(--line); border-radius: var(--r-tag);
-  padding: var(--sp-tag-y) var(--sp-3); cursor: pointer;
-  font: 10px/1.4 ui-monospace, Consolas, monospace;
-}
-.history-item:hover { border-color: var(--accent); }
-.history-item .qtext {
-  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  color: var(--fg);
-}
-.history-item .qmeta { font-size: 9px; color: var(--fg-dim); white-space: nowrap; }
-.history-item .qbadge {
-  font-size: 9px; padding: var(--sp-hair) 5px; border-radius: var(--r-lg);
-  background: var(--bg3); color: var(--fg-dim);
-}
-.history-item .qbadge.tool { background: rgba(243,156,18,0.2); color: var(--warn); }
-.history-item .qbadge.ok { background: rgba(46,204,113,0.2); color: var(--ok); }
-.history-item .qbadge.err { background: rgba(255,107,107,0.2); color: var(--err); }
-.history-item .qbadge.pin { background: rgba(27,150,255,0.25); color: var(--accent); }
-.history-item.pinned { border-color: var(--accent); background: rgba(27,150,255,0.07); }
 
 .toast {
   position: fixed; right: 12px; bottom: 36px;
