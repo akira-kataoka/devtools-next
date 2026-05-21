@@ -117,6 +117,8 @@ async function init() {
     attachAllPickers();
     setupDesignPicker();
     setupDesignTypeFilter();
+    // v3.158.0 Phase 248: 設計書「直前生成」chip をロード
+    renderDesignLastChip();
     // 検索系入力欄に ✕ クリア共通化
     // v3.89.0: csFilter は Phase 179 で削除 (変更セット view は v2.88.0 以降 HTML 非実装)
     ["inspectFilter", "exFieldFilter", "exObj", "descObj", "apiObj", "inspectRef"].forEach(attachClearButton);
@@ -164,6 +166,41 @@ async function init() {
 }
 
 // v3.53.0: 設計書 22 種を絞り込む検索ボックス
+// v3.158.0 Phase 248: 設計書「直前生成」chip を designMeta 上部に表示し、ワンクリックで再生成
+async function renderDesignLastChip() {
+  try {
+    const { sfdtLastDesign } = await chrome.storage.local.get("sfdtLastDesign");
+    const row = document.getElementById("designLastChipRow");
+    if (!row) return;
+    if (!sfdtLastDesign || !sfdtLastDesign.type) { row.innerHTML = ""; return; }
+    const last = sfdtLastDesign;
+    const sel = document.getElementById("designType");
+    const typeLabel = (() => {
+      if (!sel) return last.type;
+      const opt = Array.from(sel.options).find((o) => o.value === last.type);
+      return opt ? opt.textContent.replace(/^[★⭐]\s*/, "") : last.type;
+    })();
+    const objPart = last.obj ? ` / 対象: ${escape(last.obj)}` : "";
+    const fmtPart = last.format ? ` / 形式: ${escape(last.format)}` : "";
+    const elapsed = last.ts ? Math.round((Date.now() - last.ts) / 60000) : null;
+    const elapsedLabel = elapsed != null ? (elapsed < 60 ? ` (${elapsed} 分前)` : ` (${Math.floor(elapsed / 60)} 時間前)`) : "";
+    row.innerHTML = `<button id="btnDesignReRun" class="design-last-chip" title="直前生成と同じ条件 (type / 対象 / 形式) で 1 クリック再生成。生成日時から経過した時間も併記">
+      🔄 直前生成を再実行: ${escape(typeLabel)}${objPart}${fmtPart}${elapsedLabel}
+    </button>`;
+    const btn = document.getElementById("btnDesignReRun");
+    if (btn) btn.addEventListener("click", () => {
+      // type / obj / format を UI に復元
+      if (sel) sel.value = last.type;
+      if (sel) sel.dispatchEvent(new Event("change", { bubbles: true }));
+      const objEl = document.getElementById("designObj");
+      const fmtEl = document.getElementById("designFormat");
+      if (objEl) objEl.value = last.obj || "";
+      if (fmtEl && last.format) fmtEl.value = last.format;
+      doGenerateDesign();
+    });
+  } catch (e) { console.warn("[design] last chip render failed", e); }
+}
+
 function setupDesignTypeFilter() {
   const filter = document.getElementById("designTypeFilter");
   const sel = document.getElementById("designType");
@@ -2871,6 +2908,11 @@ async function doGenerateDesign() {
     if (myId !== designRunId) { console.log(`[DevToolsNext] discard stale Design result #${myId}`); return; }
     // v3.134.0 Phase 223 (Team H): 設計書生成成功時、対象オブジェクト名を最近使った候補に push
     if (obj && /^[A-Za-z][A-Za-z0-9_]*$/.test(obj)) pushRecentObject(obj);
+    // v3.158.0 Phase 248: 「直前生成」を chrome.storage に保存 (再生成ボタンで利用)
+    try {
+      chrome.storage.local.set({ sfdtLastDesign: { type, obj, format, ts: Date.now() } });
+    } catch {}
+    renderDesignLastChip();
     const dt = Math.round(performance.now() - t0);
     lastDesign = result;
     const totalRows = result.sections.reduce((n, s) => n + ((s.rows && s.rows.length) || (s.kvRows && s.kvRows.length) || 0), 0);
