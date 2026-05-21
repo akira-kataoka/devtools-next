@@ -152,12 +152,13 @@ function makeCoverSection(opts) {
   };
 }
 
-export async function generateDesign({ type, host, sid, apiVersion, obj, format, onProgress, orgId, envLabel }) {
+export async function generateDesign({ type, host, sid, apiVersion, obj, format, onProgress, orgId, envLabel, erDepth, erMdOnly }) {
   let result;
   const progress = onProgress || (() => {});
   // v3.37.0: 設計書表紙の「対象組織」表示改善のため orgId / envLabel を module-level _designCtx に保持
   _designCtx = { orgId: orgId || null, envLabel: envLabel || null };
-  const ctx = { host, sid, apiVersion, obj, progress };
+  // v3.142.0 Phase 232: ER 図用の追加オプション (深さ / Master-Detail フィルタ)
+  const ctx = { host, sid, apiVersion, obj, progress, erDepth: erDepth || 1, erMdOnly: !!erMdOnly };
   switch (type) {
     case "objectDef":          result = await buildObjectDef(ctx); break;
     case "profileList":        result = await buildProfileList(ctx); break;
@@ -1012,61 +1013,108 @@ async function buildCustomSettingList({ host, sid, apiVersion, progress = () => 
 }
 
 // ============ ER 図 (Mermaid) ============
-async function buildErDiagram({ host, sid, apiVersion, obj }) {
+// v3.142.0 Phase 232 (Team D): 2-hop オプション / Master-Detail のみフィルタ追加
+async function buildErDiagram({ host, sid, apiVersion, obj, progress = () => {}, erDepth = 1, erMdOnly = false }) {
   requireInput(obj, "基点となるオブジェクト API 名 (例: Account)");
-  // 起点 + 直接の参照先を 1 hop 取る
-  const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(obj)}/describe` });
-  if (!r.ok) throw apiError(`オブジェクト '${obj}' の describe 取得に失敗しました`, r);
-  const d = r.data;
-  const lines = ["erDiagram"];
-  const seen = new Set([d.name]);
+  const depth = Math.max(1, Math.min(2, erDepth || 1)); // 1 or 2 のみ
+  const mdOnly = !!erMdOnly;
 
   // Mermaid ER 図用エスケープヘルパー
   const mid = (s) => String(s || "").replace(/[^A-Za-z0-9_]/g, "_"); // 識別子: 英数字+_
   const mlabel = (s) => String(s || "")
-    .replace(/\\/g, "")          // backslash 除去
-    .replace(/"/g, "'")          // " → ' (mermaid label は " で囲むため)
-    .replace(/\r?\n/g, " ")      // 改行 → 空白
-    .replace(/[\x00-\x1F]/g, ""); // 制御文字除去
+    .replace(/\\/g, "").replace(/"/g, "'").replace(/\r?\n/g, " ").replace(/[\x00-\x1F]/g, "");
 
-  // v2.13.0: Master-Detail と Lookup で線種を区別
-  // Mermaid 記法:
-  //   親 ||--o{ 子  → Lookup (1 対 0..多、子は親を持たなくても OK)
-  //   親 ||--|{ 子  → Master-Detail (1 対 1..多、子は親必須・カスケード削除)
-  // v2.71.0: 親/子 別 + MD/Lookup 別の件数集計 (note サマリ用)
+  const lines = ["erDiagram"];
+  const seen = new Set();
+  const fetchedDescribes = new Map(); // name → describe data
+
+  // 1 オブジェクトの describe を取得 (キャッシュ付き)
+  const fetchDescribe = async (name) => {
+    if (fetchedDescribes.has(name)) return fetchedDescribes.get(name);
+    const r = await sfFetch({ host, sid, path: `/services/data/v${apiVersion}/sobjects/${encodeURIComponent(name)}/describe` });
+    if (!r.ok) {
+      // 個別失敗は警告ログだけ残して空 describe で続行 (2-hop での権限差・存在差対応)
+      console.warn(`[ER 図] ${name} の describe 取得失敗 (HTTP ${r.status})`);
+      fetchedDescribes.set(name, null);
+      return null;
+    }
+    fetchedDescribes.set(name, r.data);
+    return r.data;
+  };
+
+  // 起点 (起点だけ詳細項目を出す)
+  progress(`describe 取得中: ${obj}`);
+  const rootData = await fetchDescribe(obj);
+  if (!rootData) throw new Error(`HTTP 404 起点オブジェクト '${obj}' の describe 取得に失敗しました`);
+  seen.add(rootData.name);
+
+  // 集計用カウンタ (起点とその先で別集計)
   let parentMD = 0, parentLookup = 0, childMD = 0, childLookup = 0;
-  let childTotal = 0, childTruncated = false;
-  // 親方向 (この obj が子側、reference 項目で親を参照)
-  const refs = (d.fields || []).filter((f) => f.type === "reference" && (f.referenceTo || []).length);
-  refs.forEach((f) => {
-    (f.referenceTo || []).forEach((to) => {
-      // f.nillable=false かつ writeRequiresMasterRead が true なら Master-Detail
-      const isMD = f.relationshipName && !f.nillable && (f.cascadeDelete || f.writeRequiresMasterRead);
-      const arrow = isMD ? `}|--||` : `}o--||`;
-      const kind = isMD ? "MD" : "Lookup";
-      lines.push(`    ${mid(d.name)} ${arrow} ${mid(to)} : "${mlabel(f.name)} (${kind})"`);
-      seen.add(to);
-      if (isMD) parentMD++; else parentLookup++;
-    });
-  });
-  // 子方向 (childRelationships) — cascadeDelete = true なら Master-Detail
-  const allChildren = (d.childRelationships || []).filter((c) => c.childSObject);
-  childTotal = allChildren.length;
-  if (childTotal > 30) childTruncated = true;
-  allChildren.slice(0, 30).forEach((c) => {
-    const isMD = !!c.cascadeDelete;
-    const arrow = isMD ? `||--|{` : `||--o{`;
-    const kind = isMD ? "MD" : "Lookup";
-    lines.push(`    ${mid(d.name)} ${arrow} ${mid(c.childSObject)} : "${mlabel(c.field)} (${kind})"`);
-    seen.add(c.childSObject);
-    if (isMD) childMD++; else childLookup++;
-  });
+  let childTotalCnt = 0, childTruncated = false;
+  let hop2MD = 0, hop2Lookup = 0;
 
-  // 各エンティティに API 名表示用の空ブロック
+  // 1 オブジェクトの参照関係を Mermaid に追加 (起点もしくは hop2 用)
+  // isRoot=true なら 親/子 両方 / 起点項目を出力、isRoot=false なら必要な関係のみ
+  const addRelations = async (name, isRoot) => {
+    const d = await fetchDescribe(name);
+    if (!d) return [];
+    const newlyReachable = []; // 次 hop の候補
+    // 親方向 (この obj が子側) — reference 項目で参照先を辿る
+    const refs = (d.fields || []).filter((f) => f.type === "reference" && (f.referenceTo || []).length);
+    refs.forEach((f) => {
+      (f.referenceTo || []).forEach((to) => {
+        const isMD = f.relationshipName && !f.nillable && (f.cascadeDelete || f.writeRequiresMasterRead);
+        if (mdOnly && !isMD) return; // MD-only フィルタ
+        const arrow = isMD ? `}|--||` : `}o--||`;
+        const kind = isMD ? "MD" : "Lookup";
+        const hopLabel = isRoot ? kind : `${kind}・2hop`;
+        lines.push(`    ${mid(name)} ${arrow} ${mid(to)} : "${mlabel(f.name)} (${hopLabel})"`);
+        if (!seen.has(to)) newlyReachable.push(to);
+        seen.add(to);
+        if (isRoot) {
+          if (isMD) parentMD++; else parentLookup++;
+        } else {
+          if (isMD) hop2MD++; else hop2Lookup++;
+        }
+      });
+    });
+    // 子方向 (childRelationships) — 起点のみ表示 (2-hop で全子参照を辿るとグラフ爆発)
+    if (isRoot) {
+      const allChildren = (d.childRelationships || []).filter((c) => c.childSObject);
+      childTotalCnt = allChildren.length;
+      if (childTotalCnt > 30) childTruncated = true;
+      allChildren.slice(0, 30).forEach((c) => {
+        const isMD = !!c.cascadeDelete;
+        if (mdOnly && !isMD) return;
+        const arrow = isMD ? `||--|{` : `||--o{`;
+        const kind = isMD ? "MD" : "Lookup";
+        lines.push(`    ${mid(name)} ${arrow} ${mid(c.childSObject)} : "${mlabel(c.field)} (${kind})"`);
+        if (!seen.has(c.childSObject)) newlyReachable.push(c.childSObject);
+        seen.add(c.childSObject);
+        if (isMD) childMD++; else childLookup++;
+      });
+    }
+    return newlyReachable;
+  };
+
+  // 起点処理 → 1-hop で見つかった他オブジェクトを記録
+  const hop1Reachable = await addRelations(rootData.name, true);
+
+  // depth=2 なら、1-hop で到達したオブジェクトの 親方向だけ追加 (子方向は爆発するので除外)
+  if (depth >= 2 && hop1Reachable.length > 0) {
+    // 最大 15 オブジェクトに制限 (API コール数と Mermaid 可読性を考慮)
+    const targets = hop1Reachable.slice(0, 15);
+    for (const t of targets) {
+      progress(`2-hop describe 取得中: ${t}`);
+      await addRelations(t, false);
+    }
+  }
+
+  // 各エンティティに API 名表示用の空ブロック (起点は項目ヘッダー、その他は空)
   Array.from(seen).forEach((name) => {
     lines.push(`    ${mid(name)} {`);
-    if (name === d.name) {
-      (d.fields || []).slice(0, 8).forEach((f) => {
+    if (name === rootData.name) {
+      (rootData.fields || []).slice(0, 8).forEach((f) => {
         lines.push(`        ${sanitizeType(f.type)} ${mid(f.name)} "${mlabel(f.label)}"`);
       });
     }
@@ -1074,29 +1122,31 @@ async function buildErDiagram({ host, sid, apiVersion, obj }) {
   });
 
   const mermaid = lines.join("\n");
-
-  // v2.71.0: note サマリに参照件数 (親方向/子方向 × MD/Lookup) を集計
   const parentTotal = parentMD + parentLookup;
   const childRendered = childMD + childLookup;
-  const truncMsg = childTruncated ? ` (うち ${fmtNum(childTotal - 30)} 件は表示省略・childRelationships 上限 30 件)` : "";
-  // v3.36.0: 凡例セクション追加 (業務担当者向け Mermaid 記号の説明)
+  const hop2Total = hop2MD + hop2Lookup;
+  const truncMsg = childTruncated ? ` (うち ${fmtNum(childTotalCnt - 30)} 件は表示省略・childRelationships 上限 30 件)` : "";
+  const filterMsg = mdOnly ? " / **Master-Detail のみフィルタ ON**" : "";
   const erLegend = [
-    ["||--o{", "Lookup (任意参照) — 親なしでも子だけ存在可。例: Account ⇔ Case (Case の Account 紐付け解除可)"],
+    ["||--o{", "Lookup (任意参照) — 親なしでも子だけ存在可。例: Account ⇔ Case"],
     ["||--|{", "Master-Detail (必須参照・カスケード削除) — 親削除時に子も自動削除。例: Order ⇔ OrderItem"],
     ["親方向参照", "本オブジェクトが「子」側になる参照 (上位のレコード)"],
     ["子方向参照", "本オブジェクトが「親」側になる参照 (下位のレコード、削除時影響あり)"],
-    ["1-hop", "起点オブジェクトから直接参照される 1 階層のみを表示 (深掘り無し)"],
+    ["depth=1 (1-hop)", "起点オブジェクトから直接参照される 1 階層のみを表示"],
+    ["depth=2 (2-hop)", "1-hop の親側オブジェクトの「親方向参照」もたどる (子方向は爆発するため除外、最大 15 オブジェクト)"],
+    ["MD only", "Master-Detail 関係のみ表示し Lookup を隠すフィルタ (削除影響範囲の把握に便利)"],
     ["可視化方法", "https://mermaid.live に貼り付けると視覚的な ER 図が描画されます"],
   ];
+  const titleSuffix = `${depth}-hop${mdOnly ? " / MD only" : ""}`;
   return {
-    title: `ER 図: ${d.label} (${d.name}) を起点とした 1-hop`,
+    title: `ER 図: ${rootData.label} (${rootData.name}) を起点とした ${titleSuffix}`,
     type: "erDiagram",
     sections: [
-      makeCoverSection({ docTitle: "ER 図", target: `${d.label} (${d.name}) を起点とした 1-hop`, orgHost: host, revision: "初版" }),
+      makeCoverSection({ docTitle: "ER 図", target: `${rootData.label} (${rootData.name}) を起点とした ${titleSuffix}`, orgHost: host, revision: "初版" }),
       { heading: "0. 凡例", kvRows: erLegend },
       { heading: "1. ER 図 (Mermaid)", mermaid },
     ],
-    note: `関連エンティティ ${fmtNum(seen.size - 1)} 件 / 親方向参照 ${fmtNum(parentTotal)} 件 (MD ${fmtNum(parentMD)} + Lookup ${fmtNum(parentLookup)}) / 子方向参照 ${fmtNum(childRendered)} 件 (MD ${fmtNum(childMD)} + Lookup ${fmtNum(childLookup)})${truncMsg}。**業務担当者向け**: 本図はデータ連携の依存関係を示します。**Master-Detail (必須参照・カスケード削除)** = 親レコード削除時に子も自動削除される強い結合。**Lookup (任意参照)** = 親なしでも子だけ存在可能な弱い結合。要件定義書や移行計画でデータ削除順序の検討にご活用ください。**可視化**: https://mermaid.live に貼り付け。`,
+    note: `関連エンティティ ${fmtNum(seen.size - 1)} 件 / 親方向参照 ${fmtNum(parentTotal)} 件 (MD ${fmtNum(parentMD)} + Lookup ${fmtNum(parentLookup)}) / 子方向参照 ${fmtNum(childRendered)} 件 (MD ${fmtNum(childMD)} + Lookup ${fmtNum(childLookup)})${truncMsg}${depth >= 2 ? ` / 2-hop 親方向参照 ${fmtNum(hop2Total)} 件 (MD ${fmtNum(hop2MD)} + Lookup ${fmtNum(hop2Lookup)})` : ""}${filterMsg}。**業務担当者向け**: 本図はデータ連携の依存関係を示します。**Master-Detail (必須参照・カスケード削除)** = 親レコード削除時に子も自動削除される強い結合。**Lookup (任意参照)** = 親なしでも子だけ存在可能な弱い結合。要件定義書や移行計画でデータ削除順序の検討にご活用ください。**Phase 232**: 2-hop オプションと MD のみフィルタを追加 — depth=2 でデータ削除影響範囲を 2 階層先まで可視化、MD only でカスケード削除の伝播経路を強調表示。**可視化**: https://mermaid.live に貼り付け。`,
   };
 }
 

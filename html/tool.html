@@ -534,6 +534,14 @@ System.debug('Now: ' + System.now());</textarea>
           <input id="designObj" placeholder="設計書の種類に応じて入力してください (オブジェクト API 名 / プロファイル名 / @PermSet 名 等)" list="dl-sobjects" autocomplete="off" title="objectDef や erDiagram は『Account』等の API 名、profileDetail は『営業ユーザー』等のプロファイル名、または @PermSet_API名 形式で権限セットを指定できます" />
           <span id="designObjHint" class="pill" title="選択した設計書の種類で「対象」入力が必須かどうかを示します" style="font-size:10px">対象: -</span>
           <button id="btnDesignFromTab" title="現在のタブが Salesforce レコードページなら、その対象オブジェクト名を自動入力します (objectDef / erDiagram / fieldPermMatrix 等で便利)">📍 現在タブから</button>
+          <!-- v3.142.0 Phase 232: ER 図用オプション -->
+          <span id="erOptions" style="display:none;gap:6px;align-items:center;font-size:11px" title="ER 図のオプション">
+            <select id="erDepth" title="ER 図の深さ" aria-label="ER 図の深さ">
+              <option value="1">深さ 1-hop (起点のみ)</option>
+              <option value="2">深さ 2-hop (親方向 2 階層、最大 15 オブジェクト)</option>
+            </select>
+            <label title="Master-Detail のみ表示、Lookup を隠す"><input type="checkbox" id="erMdOnly" /> MD のみ表示</label>
+          </span>
           <select id="designFormat">
             <option value="excel">Excel (.xls / SpreadsheetML) ⚠ 大量行は遅い</option>
             <option value="markdown">Markdown</option>

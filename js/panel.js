@@ -238,6 +238,9 @@ function setupDesignPicker() {
     }
     // v3.74.0: type 別履歴チップを表示
     renderDesignObjHistory(type);
+    // v3.142.0 Phase 232: ER 図オプション (erDepth/erMdOnly) は erDiagram 選択時のみ表示
+    const erOpts = document.getElementById("erOptions");
+    if (erOpts) erOpts.style.display = (type === "erDiagram") ? "inline-flex" : "none";
   };
   sel.addEventListener("change", refresh);
   refresh();
@@ -2720,7 +2723,10 @@ async function doGenerateDesign() {
     const envLabel = /\.sandbox\./.test(state.apiHost || "") ? "SBX"
                    : (/\.develop\./.test(state.apiHost || "") || /\.scratch\./.test(state.apiHost || "")) ? "DEV"
                    : "PROD";
-    const result = await generateDesign({ type, host: state.host, sid: state.sid, apiVersion: state.apiVersion, obj, format, onProgress, orgId: state.orgId, envLabel });
+    // v3.142.0 Phase 232: ER 図用オプション (erDiagram 選択時のみ実効)
+    const erDepth = type === "erDiagram" ? parseInt((document.getElementById("erDepth") || {}).value || "1", 10) : 1;
+    const erMdOnly = type === "erDiagram" ? !!(document.getElementById("erMdOnly") || {}).checked : false;
+    const result = await generateDesign({ type, host: state.host, sid: state.sid, apiVersion: state.apiVersion, obj, format, onProgress, orgId: state.orgId, envLabel, erDepth, erMdOnly });
     if (myId !== designRunId) { console.log(`[DevToolsNext] discard stale Design result #${myId}`); return; }
     // v3.134.0 Phase 223 (Team H): 設計書生成成功時、対象オブジェクト名を最近使った候補に push
     if (obj && /^[A-Za-z][A-Za-z0-9_]*$/.test(obj)) pushRecentObject(obj);
