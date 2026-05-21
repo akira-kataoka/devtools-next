@@ -50,6 +50,7 @@
 
         <button class="nav-sep" data-cat="monitor" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 🛡️ 組織管理</button>
         <div class="nav-group" data-cat="monitor">
+          <button class="nav-btn" data-view="admin" data-cat="monitor" title="👥 ユーザー数・ライセンス使用状況・凍結ユーザー・MFA 設定状況・インストールパッケージ等を 1 画面で把握できる管理者向けダッシュボード (Phase 219)"><span class="nav-label">👥 ユーザー・ライセンス管理</span></button>
           <button class="nav-btn" data-view="limits" data-cat="monitor" title="API コール数・Apex 容量・ストレージ等の使用状況"><span class="nav-label">📊 使用状況</span><kbd class="nav-kbd">L</kbd></button>
           <button class="nav-btn" data-view="logs" data-cat="monitor" title="Apex 実行ログ (Debug ログ) を取得・表示"><span class="nav-label">📜 Apex 実行ログ</span></button>
           <button class="nav-btn" data-view="login" data-cat="monitor" title="ユーザのログイン履歴を取得"><span class="nav-label">🔐 ログイン履歴</span></button>
@@ -99,6 +100,7 @@
         <div class="home-secondary">
           <div class="home-secondary-title">他の機能</div>
           <div class="home-secondary-grid">
+            <button class="home-mini-card" data-go="admin" title="👥 ユーザー数・ライセンス使用状況・凍結ユーザー・MFA 設定状況・インストールパッケージ等を 1 画面で把握できる管理者向けダッシュボード">👥 ユーザー・ライセンス管理</button>
             <button class="home-mini-card" data-go="apiurl" title="REST API を組み立てて実行 (URL ビルダー + 実行を統合)">🌐 REST API</button>
             <button class="home-mini-card" data-go="metadata" title="ApexClass / Flow / Profile 等のメタデータ一覧">📦 メタデータ一覧</button>
             <button class="home-mini-card" data-go="logs" title="Apex 実行ログ (Debug ログ) を取得">📜 Apex 実行ログ</button>
@@ -196,6 +198,7 @@
           <span class="grow"></span>
           <label class="inspector-opt" title="Tooling API を使う場合はチェックしてください (ApexClass / ValidationRule 等)"><input type="checkbox" id="exTooling" /> Tooling API を使用</label>
           <button id="btnExBuild" title="選択したフィールドと条件から SOQL を自動生成します">SOQL 組立</button>
+          <button id="btnExToSoql" title="現在の SOQL 組立結果を 📥 レコードエクスポート (SOQL タブ) に転送して編集・実行できるようにします (Phase 219 重複機能整理)">📤 SOQL タブへ転送</button>
           <button id="btnExRun" class="primary" title="SOQL を実行してエクスポート結果を取得します (最大 50,000 件)">▶ 実行</button>
         </div>
         <div class="export-layout">
@@ -502,6 +505,111 @@ System.debug('Now: ' + System.now());</textarea>
             <div class="design-pane-label">ソース</div>
             <pre id="designSource" class="code"></pre>
           </div>
+        </div>
+      </div>
+
+      <!-- v3.129.0 Phase 219 (Team U): ユーザー・ライセンス管理ダッシュボード — SOQL/Apex テンプレート内に埋もれていた機能を専用画面化 -->
+      <div class="view hidden" data-view="admin">
+        <div class="admin-howto">
+          <div class="admin-howto-title">👥 ユーザー・ライセンス管理ダッシュボードの使い方</div>
+          <ol class="admin-howto-steps">
+            <li><strong>① まず「▶ すべて取得」を押す</strong> — 6 種類の管理データを Salesforce から取得して全カードに表示します (本番組織でも参照のみで安全)</li>
+            <li><strong>② 各カードを確認</strong> — 使用率 90% 超のライセンス・凍結ユーザー・MFA 未設定者・インストールパッケージ等が一覧に</li>
+            <li><strong>③ アクション実行</strong> — 凍結ユーザー行の「🔓 凍結解除」、ライセンス行の「👥 使用者を見る」、MFA カードの「🚨 未設定者を抽出」等で即操作可能</li>
+            <li><strong>④ レポート保存</strong> — 「📥 サマリ CSV」で取得済みの全カードを 1 つの CSV (Excel 開ける) にまとめてダウンロード — 年次監査・経営報告にそのまま使用可</li>
+          </ol>
+        </div>
+        <div class="toolbar admin-toolbar">
+          <div class="admin-toolbar-info">
+            <strong style="font-size:13px">👥 ユーザー・ライセンス管理</strong>
+            <span class="meta" style="font-size:11px">組織のユーザー数・ライセンス使用率・凍結ユーザー・MFA 設定状況・インストールパッケージを 1 画面で確認できます。本番組織でも参照のみのため安全です。</span>
+          </div>
+          <span class="grow"></span>
+          <button id="btnAdminLoadAll" class="primary" title="6 カードすべての情報を一括取得します (UserLicense / PermissionSetLicense / User 集計 / 凍結 / MFA / パッケージ)">▶ すべて取得</button>
+          <button id="btnAdminExportCsv" title="現在表示中のサマリと各カードのデータを CSV としてダウンロードします (取得済みカードのみ)">📥 サマリ CSV</button>
+        </div>
+        <div id="adminMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
+
+        <div class="admin-grid">
+          <div class="admin-card">
+            <div class="admin-card-hdr">
+              <h3 class="admin-card-title">📊 ユーザーライセンス使用状況</h3>
+              <button class="mini-btn" id="btnAdminLicenses" title="UserLicense (Salesforce / Salesforce Platform / Identity / Customer Community 等) の TotalLicenses vs UsedLicenses を取得">取得</button>
+            </div>
+            <div class="admin-card-desc">どのライセンスに何席残っているか即把握。年次更新前のライセンス調達判断、未使用ライセンスの棚卸しに使用。</div>
+            <div id="adminLicensesResult" class="admin-card-body">
+              <div class="empty-state" style="padding:24px 12px">取得ボタンをクリックすると、組織で有効な UserLicense ごとに <strong>総数 / 使用中 / 残り / 使用率バー</strong> を表示します。</div>
+            </div>
+          </div>
+
+          <div class="admin-card">
+            <div class="admin-card-hdr">
+              <h3 class="admin-card-title">🔑 権限セットライセンス</h3>
+              <button class="mini-btn" id="btnAdminPermSetLicenses" title="PermissionSetLicense (Sales Cloud User / Service Cloud User / Knowledge User 等) の使用率と有効期限">取得</button>
+            </div>
+            <div class="admin-card-desc">Sales Cloud / Service Cloud などのアドオンライセンスの使用率と有効期限を表示。期限切れ前に再契約判断。</div>
+            <div id="adminPermSetLicensesResult" class="admin-card-body">
+              <div class="empty-state" style="padding:24px 12px">取得ボタンをクリックすると、PermissionSetLicense ごとの <strong>総数 / 使用中 / 残り / 有効期限 / 使用率</strong> を表示します。</div>
+            </div>
+          </div>
+
+          <div class="admin-card">
+            <div class="admin-card-hdr">
+              <h3 class="admin-card-title">👥 ユーザー集計</h3>
+              <button class="mini-btn" id="btnAdminUserStats" title="アクティブ・非アクティブ・凍結ユーザー数およびプロファイル分布を集計 (組織健全性の指標)">取得</button>
+            </div>
+            <div class="admin-card-desc">アクティブ / 非アクティブ / 凍結を即集計し、プロファイル別の人数分布も表示。棚卸しと組織再編判断に。</div>
+            <div id="adminUserStatsResult" class="admin-card-body">
+              <div class="empty-state" style="padding:24px 12px">取得ボタンをクリックすると、<strong>ユーザー総数 / アクティブ / 非アクティブ / 凍結数</strong> およびプロファイル別人数を表示します。</div>
+            </div>
+          </div>
+
+          <div class="admin-card">
+            <div class="admin-card-hdr">
+              <h3 class="admin-card-title">❄️ 凍結ユーザー一覧</h3>
+              <button class="mini-btn" id="btnAdminFrozen" title="UserLogin.IsFrozen=true のユーザー一覧 (ログインのみ禁止・ライセンスは保持)">取得</button>
+            </div>
+            <div class="admin-card-desc">退職予定者の一時凍結・休職対応・不正アクセス疑い時の緊急ロック対象を一覧で確認。クリックで一括解除 Apex も呼出可。</div>
+            <div id="adminFrozenResult" class="admin-card-body">
+              <div class="empty-state" style="padding:24px 12px">取得ボタンをクリックすると、<strong>UserLogin.IsFrozen = true</strong> のユーザー一覧 (氏名 / ユーザ名 / プロファイル / IsActive) を表示します。</div>
+            </div>
+          </div>
+
+          <div class="admin-card">
+            <div class="admin-card-hdr">
+              <h3 class="admin-card-title">🛡️ MFA 設定状況</h3>
+              <button class="mini-btn" id="btnAdminMfa" title="TwoFactorMethodsInfo — ユーザー別の MFA 設定方式 (TOTP / Salesforce Authenticator / U2F 等)">取得</button>
+              <button class="mini-btn admin-action-mfa-missing" title="🚨 MFA を設定していないアクティブな内部ユーザー (UserType=Standard) のみを抽出します — Salesforce 強制要件のコンプライアンスチェック用">🚨 未設定者を抽出</button>
+            </div>
+            <div class="admin-card-desc">MFA を未設定のユーザー特定にも活用。Salesforce 強制要件 (内部ユーザの MFA) のコンプライアンス監査資料。</div>
+            <div id="adminMfaResult" class="admin-card-body">
+              <div class="empty-state" style="padding:24px 12px">取得ボタンをクリックすると、<strong>MFA 設定済ユーザー数</strong> と方式別 (TOTP / SalesforceAuthenticator / U2F) の内訳を表示します。<br>「🚨 未設定者を抽出」で、MFA を持たないアクティブ内部ユーザーを一覧化できます。</div>
+            </div>
+          </div>
+
+          <div class="admin-card">
+            <div class="admin-card-hdr">
+              <h3 class="admin-card-title">🔌 インストールパッケージ</h3>
+              <button class="mini-btn" id="btnAdminPackages" title="InstalledSubscriberPackage (Tooling API) — AppExchange / 管理パッケージのインストール状況とバージョン">取得</button>
+            </div>
+            <div class="admin-card-desc">AppExchange パッケージ・社内 ManagedPackage 一覧をバージョン付きで表示。バージョンアップ前の互換性把握に。</div>
+            <div id="adminPackagesResult" class="admin-card-body">
+              <div class="empty-state" style="padding:24px 12px">取得ボタンをクリックすると、<strong>InstalledSubscriberPackage</strong> (Tooling) からパッケージ名・名前空間・バージョンを一覧表示します。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-footer">
+          <details class="admin-tips">
+            <summary>💡 業務シナリオ別 推奨フロー (クリックで展開)</summary>
+            <ol style="margin:6px 0;padding-left:20px;font-size:11px;line-height:1.7;color:var(--fg-dim)">
+              <li><strong>新年度ライセンス見積り</strong>: 「📊 ユーザーライセンス使用状況」+「🔑 権限セットライセンス」で使用率 80% 超のライセンスを特定 → 営業担当に追加調達依頼</li>
+              <li><strong>退職者一括処理</strong>: 「👥 ユーザー集計」で対象特定 →「❄️ 凍結ユーザー」で現状確認 → Apex タブの「❄️ ユーザー一括凍結」テンプレで実行</li>
+              <li><strong>セキュリティ年次監査</strong>: 「🛡️ MFA 設定状況」+「🔐 ログイン履歴 (失敗のみ)」で未設定ユーザーと不正アクセス兆候を確認</li>
+              <li><strong>バージョンアップ前棚卸し</strong>: 「🔌 インストールパッケージ」で全パッケージのバージョンを把握 → 各ベンダーのアップグレード情報を確認</li>
+              <li><strong>組織健全性チェック</strong>: 「👥 ユーザー集計」のプロファイル分布で偏りを確認 → SOQL タブの「🏆 取引先所有者ランキング」「⚠ 非アクティブだが取引先所有」で棚卸し</li>
+            </ol>
+          </details>
         </div>
       </div>
     </section>

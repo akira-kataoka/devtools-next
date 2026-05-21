@@ -1036,6 +1036,34 @@ function bindEvents() {
   // LoginHistory
   $on("btnFetchLogin", "click", doFetchLoginHistory);
   $on("btnLoginCsv", "click", exportLoginCsv);
+
+  // v3.129.0 Phase 219 (Team U): ユーザー・ライセンス管理ダッシュボード
+  $on("btnAdminLicenses", "click", doAdminLicenses);
+  $on("btnAdminPermSetLicenses", "click", doAdminPermSetLicenses);
+  $on("btnAdminUserStats", "click", doAdminUserStats);
+  $on("btnAdminFrozen", "click", doAdminFrozen);
+  $on("btnAdminMfa", "click", doAdminMfa);
+  $on("btnAdminPackages", "click", doAdminPackages);
+  $on("btnAdminLoadAll", "click", doAdminLoadAll);
+  $on("btnAdminExportCsv", "click", adminExportCsv);
+  // 凍結ユーザー解除アクションは結果テーブル内 .admin-action-unfreeze からデリゲート
+  document.addEventListener("click", (e) => {
+    const unfreeze = e.target.closest && e.target.closest(".admin-action-unfreeze");
+    if (unfreeze) {
+      const userId = unfreeze.dataset.userId;
+      const userName = unfreeze.dataset.userName || "";
+      doAdminUnfreezeUser(userId, userName);
+      return;
+    }
+    const mfaMissing = e.target.closest && e.target.closest(".admin-action-mfa-missing");
+    if (mfaMissing) { doAdminListMfaMissing(); return; }
+    const licenseAlert = e.target.closest && e.target.closest(".admin-action-license-detail");
+    if (licenseAlert) {
+      const apiName = licenseAlert.dataset.apiName;
+      doAdminShowLicenseUsers(apiName);
+      return;
+    }
+  });
   // 設計書
   $on("btnDesignGen", "click", doGenerateDesign);
   $on("btnDesignCopy", "click", copyDesignSource);
@@ -1131,6 +1159,27 @@ function bindEvents() {
   $on("btnExSelectNone", "click", () => exSelectFields(false, false));
   $on("btnExSelectStandard", "click", () => exSelectFields(true, true));
   $on("btnExBuild", "click", exBuildSoql);
+  // v3.129.0 Phase 219: DataExport の組立 SOQL を 📥 レコードエクスポート (SOQL タブ) に転送 — 重複機能整理の第 1 弾、ユーザー要望「重複機能は統合」
+  $on("btnExToSoql", "click", () => {
+    exBuildSoql(); // 念のため最新の SOQL を生成
+    const exSoql = document.getElementById("exSoql");
+    const soqlText = document.getElementById("soqlText");
+    const src = exSoql ? exSoql.value.trim() : "";
+    if (!src) {
+      panelToast("⚠ 先にフィールドを選択して「SOQL 組立」を実行してください", { kind: "warn" });
+      return;
+    }
+    if (soqlText) {
+      soqlText.value = src;
+      soqlText.dispatchEvent(new Event("input", { bubbles: true })); // カーソル位置インジケータ等の追従
+    }
+    // Tooling API 状態も連動
+    const exTooling = document.getElementById("exTooling");
+    const useTooling = document.getElementById("useTooling");
+    if (exTooling && useTooling) useTooling.checked = exTooling.checked;
+    switchToView("soql");
+    panelToast(`📤 SOQL タブへ転送しました (${src.length.toLocaleString()} 文字)。編集して「▶ 実行」してください`, { kind: "ok" });
+  });
   $on("btnExRun", "click", exRunPreview);
   $on("btnExDlCsv", "click", () => exDownloadAll("csv"));
   $on("btnExDlExcel", "click", () => exDownloadAll("excel"));
@@ -3779,6 +3828,9 @@ async function doMetadataList() {
   // v2.86.0 バグ修正: Tooling API の各テーブルは持つフィールドが違うため type 別に SOQL を切り替える
   // 旧実装は `SELECT Id, Name, ... FROM ${type}` 固定だったため Flow / FlowDefinition 等で「INVALID_FIELD: Name」エラー
   // ユーザー報告「Flow のメタデータ一覧を取得しようとするとダメでした」(2026-05-20)
+  // v3.129.0 Phase 219: CustomObject 等の取得失敗バグ修正
+  // CustomObject (Tooling) は Name 列を持たず DeveloperName を使う → INVALID_FIELD 'Name' エラー
+  // ApexClass / ApexTrigger も明示クエリで API バージョン等を取得し列を整理
   const TYPE_SOQL = {
     "Flow": "SELECT Id, MasterLabel, DeveloperName, ProcessType, Status, VersionNumber, Description, LastModifiedDate FROM Flow ORDER BY LastModifiedDate DESC LIMIT 200",
     "FlowDefinition": "SELECT Id, DeveloperName, MasterLabel, ActiveVersionId, LastModifiedDate FROM FlowDefinition ORDER BY LastModifiedDate DESC LIMIT 200",
@@ -3786,6 +3838,9 @@ async function doMetadataList() {
     "AuraDefinitionBundle": "SELECT Id, DeveloperName, MasterLabel, ApiVersion, NamespacePrefix, ManageableState, LastModifiedDate FROM AuraDefinitionBundle ORDER BY LastModifiedDate DESC LIMIT 200",
     "ValidationRule": "SELECT Id, ValidationName, Active, EntityDefinition.QualifiedApiName, ErrorMessage, LastModifiedDate FROM ValidationRule ORDER BY LastModifiedDate DESC LIMIT 200",
     "StaticResource": "SELECT Id, Name, NamespacePrefix, ContentType, BodyLength, LastModifiedDate FROM StaticResource ORDER BY LastModifiedDate DESC LIMIT 200",
+    "CustomObject": "SELECT Id, DeveloperName, NamespacePrefix, ManageableState, CreatedDate, LastModifiedDate FROM CustomObject ORDER BY DeveloperName LIMIT 500",
+    "ApexClass": "SELECT Id, Name, ApiVersion, Status, NamespacePrefix, ManageableState, LengthWithoutComments, LastModifiedDate FROM ApexClass ORDER BY LastModifiedDate DESC LIMIT 500",
+    "ApexTrigger": "SELECT Id, Name, TableEnumOrId, Status, NamespacePrefix, ManageableState, LastModifiedDate FROM ApexTrigger ORDER BY LastModifiedDate DESC LIMIT 500",
   };
   // Profile / PermissionSet は通常 REST (Tooling 不要) で取れる
   const REST_TYPES = {
@@ -3874,10 +3929,47 @@ async function doMetadataList() {
         "更新日": rec.LastModifiedDate,
       };
     }
-    // デフォルト (ApexClass / ApexTrigger / CustomObject 等は Name フィールドあり)
+    if (type === "CustomObject") {
+      return {
+        "ID": rec.Id,
+        "API 名": rec.DeveloperName ? rec.DeveloperName + "__c" : "",
+        "DeveloperName": rec.DeveloperName || "",
+        "ネームスペース": rec.NamespacePrefix || "(なし)",
+        "管理状態": stateMap[rec.ManageableState] || rec.ManageableState || "",
+        "作成日": rec.CreatedDate,
+        "更新日": rec.LastModifiedDate,
+      };
+    }
+    if (type === "ApexClass") {
+      const statusEmo = { "Active": "○ 有効", "Inactive": "− 無効", "Deleted": "✗ 削除済" };
+      const sizeKb = rec.LengthWithoutComments != null ? `${(rec.LengthWithoutComments / 1024).toFixed(1)} KB` : "";
+      return {
+        "ID": rec.Id,
+        "クラス名": rec.Name || "",
+        "API バージョン": rec.ApiVersion != null ? `v${rec.ApiVersion}` : "",
+        "ステータス": statusEmo[rec.Status] || rec.Status || "",
+        "ネームスペース": rec.NamespacePrefix || "(なし)",
+        "管理状態": stateMap[rec.ManageableState] || rec.ManageableState || "",
+        "コードサイズ": sizeKb,
+        "更新日": rec.LastModifiedDate,
+      };
+    }
+    if (type === "ApexTrigger") {
+      const statusEmo = { "Active": "○ 有効", "Inactive": "− 無効", "Deleted": "✗ 削除済" };
+      return {
+        "ID": rec.Id,
+        "トリガ名": rec.Name || "",
+        "対象オブジェクト": rec.TableEnumOrId || "",
+        "ステータス": statusEmo[rec.Status] || rec.Status || "",
+        "ネームスペース": rec.NamespacePrefix || "(なし)",
+        "管理状態": stateMap[rec.ManageableState] || rec.ManageableState || "",
+        "更新日": rec.LastModifiedDate,
+      };
+    }
+    // デフォルト (未登録 type — 念のため Name 優先・無ければ DeveloperName)
     return {
       "ID": rec.Id,
-      "API 名": rec.Name || "",
+      "API 名": rec.Name || rec.DeveloperName || rec.MasterLabel || "",
       "ネームスペース": rec.NamespacePrefix || "(なし)",
       "管理状態": stateMap[rec.ManageableState] || rec.ManageableState || "",
       "作成日": rec.CreatedDate,
@@ -4927,4 +5019,444 @@ async function loadSelectedQuery() {
   if (!name) return;
   const { savedQueries = {} } = await chrome.storage.local.get("savedQueries");
   if (savedQueries[name]) document.getElementById("soqlText").value = savedQueries[name];
+}
+
+// =============================================================================
+// v3.129.0 Phase 219 (Team U): ユーザー・ライセンス管理ダッシュボード
+// SOQL/Apex テンプレート内に埋もれていた機能を専用画面化。各カードは独立して取得可。
+// =============================================================================
+const adminState = {
+  licenses: null,
+  permsetLicenses: null,
+  userStats: null,
+  frozen: null,
+  mfa: null,
+  packages: null,
+};
+
+function adminSetCardLoading(elId, label) {
+  const el = document.getElementById(elId);
+  if (el) el.innerHTML = `<div class="meta" style="padding:12px;text-align:center"><span class="pill loading">${escape(label)}</span></div>`;
+}
+
+function adminSetCardError(elId, status, body) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const txt = typeof body === "string" ? body : JSON.stringify(body || {});
+  const short = txt.length > 220 ? txt.substring(0, 220) + "…" : txt;
+  el.innerHTML = `<div class="meta admin-card-err" style="padding:12px;color:var(--err)"><strong>HTTP ${escape(String(status))}</strong>: ${escape(short)}</div>`;
+}
+
+function adminFmtPct(used, total) {
+  if (!total || total <= 0) return { txt: "—", ratio: 0 };
+  const ratio = Math.min(1, used / total);
+  return { txt: (ratio * 100).toFixed(1) + "%", ratio };
+}
+
+function adminPctBarHtml(used, total) {
+  const { txt, ratio } = adminFmtPct(used, total);
+  const widthPct = (ratio * 100).toFixed(1);
+  const kind = ratio >= 0.9 ? "err" : ratio >= 0.7 ? "warn" : "ok";
+  return `<div class="admin-bar" title="使用率 ${escape(txt)} (${escape(String(used))} / ${escape(String(total))})">
+    <div class="admin-bar-fill admin-bar-${kind}" style="width:${widthPct}%"></div>
+    <span class="admin-bar-label">${escape(txt)}</span>
+  </div>`;
+}
+
+function adminTableHtml(headers, rows, opts = {}) {
+  if (!rows || !rows.length) return `<div class="meta" style="padding:12px;text-align:center;font-size:11px">📭 該当データなし</div>`;
+  const cls = opts.compact ? "admin-table compact" : "admin-table";
+  const headHtml = headers.map((h) => `<th>${escape(h)}</th>`).join("");
+  const rowsHtml = rows.map((r) => `<tr>${headers.map((h) => {
+    const v = r[h];
+    if (v && typeof v === "object" && v.__html) return `<td>${v.__html}</td>`;
+    return `<td>${escape(v == null ? "" : String(v))}</td>`;
+  }).join("")}</tr>`).join("");
+  return `<table class="${cls}"><thead><tr>${headHtml}</tr></thead><tbody>${rowsHtml}</tbody></table>`;
+}
+
+async function doAdminLicenses() {
+  if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
+  adminSetCardLoading("adminLicensesResult", "UserLicense を取得中…");
+  const r = await runSoql({
+    host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+    soql: `SELECT Name, MasterLabel, TotalLicenses, UsedLicenses, Status FROM UserLicense ORDER BY UsedLicenses DESC LIMIT 100`,
+  });
+  if (!r.ok) { adminSetCardError("adminLicensesResult", r.status, r.data); return; }
+  const recs = (r.data && r.data.records) || [];
+  const rows = recs.map((rec) => {
+    const total = Number(rec.TotalLicenses) || 0;
+    const used = Number(rec.UsedLicenses) || 0;
+    const ratio = total > 0 ? used / total : 0;
+    const apiName = rec.Name || "";
+    return {
+      "ライセンス": rec.MasterLabel || rec.Name,
+      "API 名": apiName,
+      "総数": total.toLocaleString("ja-JP"),
+      "使用中": used.toLocaleString("ja-JP"),
+      "残り": (total - used).toLocaleString("ja-JP"),
+      "使用率": { __html: adminPctBarHtml(used, total) },
+      "状態": rec.Status === "Active" ? "○ 有効" : rec.Status,
+      "アクション": { __html: total > 0 ? `<button class="admin-action-license-detail admin-row-action" data-api-name="${escape(apiName)}" title="このライセンスを使用中の全ユーザーを抽出表示します (Profile.UserLicense 経由)">👥 使用者を見る</button>` : "" },
+    };
+  });
+  adminState.licenses = rows;
+  const totalSum = recs.reduce((s, r) => s + (Number(r.TotalLicenses) || 0), 0);
+  const usedSum = recs.reduce((s, r) => s + (Number(r.UsedLicenses) || 0), 0);
+  const criticalCount = recs.filter((r) => {
+    const t = Number(r.TotalLicenses) || 0;
+    const u = Number(r.UsedLicenses) || 0;
+    return t > 0 && u / t >= 0.9;
+  }).length;
+  const alertHtml = criticalCount > 0
+    ? `<div class="admin-alert admin-alert-err">⚠ 使用率 90% 超のライセンスが <strong>${criticalCount} 件</strong> あります — 早急に追加調達 / 棚卸しが必要です</div>`
+    : "";
+  const headers = ["ライセンス", "API 名", "総数", "使用中", "残り", "使用率", "状態", "アクション"];
+  document.getElementById("adminLicensesResult").innerHTML =
+    alertHtml +
+    `<div class="admin-card-summary">合計 ${recs.length} 種類 / 総席数 <strong>${totalSum.toLocaleString("ja-JP")}</strong> 席 / 使用中 <strong>${usedSum.toLocaleString("ja-JP")}</strong> 席 (全体 ${adminFmtPct(usedSum, totalSum).txt})</div>` +
+    adminTableHtml(headers, rows);
+}
+
+async function doAdminPermSetLicenses() {
+  if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
+  adminSetCardLoading("adminPermSetLicensesResult", "PermissionSetLicense を取得中…");
+  const r = await runSoql({
+    host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+    soql: `SELECT MasterLabel, DeveloperName, TotalLicenses, UsedLicenses, ExpirationDate, Status FROM PermissionSetLicense ORDER BY UsedLicenses DESC LIMIT 200`,
+  });
+  if (!r.ok) { adminSetCardError("adminPermSetLicensesResult", r.status, r.data); return; }
+  const recs = (r.data && r.data.records) || [];
+  const rows = recs.map((rec) => {
+    const total = Number(rec.TotalLicenses) || 0;
+    const used = Number(rec.UsedLicenses) || 0;
+    return {
+      "ライセンス": rec.MasterLabel,
+      "API 名": rec.DeveloperName,
+      "総数": total.toLocaleString("ja-JP"),
+      "使用中": used.toLocaleString("ja-JP"),
+      "残り": (total - used).toLocaleString("ja-JP"),
+      "使用率": { __html: adminPctBarHtml(used, total) },
+      "有効期限": rec.ExpirationDate ? String(rec.ExpirationDate).substring(0, 10) : "無期限",
+      "状態": rec.Status === "Active" ? "○ 有効" : rec.Status,
+    };
+  });
+  adminState.permsetLicenses = rows;
+  const headers = ["ライセンス", "API 名", "総数", "使用中", "残り", "使用率", "有効期限", "状態"];
+  document.getElementById("adminPermSetLicensesResult").innerHTML =
+    `<div class="admin-card-summary">合計 ${recs.length} 種類 / 期限切れ間近 (90 日以内): <strong>${recs.filter((r) => r.ExpirationDate && (new Date(r.ExpirationDate) - new Date()) < 90 * 86400000 && (new Date(r.ExpirationDate) - new Date()) > 0).length}</strong> 件</div>` +
+    adminTableHtml(headers, rows);
+}
+
+async function doAdminUserStats() {
+  if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
+  adminSetCardLoading("adminUserStatsResult", "ユーザー集計中…");
+  // 1) アクティブ・非アクティブ集計
+  const userAgg = await runSoql({
+    host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+    soql: `SELECT IsActive, COUNT(Id) cnt FROM User GROUP BY IsActive`,
+  });
+  if (!userAgg.ok) { adminSetCardError("adminUserStatsResult", userAgg.status, userAgg.data); return; }
+  let activeCount = 0, inactiveCount = 0;
+  for (const r of (userAgg.data.records || [])) {
+    if (r.IsActive) activeCount = Number(r.cnt) || 0;
+    else inactiveCount = Number(r.cnt) || 0;
+  }
+  // 2) 凍結数
+  const frozenAgg = await runSoql({
+    host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+    soql: `SELECT COUNT(Id) cnt FROM UserLogin WHERE IsFrozen = true`,
+  });
+  const frozenCount = frozenAgg.ok ? (Number(((frozenAgg.data.records || [])[0] || {}).cnt) || 0) : 0;
+  // 3) プロファイル分布 (アクティブのみ Top 20)
+  const profAgg = await runSoql({
+    host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+    soql: `SELECT Profile.Name profile, COUNT(Id) cnt FROM User WHERE IsActive = true GROUP BY Profile.Name ORDER BY COUNT(Id) DESC LIMIT 20`,
+  });
+  const profRows = profAgg.ok ? ((profAgg.data.records || []).map((r) => ({
+    "プロファイル": r.profile || "(未設定)",
+    "アクティブ人数": Number(r.cnt).toLocaleString("ja-JP"),
+    "割合": ((Number(r.cnt) / Math.max(activeCount, 1)) * 100).toFixed(1) + "%",
+  }))) : [];
+  adminState.userStats = { activeCount, inactiveCount, frozenCount, profRows };
+  const total = activeCount + inactiveCount;
+  const summary = `
+    <div class="admin-stat-grid">
+      <div class="admin-stat"><div class="admin-stat-label">総ユーザー数</div><div class="admin-stat-value">${total.toLocaleString("ja-JP")}</div></div>
+      <div class="admin-stat admin-stat-ok"><div class="admin-stat-label">アクティブ</div><div class="admin-stat-value">${activeCount.toLocaleString("ja-JP")}</div></div>
+      <div class="admin-stat admin-stat-dim"><div class="admin-stat-label">非アクティブ</div><div class="admin-stat-value">${inactiveCount.toLocaleString("ja-JP")}</div></div>
+      <div class="admin-stat admin-stat-warn"><div class="admin-stat-label">凍結</div><div class="admin-stat-value">${frozenCount.toLocaleString("ja-JP")}</div></div>
+    </div>`;
+  const profTable = profRows.length
+    ? `<div class="admin-card-subtitle">プロファイル別 アクティブユーザー (Top 20)</div>` + adminTableHtml(["プロファイル", "アクティブ人数", "割合"], profRows, { compact: true })
+    : `<div class="meta" style="padding:8px">プロファイル別取得に失敗しました (権限不足の可能性)</div>`;
+  document.getElementById("adminUserStatsResult").innerHTML = summary + profTable;
+}
+
+async function doAdminFrozen() {
+  if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
+  adminSetCardLoading("adminFrozenResult", "凍結ユーザーを取得中…");
+  const r = await runSoql({
+    host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+    soql: `SELECT Id, UserId, User.Name, User.Username, User.Profile.Name, User.IsActive, User.Email FROM UserLogin WHERE IsFrozen = true ORDER BY User.Name LIMIT 500`,
+  });
+  if (!r.ok) { adminSetCardError("adminFrozenResult", r.status, r.data); return; }
+  const recs = (r.data && r.data.records) || [];
+  const rows = recs.map((rec) => ({
+    "氏名": rec.User ? rec.User.Name : "",
+    "ユーザ名": rec.User ? rec.User.Username : "",
+    "メール": rec.User ? rec.User.Email : "",
+    "プロファイル": rec.User && rec.User.Profile ? rec.User.Profile.Name : "(未設定)",
+    "IsActive": rec.User && rec.User.IsActive ? "○ 有効" : "− 無効",
+    "User Id": rec.UserId,
+    "アクション": { __html: `<button class="admin-action-unfreeze admin-row-action" data-user-id="${escape(rec.UserId || "")}" data-user-name="${escape(rec.User ? rec.User.Name : "")}" title="このユーザーの凍結を解除します (UserLogin.IsFrozen = false を Composite API で UPDATE、確認ダイアログあり)">🔓 凍結解除</button>` },
+  }));
+  adminState.frozen = rows;
+  const headers = ["氏名", "ユーザ名", "メール", "プロファイル", "IsActive", "User Id", "アクション"];
+  const hint = recs.length
+    ? `<div class="admin-card-summary">${recs.length} 件凍結中 — 各行の「🔓 凍結解除」ボタンで個別解除、または Apex タブの「🔓 ユーザー一括凍結解除」テンプレで一括処理</div>`
+    : `<div class="admin-card-summary admin-card-ok">✓ 凍結中のユーザーはいません</div>`;
+  document.getElementById("adminFrozenResult").innerHTML = hint + adminTableHtml(headers, rows);
+}
+
+// 個別ユーザー凍結解除 (UserLogin.IsFrozen = false を REST API で UPDATE)
+async function doAdminUnfreezeUser(userId, userName) {
+  if (!state.sid || !userId) { panelToast("⚠ User Id が取得できません", { kind: "warn" }); return; }
+  // 1. UserLogin の Id を引く (UserLogin の主キーは Id、UserId は外部キー)
+  const findR = await runSoql({
+    host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+    soql: `SELECT Id, IsFrozen FROM UserLogin WHERE UserId = '${userId.replace(/'/g, "")}' LIMIT 1`,
+  });
+  if (!findR.ok) { panelToast(`❌ UserLogin 取得に失敗: HTTP ${findR.status}`, { kind: "err" }); return; }
+  const userLogin = ((findR.data || {}).records || [])[0];
+  if (!userLogin) { panelToast(`❌ 該当する UserLogin が見つかりません (UserId=${userId})`, { kind: "err" }); return; }
+  if (!userLogin.IsFrozen) { panelToast(`✓ ユーザー「${userName}」は既に凍結解除されています`, { kind: "ok" }); doAdminFrozen(); return; }
+  // 2. 確認ダイアログ
+  const ok = window.confirm(`ユーザー「${userName}」(UserId=${userId}) の凍結を解除しますか？\n\nUserLogin (${userLogin.Id}) の IsFrozen を false に更新します。\nこの操作は本番組織でも即時反映されます。`);
+  if (!ok) return;
+  // 3. PATCH /sobjects/UserLogin/<Id>
+  const patchR = await sfFetch({
+    host: state.host, sid: state.sid,
+    path: `/services/data/v${state.apiVersion}/sobjects/UserLogin/${encodeURIComponent(userLogin.Id)}`,
+    method: "PATCH",
+    body: JSON.stringify({ IsFrozen: false }),
+  });
+  if (!patchR.ok) {
+    panelToast(`❌ 凍結解除に失敗: HTTP ${patchR.status} ${JSON.stringify(patchR.data || {}).slice(0, 120)}`, { kind: "err" });
+    return;
+  }
+  panelToast(`✓ ユーザー「${userName}」の凍結を解除しました`, { kind: "ok" });
+  // 4. 一覧再取得
+  doAdminFrozen();
+}
+
+// MFA 未設定のアクティブユーザー一覧 (TwoFactorMethodsInfo に登録の無い User を抽出)
+async function doAdminListMfaMissing() {
+  if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
+  const el = document.getElementById("adminMfaResult");
+  if (el) el.innerHTML = `<div class="meta" style="padding:12px"><span class="pill loading">MFA 未設定アクティブユーザーを抽出中…</span></div>`;
+  // 1. MFA 設定済 UserId 一覧
+  const mfaR = await runSoql({
+    host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+    soql: `SELECT UserId FROM TwoFactorMethodsInfo LIMIT 50000`,
+  });
+  if (!mfaR.ok) { adminSetCardError("adminMfaResult", mfaR.status, mfaR.data); return; }
+  const mfaUserIds = new Set(((mfaR.data || {}).records || []).map((r) => r.UserId).filter(Boolean));
+  // 2. アクティブな内部ユーザー一覧 (UserType=Standard)
+  const userR = await runSoql({
+    host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+    soql: `SELECT Id, Name, Username, Email, Profile.Name, UserType, LastLoginDate FROM User WHERE IsActive = true AND UserType = 'Standard' ORDER BY LastLoginDate DESC NULLS LAST LIMIT 5000`,
+  });
+  if (!userR.ok) { adminSetCardError("adminMfaResult", userR.status, userR.data); return; }
+  const allActive = (userR.data || {}).records || [];
+  const missing = allActive.filter((u) => !mfaUserIds.has(u.Id));
+  const rows = missing.slice(0, 500).map((u) => ({
+    "氏名": u.Name,
+    "ユーザ名": u.Username,
+    "メール": u.Email || "",
+    "プロファイル": u.Profile ? u.Profile.Name : "(未設定)",
+    "最終ログイン": u.LastLoginDate ? String(u.LastLoginDate).substring(0, 10) : "未ログイン",
+  }));
+  const headers = ["氏名", "ユーザ名", "メール", "プロファイル", "最終ログイン"];
+  const summary = `<div class="admin-card-summary admin-card-warn">⚠ MFA 未設定アクティブ内部ユーザー: <strong>${missing.length}</strong> 名 / 全アクティブ内部 ${allActive.length} 名 (${allActive.length ? ((missing.length / allActive.length) * 100).toFixed(1) : 0}%)</div>`;
+  const note = `<div class="meta" style="padding:6px 8px;font-size:11px;color:var(--fg-dim)">※ Salesforce はすべての内部ユーザーに MFA を必須化しています (2022/02 以降)。未設定者は要督促。<br>※ 表示は最大 500 名まで。全件は「📥 サマリ CSV」で出力できます。</div>`;
+  document.getElementById("adminMfaResult").innerHTML = summary + note + adminTableHtml(headers, rows);
+  // CSV エクスポート用に保存
+  adminState.mfaMissing = rows;
+}
+
+// 特定ライセンスの使用ユーザー一覧 (Profile.UserLicense.Name 経由で逆引き)
+async function doAdminShowLicenseUsers(apiName) {
+  if (!state.sid || !apiName) return;
+  panelToast(`🔎 ${apiName} ライセンス使用ユーザーを抽出中…`, { kind: "ok" });
+  const r = await runSoql({
+    host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+    soql: `SELECT Id, Name, Username, IsActive, Profile.Name, LastLoginDate FROM User WHERE Profile.UserLicense.Name = '${apiName.replace(/'/g, "")}' AND IsActive = true ORDER BY LastLoginDate DESC NULLS LAST LIMIT 1000`,
+  });
+  if (!r.ok) { panelToast(`❌ 抽出失敗 HTTP ${r.status}`, { kind: "err" }); return; }
+  const recs = (r.data || {}).records || [];
+  const rows = recs.map((u) => ({
+    "氏名": u.Name,
+    "ユーザ名": u.Username,
+    "プロファイル": u.Profile ? u.Profile.Name : "",
+    "最終ログイン": u.LastLoginDate ? String(u.LastLoginDate).substring(0, 10) : "未ログイン",
+    "状態": u.IsActive ? "○ 有効" : "− 無効",
+  }));
+  // モーダル風: adminLicensesResult の下に展開
+  const target = document.getElementById("adminLicensesResult");
+  if (!target) return;
+  const headers = ["氏名", "ユーザ名", "プロファイル", "最終ログイン", "状態"];
+  const detailHtml = `
+    <div class="admin-card-detail">
+      <div class="admin-card-detail-hdr">
+        <strong>${escape(apiName)} ライセンス 使用ユーザー (${recs.length} 名)</strong>
+        <button class="admin-card-detail-close" title="閉じる">✕</button>
+      </div>
+      ${adminTableHtml(headers, rows, { compact: true })}
+    </div>`;
+  // 既存 detail を置換
+  const existing = target.querySelector(".admin-card-detail");
+  if (existing) existing.remove();
+  target.insertAdjacentHTML("beforeend", detailHtml);
+  const closeBtn = target.querySelector(".admin-card-detail-close");
+  if (closeBtn) closeBtn.addEventListener("click", () => {
+    const d = target.querySelector(".admin-card-detail"); if (d) d.remove();
+  });
+}
+
+async function doAdminMfa() {
+  if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
+  adminSetCardLoading("adminMfaResult", "MFA 設定状況を取得中…");
+  const r = await runSoql({
+    host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+    soql: `SELECT UserId, User.Name, User.Username, User.Profile.Name, MethodDefinition FROM TwoFactorMethodsInfo ORDER BY User.Name LIMIT 500`,
+  });
+  if (!r.ok) {
+    // 一部組織で TwoFactorMethodsInfo が無効化されている場合のフォールバック説明
+    adminSetCardError("adminMfaResult", r.status, r.data);
+    const el = document.getElementById("adminMfaResult");
+    if (el) el.innerHTML += `<div class="meta admin-card-hint" style="padding:8px;font-size:11px;color:var(--fg-dim)">※ TwoFactorMethodsInfo は Identity Verification 機能の組織のみ参照可能です。古い組織では Spring '20 以降の有効化が必要です。</div>`;
+    return;
+  }
+  const recs = (r.data && r.data.records) || [];
+  // 方式別集計
+  const byMethod = {};
+  const userMfa = new Map();
+  for (const rec of recs) {
+    const m = rec.MethodDefinition || "(未定義)";
+    byMethod[m] = (byMethod[m] || 0) + 1;
+    if (rec.UserId) {
+      if (!userMfa.has(rec.UserId)) userMfa.set(rec.UserId, { name: rec.User ? rec.User.Name : "", username: rec.User ? rec.User.Username : "", profile: rec.User && rec.User.Profile ? rec.User.Profile.Name : "", methods: [] });
+      userMfa.get(rec.UserId).methods.push(m);
+    }
+  }
+  const methodRows = Object.entries(byMethod).map(([m, cnt]) => ({
+    "方式": m,
+    "件数": Number(cnt).toLocaleString("ja-JP"),
+    "説明": m === "TOTP" ? "Time-based OTP (Google Authenticator 等)"
+          : m === "SalesforceAuthenticator" ? "Salesforce Authenticator アプリ"
+          : m === "U2F" || m === "WebAuthn" ? "セキュリティキー (FIDO)"
+          : m === "OneTimePasswordSms" || m === "SMSCode" ? "SMS ワンタイムパスワード"
+          : m === "OneTimePasswordEmail" || m === "EmailCode" ? "メール ワンタイムパスワード"
+          : "—",
+  })).sort((a, b) => Number(b["件数"].replace(/,/g, "")) - Number(a["件数"].replace(/,/g, "")));
+  const userRows = Array.from(userMfa.values()).slice(0, 100).map((u) => ({
+    "氏名": u.name,
+    "ユーザ名": u.username,
+    "プロファイル": u.profile || "(未設定)",
+    "登録方式": u.methods.join(", "),
+  }));
+  adminState.mfa = { byMethod, userRows };
+  const summary = `<div class="admin-card-summary">MFA 設定済 <strong>${userMfa.size}</strong> ユーザー / 方式 <strong>${Object.keys(byMethod).length}</strong> 種類 / 登録レコード総数 ${recs.length} 件</div>`;
+  const methodSection = `<div class="admin-card-subtitle">方式別集計</div>` + adminTableHtml(["方式", "件数", "説明"], methodRows, { compact: true });
+  const userSection = userRows.length
+    ? `<div class="admin-card-subtitle" style="margin-top:8px">ユーザー別 MFA 設定 (先頭 100 名)</div>` + adminTableHtml(["氏名", "ユーザ名", "プロファイル", "登録方式"], userRows, { compact: true })
+    : "";
+  document.getElementById("adminMfaResult").innerHTML = summary + methodSection + userSection;
+}
+
+async function doAdminPackages() {
+  if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
+  adminSetCardLoading("adminPackagesResult", "InstalledSubscriberPackage (Tooling) を取得中…");
+  const r = await runSoql({
+    host: state.host, sid: state.sid, apiVersion: state.apiVersion, tooling: true,
+    soql: `SELECT SubscriberPackage.Name, SubscriberPackage.NamespacePrefix, SubscriberPackageVersion.Name, SubscriberPackageVersion.MajorVersion, SubscriberPackageVersion.MinorVersion, SubscriberPackageVersion.PatchVersion, SubscriberPackageVersion.IsBeta, SubscriberPackageVersion.IsManaged FROM InstalledSubscriberPackage ORDER BY SubscriberPackage.Name LIMIT 500`,
+  });
+  if (!r.ok) { adminSetCardError("adminPackagesResult", r.status, r.data); return; }
+  const recs = (r.data && r.data.records) || [];
+  const rows = recs.map((rec) => {
+    const pkg = rec.SubscriberPackage || {};
+    const ver = rec.SubscriberPackageVersion || {};
+    const verStr = [ver.MajorVersion, ver.MinorVersion, ver.PatchVersion].filter((n) => n != null).join(".");
+    return {
+      "パッケージ名": pkg.Name || "",
+      "名前空間": pkg.NamespacePrefix || "(なし)",
+      "バージョン名": ver.Name || "",
+      "バージョン番号": verStr || "—",
+      "形態": ver.IsManaged ? "管理パッケージ" : "非管理",
+      "Beta": ver.IsBeta ? "○ Beta" : "",
+    };
+  });
+  adminState.packages = rows;
+  const headers = ["パッケージ名", "名前空間", "バージョン名", "バージョン番号", "形態", "Beta"];
+  document.getElementById("adminPackagesResult").innerHTML =
+    `<div class="admin-card-summary">合計 ${recs.length} 件 / 管理 ${rows.filter((r) => r["形態"] === "管理パッケージ").length} 件 / Beta ${rows.filter((r) => r["Beta"]).length} 件</div>` +
+    adminTableHtml(headers, rows);
+}
+
+async function doAdminLoadAll() {
+  if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
+  const meta = document.getElementById("adminMeta");
+  if (meta) meta.innerHTML = `<span class="pill loading">6 カードを順次取得中…</span>`;
+  const t0 = performance.now();
+  // 順次実行 (並列だと UserLogin の参照などで 401 になりやすい組織あり)
+  await doAdminLicenses();
+  await doAdminPermSetLicenses();
+  await doAdminUserStats();
+  await doAdminFrozen();
+  await doAdminMfa();
+  await doAdminPackages();
+  const dt = Math.round(performance.now() - t0);
+  if (meta) meta.innerHTML = `<span class="pill ok">✓ すべて取得完了</span> <span class="meta">${dt} ms</span>`;
+  panelToast(`✓ ユーザー・ライセンス管理 6 カードを取得しました (${dt} ms)`, { kind: "ok" });
+}
+
+function adminExportCsv() {
+  // 取得済みカードのみ CSV に集約
+  const sections = [];
+  if (adminState.licenses) sections.push({ title: "📊 ユーザーライセンス", headers: ["ライセンス", "API 名", "総数", "使用中", "残り", "使用率", "状態"], rows: adminState.licenses });
+  if (adminState.permsetLicenses) sections.push({ title: "🔑 権限セットライセンス", headers: ["ライセンス", "API 名", "総数", "使用中", "残り", "使用率", "有効期限", "状態"], rows: adminState.permsetLicenses });
+  if (adminState.userStats) sections.push({ title: "👥 ユーザー集計", headers: ["プロファイル", "アクティブ人数", "割合"], rows: adminState.userStats.profRows });
+  if (adminState.frozen) sections.push({ title: "❄️ 凍結ユーザー", headers: ["氏名", "ユーザ名", "メール", "プロファイル", "IsActive", "User Id"], rows: adminState.frozen });
+  if (adminState.mfa) sections.push({ title: "🛡️ MFA 方式別", headers: ["方式", "件数", "説明"], rows: Object.entries(adminState.mfa.byMethod).map(([m, c]) => ({ "方式": m, "件数": c, "説明": "" })) });
+  if (adminState.packages) sections.push({ title: "🔌 インストールパッケージ", headers: ["パッケージ名", "名前空間", "バージョン名", "バージョン番号", "形態", "Beta"], rows: adminState.packages });
+  if (!sections.length) { panelToast("📭 取得済みデータがありません。先に「▶ すべて取得」を実行してください", { kind: "warn" }); return; }
+  const escCsv = (v) => {
+    if (v && typeof v === "object" && v.__html) {
+      // 使用率セル: HTML 内の文字列ラベルだけ抽出
+      const m = v.__html.match(/admin-bar-label">([^<]+)</);
+      v = m ? m[1] : "";
+    }
+    const s = v == null ? "" : String(v);
+    return /[",\n\t]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines = [];
+  lines.push(`# DevToolsNext ユーザー・ライセンス管理 サマリ`);
+  lines.push(`# 生成日時: ${new Date().toLocaleString("ja-JP")}`);
+  lines.push(`# 組織: ${state.host || ""}`);
+  for (const s of sections) {
+    lines.push("");
+    lines.push(`# ${s.title}`);
+    lines.push(s.headers.map(escCsv).join(","));
+    for (const r of s.rows) lines.push(s.headers.map((h) => escCsv(r[h])).join(","));
+  }
+  const csv = "﻿" + lines.join("\n"); // BOM (Excel 文字化け防止)
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  const ts = new Date().toISOString().substring(0, 19).replace(/[-T:]/g, "");
+  a.href = URL.createObjectURL(blob);
+  a.download = `devtoolsnext-admin-summary-${ts}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  panelToast(`📥 サマリ CSV をダウンロードしました (${sections.length} セクション)`, { kind: "ok" });
 }
