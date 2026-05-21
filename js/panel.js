@@ -1179,6 +1179,8 @@ function bindEvents() {
     const TEMPLATES = {
       recent_accounts: `SELECT Id, Name, Industry, Type, CreatedDate, CreatedBy.Name\nFROM Account\nORDER BY CreatedDate DESC\nLIMIT 10`,
       my_open_cases: `SELECT Id, CaseNumber, Subject, Status, Priority, CreatedDate, Account.Name\nFROM Case\nWHERE OwnerId = '${state.userId || "REPLACE_USER_ID"}' AND IsClosed = false\nORDER BY Priority ASC, CreatedDate DESC\nLIMIT 50`,
+      // v3.247.0 Phase 337: 営業向け業務シナリオ — 自分が担当の Open Lead (Phase 336 mini-panel と整合)
+      my_open_leads: `// 🎯 自分が担当の Open Lead (リード追跡)\nSELECT Id, Name, Company, Status, Email, Phone, Industry, CreatedDate\nFROM Lead\nWHERE OwnerId = '${state.userId || "REPLACE_USER_ID"}' AND IsConverted = false\nORDER BY CreatedDate DESC\nLIMIT 50`,
       active_users: `SELECT Id, Name, Username, Email, Profile.Name, UserRole.Name, IsActive\nFROM User\nWHERE IsActive = true\nORDER BY Name\nLIMIT 100`,
       apex_classes: `// Tooling API: 左の「Tooling API を使用」にチェックしてから実行\nSELECT Id, Name, NamespacePrefix, ApiVersion, Status, LengthWithoutComments, LastModifiedDate, LastModifiedBy.Name\nFROM ApexClass\nORDER BY LastModifiedDate DESC\nLIMIT 50`,
       custom_fields: `// Tooling API: 左の「Tooling API を使用」にチェックしてから実行\nSELECT Id, DeveloperName, EntityDefinition.QualifiedApiName, DataType, Length, LastModifiedDate\nFROM CustomField\nWHERE EntityDefinition.QualifiedApiName = 'Account'\nORDER BY DeveloperName\nLIMIT 100`,
