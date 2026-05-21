@@ -155,6 +155,9 @@ async function init() {
       window._sfdtInitialBodyFromQuery = params.get("body") || null;
       // v3.205.0 Phase 295: ?code= 対応 — apex ビュー起動時にコード投入 (auto-fire 無効、ユーザー確認後手動実行)
       window._sfdtInitialCodeFromQuery = params.get("code") || null;
+      // v3.207.0 Phase 297: ?limit=&status= 対応 — login ビュー起動時に件数/ステータス投入 + 自動取得
+      window._sfdtInitialLimitFromQuery = params.get("limit") || null;
+      window._sfdtInitialStatusFromQuery = params.get("status") || null;
     } catch {}
     // v2.93.0: リフレッシュ時の直前 view 復元 (ユーザー要望「リフレッシュしても前のページ状態を残して」)
     try {
@@ -188,6 +191,33 @@ async function init() {
             if (tryRun() || waited >= 5000) clearInterval(iv);
           }, 250);
         }
+      }
+    }
+    // v3.207.0 Phase 297: ?limit=&status= が指定されかつ login view なら投入 + 自動取得
+    if (initialViewFromQuery === "login" && (window._sfdtInitialLimitFromQuery || window._sfdtInitialStatusFromQuery)) {
+      const limitSel = document.getElementById("loginLimit");
+      const statusSel = document.getElementById("loginStatus");
+      if (limitSel && window._sfdtInitialLimitFromQuery) {
+        const l = String(window._sfdtInitialLimitFromQuery);
+        if (Array.from(limitSel.options).some((o) => o.value === l)) limitSel.value = l;
+      }
+      if (statusSel && window._sfdtInitialStatusFromQuery) {
+        const s = String(window._sfdtInitialStatusFromQuery);
+        if (Array.from(statusSel.options).some((o) => o.value === s)) statusSel.value = s;
+      }
+      const tryRun = () => {
+        if (state.sid) {
+          try { const btn = document.getElementById("btnFetchLogin"); if (btn) btn.click(); } catch {}
+          return true;
+        }
+        return false;
+      };
+      if (!tryRun()) {
+        let waited = 0;
+        const iv = setInterval(() => {
+          waited += 250;
+          if (tryRun() || waited >= 5000) clearInterval(iv);
+        }, 250);
       }
     }
     // v3.205.0 Phase 295: ?code= が指定されかつ apex view なら投入のみ (auto-fire 無効 — 匿名 Apex は破壊的なのでユーザー確認必須)
@@ -1215,6 +1245,18 @@ function bindEvents() {
       const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
       await navigator.clipboard.writeText(url);
       panelToast(`🔗 ${inspectState.obj || "?"}:${inspectState.id} の Inspector リンクをコピー`, { kind: "ok" });
+    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+  });
+  // v3.207.0 Phase 297: ログイン履歴 🔗 リンク (?view=login&limit=&status=)
+  $on("btnLoginCopyLink", "click", async () => {
+    const limit = (document.getElementById("loginLimit").value || "50");
+    const status = (document.getElementById("loginStatus").value || "");
+    try {
+      const qp = new URLSearchParams({ view: "login", limit });
+      if (status) qp.set("status", status);
+      const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
+      await navigator.clipboard.writeText(url);
+      panelToast(`🔗 ログイン履歴リンクをコピー (limit=${limit}${status ? ` / ${status}` : ""})`, { kind: "ok" });
     } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
   });
   // v3.205.0 Phase 295: Apex 🔗 リンク (?view=apex&code=) — auto-fire 無効、投入のみで停止

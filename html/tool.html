@@ -511,6 +511,7 @@ System.debug('Now: ' + System.now());</textarea>
           <button id="btnLoginCsv" title="ログイン履歴を CSV ファイルとしてダウンロードします">CSV</button>
           <button id="btnLoginCopyMd" title="📝 ログイン履歴を Markdown 形式でコピー (Phase 265)">📝 MD コピー</button>
           <button id="btnLoginEvidence" aria-label="ログイン履歴をエビデンスとしてダウンロード" title="現在のログイン履歴を Markdown 形式のエビデンスとしてダウンロードします (テスト工程の証跡用)">📸 エビデンス</button>
+          <button id="btnLoginCopyLink" title="🔗 現在のログイン履歴条件 (件数/ステータス) を再取得できる URL (?view=login&limit=&status=) をクリップボードコピー — セキュリティ監査チーム共有用 (Phase 297)">🔗 リンク</button>
         </div>
         <div id="loginMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
         <div id="loginResult" class="grid"><div class="empty-state">👆 取得件数とステータスを選んで「取得」を押してください。<br/>取得後はテーブル内で列ソート・絞り込み・📸 エビデンス保存ができます。<br/><br/><strong>💡 ヒント</strong>: 「失敗のみ」を選ぶと、パスワード誤りや IP 制限などの認証失敗を素早く確認できます。CSV/エビデンス保存はセキュリティ監査の証跡としてご活用ください。</div></div>
