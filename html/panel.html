@@ -441,11 +441,13 @@ System.debug('Now: ' + System.now());</textarea>
 
       <div class="view hidden" data-view="metadata">
         <div class="toolbar">
-          <select id="mdType" title="一覧を取得するメタデータ型を選択してください">
+          <select id="mdType" title="一覧を取得するメタデータ型を選択してください (Phase 309 で 15 種に拡張)">
             <option>ApexClass</option><option>ApexTrigger</option><option>Flow</option>
             <option>CustomObject</option><option>PermissionSet</option><option>Profile</option>
             <option>StaticResource</option><option>LightningComponentBundle</option>
             <option>AuraDefinitionBundle</option><option>ValidationRule</option>
+            <option>EmailTemplate</option><option>Dashboard</option><option>Report</option>
+            <option>CustomField</option><option>RecordType</option>
           </select>
           <button id="btnMetadata" class="primary" title="選択したメタデータ型の一覧を Tooling API から取得します">一覧取得</button>
           <button id="btnMetadataCopyMd" title="📝 メタデータ一覧を Markdown テーブル形式でクリップボードにコピー — Slack / 設計書 / 監査資料 に貼り付け可能 (Phase 266)">📝 MD コピー</button>

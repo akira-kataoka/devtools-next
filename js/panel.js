@@ -4935,11 +4935,18 @@ async function doMetadataList() {
     "CustomObject": "SELECT Id, DeveloperName, NamespacePrefix, ManageableState, CreatedDate, LastModifiedDate FROM CustomObject ORDER BY DeveloperName LIMIT 500",
     "ApexClass": "SELECT Id, Name, ApiVersion, Status, NamespacePrefix, ManageableState, LengthWithoutComments, LastModifiedDate FROM ApexClass ORDER BY LastModifiedDate DESC LIMIT 500",
     "ApexTrigger": "SELECT Id, Name, TableEnumOrId, Status, NamespacePrefix, ManageableState, LastModifiedDate FROM ApexTrigger ORDER BY LastModifiedDate DESC LIMIT 500",
+    // v3.219.0 Phase 309: 追加メタデータ型 (Tooling)
+    "CustomField": "SELECT Id, DeveloperName, EntityDefinition.QualifiedApiName, DataType, Label, ManageableState, LastModifiedDate FROM CustomField ORDER BY EntityDefinition.QualifiedApiName, DeveloperName LIMIT 500",
   };
   // Profile / PermissionSet は通常 REST (Tooling 不要) で取れる
   const REST_TYPES = {
     "Profile": "SELECT Id, Name, UserType, UserLicense.Name, CreatedDate, LastModifiedDate FROM Profile ORDER BY Name LIMIT 200",
     "PermissionSet": "SELECT Id, Name, Label, License.Name, IsCustom, NamespacePrefix, LastModifiedDate FROM PermissionSet WHERE IsOwnedByProfile = false ORDER BY Name LIMIT 200",
+    // v3.219.0 Phase 309: 追加メタデータ型 (REST、Tooling 不要)
+    "EmailTemplate": "SELECT Id, Name, DeveloperName, FolderId, IsActive, TemplateStyle, TemplateType, LastUsedDate FROM EmailTemplate ORDER BY LastUsedDate DESC NULLS LAST, Name LIMIT 200",
+    "Dashboard": "SELECT Id, Title, DeveloperName, FolderName, RunningUserId, RunningUser.Name, LastModifiedDate FROM Dashboard ORDER BY LastModifiedDate DESC LIMIT 200",
+    "Report": "SELECT Id, Name, DeveloperName, FolderName, Format, LastRunDate, LastModifiedDate FROM Report ORDER BY LastModifiedDate DESC LIMIT 200",
+    "RecordType": "SELECT Id, Name, DeveloperName, SobjectType, IsActive, BusinessProcessId, LastModifiedDate FROM RecordType ORDER BY SobjectType, Name LIMIT 200",
   };
   const isRest = !!REST_TYPES[type];
   const soql = TYPE_SOQL[type] || REST_TYPES[type] || `SELECT Id, Name, NamespacePrefix, ManageableState, CreatedDate, LastModifiedDate FROM ${type} ORDER BY LastModifiedDate DESC LIMIT 200`;
