@@ -93,7 +93,7 @@
 > - **業務担当者向け磨き**: 設計書 21/21 種 note + 凡例 + 章番号 chip + 文書管理 ID + 機密区分 + 環境バッジ + ロール別 FAQ 19 問 + トラブルシューティング 13 症状 + PDF 保存手順 + アンインストール手順
 > - **a11y 実績**: 3 モード fade-in アニメーション統一、prefers-reduced-motion 対応、focus-visible/aria-label 全面適用、PROD バッジ警告パルス、`.pill.loading` 統一スピナー、ソート `⇅` マーカー、**admin モーダルのフォーカス trap (Phase 231)**
 > - **3 モード UI 統一達成**: popup (⚙️ 管理者) / panel + tool (💻 開発者) / mini-panel (👤 ユーザー) — fade-in / versionBadge / 空状態ガイド / button transition / a11y outline すべて整合
-> - **chrome.storage 永続化キー**: **18 種** (最近 SOQL / Apex / REST / Inspector / Login as User / 設計書「対象」/ メタデータ type / SOQL Tooling チェック状態 / Apex Debug ログ / 最近検索ワード + スコープ / 直前生成設計書 (Phase 248) / **過去 5 件設計書履歴 (Phase 259)** 等)
+> - **chrome.storage 永続化キー**: **25+ 種** (履歴系: SOQL / Apex / REST / Inspector / Picker / Login as User / 検索ワード + 最近ユーザー、Draft 系: SOQL / Apex / REST body、UI 状態系: 最終 view / Limits ピン + ソート / Tooling チェック / メタデータ type / Apex Debug log / popup 便利リンク折りたたみ / ナビ折りたたみ / sideCollapsed / whatsNewCollapsed、最近候補系: オブジェクト / レコード ID / view / 検索ワード / 設計書「対象」/ 直前生成設計書 / 過去 5 件設計書履歴、その他: KnownVersion 等 — Phase 358 で再 count 18→25+ 実数化)
 > - **CSS デザイントークン**: 18 種 (--sp-0 〜 --sp-7 + --r-xs 〜 --r-xl + --r-pill + --r-tag + --sp-card-y + --sp-hair + --sp-tag-y)、累計 170+ 箇所トークン化
 > - **業務シナリオ完全カバー**:
 >   - **データ抽出**: SOQL モード / 項目選択モード / グローバル検索 (SOSL)
