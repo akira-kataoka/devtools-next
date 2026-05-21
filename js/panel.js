@@ -5371,10 +5371,12 @@ async function doBulkDelete(tableId) {
   const preview = ids.slice(0, 5).join("\n");
   const more = ids.length > 5 ? `\n…他 ${ids.length - 5} 件` : "";
   // v3.201.0 Phase 291: PROD 環境では警告メッセージを強化 + 組織情報を明示
+  // v3.313.0 Phase 403: footer を inline 式から prodFooter 変数 pattern に統一 (他 5 経路と code-level 整合性)
   const prodHeader = state.isProd
     ? `🚨🚨 本番組織 (PROD) での DELETE 操作 🚨🚨\n対象組織: ${state.host || "?"}\n\n`
     : "";
-  const ok = window.confirm(`${prodHeader}⚠ ${ids.length} 件のレコードを削除します\n\n対象 Id (先頭 5 件):\n${preview}${more}\n\nこの操作は取り消せません。続行しますか?${state.isProd ? "\n\n(Sandbox での事前テストを強く推奨します)" : ""}`);
+  const prodFooter = state.isProd ? "\n\n(Sandbox での事前テストを強く推奨します)" : "";
+  const ok = window.confirm(`${prodHeader}⚠ ${ids.length} 件のレコードを削除します\n\n対象 Id (先頭 5 件):\n${preview}${more}\n\nこの操作は取り消せません。続行しますか?${prodFooter}`);
   if (!ok) return;
   if (!state.host || !state.sid) { panelToast("⚠ セッション未取得です", { kind: "err" }); return; }
   panelToast(`🗑 削除を開始します (${ids.length} 件)…`, { kind: "loading" });
