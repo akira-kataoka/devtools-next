@@ -7,7 +7,7 @@
 ## チェックリスト
 
 - [ ] `VERSION.txt` と `manifest.json` の `version` を更新 (三桁固定: `3.X.Y`)
-- [ ] `README.md` の更新履歴に変更を追記
+- [ ] **小規模 PR**: `README.md` の更新履歴に変更を追記 / **自律改修ループの累積 Phase** (v3 系 Phase 100+): 冒頭「Phase NNN-NNN ブロック」「累計実績」を更新で代替 (CONTRIBUTING.md 参照、Phase 354 で改訂)
 - [ ] 影響範囲を 3 モード (💻 panel + tool / ⚙️ popup / 👤 mini-panel) で確認
 - [ ] Phase 121 [リリース前 動作確認チェックリスト](../blob/main/README.md#-リリース前-全体動作確認チェックリスト-v3310-) の該当項目を実施
 - [ ] アクセシビリティ確認 (`:focus-visible` / `aria-label` / `prefers-reduced-motion` 配慮が必要なら適用)
