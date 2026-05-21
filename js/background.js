@@ -116,6 +116,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
       } else if (msg.type === "sfdt:reloadNow") {
         sendResponse({ ok: true });
         setTimeout(() => chrome.runtime.reload(), 200);
+      } else if (msg.type === "sfdt:capture") {
+        // v3.128.0 Phase 218: アクティブ Salesforce タブの可視範囲を PNG キャプチャ (エビデンス画像化、ユーザー要望)
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+        const tab = tabs && tabs[0];
+        if (!tab) { sendResponse({ ok: false, error: "アクティブなタブが見つかりません" }); return; }
+        try {
+          const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "png" });
+          sendResponse({ ok: true, dataUrl, tabUrl: tab.url, tabTitle: tab.title });
+        } catch (capErr) {
+          sendResponse({ ok: false, error: "captureVisibleTab 失敗: " + String(capErr && capErr.message || capErr) });
+        }
       } else {
         sendResponse({ ok: false, error: "unknown message type" });
       }

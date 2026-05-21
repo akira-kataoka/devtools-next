@@ -3160,6 +3160,31 @@ function downloadEvidence(md, baseName) {
   a.download = `${baseName || "evidence"}-${tsForFilename()}.md`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 2000);
+  // v3.128.0 Phase 218: Markdown と同時に Salesforce タブの PNG スクリーンショットも保存 (ユーザー要望「エビデンス取得は画像の取得としたい」)
+  captureScreenshotPng(baseName).catch((e) => console.log("[evidence] screenshot failed (ignored):", e));
+}
+
+// v3.128.0 Phase 218: chrome.tabs.captureVisibleTab で Salesforce タブの PNG スクリーンショットを取得 → ダウンロード
+async function captureScreenshotPng(baseName) {
+  try {
+    const res = await chrome.runtime.sendMessage({ type: "sfdt:capture" });
+    if (!res || !res.ok || !res.dataUrl) {
+      panelToast(`⚠ 画像エビデンス失敗: ${res?.error || "background から PNG が返りませんでした"}`, { kind: "warn" });
+      return;
+    }
+    // dataUrl (data:image/png;base64,...) → Blob → download
+    const r = await fetch(res.dataUrl);
+    const blob = await r.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${baseName || "evidence"}-${tsForFilename()}.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    panelToast(`📸 画像エビデンスも保存しました (Salesforce タブの可視範囲 PNG)`, { kind: "ok" });
+  } catch (e) {
+    panelToast(`⚠ 画像エビデンス失敗: ${String(e && e.message || e)}`, { kind: "warn" });
+  }
 }
 
 function captureSoqlEvidence() {
