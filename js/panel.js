@@ -186,7 +186,7 @@ async function renderDesignLastChip() {
     const elapsedLabel = elapsed != null ? (elapsed < 60 ? ` (${elapsed} 分前)` : ` (${Math.floor(elapsed / 60)} 時間前)`) : "";
     row.innerHTML = `<button id="btnDesignReRun" class="design-last-chip" title="直前生成と同じ条件 (type / 対象 / 形式) で 1 クリック再生成。生成日時から経過した時間も併記">
       🔄 直前生成を再実行: ${escape(typeLabel)}${objPart}${fmtPart}${elapsedLabel}
-    </button>`;
+    </button><button id="btnDesignReRunClear" class="design-last-chip-clear" title="直前生成履歴を削除します — 機密設計書 (FLS / プロファイル詳細 / 組織全体スナップショット) を生成した後、共用 PC で履歴を残したくない場合に (Phase 249)">✕</button>`;
     const btn = document.getElementById("btnDesignReRun");
     if (btn) btn.addEventListener("click", () => {
       // type / obj / format を UI に復元
@@ -197,6 +197,15 @@ async function renderDesignLastChip() {
       if (objEl) objEl.value = last.obj || "";
       if (fmtEl && last.format) fmtEl.value = last.format;
       doGenerateDesign();
+    });
+    // v3.159.0 Phase 249: 履歴クリアボタン (機密配慮、共用 PC 対応)
+    const clearBtn = document.getElementById("btnDesignReRunClear");
+    if (clearBtn) clearBtn.addEventListener("click", async () => {
+      try {
+        await chrome.storage.local.remove("sfdtLastDesign");
+        row.innerHTML = "";
+        panelToast("✓ 直前生成履歴を削除しました", { kind: "ok" });
+      } catch (e) { console.warn("[design] last clear failed", e); }
     });
   } catch (e) { console.warn("[design] last chip render failed", e); }
 }

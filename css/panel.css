@@ -2126,3 +2126,22 @@ mark.search-hl {
   border-color: #2ecc71;
   color: #fff;
 }
+
+/* v3.159.0 Phase 249: 設計書 直前生成 chip クリアボタン (機密配慮) */
+.design-last-chip-clear {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--fg-dim);
+  padding: 5px 9px;
+  border-radius: 50%;
+  font-size: 11px;
+  cursor: pointer;
+  margin-left: 4px;
+  vertical-align: middle;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+.design-last-chip-clear:hover {
+  background: var(--err);
+  color: #fff;
+  border-color: var(--err);
+}
