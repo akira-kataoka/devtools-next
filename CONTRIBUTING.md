@@ -88,7 +88,7 @@ sf-devtool-extension/
 │   ├── panel.js         # panel/tool 共通ロジック (3000+ 行)
 │   ├── content.js       # mini-panel (shadow DOM)
 │   ├── sf-api.js        # Salesforce REST/Tooling API ラッパー
-│   ├── design-docs.js   # 設計書 22 種ジェネレータ
+│   ├── design-docs.js   # 設計書 23 種ジェネレータ (Phase 240 で orgSnapshot 追加)
 │   ├── picker.js        # ARIA listbox ピッカー (オブジェクト/プロファイル/Flow 等)
 │   ├── ui-helpers.js    # 共通 UI ユーティリティ
 │   └── background.js    # service_worker (entry: manifest.json 参照)

@@ -423,7 +423,7 @@ async function init() {
   }
 }
 
-// v3.53.0: 設計書 22 種を絞り込む検索ボックス
+// v3.53.0: 設計書 23 種を絞り込む検索ボックス (Phase 240 で 23 種に拡張)
 // v3.158.0 Phase 248: 設計書「直前生成」chip を designMeta 上部に表示し、ワンクリックで再生成
 // v3.169.0 Phase 259: 過去 5 件履歴に拡張 (sfdtRecentDesigns、最新を sfdtLastDesign に維持)
 async function renderDesignLastChip() {
