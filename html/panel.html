@@ -126,6 +126,11 @@
             <option value="my_permission_sets">🔑 自分の権限セット割当 (ガバナンス監査)</option>
             <option value="large_attachments">📦 大型添付ファイル Top 50 (ストレージ削減)</option>
             <option value="stale_open_cases">⏰ 長期未対応 Case 30 日超 (SLA 違反候補)</option>
+            <option value="user_license_usage">📊 ユーザーライセンス使用状況 (UserLicense)</option>
+            <option value="permset_license_usage">🔑 権限セットライセンス使用状況 (PermissionSetLicense)</option>
+            <option value="frozen_users">❄️ 凍結ユーザー一覧 (UserLogin.IsFrozen)</option>
+            <option value="mfa_status">🛡️ MFA 設定状況 (TwoFactorMethodsInfo)</option>
+            <option value="installed_packages">🔌 インストールパッケージ一覧 (要 Tooling API)</option>
           </select>
           <input id="soqlSavedName" placeholder="名前を付けて保存します..." title="現在の SOQL クエリに名前を付けて保存します" />
           <button id="btnSaveSoql" title="入力した名前で現在の SOQL を保存します">保存</button>
@@ -296,6 +301,9 @@
             <option value="profile_summary">👥 プロファイル別アクティブユーザー数 (ガバナンス監査)</option>
             <option value="apex_governor_test">🧪 Apex ガバナ消費の実態確認</option>
             <option value="abort_all_jobs">🛑 全 CronTrigger キャンセル (要注意・コメント化)</option>
+            <option value="bulk_freeze_users">❄️ ユーザー一括凍結 (UserLogin.IsFrozen 一覧+UPDATE)</option>
+            <option value="bulk_unfreeze_users">🔓 ユーザー一括凍結解除</option>
+            <option value="bulk_deactivate_users">🚫 ユーザー一括無効化 (IsActive=false, ライセンス開放)</option>
           </select>
           <select id="apexSaved" title="保存済みの匿名 Apex を選択して読み込みます"></select>
           <button id="btnLoadApex" title="選択した保存済み Apex をエディタに読み込みます">読込</button>
