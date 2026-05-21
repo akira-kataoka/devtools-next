@@ -1360,6 +1360,10 @@ function bindEvents() {
       async_jobs: { method: "GET", path: `/services/data/v${apiVer}/tooling/sobjects/AsyncApexJob` },
       bulk_jobs: { method: "GET", path: `/services/data/v${apiVer}/jobs/ingest` },
       versions: { method: "GET", path: `/services/data` },
+      // v3.215.0 Phase 305: 追加 3 種
+      recent: { method: "GET", path: `/services/data/v${apiVer}/recent` },
+      theme: { method: "GET", path: `/services/data/v${apiVer}/theme` },
+      actions: { method: "GET", path: `/services/data/v${apiVer}/actions` },
     };
     const tpl = REST_QUICK[key];
     if (!tpl) return;
