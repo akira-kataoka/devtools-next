@@ -1,7 +1,7 @@
 # Salesforce DevTool (Chrome / Edge 拡張)  v3.x
 
-> 🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊 **Phase 310 マイルストーン達成 — v3 系 220 連続リリース!!!** (2026-05-22) — 通算 420+ リリース、サイクル 1-310 完遂 🎯
-> v3.0.0 (Phase 90) → **v3.220.0 (Phase 310)** を継続的自律改修ループで磨き上げ。**🎊 v3 系 220 連続リリース完遂!**
+> 🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊 **Phase 320 マイルストーン達成 — v3 系 230 連続リリース!!!** (2026-05-22) — 通算 430+ リリース、サイクル 1-320 完遂 🎯
+> v3.0.0 (Phase 90) → **v3.230.0 (Phase 320)** を継続的自律改修ループで磨き上げ。**🎊 v3 系 230 連続リリース完遂!**
 > **設計書 21 種類整合性完成 (Phase 318-319、実装数確認 + 全方位修正) + 5 系統クイック実行拡充 (Phase 305-309、17 新規 templates/types) + 6 系統 templates/types グルーピング (Phase 313-318、102 templates × 26 カテゴリ)** + 既存資産 (URL クエリ 12 / 🔗 リンク 10 / 📝 MD 14 / PROD 防御 6 経路) 維持
 > **GitHub Governance 完成** — CI / Issue / PR / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT すべて整備
 > **Inspector ↔ SOQL 双方向ナビ** (Phase 155-157) + **SQL/Apex 整形** (Phase 153-154) + **SOQL/Apex テンプレート挿入** (Phase 159-160) すべて完成
@@ -74,10 +74,11 @@
 > - **Phase 281-290**: v3.191-3.200 🔗 **グローバル検索に `?kw=` URL クエリ + 「🔗 リンクコピー」ボタン** (Phase 281) / 🔗 **SOQL/Describe/Inspector に「🔗 リンク」ボタン横展開** (Phase 282) / 🔗 **メタデータ一覧に `?type=` URL クエリ + 「🔗 リンク」** (Phase 283) / 🔗 **設計書ビューに `?type=&target=&format=` URL クエリ + 「🔗 リンク」** (Phase 284) / 🔗 **REST API ビューに `?method=&path=&body=` URL クエリ + 「🔗 リンク」(GET のみ auto-fire、POST/PATCH/DELETE は安全のため投入のみ)** (Phase 285) / 📚 **README に「URL クエリ統一パターン 9 種」セクション追加** (Phase 286) / 📐 **Home に「📐 オブジェクト構造」ミニカード追加 (4 入口統一の補完)** (Phase 287) / ⚠ **mini-panel に ENV (Sandbox/PROD) バッジ追加 — PROD はパルスアニメーション (誤操作防止)** (Phase 288) / 🛡️ **PROD 環境での破壊的操作に confirm ダイアログ (Apex DML / REST POST/PATCH/DELETE) — 2 段階防御完成** (Phase 289) / 🎊🎊🎊🎊 **v3 系 200 連続リリース達成 + マイルストーン記念** (Phase 290)
 > - **Phase 291-300**: v3.201-3.210 🛡️ **SOQL Bulk DELETE / Bulk DML (CSV→DML) に PROD 警告強化** (Phase 291) / 🛡️ **Inspector インライン編集 (PATCH) に PROD 確認 — PROD 防御 5 経路完成** (Phase 292) / 🛡️ **admin 凍結解除 (UserLogin PATCH) に PROD 警告強化 — PROD 防御 6 経路完成** (Phase 293) / 📚 **README に「PROD 誤操作防止 2 段階防御 × 6 経路」セクション追加** (Phase 294) / 🔗 **Apex ビューに `?code=` URL クエリ + 「🔗 リンク」(auto-fire 無効、投入のみ)** (Phase 295) / 📚 **README URL クエリ表を 9 → 10 種に更新** (Phase 296) / 🔐 **ログイン履歴に `?view=login&limit=&status=` URL クエリ + 「🔗 リンク」(セキュリティ監査向け)** (Phase 297) / 🌐 **API URL ビルダーに `?op=&apiObj=&apiId=` URL クエリ + 「🔗 リンク」** (Phase 298) / 📚 **README URL クエリ表を 10 → 12 種に更新** (Phase 299) / 🎊🎊🎊🎊🎊 **v3 系 210 連続リリース達成 + マイルストーン記念** (Phase 300)
 > - **Phase 301-310**: v3.211-3.220 🔧 **設計書数を 22 → 23 種に一掃 (UI 案内文整合)** (Phase 301) / 📚 **README 業務向け詳細解説に orgSnapshot 行追加** (Phase 302) / 🧪 **README 手動テストガイドに #21-23 行追加 (apexCallTree/limitsDashboard/orgSnapshot)** (Phase 303) / 📚 **CONTRIBUTING.md + panel.js コメント 22 → 23 種** (Phase 304) / 🌐 **REST クイック実行テンプレート 8 → 11 種 (recent/theme/actions)** (Phase 305) / 📝 **mini-panel SOQL テンプレート 6 → 9 種 (stale_cases/recent_contacts/top_revenue)** (Phase 306) / 🟧 **Apex 匿名実行テンプレート 17 → 20 種 (count_record_types/list_named_credentials/recent_login_failures)** (Phase 307) / 🔎 **panel SOQL テンプレート 22 → 25 種 (recent_modified_flows/email_templates/dashboards)** (Phase 308) / 📦 **メタデータ一覧 type 10 → 15 種 (EmailTemplate/Dashboard/Report/CustomField/RecordType)** (Phase 309) / 🎊🎊🎊🎊🎊🎊 **v3 系 220 連続リリース達成 + マイルストーン記念** (Phase 310)
+> - **Phase 311-320**: v3.221-3.230 📊 **popup に「📊 使用状況」ボタン追加 (Limits 直接ジャンプ)** (Phase 311) / 📋 **mini-panel SOQL に Setup Audit Trail 追加 (9 → 10 種)** (Phase 312) / 🗂️ **mini-panel SOQL を 3 カテゴリ optgroup 化** (Phase 313) / 🗂️ **panel/tool SOQL 25 種を 5 カテゴリ optgroup 化** (Phase 314) / 🗂️ **panel/tool Apex 20 種を 5 カテゴリ optgroup 化** (Phase 315) / 🗂️ **panel/tool REST 11 種を 3 カテゴリ optgroup 化** (Phase 316) / 🗂️ **メタデータ type 15 種を 5 カテゴリ optgroup 化** (Phase 317) / 🗂️ **設計書 type 21 種を 5 カテゴリ optgroup 化 + 23 → 21 種 実装一致発見** (Phase 318) / 🔧 **設計書数 23 → 21 種 全方位修正 (8 ファイル)** (Phase 319) / 🎊🎊🎊🎊🎊🎊🎊 **v3 系 230 連続リリース達成 + マイルストーン記念** (Phase 320)
 >
-> ## 📈 累計実績 (Phase 310 時点) 🎯
-> - **リリース数**: v1 系 + v2 系 100 リリース + **🎊 v3 系 220 リリース** = **420+ リリース**
-> - **GitHub push 数**: **470+ コミット**
+> ## 📈 累計実績 (Phase 320 時点) 🎯
+> - **リリース数**: v1 系 + v2 系 100 リリース + **🎊 v3 系 230 リリース** = **430+ リリース**
+> - **GitHub push 数**: **480+ コミット**
 > - **対応ユーザー報告**: **100+ 件** (UX 改善 / 機能追加 / バグ修正)
 > - **URL クエリ統一パターン**: **12 種完成**
 > - **🔗 リンクコピーボタン**: **10 箇所完成**
