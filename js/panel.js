@@ -2147,6 +2147,8 @@ async function exLoadFields() {
   // 基本的に複合項目 (Name 等の compoundFieldName が無いもの) を選べばよい。
   exState.obj = obj;
   exState.fields = (r.data.fields || []).filter((f) => !f.deprecatedAndHidden);
+  // v3.257.0 Phase 347 (Team H): エクスポートのフィールド読込成功時、対象オブジェクトを最近使った候補に push
+  if (/^[A-Za-z][A-Za-z0-9_]*$/.test(obj)) pushRecentObject(obj);
   // 標準セレクション: 一般的な代表項目 (Id, Name, 主要ラベル系)
   exState.selected = new Set();
   for (const f of exState.fields) {
@@ -2493,6 +2495,16 @@ async function apiRunRequest() {
   const statusIcon = r.ok ? "✓" : "❌";
   const formatted = (typeof r.data === "object") ? JSON.stringify(r.data, null, 2) : String(r.data || "");
   out.textContent = formatted;
+  // v3.257.0 Phase 347 (Team H): API URL ビルダー 実行成功時、apiObj / apiId を最近使った候補に push
+  if (r.ok) {
+    const apiObjV = (document.getElementById("apiObj").value || "").trim();
+    const apiIdV = (document.getElementById("apiId").value || "").trim();
+    if (apiObjV && /^[A-Za-z][A-Za-z0-9_]*$/.test(apiObjV)) pushRecentObject(apiObjV);
+    if (apiIdV && /^[a-zA-Z0-9]{15,18}$/.test(apiIdV)) {
+      const lbl = (r.data && typeof r.data === "object" && (r.data.Name || r.data.Subject || r.data.CaseNumber || r.data.Title)) || apiObjV;
+      pushRecentRecordId(apiIdV, `${apiObjV}${lbl ? ": " + lbl : ""}`);
+    }
+  }
   // v3.183.0 Phase 273: API URL ビルダー実行結果にサイズ表示 + 📋/📝 コピーボタン追加 (REST view と整合)
   const bodySize = formatted ? formatted.length : 0;
   const sizeLabel = bodySize < 1024 ? `${bodySize} B` : `${(bodySize / 1024).toFixed(1)} KB`;
@@ -4736,6 +4748,8 @@ async function doDescribe() {
   const fields = (r.data && r.data.fields) || [];
   // v3.185.0 Phase 275: 設計書 MD コピーボタンが参照する最新 describe データを state に保持
   state.lastDescribe = { obj, data: r.data };
+  // v3.257.0 Phase 347 (Team H): describe 成功時、対象オブジェクト名を最近使った候補に push (datalist 上位 ★ 表示)
+  if (/^[A-Za-z][A-Za-z0-9_]*$/.test(obj)) pushRecentObject(obj);
   // v3.184.0 Phase 274: 項目統計サマリ (組織監査・ガバナンス用途) + custom 列追加
   const d = r.data || {};
   const total = fields.length;
