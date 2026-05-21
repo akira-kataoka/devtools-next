@@ -5421,7 +5421,10 @@ async function doGlobalSearch() {
     groups.get(type).push(rec);
   }
 
-  meta.innerHTML = `<span class="pill ok">✓ ${records.length} 件</span> <span class="meta">${dt}ms / ${groups.size} オブジェクト</span>`;
+  meta.innerHTML = `<span class="pill ok">✓ ${records.length} 件</span> <span class="meta">${dt}ms / ${groups.size} オブジェクト</span> <button id="btnSearchExportCsv" class="admin-row-action" style="margin-left:8px" title="検索結果全体を CSV ファイルとしてダウンロードします (SObject 列付き、全グループ統合)">📥 CSV</button>`;
+  // v3.155.0 Phase 245: CSV ダウンロードボタン (グローバル検索結果)
+  const csvBtn = document.getElementById("btnSearchExportCsv");
+  if (csvBtn) csvBtn.addEventListener("click", () => exportSearchCsv(records, kw));
 
   if (!records.length) {
     root.innerHTML = `<div class="empty-state" style="padding:24px 12px">
@@ -5462,6 +5465,71 @@ async function doGlobalSearch() {
   highlightSearchTerm(root, kw);
   // v3.149.0 Phase 239: 履歴に push (chrome.storage 永続化)
   pushSearchHistory({ kw, scope });
+}
+
+// v3.155.0 Phase 245: グローバル検索結果を CSV としてダウンロード
+// SOSL の結果は SObject ごとに項目が異なるため、共通項目 + 個別項目 を 1 CSV にまとめる
+function exportSearchCsv(records, keyword) {
+  if (!Array.isArray(records) || !records.length) {
+    panelToast("📭 エクスポート対象の結果がありません", { kind: "warn" });
+    return;
+  }
+  // 全項目を収集 (各レコードのキーを集約、attributes は除外)
+  const allKeys = new Set(["SObject"]); // 先頭は SObject (種別判別用)
+  for (const rec of records) {
+    Object.keys(rec).forEach((k) => {
+      if (k !== "attributes") allKeys.add(k);
+    });
+  }
+  const headers = ["SObject", ...Array.from(allKeys).filter((k) => k !== "SObject")];
+  // CSV セル変換 (recordsToCsv と同じ、ネスト object 平坦化 + datetime 整形)
+  const escCsv = (v) => {
+    let s;
+    if (v == null) s = "";
+    else if (typeof v === "object") {
+      if (v.attributes && typeof v.attributes === "object") {
+        const fields = Object.keys(v).filter((k) => k !== "attributes");
+        const prefer = ["Name", "Subject", "Title", "DeveloperName", "MasterLabel"];
+        let label = null;
+        for (const p of prefer) {
+          if (fields.includes(p) && v[p] != null) {
+            const id = fields.includes("Id") && v.Id ? ` [${String(v.Id).substring(0, 18)}]` : "";
+            label = `${v[p]}${id}`;
+            break;
+          }
+        }
+        s = label || (fields.length ? `${fields[0]}=${v[fields[0]]}` : "{}");
+      } else {
+        s = JSON.stringify(v);
+      }
+    } else {
+      s = String(v);
+      const m = s.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/);
+      if (m) s = `${m[1]} ${m[2]}`;
+    }
+    return /[",\n\t]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines = [];
+  lines.push(headers.map(escCsv).join(","));
+  for (const rec of records) {
+    const sobj = (rec.attributes && rec.attributes.type) || "?";
+    const row = headers.map((h) => {
+      if (h === "SObject") return escCsv(sobj);
+      return escCsv(rec[h]);
+    });
+    lines.push(row.join(","));
+  }
+  // BOM 付き UTF-8 (Excel 文字化け防止)
+  const csv = "﻿" + lines.join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  const ts = new Date().toISOString().substring(0, 19).replace(/[-T:]/g, "");
+  const kwSafe = String(keyword || "search").replace(/[^a-zA-Z0-9_\-]/g, "_").substring(0, 30);
+  a.href = URL.createObjectURL(blob);
+  a.download = `devtoolsnext-search-${kwSafe}-${ts}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  panelToast(`📥 検索結果 CSV をダウンロードしました (${records.length} 件)`, { kind: "ok" });
 }
 
 // v3.148.0 Phase 238: 検索結果セル内のキーワードハイライト
