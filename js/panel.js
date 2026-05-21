@@ -3462,7 +3462,7 @@ const HARDCODED_LIMITS_GROUPS = [
       title: "🟧 Apex ガバナ制限 (同期トランザクション)",
       items: [
         { ja: "SOQL クエリ数", value: "100 回", desc: "1 トランザクション内で発行できる SELECT 数。SOQL for ループや Map による事前取得で削減" },
-        { ja: "SOQL 取得レコード数", value: "50,000 行", desc: "全 SOQL の累計取得行数。LIMIT 句で意図的に絞る、Aggregate で件数だけ取る等で回避" },
+        { ja: "SOQL 取得レコード数", value: "50,000 行", desc: "全 SOQL の累計取得行数。LIMIT 句で意図的に絞る、Aggregate で件数だけ取る等で回避 (Phase 412 で exBuildSoql の Math.min(limit, 50000) cap と整合)" },
         { ja: "DML ステートメント", value: "150 回", desc: "insert / update / delete / upsert / merge / undelete の合計回数。Bulkify (List 単位で 1 回) が原則" },
         { ja: "DML 処理レコード行数", value: "10,000 行", desc: "全 DML の累計処理行数。大量更新は Batch Apex (200/batch) や Bulk API へ" },
         { ja: "ヒープサイズ", value: "6 MB", desc: "変数・コレクション等が消費できるメモリ。大量 List はループ後 clear() で解放、SOQL も SELECT 列を最小化" },
