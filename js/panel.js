@@ -976,6 +976,8 @@ function bindEvents() {
 
   // Describe / REST / Metadata / Logs / Limits
   $on("btnDescribe", "click", doDescribe);
+  // v3.185.0 Phase 275: 設計書 MD コピー (タイトル + 統計サマリ + 項目表)
+  $on("btnDescribeCopyMd", "click", copyDescribeAsMd);
   $on("btnRest", "click", doRest);
   // v3.125.0 Phase 215: REST クイック実行 (Method+Path 自動セット + 即実行、ユーザー要望「ボタン実行で SF に投げる」)
   $on("restTemplate", "change", (e) => {
@@ -4283,6 +4285,8 @@ async function doDescribe() {
     return;
   }
   const fields = (r.data && r.data.fields) || [];
+  // v3.185.0 Phase 275: 設計書 MD コピーボタンが参照する最新 describe データを state に保持
+  state.lastDescribe = { obj, data: r.data };
   // v3.184.0 Phase 274: 項目統計サマリ (組織監査・ガバナンス用途) + custom 列追加
   const d = r.data || {};
   const total = fields.length;
@@ -5731,6 +5735,69 @@ async function copyResultTableAsMd(resultId, title) {
   try {
     await navigator.clipboard.writeText(lines.join("\n"));
     panelToast(`📝 ${title}を Markdown でコピーしました (${trs.length} 件)`, { kind: "ok" });
+  } catch (e) {
+    panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
+  }
+}
+
+// v3.185.0 Phase 275: Describe 結果を「タイトル + 統計サマリ + 項目表」の Markdown でコピー (設計書/仕様書向け)
+async function copyDescribeAsMd() {
+  const last = state.lastDescribe;
+  if (!last || !last.data) {
+    panelToast("📭 先にオブジェクトの describe を取得してください", { kind: "warn" });
+    return;
+  }
+  const { obj, data: d } = last;
+  const fields = d.fields || [];
+  const total = fields.length;
+  const customCount = fields.filter((f) => f.custom).length;
+  const requiredCount = fields.filter((f) => !f.nillable && !f.defaultedOnCreate && f.createable).length;
+  const uniqueCount = fields.filter((f) => f.unique).length;
+  const formulaCount = fields.filter((f) => f.calculated).length;
+  const picklistCount = fields.filter((f) => f.type === "picklist" || f.type === "multipicklist").length;
+  const lookupCount = fields.filter((f) => f.type === "reference").length;
+  const esc = (s) => String(s == null ? "" : s).replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+  const lines = [
+    `# 📋 ${d.label || obj} (${d.name || obj}) — オブジェクト定義書`,
+    "",
+    `_取得日時: ${new Date().toLocaleString("ja-JP")} / 対象組織: ${state.host || ""}_`,
+    "",
+    `## 統計サマリ`,
+    "",
+    `| 区分 | 件数 |`,
+    `|---|---:|`,
+    `| 全項目数 | ${total} |`,
+    `| カスタム項目 | ${customCount} |`,
+    `| 必須項目 | ${requiredCount} |`,
+    `| ユニーク制約 | ${uniqueCount} |`,
+    `| 数式項目 | ${formulaCount} |`,
+    `| 選択リスト | ${picklistCount} |`,
+    `| 参照型 (lookup) | ${lookupCount} |`,
+    "",
+    `## 権限`,
+    "",
+    `- 作成可能: ${d.createable ? "✓" : "✗"}`,
+    `- 更新可能: ${d.updateable ? "✓" : "✗"}`,
+    `- 削除可能: ${d.deletable ? "✓" : "✗"}`,
+    `- SOQL クエリ可能: ${d.queryable ? "✓" : "✗"}`,
+    `- カスタムオブジェクト: ${d.custom ? "✓" : "✗"}`,
+    "",
+    `## 全項目一覧 (${total} 件)`,
+    "",
+    `| API 名 | ラベル | 型 | 長さ | 必須 | ユニーク | カスタム | 選択肢数 | 参照先 |`,
+    `|---|---|---|---:|:---:|:---:|:---:|---:|---|`,
+  ];
+  for (const f of fields) {
+    const required = (!f.nillable && !f.defaultedOnCreate && f.createable) ? "✓" : "";
+    const unique = f.unique ? "✓" : "";
+    const custom = f.custom ? "✓" : "";
+    const picklist = (f.picklistValues || []).length || "";
+    const refs = (f.referenceTo || []).join(", ");
+    lines.push(`| ${esc(f.name)} | ${esc(f.label)} | ${esc(f.type)} | ${f.length || ""} | ${required} | ${unique} | ${custom} | ${picklist} | ${esc(refs)} |`);
+  }
+  try {
+    await navigator.clipboard.writeText(lines.join("\n"));
+    panelToast(`📝 ${d.label || obj} の設計書 MD をコピーしました (${total} 項目)`, { kind: "ok" });
   } catch (e) {
     panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
   }

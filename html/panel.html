@@ -368,6 +368,8 @@ System.debug('Now: ' + System.now());</textarea>
         <div class="toolbar">
           <input id="descObj" placeholder="オブジェクトの API 名を入力してください (例: Account)" list="dl-sobjects" autocomplete="off" />
           <button id="btnDescribe" class="primary" title="指定したオブジェクトの describe 情報を取得します">取得</button>
+          <span class="grow"></span>
+          <button id="btnDescribeCopyMd" title="📝 オブジェクト定義 (ラベル + 統計サマリ + 全項目表) を Markdown 形式でクリップボードコピー — 設計書 / 仕様書 / Notion / Confluence に貼り付け (Phase 275)">📝 設計書 MD</button>
         </div>
         <div id="describeResult" class="grid"></div>
       </div>
