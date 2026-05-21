@@ -3037,7 +3037,7 @@ function downloadDesignSource() {
   // v2.80.0 で .xml に変更したが、Windows が .xml を Excel で関連付けしておらず、
   // ダブルクリックで Excel が起動しなかった。Excel が「形式と拡張子が一致しない」警告を出すのは
   // SpreadsheetML XML を .xls で出す業界慣例的な仕様で、「はい」で開ける。業務利用上問題なし
-  const extMap = { markdown: "md", html: "html", csv: "csv", tsv: "tsv", excel: "xls", xls: "xls" };
+  const extMap = { markdown: "md", html: "html", csv: "csv", tsv: "tsv", excel: "xls", xls: "xls", json: "json" };
   const mimeMap = {
     markdown: "text/markdown;charset=utf-8",
     html: "text/html;charset=utf-8",
@@ -3045,6 +3045,7 @@ function downloadDesignSource() {
     tsv: "text/tab-separated-values;charset=utf-8",
     excel: "application/vnd.ms-excel;charset=utf-8",
     xls: "application/vnd.ms-excel;charset=utf-8",
+    json: "application/json;charset=utf-8",
   };
   const ext = extMap[fmt] || "txt";
   const mime = mimeMap[fmt] || "text/plain;charset=utf-8";

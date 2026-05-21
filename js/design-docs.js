@@ -2613,6 +2613,9 @@ export function formatOutput(result, format) {
     if (fmt === "markdown") {
       return `# ${result.title}\n\n\`\`\`mermaid\n${m}\n\`\`\`\n\n${result.note || ""}\n`;
     }
+    if (fmt === "json") {
+      return JSON.stringify({ title: result.title, type: result.type, note: result.note || "", mermaid: m }, null, 2);
+    }
     // CSV/TSV はそのままテキスト
     return m;
   }
@@ -2621,7 +2624,42 @@ export function formatOutput(result, format) {
   if (fmt === "csv") return toCsv(result, ",");
   if (fmt === "tsv") return toCsv(result, "\t");
   if (fmt === "excel" || fmt === "xls") return toExcelXml(result);
+  // v3.161.0 Phase 251: JSON 形式出力 — API 連携・別ツール取り込み・自動処理向け
+  if (fmt === "json") return toJson(result);
   return toMarkdown(result);
+}
+
+// v3.161.0 Phase 251: 設計書を JSON で出力 (sections / kvRows / rows をそのまま保持)
+function toJson(result) {
+  return JSON.stringify({
+    title: result.title,
+    type: result.type,
+    note: result.note || "",
+    generatedAt: new Date().toISOString(),
+    sections: result.sections.map((s) => {
+      const out = { heading: s.heading || "" };
+      if (s.kvRows) out.kvRows = s.kvRows;
+      if (s.headers && s.rows) {
+        out.headers = s.headers;
+        // rows 内の __html セルは raw 値のみ抽出 (HTML マークアップ除外)
+        out.rows = s.rows.map((r) => {
+          const cleaned = {};
+          for (const k of Object.keys(r)) {
+            const v = r[k];
+            if (v && typeof v === "object" && v.__html) {
+              // 「<button data-api-name="X">👥 使用者を見る</button>」等 — 純粋なテキスト抽出
+              cleaned[k] = String(v.__html).replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+            } else {
+              cleaned[k] = v;
+            }
+          }
+          return cleaned;
+        });
+      }
+      if (s.mermaid) out.mermaid = s.mermaid;
+      return out;
+    }),
+  }, null, 2);
 }
 
 // Excel 2003 SpreadsheetML XML 出力。各 section を別シートで出す。
