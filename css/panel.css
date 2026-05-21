@@ -51,8 +51,9 @@
   /* スペーシング (4px ベース) */
   --sp-0: 2px; --sp-1: 4px; --sp-2: 6px; --sp-3: 8px;
   --sp-4: 10px; --sp-5: 12px; --sp-6: 16px; --sp-7: 24px;
-  /* セマンティックスペーシング (Phase 185-186 で導入) */
-  --sp-hair: 1px; /* v3.96.0 Phase 186: 極小 badge/chip/kbd の縦 padding (16 箇所統一) */
+  /* セマンティックスペーシング (Phase 185-187 で導入) */
+  --sp-hair: 1px; /* v3.96.0 Phase 186: 極小 badge/chip/kbd の縦 padding (18 箇所統一) */
+  --sp-tag-y: 5px; /* v3.97.0 Phase 187: フォーム input / grid セル / list-item の縦 padding (--r-tag と命名整合性、6 箇所統一) */
   --sp-card-y: 32px; /* v3.95.0 Phase 185: empty-state 中央配置の縦 padding (9 箇所統一) */
   /* 角丸 (v3.94.0 Phase 184: --r-tag 5px 追加 — フォーム input / list-item / コード preview で 6 箇所使われていたため) */
   --r-xs: 3px; --r-sm: 4px; --r-tag: 5px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px; --r-pill: 12px;
@@ -141,7 +142,7 @@ button.dl-running {
 button.dl-running:hover { background: var(--err) !important; }
 input, select, textarea {
   background: #0a1224; color: var(--fg); border: 1px solid var(--line);
-  border-radius: var(--r-tag); padding: 5px 8px;
+  border-radius: var(--r-tag); padding: var(--sp-tag-y) var(--sp-3);
   font: 11px/1.4 ui-monospace, Consolas, monospace; outline: none;
 }
 input:focus, select:focus, textarea:focus { border-color: var(--accent); }
@@ -285,7 +286,7 @@ td.cell-nested::before { content: "🔗 "; font-size: 9px; opacity: 0.7; }
 td.cell-nested:hover { background: rgba(27,150,255,0.08); }
 /* cell-nested 内の角括弧 ID 部分の色を控えめに (raw JSON コピーが原則のため) */
 td.cell-nested { word-break: break-word; }
-.grid th, .grid td { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.grid th, .grid td { padding: var(--sp-tag-y) var(--sp-3); border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
 .grid td { max-width: 400px; max-height: 80px; overflow: auto; word-break: break-word; }
 /* v2.77.0: sticky ヘッダがスクロール時に body セルと重なって見えづらかったため、完全不透明背景 + 下境界 + box-shadow で明確化 */
 .grid th {
@@ -553,7 +554,7 @@ td.cell-nested { word-break: break-word; }
 }
 .soql-autocomplete .ac-item {
   display: flex; align-items: center; gap: 6px;
-  padding: 5px 8px;
+  padding: var(--sp-tag-y) var(--sp-3);
   border-radius: var(--r-sm);
   cursor: pointer;
   color: var(--fg);
@@ -997,7 +998,7 @@ td.cell-nested { word-break: break-word; }
   display: grid;
   grid-template-columns: 180px 80px 1fr 60px;
   gap: 8px; align-items: center;
-  padding: 5px 8px; border-bottom: 1px solid var(--line);
+  padding: var(--sp-tag-y) var(--sp-3); border-bottom: 1px solid var(--line);
   font: 11px ui-monospace, Consolas, monospace;
 }
 .field-row:hover { background: #112042; }
@@ -1272,7 +1273,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .picker-trigger {
   background: var(--bg3); color: var(--accent);
   border: 1px solid var(--line);
-  padding: 5px 8px; border-radius: var(--r-sm);
+  padding: var(--sp-tag-y) var(--sp-3); border-radius: var(--r-sm);
   font-size: 11px; cursor: pointer; white-space: nowrap;
 }
 .picker-trigger:hover { border-color: var(--accent); background: rgba(27,150,255,0.1); }
