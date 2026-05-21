@@ -5159,7 +5159,11 @@ async function doBulkDelete(tableId) {
   // ⚠ 本番組織誤操作防止のため、件数 + 先頭 5 件 ID を出して 2 段階確認
   const preview = ids.slice(0, 5).join("\n");
   const more = ids.length > 5 ? `\n…他 ${ids.length - 5} 件` : "";
-  const ok = window.confirm(`⚠ ${ids.length} 件のレコードを削除します\n\n対象 Id (先頭 5 件):\n${preview}${more}\n\nこの操作は取り消せません。続行しますか?`);
+  // v3.201.0 Phase 291: PROD 環境では警告メッセージを強化 + 組織情報を明示
+  const prodHeader = state.isProd
+    ? `🚨🚨 本番組織 (PROD) での DELETE 操作 🚨🚨\n対象組織: ${state.host || "?"}\n\n`
+    : "";
+  const ok = window.confirm(`${prodHeader}⚠ ${ids.length} 件のレコードを削除します\n\n対象 Id (先頭 5 件):\n${preview}${more}\n\nこの操作は取り消せません。続行しますか?${state.isProd ? "\n\n(Sandbox での事前テストを強く推奨します)" : ""}`);
   if (!ok) return;
   if (!state.host || !state.sid) { panelToast("⚠ セッション未取得です", { kind: "err" }); return; }
   panelToast(`🗑 削除を開始します (${ids.length} 件)…`, { kind: "loading" });
@@ -5352,7 +5356,12 @@ async function doBulkInsert() {
   // 2 段階確認
   const opLabel = op === "insert" ? "INSERT" : (op === "update" ? "UPDATE" : `UPSERT (Ext Id: ${extId})`);
   const apiNote = useBulkApi ? "\n\n📦 Bulk API v2 (非同期ジョブ) で実行します。完了まで自動ポーリングします。" : "";
-  if (!window.confirm(`⚠ ${records.length} 件のレコードを ${obj} に ${opLabel} します${apiNote}\n\n本番組織では実データが変更されます。続行しますか?`)) return;
+  // v3.201.0 Phase 291: PROD 環境では警告メッセージを強化 + 組織情報を明示
+  const prodHeader = state.isProd
+    ? `🚨🚨 本番組織 (PROD) での ${opLabel} 操作 🚨🚨\n対象組織: ${state.host || "?"}\n\n`
+    : "";
+  const prodFooter = state.isProd ? "\n\n(Sandbox での事前テストを強く推奨します)" : "";
+  if (!window.confirm(`${prodHeader}⚠ ${records.length} 件のレコードを ${obj} に ${opLabel} します${apiNote}\n\n本番組織では実データが変更されます。続行しますか?${prodFooter}`)) return;
   // v3.116.0 Phase 206: Bulk API v2 分岐
   if (useBulkApi) { return doBulkInsertViaBulkApi(op, obj, extId, csv, opLabel); }
   const apiVer = state.apiVersion || "62.0";
