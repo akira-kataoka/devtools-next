@@ -402,6 +402,7 @@ System.debug('Now: ' + System.now());</textarea>
           <button id="btnApexDebugOnly" title="💬 USER_DEBUG 行のみを抽出 (Phase 247)" aria-pressed="false">💬 DEBUG のみ</button>
           <button id="btnApexLimitsOnly" title="📊 ガバナ消費 (LIMIT_USAGE / SOQL queries / CPU time) 行のみを抽出 (Phase 254)" aria-pressed="false">📊 リミット消費</button>
           <button id="btnApexEvidence" aria-label="Apex 実行結果をエビデンスとしてダウンロード" title="実行した Apex コードと結果を Markdown 形式のエビデンスとしてダウンロードします (テスト工程の証跡用)">📸 エビデンス</button>
+          <button id="btnApexCopyLink" title="🔗 現在の Apex コードを再表示できる URL (?view=apex&code=) をクリップボードコピー — チーム共有用 (Phase 295、安全のため auto-fire 無効、投入のみで停止)">🔗 リンク</button>
           <span class="grow"></span>
         </div>
         <pre id="apexResult" class="code"><div class="empty-state">👆 上のエディタに匿名 Apex を入力して「▶ 実行 (Ctrl+Enter)」を押してください。実行結果と Debug ログがここに表示されます。<br/><br/><strong>💡 ヒント</strong>: DebugLevel/TraceFlag は自動有効化されるため、<code>System.debug()</code> の出力もそのまま確認できます。本番組織での <code>UPDATE</code>/<code>DELETE</code> は実データに影響するため十分注意してください。📸 エビデンスボタンで Apex コード + 結果 + ログを Markdown 保存できます。</div></pre>

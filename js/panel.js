@@ -153,6 +153,8 @@ async function init() {
       window._sfdtInitialMethodFromQuery = params.get("method") || null;
       window._sfdtInitialPathFromQuery = params.get("path") || null;
       window._sfdtInitialBodyFromQuery = params.get("body") || null;
+      // v3.205.0 Phase 295: ?code= 対応 — apex ビュー起動時にコード投入 (auto-fire 無効、ユーザー確認後手動実行)
+      window._sfdtInitialCodeFromQuery = params.get("code") || null;
     } catch {}
     // v2.93.0: リフレッシュ時の直前 view 復元 (ユーザー要望「リフレッシュしても前のページ状態を残して」)
     try {
@@ -186,6 +188,18 @@ async function init() {
             if (tryRun() || waited >= 5000) clearInterval(iv);
           }, 250);
         }
+      }
+    }
+    // v3.205.0 Phase 295: ?code= が指定されかつ apex view なら投入のみ (auto-fire 無効 — 匿名 Apex は破壊的なのでユーザー確認必須)
+    if (initialViewFromQuery === "apex" && window._sfdtInitialCodeFromQuery) {
+      const codeVal = String(window._sfdtInitialCodeFromQuery);
+      const ta = document.getElementById("apexCode");
+      if (ta && codeVal) {
+        ta.value = codeVal;
+        // auto-fire しない。ユーザーが ▶ 実行 ボタンを手動で押す必要がある (PROD なら更に confirm が出る Phase 289)
+        // meta に注意メッセージ表示
+        const meta = document.getElementById("apexMeta");
+        if (meta) meta.innerHTML = `<span class="pill warn">⚠ URL リンクから Apex コードを投入しました。内容を確認のうえ「▶ 実行」を押してください</span>`;
       }
     }
     // v3.195.0 Phase 285: ?method=&path=&body= が指定されかつ rest view なら投入 + GET なら自動実行 (POST/PATCH/DELETE は安全のため自動実行しない)
@@ -1201,6 +1215,16 @@ function bindEvents() {
       const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
       await navigator.clipboard.writeText(url);
       panelToast(`🔗 ${inspectState.obj || "?"}:${inspectState.id} の Inspector リンクをコピー`, { kind: "ok" });
+    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+  });
+  // v3.205.0 Phase 295: Apex 🔗 リンク (?view=apex&code=) — auto-fire 無効、投入のみで停止
+  $on("btnApexCopyLink", "click", async () => {
+    const code = (document.getElementById("apexCode").value || "").trim();
+    if (!code) { panelToast("⚠ Apex コードを入力してください", { kind: "warn" }); return; }
+    try {
+      const url = chrome.runtime.getURL(`html/tool.html?view=apex&code=${encodeURIComponent(code)}`);
+      await navigator.clipboard.writeText(url);
+      panelToast(`🔗 Apex リンクをコピー (${code.length} 文字、リンク先で手動実行)`, { kind: "ok" });
     } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
   });
   // v3.195.0 Phase 285: REST API 🔗 リンク (?view=rest&method=&path=&body=)
