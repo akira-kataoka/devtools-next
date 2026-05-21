@@ -1086,6 +1086,35 @@ function bindEvents() {
   $on("btnDescribe", "click", doDescribe);
   // v3.185.0 Phase 275: 設計書 MD コピー (タイトル + 統計サマリ + 項目表)
   $on("btnDescribeCopyMd", "click", copyDescribeAsMd);
+  // v3.192.0 Phase 282: 🔗 リンクコピー (URL クエリ共有パターン横展開)
+  $on("btnDescribeCopyLink", "click", async () => {
+    const obj = (document.getElementById("descObj").value || "").trim();
+    if (!obj) { panelToast("⚠ オブジェクト API 名を入力してください", { kind: "warn" }); return; }
+    try {
+      const url = chrome.runtime.getURL(`html/tool.html?view=describe&obj=${encodeURIComponent(obj)}`);
+      await navigator.clipboard.writeText(url);
+      panelToast(`🔗 ${obj} 構造リンクをコピーしました`, { kind: "ok" });
+    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+  });
+  $on("btnSoqlCopyLink", "click", async () => {
+    const q = (document.getElementById("soqlText").value || "").trim();
+    if (!q) { panelToast("⚠ SOQL を入力してください", { kind: "warn" }); return; }
+    try {
+      const url = chrome.runtime.getURL(`html/tool.html?view=soql&q=${encodeURIComponent(q)}`);
+      await navigator.clipboard.writeText(url);
+      panelToast(`🔗 SOQL 実行リンクをコピーしました (${q.length} 文字)`, { kind: "ok" });
+    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+  });
+  $on("btnInspectCopyLink", "click", async () => {
+    if (!inspectState.id) { panelToast("⚠ Inspector でレコードを開いてから実行してください", { kind: "warn" }); return; }
+    try {
+      const qp = new URLSearchParams({ view: "inspector", id: inspectState.id });
+      if (inspectState.obj) qp.set("obj", inspectState.obj);
+      const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
+      await navigator.clipboard.writeText(url);
+      panelToast(`🔗 ${inspectState.obj || "?"}:${inspectState.id} の Inspector リンクをコピー`, { kind: "ok" });
+    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+  });
   $on("btnRest", "click", doRest);
   // v3.125.0 Phase 215: REST クイック実行 (Method+Path 自動セット + 即実行、ユーザー要望「ボタン実行で SF に投げる」)
   $on("restTemplate", "change", (e) => {
