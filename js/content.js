@@ -1,6 +1,9 @@
 // content_script: SF ページ上で動作する軽量機能
 // - コンテキストメニューからの copy 要求
 // - v2.7.0+: 右下 floating launcher → mini-panel オーバーレイ (SOQL 簡易実行)
+// - Phase 243/244: グローバル検索 / 管理ダッシュボードへの直接導線 (?view=search / ?view=admin)
+// - Phase 279/365: ↗ 全画面ボタン群が SOQL textarea 内容を ?view=soql&q= で全画面に引き継ぎ実装 (UX 動線改善)
+// - Phase 276/278: 📐 構造 / 🔎 Inspector で現在レコードを ?view=describe&obj= / ?view=inspector&id=&obj= で全画面表示
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg && msg.type === "sfdt:copy" && typeof msg.text === "string") {

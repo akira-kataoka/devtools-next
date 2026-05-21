@@ -44,7 +44,7 @@ const API_OP_INPUTS = {
 // 重要: init() を queueMicrotask で遅延させ、モジュール body 全 const 初期化完了後に走らせる
 // (v1.99.0: 旧 v1.98.0 では API_OP_INPUTS のみ移動修正、本変更で他の全 const も TDZ 安全に)
 // v2.77.0: 「初期化中のまま」報告対応 — モジュール評価到達と各段階を orgInfo に即記録
-console.log("[DevToolsNext] panel.js module loaded (v2.77.0)");
+console.log("[DevToolsNext] panel.js module loaded");
 // モジュール評価が走ったことを示すため、orgInfo を即時書き換え (queueMicrotask 前)
 try {
   const _oi = document.getElementById("orgInfo");
