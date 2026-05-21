@@ -15,6 +15,7 @@ const state = {
   orgId: null,
   userId: null,
   userInfo: null,
+  // v3.318.0 Phase 408: SF API バージョン default = v62.0 (Winter '26 対応、2026 年 1 月時点、panel.js と同期)
   apiVersion: "62.0",
   lastRecords: null,
 };

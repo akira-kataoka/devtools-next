@@ -16,6 +16,8 @@ const state = {
   isProd: false,        // Phase 289/382 で env 判定後に代入
   envLabel: null,       // Phase 289/382 で env 判定後に代入
   lastDescribe: null,   // Phase 275 で動的代入 (設計書 MD コピー用)
+  // v3.318.0 Phase 408: SF API バージョン default = v62.0 (Winter '26 対応、2026 年 1 月時点)
+  // ユーザーが ⚙️ 設定で変更可能 (info-apiver select)。SF は年 3 回 (Winter/Spring/Summer) リリースで API バージョン上がる
   apiVersion: "62.0",
   lastRecords: null,
   lastLoginRecords: null,
