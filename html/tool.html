@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="DevToolsNext (フルスクリーン): Salesforce 開発支援ツール (SOQL/Inspector/Apex/REST/Limits/設計書 22 種・業務向け凡例付き)" />
+  <meta name="description" content="DevToolsNext (フルスクリーン): Salesforce 開発支援ツール (SOQL/Inspector/Apex/REST/Limits/設計書 23 種・業務向け凡例付き)" />
   <meta name="theme-color" content="#1b96ff" />
   <title>DevToolsNext</title>
   <link rel="stylesheet" href="../css/panel.css" />
@@ -84,7 +84,7 @@
           <button class="nav-btn" data-view="apex" data-cat="dev" title="匿名 Apex (Developer Console と同じ) を実行・Debug ログ取得"><span class="nav-label">🟧 Apex 実行</span><kbd class="nav-kbd">A</kbd></button>
           <button class="nav-btn" data-view="apiurl" data-cat="dev" title="REST API を組み立てて実行 (URL ビルダー + 実行を統合)"><span class="nav-label">🌐 REST API</span><kbd class="nav-kbd">R</kbd></button>
           <button class="nav-btn" data-view="metadata" data-cat="dev" title="ApexClass / Flow / Profile 等のメタデータ一覧"><span class="nav-label">📦 メタデータ一覧</span></button>
-          <button class="nav-btn" data-view="design" data-cat="dev" title="オブジェクト定義書・プロファイル詳細など 22 種類の設計書を Excel で自動生成 (オブジェクト構造の確認はこちら)"><span class="nav-label">📋 設計書作成</span><kbd class="nav-kbd">D</kbd></button>
+          <button class="nav-btn" data-view="design" data-cat="dev" title="オブジェクト定義書・プロファイル詳細など 23 種類の設計書を Excel で自動生成 (オブジェクト構造の確認はこちら)"><span class="nav-label">📋 設計書作成</span><kbd class="nav-kbd">D</kbd></button>
         </div>
 
         <button class="nav-sep" data-cat="monitor" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 🛡️ 組織管理</button>
@@ -125,10 +125,10 @@
             <div class="home-card-title">Apex 実行</div>
             <div class="home-card-desc">匿名 Apex を実行・Debug ログ取得</div>
           </button>
-          <button class="home-card" data-go="design" role="listitem" aria-label="設計書作成" title="オブジェクト定義書・プロファイル詳細・ER 図・FLS マトリクス等 22 種類の設計書を Excel で自動生成 (プロジェクト成果物として活用可)">
+          <button class="home-card" data-go="design" role="listitem" aria-label="設計書作成" title="オブジェクト定義書・プロファイル詳細・ER 図・FLS マトリクス等 23 種類の設計書を Excel で自動生成 (プロジェクト成果物として活用可)">
             <div class="home-card-icon" aria-hidden="true">📋</div>
             <div class="home-card-title">設計書作成</div>
-            <div class="home-card-desc">22 種類の設計書を Excel で自動生成</div>
+            <div class="home-card-desc">23 種類の設計書を Excel で自動生成</div>
           </button>
           <button class="home-card" data-go="limits" role="listitem" aria-label="使用状況" title="API コール数・Apex 容量・ストレージ等の使用状況を視覚化">
             <div class="home-card-icon" aria-hidden="true">📊</div>
@@ -539,7 +539,7 @@ System.debug('Now: ' + System.now());</textarea>
 
       <div class="view hidden" data-view="design">
         <div class="toolbar">
-          <input id="designTypeFilter" type="search" placeholder="🔎 設計書を検索… (例: プロファイル / Flow / FLS)" title="22 種類から名前で部分一致絞り込み (Esc でクリア)" style="max-width:240px" />
+          <input id="designTypeFilter" type="search" placeholder="🔎 設計書を検索… (例: プロファイル / Flow / FLS)" title="23 種類から名前で部分一致絞り込み (Esc でクリア)" style="max-width:240px" />
           <select id="designType">
             <option value="orgSnapshot">⭐ 組織全体スナップショット (Phase 240: 7 章統合・1 クリック監査資料)</option>
             <option value="objectDef">オブジェクト定義書</option>
