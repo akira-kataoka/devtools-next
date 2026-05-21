@@ -4143,6 +4143,8 @@ function onSoqlAutocompleteKey(e, textarea) {
 // describe global の結果をキャッシュして option を生成、再接続時のみ更新
 let _datalistObjsCached = null;
 // v3.134.0 Phase 223 (Team H): 最近使ったオブジェクト/レコード ID を chrome.storage に保存し datalist 先頭に並べる
+// v3.317.0 Phase 407: 「最近使った候補」は履歴 (5 件) と異なる用途 → RECENT_MAX = 10 (datalist 上位表示用、入力補助の選択肢として多めに保持)。
+//                     履歴は「実行済み記録」(5 件)、最近候補は「次に使うかもの予測候補」(10 件) で目的が異なるため別 const。
 const RECENT_OBJ_KEY = "sfdtRecentObjects";
 const RECENT_RECORD_ID_KEY = "sfdtRecentRecordIds";
 const RECENT_MAX = 10;
