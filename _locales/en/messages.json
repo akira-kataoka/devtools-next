@@ -4,7 +4,7 @@
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "Next-gen developer utilities for Salesforce (DevToolsNext): SOQL runner, anonymous Apex, ID parser, Setup shortcuts, REST/Tooling API explorer, session inspector, Login History, 20+ design document generators, change-set/package.xml builder, record Inspector.",
+    "message": "Next-gen developer utilities for Salesforce (DevToolsNext): SOQL/Apex runner, record Inspector, data export, API URL builder, Login as User, Login History, User/License admin dashboard (7 cards), 21 design document generators (incl. org snapshot), Limits dashboard, PROD 2-layer defense across 6 paths, auto-update, settings export/import.",
     "description": "Extension description"
   }
 }
