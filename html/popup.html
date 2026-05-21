@@ -40,7 +40,8 @@
     </button>
     <!-- v3.143.0 Phase 233: 主要ビューへの直接導線 (URL クエリ ?view=xxx で起動) -->
     <!-- v3.187.0 Phase 277: 📐 構造 (describe) も追加して 4 入口統一達成 (popup ⇄ mini-panel ⇄ panel ⇄ tool) -->
-    <div class="cta-sub-row" style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
+    <!-- v3.241.0 Phase 331: 6 ボタンを 2 行 × 3 列 grid 配置に変更 (整然と表示) -->
+    <div class="cta-sub-row" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:6px">
       <button id="btnOpenAdmin" class="cta-mini" title="👥 ユーザー・ライセンス管理ダッシュボードを全画面で開く (ライセンス使用率 / 凍結ユーザー / MFA / パッケージ等を 1 画面で確認)">
         👥 ユーザー・ライセンス管理
       </button>
