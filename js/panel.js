@@ -1439,6 +1439,64 @@ function bindEvents() {
       panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
     }
   });
+  // v3.179.0 Phase 269: Inspector レコードの全項目を Markdown 表形式でコピー
+  $on("btnInspectCopyFullMd", "click", async () => {
+    if (!inspectState.record || !inspectState.describe) {
+      panelToast("⚠ Inspector でレコードを開いてから実行してください", { kind: "warn" });
+      return;
+    }
+    const rec = inspectState.record;
+    const fields = (inspectState.describe.fields || []);
+    const obj = inspectState.obj || "Record";
+    const id = inspectState.id || "";
+    const displayName = rec.Name || rec.Subject || rec.Title || rec.CaseNumber || obj;
+    const lhost = state.host && state.host.endsWith(".lightning.force.com")
+      ? state.host
+      : (state.host || "").replace(/\.my\.salesforce\.com$/, ".lightning.force.com");
+    const url = `https://${lhost}/lightning/r/${obj}/${id}/view`;
+    const lines = [];
+    lines.push(`## ${escape(displayName)} — ${escape(obj)}`);
+    lines.push("");
+    lines.push(`[Salesforce で開く](${url}) | Id: \`${escape(id)}\``);
+    lines.push("");
+    lines.push(`_取得日時: ${new Date().toLocaleString("ja-JP")}_`);
+    lines.push("");
+    lines.push("| 項目 | 表示名 | 値 |");
+    lines.push("|---|---|---|");
+    // 値が null/空白でない項目のみ (Markdown 簡潔化)
+    const mdEsc = (v) => String(v == null ? "" : v).replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+    const showAll = false; // null 値は除外 (簡潔化)
+    let displayed = 0;
+    for (const f of fields) {
+      const v = rec[f.name];
+      if (!showAll && (v === null || v === undefined || v === "")) continue;
+      // ネスト object (リレーション) は平坦化
+      let display;
+      if (v && typeof v === "object") {
+        if (v.attributes) {
+          const pref = ["Name", "Subject", "Title", "DeveloperName", "MasterLabel"].find((p) => v[p]);
+          display = pref ? `${v[pref]}${v.Id ? ` [${String(v.Id).substring(0, 18)}]` : ""}` : JSON.stringify(v);
+        } else {
+          display = JSON.stringify(v);
+        }
+      } else if (typeof v === "string") {
+        const m = v.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+        display = m ? `${m[1]} ${m[2]}` : v;
+      } else {
+        display = String(v);
+      }
+      lines.push(`| ${mdEsc(f.name)} | ${mdEsc(f.label || "")} | ${mdEsc(display)} |`);
+      displayed++;
+    }
+    lines.push("");
+    lines.push(`_表示項目: ${displayed} / 全 ${fields.length} 件 (値が空の項目は除外)_`);
+    try {
+      await navigator.clipboard.writeText(lines.join("\n"));
+      panelToast(`📝 全項目 Markdown をコピーしました (${displayed} 項目)`, { kind: "ok" });
+    } catch (e) {
+      panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
+    }
+  });
   // v3.165.0 Phase 255: 「[Name](URL) 形式の Markdown リンク」をコピー
   $on("btnInspectCopyMd", "click", async () => {
     if (!inspectState.id) {
