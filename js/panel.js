@@ -5361,6 +5361,42 @@ async function doRunApex() {
     else { sizeLabel = `${(sizeKb / 1024).toFixed(1)} MB`; pillClass = "err"; }
     const cur = meta.innerHTML;
     meta.innerHTML = `${cur} <span class="pill ${pillClass}" title="Debug ログのサイズ${sizeBytes > 1048576 ? ' (1 MB 超のため、スクロールが重くなる可能性があります)' : ''}">${lines.toLocaleString()} 行 / ${sizeLabel}</span>`;
+    // v3.178.0 Phase 268: ガバナ消費サマリを自動抽出して meta に pill 表示
+    // SOQL queries / DML statements / CPU time / Heap size を「N / M (NN%)」形式で
+    try {
+      const limitRe = /Number of (SOQL queries|DML statements|query rows|DML rows|Async calls|Future calls|callouts|SOSL queries|Aggregate queries|Email Invocations|chained Apex jobs|Mobile Apex push calls): (\d+) out of (\d+)|Maximum (CPU time|heap size|stack depth): (\d+) out of (\d+)/g;
+      const limits = {};
+      let m;
+      while ((m = limitRe.exec(txt)) !== null) {
+        const name = m[1] || m[4];
+        const used = parseInt(m[2] || m[5], 10);
+        const max = parseInt(m[3] || m[6], 10);
+        // 最大値 (累積) を採用
+        if (!limits[name] || limits[name].used < used) {
+          limits[name] = { used, max };
+        }
+      }
+      // 主要 4 種を抽出して pill 表示
+      const priority = ["SOQL queries", "DML statements", "CPU time", "heap size"];
+      const summaryPills = priority
+        .filter((k) => limits[k] && limits[k].max > 0)
+        .map((k) => {
+          const { used, max } = limits[k];
+          const pct = Math.round((used / max) * 100);
+          const cls = pct >= 80 ? "err" : pct >= 50 ? "warn" : "ok";
+          const labelMap = {
+            "SOQL queries": "SOQL",
+            "DML statements": "DML",
+            "CPU time": "CPU",
+            "heap size": "Heap",
+          };
+          return `<span class="pill ${cls}" title="${k}: ${used.toLocaleString()} / ${max.toLocaleString()}">${labelMap[k]} ${used}/${max} (${pct}%)</span>`;
+        });
+      if (summaryPills.length) {
+        const cur = meta.innerHTML;
+        meta.innerHTML = `${cur} ${summaryPills.join(" ")}`;
+      }
+    } catch (e) { console.warn("[apex] governor summary failed", e); }
   }
   // v2.77.0: runBtn は 2618 行で同関数スコープに既に const 宣言済み。再宣言で SyntaxError が出ていたため削除し既存変数を再利用
   // 実行中フラグを解除 (ボタン再有効化)
