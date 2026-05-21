@@ -13,6 +13,9 @@ const CONTEXT_MENUS = [
 // 開発ループ側 (PowerShell や CI) が VERSION.txt を書き換える、または
 // ユーザーが手動で sf-devtool-extension/VERSION.txt を更新すれば自動反映。
 const VERSION_ALARM = "sfdt-version-check";
+// v3.321.0 Phase 411: 30 秒間隔は「開発時の自動アップデート反映」と「CPU/network 負荷」のバランス値。
+//                     より短く (例 10 秒) → 開発反映は早いが過剰 fetch / より長く (例 5 分) → 反映遅延が体感
+//                     manifest.json の alarms permission は最低 30 秒 (Chrome MV3 制約: 0.5 分未満は警告)
 const VERSION_INTERVAL_MIN = 0.5; // 30 秒間隔
 let knownVersion = null;
 
