@@ -145,6 +145,11 @@
             <option value="frozen_users">❄️ 凍結ユーザー一覧 (UserLogin.IsFrozen)</option>
             <option value="mfa_status">🛡️ MFA 設定状況 (TwoFactorMethodsInfo)</option>
             <option value="installed_packages">🔌 インストールパッケージ一覧 (要 Tooling API)</option>
+            <option value="large_content_versions">📁 大型 ContentVersion Top 50 (50 MB 超・ストレージ削減候補)</option>
+            <option value="old_attachments">🗑️ 古い Attachment Top 200 (365 日未更新)</option>
+            <option value="public_groups">👥 Public Group 一覧 (Type=Regular)</option>
+            <option value="queues">📋 Queue 一覧 (Type=Queue)</option>
+            <option value="group_members_summary">🧑‍🤝‍🧑 Group / Queue メンバー数集計</option>
           </select>
           <input id="soqlSavedName" placeholder="名前を付けて保存します..." title="現在の SOQL クエリに名前を付けて保存します" />
           <button id="btnSaveSoql" title="入力した名前で現在の SOQL を保存します">保存</button>

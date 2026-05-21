@@ -836,6 +836,12 @@ function bindEvents() {
       frozen_users: `// ❄️ 凍結ユーザー一覧 (Setup → User Login で IsFrozen = true のレコード)\nSELECT Id, UserId, User.Name, User.Username, User.Email, User.Profile.Name, User.IsActive, IsFrozen\nFROM UserLogin\nWHERE IsFrozen = true\nORDER BY User.Name`,
       mfa_status: `// 🛡️ MFA (多要素認証) 設定状況 — TwoFactorMethodsInfo で各ユーザーの MFA 設定方法\nSELECT UserId, User.Name, User.Username, User.Profile.Name, MethodDefinition, HasUserVerifiedEmailAddress, HasUserVerifiedMobileNumber\nFROM TwoFactorMethodsInfo\nORDER BY User.Name\nLIMIT 200`,
       installed_packages: `// 🔌 インストールパッケージ一覧 (Tooling API) — 左の「Tooling API を使用」にチェック\nSELECT Id, SubscriberPackage.Name, SubscriberPackage.NamespacePrefix, SubscriberPackageVersion.Name, SubscriberPackageVersion.MajorVersion, SubscriberPackageVersion.MinorVersion, SubscriberPackageVersion.PatchVersion, SubscriberPackageVersion.IsBeta\nFROM InstalledSubscriberPackage\nORDER BY SubscriberPackage.Name`,
+      // v3.147.0 Phase 237: ストレージ削減・アクセス制御系 SOQL テンプレ 5 種追加
+      large_content_versions: `// 📁 大型 ContentVersion (50 MB 超) Top 50 — ストレージ削減候補抽出 (admin「📁 ストレージ詳細」連携)\nSELECT Id, Title, FileExtension, ContentSize, CreatedBy.Name, CreatedDate, FirstPublishLocationId, ContentDocumentId\nFROM ContentVersion\nWHERE IsLatest = true AND ContentSize > 52428800\nORDER BY ContentSize DESC\nLIMIT 50`,
+      old_attachments: `// 🗑️ 古い Attachment (365 日未更新) Top 200 — 旧形式の添付棚卸し\n// 注: Attachment は ContentDocument 統合移行中、新規実装は ContentDocument 推奨\nSELECT Id, Name, BodyLength, ParentId, ContentType, CreatedBy.Name, CreatedDate, LastModifiedDate\nFROM Attachment\nWHERE LastModifiedDate < LAST_N_DAYS:365\nORDER BY BodyLength DESC\nLIMIT 200`,
+      public_groups: `// 👥 Public Group (パブリックグループ) 一覧 — 共有ルール・フォルダ共有等の対象\n// Type=Regular がパブリックグループ (Queue は別 Type)\nSELECT Id, Name, DeveloperName, Type, RelatedId, OwnerId, Email\nFROM Group\nWHERE Type = 'Regular'\nORDER BY Name\nLIMIT 200`,
+      queues: `// 📋 Queue (キュー) 一覧 — Case / Lead / カスタムオブジェクトの受け皿、担当未定レコードの初期所有者\nSELECT Id, Name, DeveloperName, Type, Email, OwnerId\nFROM Group\nWHERE Type = 'Queue'\nORDER BY Name\nLIMIT 200`,
+      group_members_summary: `// 🧑‍🤝‍🧑 Group / Queue メンバー集計 — 各 Group のメンバー数 (Public Group や Queue の規模把握)\nSELECT GroupId, Group.Name, Group.Type, COUNT(Id) memberCount\nFROM GroupMember\nGROUP BY GroupId, Group.Name, Group.Type\nORDER BY COUNT(Id) DESC\nLIMIT 200`,
     };
     const code = TEMPLATES[key];
     if (!code) return;
