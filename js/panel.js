@@ -205,6 +205,7 @@ function setupDesignPicker() {
   const NO_INPUT_TYPES = new Set([
     "profileList", "permsetList", "apexClassList", "apexTriggerList",
     "flowList", "customSettingList", "appList", "accessControl",
+    "orgSnapshot", // v3.150.0 Phase 240: 組織全体スナップショットは対象不要
   ]);
   const refresh = () => {
     const existing = input.nextElementSibling;

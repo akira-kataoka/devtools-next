@@ -180,6 +180,7 @@ export async function generateDesign({ type, host, sid, apiVersion, obj, format,
     case "flowDetail":         result = await buildFlowDetail(ctx); break;
     case "apexDetail":         result = await buildApexDetail(ctx); break;
     case "lwcDetail":          result = await buildLwcDetail(ctx); break;
+    case "orgSnapshot":        result = await buildOrgSnapshot(ctx); break;
     default: throw new Error("未対応の設計書タイプです: " + type);
   }
   result.format = format;
@@ -2398,6 +2399,203 @@ async function buildObjectPermMatrix({ host, sid, apiVersion, progress = () => {
     note: "**業務担当者向け**: Excel で開き B2 セルでウィンドウ枠固定すると左 2 列と先頭行が常時可視で見やすくなります。**用途**: オブジェクト権限 (CRUD + ViewAll/ModifyAll) の年次監査、内部統制 (J-SOX) 監査対応、新規プロファイル/権限セット設計時のリファレンス、組織再編時の権限再評価。**V (ViewAllRecords) / M (ModifyAllRecords) は高権限**のため、システム管理者・特権ユーザーのみ付与されているか必ず確認してください。",
   };
 }
+// =============================================================================
+// v3.150.0 Phase 240 (Team D): 組織全体スナップショット (orgSnapshot)
+// 複数の管理メタデータ (Organization / ライセンス / ユーザ集計 / Profile / PermSet / Group) を
+// 1 つの設計書に統合。1 クリックで「組織監査資料一式」を生成可能。
+// =============================================================================
+async function buildOrgSnapshot({ host, sid, apiVersion, progress = () => {} }) {
+  progress("組織情報を取得中...");
+  // 1. Organization
+  const orgR = await runSoql({
+    host, sid, apiVersion,
+    soql: `SELECT Id, Name, OrganizationType, InstanceName, IsSandbox, LanguageLocaleKey, TimeZoneSidKey, DefaultCurrencyIsoCode, FiscalYearStartMonth, CreatedDate, NamespacePrefix, TrialExpirationDate FROM Organization LIMIT 1`,
+  });
+  if (!orgR.ok) throw apiError("組織情報の取得に失敗しました", orgR);
+  const org = ((orgR.data || {}).records || [])[0] || {};
+
+  // 2. UserLicense
+  progress("ライセンス情報を取得中...");
+  const licR = await runSoql({
+    host, sid, apiVersion,
+    soql: `SELECT Name, MasterLabel, TotalLicenses, UsedLicenses, Status FROM UserLicense WHERE Status = 'Active' ORDER BY UsedLicenses DESC LIMIT 100`,
+  });
+
+  // 3. ユーザ集計
+  progress("ユーザ集計を取得中...");
+  const userAggR = await runSoql({
+    host, sid, apiVersion,
+    soql: `SELECT IsActive, COUNT(Id) cnt FROM User GROUP BY IsActive`,
+  });
+  let activeUsers = 0, inactiveUsers = 0;
+  for (const r of ((userAggR.data || {}).records || [])) {
+    if (r.IsActive) activeUsers = Number(r.cnt) || 0;
+    else inactiveUsers = Number(r.cnt) || 0;
+  }
+  const frozenR = await runSoql({
+    host, sid, apiVersion,
+    soql: `SELECT COUNT(Id) cnt FROM UserLogin WHERE IsFrozen = true`,
+  });
+  const frozenUsers = frozenR.ok ? Number(((frozenR.data || {}).records || [])[0]?.cnt) || 0 : 0;
+
+  // 4. Profile (ユーザー割当数も)
+  progress("プロファイル情報を取得中...");
+  const profR = await runSoql({
+    host, sid, apiVersion,
+    soql: `SELECT Id, Name, UserLicense.Name, UserType FROM Profile ORDER BY Name LIMIT 200`,
+  });
+  const profAggR = await runSoql({
+    host, sid, apiVersion,
+    soql: `SELECT ProfileId, COUNT(Id) cnt FROM User WHERE IsActive = true GROUP BY ProfileId`,
+  });
+  const profCnts = new Map();
+  for (const r of ((profAggR.data || {}).records || [])) {
+    if (r.ProfileId) profCnts.set(r.ProfileId, Number(r.cnt) || 0);
+  }
+
+  // 5. PermissionSet (割当数)
+  progress("権限セット情報を取得中...");
+  const psR = await runSoql({
+    host, sid, apiVersion,
+    soql: `SELECT Id, Name, Label, License.Name, IsCustom FROM PermissionSet WHERE IsOwnedByProfile = false ORDER BY Name LIMIT 500`,
+  });
+  const psAggR = await runSoql({
+    host, sid, apiVersion,
+    soql: `SELECT PermissionSetId, COUNT(Id) cnt FROM PermissionSetAssignment WHERE PermissionSetId != null GROUP BY PermissionSetId LIMIT 500`,
+  });
+  const psCnts = new Map();
+  for (const r of ((psAggR.data || {}).records || [])) {
+    if (r.PermissionSetId) psCnts.set(r.PermissionSetId, Number(r.cnt) || 0);
+  }
+
+  // 6. Public Group + Queue
+  progress("Group / Queue 情報を取得中...");
+  const grpR = await runSoql({
+    host, sid, apiVersion,
+    soql: `SELECT Id, Name, DeveloperName, Type, Email FROM Group WHERE Type IN ('Regular', 'Queue') ORDER BY Type, Name LIMIT 500`,
+  });
+  const groupRecs = grpR.ok ? ((grpR.data || {}).records || []) : [];
+
+  // 7. インストールパッケージ
+  progress("インストールパッケージ情報を取得中...");
+  const pkgR = await runSoql({
+    host, sid, apiVersion, tooling: true,
+    soql: `SELECT Id, SubscriberPackage.Name, SubscriberPackage.NamespacePrefix, SubscriberPackageVersion.MajorVersion, SubscriberPackageVersion.MinorVersion FROM InstalledSubscriberPackage ORDER BY SubscriberPackage.Name LIMIT 200`,
+  });
+  const pkgRecs = pkgR.ok ? ((pkgR.data || {}).records || []) : [];
+
+  // === 章構成 ===
+  const editionMap = {
+    "Developer Edition": "Developer (開発者・無料)", "Enterprise Edition": "Enterprise (大規模企業向け)",
+    "Unlimited Edition": "Unlimited (上位)", "Performance Edition": "Performance",
+    "Professional Edition": "Professional (中小規模)", "Group Edition": "Group (小規模)",
+    "Essentials Edition": "Essentials (Starter)", "Trial Edition": "Trial (試用)",
+  };
+  const monthMap = { 1: "1月", 2: "2月", 3: "3月", 4: "4月 (日本会計年度)", 5: "5月", 6: "6月", 7: "7月", 8: "8月", 9: "9月", 10: "10月", 11: "11月", 12: "12月" };
+
+  const orgKv = [
+    ["組織名", org.Name || ""],
+    ["組織 ID", org.Id || ""],
+    ["エディション", editionMap[org.OrganizationType] || (org.OrganizationType || "")],
+    ["環境種別", org.IsSandbox ? "⚠ Sandbox (検証/開発)" : "🚨 Production (本番)"],
+    ["インスタンス", org.InstanceName || ""],
+    ["ネームスペース", org.NamespacePrefix || "(なし)"],
+    ["言語 / タイムゾーン", `${org.LanguageLocaleKey || ""} / ${org.TimeZoneSidKey || ""}`],
+    ["既定通貨", org.DefaultCurrencyIsoCode || ""],
+    ["会計年度開始月", monthMap[org.FiscalYearStartMonth] || ""],
+    ["組織作成日", org.CreatedDate ? fmtDate(org.CreatedDate) : ""],
+    ["Trial 期限", org.TrialExpirationDate || "(該当なし)"],
+  ];
+
+  const licHeaders = ["No", "ライセンス", "API 名", "総数", "使用中", "残り", "使用率"];
+  const licRows = ((licR.data || {}).records || []).map((r, i) => {
+    const total = Number(r.TotalLicenses) || 0;
+    const used = Number(r.UsedLicenses) || 0;
+    return {
+      "No": i + 1,
+      "ライセンス": r.MasterLabel || r.Name,
+      "API 名": r.Name,
+      "総数": fmtNum(total),
+      "使用中": fmtNum(used),
+      "残り": fmtNum(total - used),
+      "使用率": total > 0 ? fmtPercent(used / total) : "—",
+    };
+  });
+
+  const userKv = [
+    ["総ユーザー数", fmtNum(activeUsers + inactiveUsers)],
+    ["アクティブ", fmtNum(activeUsers)],
+    ["非アクティブ", fmtNum(inactiveUsers)],
+    ["凍結中 (UserLogin.IsFrozen)", fmtNum(frozenUsers)],
+  ];
+
+  const profHeaders = ["No", "プロファイル名", "ライセンス", "ユーザ種別", "割当アクティブ数"];
+  const profRecs = (profR.data || {}).records || [];
+  const profRows = profRecs.map((p, i) => ({
+    "No": i + 1,
+    "プロファイル名": p.Name,
+    "ライセンス": p.UserLicense ? p.UserLicense.Name : "(なし)",
+    "ユーザ種別": p.UserType || "",
+    "割当アクティブ数": fmtNum(profCnts.get(p.Id) || 0),
+  }));
+
+  const psHeaders = ["No", "API 名", "ラベル", "ライセンス", "種別", "割当数"];
+  const psRecs = (psR.data || {}).records || [];
+  const psRows = psRecs.map((p, i) => ({
+    "No": i + 1,
+    "API 名": p.Name,
+    "ラベル": p.Label || "",
+    "ライセンス": p.License ? p.License.Name : "(なし)",
+    "種別": p.IsCustom ? "カスタム" : "標準/パッケージ",
+    "割当数": fmtNum(psCnts.get(p.Id) || 0),
+  }));
+
+  const grpHeaders = ["No", "種別", "Name", "DeveloperName", "Email"];
+  const grpTypeMap = { "Regular": "Public Group", "Queue": "Queue" };
+  const grpRows = groupRecs.map((g, i) => ({
+    "No": i + 1,
+    "種別": grpTypeMap[g.Type] || g.Type,
+    "Name": g.Name,
+    "DeveloperName": g.DeveloperName || "",
+    "Email": g.Email || "",
+  }));
+
+  const pkgHeaders = ["No", "パッケージ名", "ネームスペース", "バージョン"];
+  const pkgRows = pkgRecs.map((p, i) => {
+    const pkg = p.SubscriberPackage || {};
+    const ver = p.SubscriberPackageVersion || {};
+    return {
+      "No": i + 1,
+      "パッケージ名": pkg.Name || "",
+      "ネームスペース": pkg.NamespacePrefix || "(なし)",
+      "バージョン": [ver.MajorVersion, ver.MinorVersion].filter((n) => n != null).join("."),
+    };
+  });
+
+  const sections = [
+    makeCoverSection({ docTitle: "組織全体スナップショット", target: `${org.Name || ""} (${org.IsSandbox ? "Sandbox" : "Production"})`, orgHost: host, revision: "初版" }),
+    { heading: "0. 概要", kvRows: [
+      ["本資料の目的", "組織監査・年次レポート・組織移管時の引継ぎ資料として、組織の主要メタデータを 1 つの設計書に集約"],
+      ["含まれる情報", "組織情報 / ライセンス使用状況 / ユーザー集計 / プロファイル一覧 / 権限セット一覧 / Public Group・Queue / インストールパッケージ"],
+      ["想定読者", "システム管理者 / Salesforce 担当者 / 監査担当者 / コンサルタント"],
+    ]},
+    { heading: "1. 組織情報", kvRows: orgKv },
+    { heading: "2. ライセンス使用状況", headers: licHeaders, rows: licRows },
+    { heading: "3. ユーザ集計", kvRows: userKv },
+    { heading: "4. プロファイル一覧", headers: profHeaders, rows: profRows },
+    { heading: "5. 権限セット一覧", headers: psHeaders, rows: psRows },
+    { heading: "6. Public Group / Queue", headers: grpHeaders, rows: grpRows },
+    { heading: "7. インストールパッケージ", headers: pkgHeaders, rows: pkgRows },
+  ];
+
+  return {
+    title: `組織全体スナップショット: ${org.Name || ""}`,
+    type: "orgSnapshot",
+    sections,
+    note: `組織 ${org.Name || ""} (${org.IsSandbox ? "Sandbox" : "Production"}) の主要メタデータ 7 章構成スナップショット。ライセンス ${fmtNum(licRows.length)} 種類 / アクティブユーザー ${fmtNum(activeUsers)} 名 / プロファイル ${fmtNum(profRows.length)} / 権限セット ${fmtNum(psRows.length)} / Group ${fmtNum(grpRows.length)} / パッケージ ${fmtNum(pkgRows.length)}。**業務担当者向け**: 年次監査資料・組織移管引継ぎ・経営報告・コンサル提案前の現状把握等に 1 クリック生成で活用できます。各章の詳細は個別設計書 (プロファイル詳細レポート / FLS マトリクス 等) を組み合わせてください。`,
+  };
+}
+
 function fmtDate(s) {
   if (!s) return "";
   return s.replace("T", " ").replace(/\.\d+\+\d+$/, "").replace(/\+\d+$/, "");
