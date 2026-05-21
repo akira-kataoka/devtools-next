@@ -461,6 +461,7 @@ System.debug('Now: ' + System.now());</textarea>
         <div class="toolbar">
           <button id="btnRestCopy" title="REST API のレスポンスをクリップボードにコピー (生 JSON)">📋 結果コピー</button>
           <button id="btnRestCopyMd" title="📝 Markdown コードブロック形式でコピー (Phase 261)">📝 MD コピー</button>
+          <button id="btnRestCopyLink" title="🔗 現在の REST 呼び出し (Method/Path/Body) を再実行できる URL (?view=rest&method=&path=&body=) をクリップボードコピー — チーム共有用 (Phase 285、GET のみ自動実行、POST/PATCH/DELETE は安全のため投入のみ)">🔗 リンク</button>
           <span class="grow"></span>
         </div>
         <pre id="restResult" class="code"><div class="empty-state">👆 上のメソッド (GET/POST/PATCH/DELETE) とパスを指定して「送信」を押してください。レスポンス (JSON) がここに整形表示されます。<br/><br/><strong>💡 ヒント</strong>: SOQL では取得できない情報 (<code>/limits</code>/<code>/userinfo</code>/<code>/sobjects/</code>/<code>/versions</code> 等) を直接叩けます。POST/PATCH の場合はボディに JSON を入力してください。<code>📋 結果コピー</code> でクリップボードに JSON を保存できます。</div></pre>

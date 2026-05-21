@@ -149,6 +149,10 @@ async function init() {
       // v3.194.0 Phase 284: ?target=&format= 対応 — design ビュー起動時に種類/対象/形式を投入 + 自動生成
       window._sfdtInitialTargetFromQuery = params.get("target") || null;
       window._sfdtInitialFormatFromQuery = params.get("format") || null;
+      // v3.195.0 Phase 285: ?method=&path=&body= 対応 — rest ビュー起動時に投入 + GET なら自動実行
+      window._sfdtInitialMethodFromQuery = params.get("method") || null;
+      window._sfdtInitialPathFromQuery = params.get("path") || null;
+      window._sfdtInitialBodyFromQuery = params.get("body") || null;
     } catch {}
     // v2.93.0: リフレッシュ時の直前 view 復元 (ユーザー要望「リフレッシュしても前のページ状態を残して」)
     try {
@@ -176,6 +180,33 @@ async function init() {
         };
         if (!tryRun()) {
           // sid 未取得 — 接続完了後リトライ (最大 5 秒)
+          let waited = 0;
+          const iv = setInterval(() => {
+            waited += 250;
+            if (tryRun() || waited >= 5000) clearInterval(iv);
+          }, 250);
+        }
+      }
+    }
+    // v3.195.0 Phase 285: ?method=&path=&body= が指定されかつ rest view なら投入 + GET なら自動実行 (POST/PATCH/DELETE は安全のため自動実行しない)
+    if (initialViewFromQuery === "rest" && (window._sfdtInitialMethodFromQuery || window._sfdtInitialPathFromQuery || window._sfdtInitialBodyFromQuery)) {
+      const restMethodSel = document.getElementById("restMethod");
+      const restPathInp = document.getElementById("restPath");
+      const restBodyTa = document.getElementById("restBody");
+      const methodVal = (window._sfdtInitialMethodFromQuery || "GET").toUpperCase();
+      if (restMethodSel && Array.from(restMethodSel.options).some((o) => o.text === methodVal)) restMethodSel.value = methodVal;
+      if (restPathInp && window._sfdtInitialPathFromQuery) restPathInp.value = String(window._sfdtInitialPathFromQuery);
+      if (restBodyTa && window._sfdtInitialBodyFromQuery) restBodyTa.value = String(window._sfdtInitialBodyFromQuery);
+      // GET のみ自動実行 (POST/PATCH/DELETE は破壊的なので投入のみで停止)
+      if (methodVal === "GET") {
+        const tryRun = () => {
+          if (state.sid) {
+            try { const btn = document.getElementById("btnRest"); if (btn) btn.click(); } catch {}
+            return true;
+          }
+          return false;
+        };
+        if (!tryRun()) {
           let waited = 0;
           const iv = setInterval(() => {
             waited += 250;
@@ -1170,6 +1201,20 @@ function bindEvents() {
       const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
       await navigator.clipboard.writeText(url);
       panelToast(`🔗 ${inspectState.obj || "?"}:${inspectState.id} の Inspector リンクをコピー`, { kind: "ok" });
+    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+  });
+  // v3.195.0 Phase 285: REST API 🔗 リンク (?view=rest&method=&path=&body=)
+  $on("btnRestCopyLink", "click", async () => {
+    const method = (document.getElementById("restMethod").value || "GET").trim();
+    const path = (document.getElementById("restPath").value || "").trim();
+    const body = (document.getElementById("restBody").value || "").trim();
+    if (!path) { panelToast("⚠ REST API パスを入力してください", { kind: "warn" }); return; }
+    try {
+      const qp = new URLSearchParams({ view: "rest", method, path });
+      if (body) qp.set("body", body);
+      const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
+      await navigator.clipboard.writeText(url);
+      panelToast(`🔗 REST リンクをコピー (${method} ${path.length > 40 ? path.substring(0, 40) + "…" : path})`, { kind: "ok" });
     } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
   });
   // v3.194.0 Phase 284: 設計書 🔗 リンク (?view=design&type=&target=&format=)
