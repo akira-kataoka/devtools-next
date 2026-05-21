@@ -1,7 +1,8 @@
 # Salesforce DevTool (Chrome / Edge 拡張)  v3.x
 
-> 🎊🎊🎊🎊🎊🎊🎊🎊🎊 **Phase 260 マイルストーン達成** (2026-05-22) — 通算 370+ リリース、サイクル 1-260 完遂
-> v3.0.0 (Phase 90) → **v3.170.0 (Phase 260)** を継続的自律改修ループで磨き上げ。**🎊 v3 系 170 連続リリース完遂!**
+> 🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊 **Phase 270 マイルストーン達成** (2026-05-22) — 通算 380+ リリース、サイクル 1-270 完遂
+> v3.0.0 (Phase 90) → **v3.180.0 (Phase 270)** を継続的自律改修ループで磨き上げ。**🎊 v3 系 180 連続リリース完遂!**
+> **「📝 MD コピー」横断 10 箇所達成** (Phase 261-267) — REST/Apex/mini-panel SOQL/Limits/ログイン履歴/メタデータ/Apex ログ + Inspector ID/MD リンク/全項目 MD
 > **GitHub Governance 完成** — CI / Issue / PR / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT すべて整備
 > **Inspector ↔ SOQL 双方向ナビ** (Phase 155-157) + **SQL/Apex 整形** (Phase 153-154) + **SOQL/Apex テンプレート挿入** (Phase 159-160) すべて完成
 > 🎯 **Phase 219-250 新機能群完成 (2026-05-21〜22)**:
@@ -68,11 +69,12 @@
 > - **Phase 231-240**: v3.141-3.150 📐 **objectDef 項目集計サマリ + a11y モーダル強化** (Phase 231) / 🔗 **ER 図 2-hop オプション + MD のみフィルタ** (Phase 232) / 📤 **popup → admin/search クロスナビ** (?view= URL クエリ、Phase 233) / 🏢 **admin 組織情報サマリカード (7 カード目)** (Phase 234) / 📁 **ストレージ詳細抽出** (ContentVersion 拡張子別 + Top 20、Phase 235) / 🟧 **Apex 削減テンプレ 3 種** (大型ファイル / 古い Attachment / 空 Account、Phase 236) / 🔎 **SOQL 管理者向け 5 種** (ストレージ / Public Group / Queue / メンバー集計、Phase 237) / 🔆 **グローバル検索ハイライト** (Phase 238) / 📜 **検索履歴チップ** (chrome.storage、Phase 239) / ⭐ **新設計書「組織全体スナップショット」(23 種目)** (Team D 集大成、Phase 240)
 > - **Phase 241-250**: v3.151-3.160 🎊 **マイルストーン年表** 📝 **README に Phase 161-240 累計年表 + 累計実績更新** (Phase 241) / 🔗 **Inspector「関連レコード」横断 SOQL** (子オブジェクト Top 5 サブクエリ、Phase 242) / 🌐 **mini-panel「検索」ボタン** (Phase 243) / 👥 **mini-panel「管理」ボタン (4 入口統一達成)** (Phase 244) / 📥 **グローバル検索結果 CSV エクスポート** (Phase 245) / 📋 **Inspector「ID」コピーボタン** (3 モード整合、Phase 246) / 💬 **Apex「DEBUG のみ」フィルタ** (USER_DEBUG 抽出、Phase 247) / 🔄 **設計書「直前生成」再実行 chip** (Phase 248) / 🔒 **chip クリアボタン (機密配慮)** (Phase 249) / 🎊 **v3 系 160 連続リリース達成 + マイルストーン記念** (Phase 250)
 > - **Phase 251-260**: v3.161-3.170 📊 **設計書フォーマットに JSON 追加** (API 連携・自動処理、Phase 251) / ♿ **admin 取得ボタン aria-label 整備 (WCAG 2.1 SC 2.4.6 準拠)** (Phase 252) / ❄️📁 **mini-panel SOQL テンプレ管理者向け 2 種追加** (Phase 253) / 📊 **Apex「リミット消費」フィルタ追加 (3 フィルタ完成)** (Phase 254) / 📝 **Inspector「MD リンク」コピー** (Phase 255) / 📝 **mini-panel「MD」リンクコピー** (3 モード整合性、Phase 256) / 📥 **検索結果グループ別 CSV エクスポート** (Phase 257) / 📥 **admin 主要 4 カード個別 CSV エクスポート** (Phase 258) / 📜 **設計書「過去 5 件履歴」chip 拡張** (Phase 259) / 🎊 **v3 系 170 連続リリース達成 + マイルストーン記念** (Phase 260)
+> - **Phase 261-270**: v3.171-3.180 📝 **REST API レスポンス「MD コピー」** (Phase 261) / 📝 **Apex 実行結果「MD コピー」** (Phase 262) / 📝 **mini-panel SOQL 結果「MD」テーブルコピー** (3 モード整合性、Phase 263) / 📝 **Limits 画面「MD コピー」** (Phase 264) / 📝 **ログイン履歴「MD コピー」** (セキュリティ監査向け、Phase 265) / 📝 **メタデータ一覧「MD コピー」** (Phase 266) / 📝 **Apex Debug ログ「MD コピー」+ 汎用関数化 (Markdown 10 箇所目 🎊)** (Phase 267) / 📊 **Apex 実行結果「ガバナ消費サマリ pill」自動表示** (Phase 268) / 📋 **Inspector「全項目 MD」コピー** (バグ報告/監査資料用、Phase 269) / 🎊🎊 **v3 系 180 連続リリース達成 + マイルストーン記念** (Phase 270)
 >
-> ## 📈 累計実績 (Phase 260 時点)
-> - **リリース数**: v1 系 + v2 系 100 リリース + **🎊 v3 系 170 リリース** = **370+ リリース**
-> - **GitHub push 数**: **420+ コミット**
-> - **対応ユーザー報告**: **90+ 件** (UX 改善 / 機能追加 / バグ修正)
+> ## 📈 累計実績 (Phase 270 時点)
+> - **リリース数**: v1 系 + v2 系 100 リリース + **🎊 v3 系 180 リリース** = **380+ リリース**
+> - **GitHub push 数**: **430+ コミット**
+> - **対応ユーザー報告**: **95+ 件** (UX 改善 / 機能追加 / バグ修正)
 > - **CRITICAL バグ修正**: 8 件 (runBtn 二重宣言 / addEventListener null セーフ x2 / Flow メタデータ取得 / Limits ReferenceError / ログイン履歴 WHERE filterable / var(--muted) 未定義変数 + Markdown bold 見えない不具合 / **メタデータ一覧 CustomObject Name 列 INVALID_FIELD (Phase 219)** / **chrome.storage キー名不一致 2 バグ (Phase 190)**)
 > - **業務担当者向け磨き**: 設計書 23/23 種 note + 凡例 + 章番号 chip + 文書管理 ID + 機密区分 + 環境バッジ + ロール別 FAQ 19 問 + トラブルシューティング 13 症状 + PDF 保存手順 + アンインストール手順
 > - **a11y 実績**: 3 モード fade-in アニメーション統一、prefers-reduced-motion 対応、focus-visible/aria-label 全面適用、PROD バッジ警告パルス、`.pill.loading` 統一スピナー、ソート `⇅` マーカー、**admin モーダルのフォーカス trap (Phase 231)**
