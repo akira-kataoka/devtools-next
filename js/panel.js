@@ -158,6 +158,8 @@ async function init() {
       // v3.207.0 Phase 297: ?limit=&status= 対応 — login ビュー起動時に件数/ステータス投入 + 自動取得
       window._sfdtInitialLimitFromQuery = params.get("limit") || null;
       window._sfdtInitialStatusFromQuery = params.get("status") || null;
+      // v3.237.0 Phase 327: ?period= 対応 (1/7/30) — login ビューの期間フィルタも URL クエリ共有
+      window._sfdtInitialPeriodFromQuery = params.get("period") || null;
       // v3.208.0 Phase 298: ?op=&apiObj=&apiId= 対応 — apiurl ビュー起動時に投入 + URL ビルド自動実行
       window._sfdtInitialOpFromQuery = params.get("op") || null;
       window._sfdtInitialApiObjFromQuery = params.get("apiObj") || null;
@@ -212,9 +214,11 @@ async function init() {
       try { const btn = document.getElementById("btnApiBuild"); if (btn) btn.click(); } catch {}
     }
     // v3.207.0 Phase 297: ?limit=&status= が指定されかつ login view なら投入 + 自動取得
-    if (initialViewFromQuery === "login" && (window._sfdtInitialLimitFromQuery || window._sfdtInitialStatusFromQuery)) {
+    // v3.237.0 Phase 327: ?period= も対応
+    if (initialViewFromQuery === "login" && (window._sfdtInitialLimitFromQuery || window._sfdtInitialStatusFromQuery || window._sfdtInitialPeriodFromQuery)) {
       const limitSel = document.getElementById("loginLimit");
       const statusSel = document.getElementById("loginStatus");
+      const periodSel = document.getElementById("loginPeriod");
       if (limitSel && window._sfdtInitialLimitFromQuery) {
         const l = String(window._sfdtInitialLimitFromQuery);
         if (Array.from(limitSel.options).some((o) => o.value === l)) limitSel.value = l;
@@ -222,6 +226,10 @@ async function init() {
       if (statusSel && window._sfdtInitialStatusFromQuery) {
         const s = String(window._sfdtInitialStatusFromQuery);
         if (Array.from(statusSel.options).some((o) => o.value === s)) statusSel.value = s;
+      }
+      if (periodSel && window._sfdtInitialPeriodFromQuery) {
+        const p = String(window._sfdtInitialPeriodFromQuery);
+        if (Array.from(periodSel.options).some((o) => o.value === p)) periodSel.value = p;
       }
       const tryRun = () => {
         if (state.sid) {
@@ -1316,16 +1324,19 @@ function bindEvents() {
       panelToast(`🔗 API URL ビルダーリンクをコピー (${op}${apiObj ? ` / ${apiObj}` : ""})`, { kind: "ok" });
     } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
   });
-  // v3.207.0 Phase 297: ログイン履歴 🔗 リンク (?view=login&limit=&status=)
+  // v3.207.0 Phase 297: ログイン履歴 🔗 リンク (?view=login&limit=&status=&period=)
   $on("btnLoginCopyLink", "click", async () => {
     const limit = (document.getElementById("loginLimit").value || "50");
     const status = (document.getElementById("loginStatus").value || "");
+    const periodEl = document.getElementById("loginPeriod");
+    const period = periodEl ? (periodEl.value || "") : "";
     try {
       const qp = new URLSearchParams({ view: "login", limit });
       if (status) qp.set("status", status);
+      if (period) qp.set("period", period);
       const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
       await navigator.clipboard.writeText(url);
-      panelToast(`🔗 ログイン履歴リンクをコピー (limit=${limit}${status ? ` / ${status}` : ""})`, { kind: "ok" });
+      panelToast(`🔗 ログイン履歴リンクをコピー (limit=${limit}${status ? ` / ${status}` : ""}${period ? ` / 直近 ${period} 日` : ""})`, { kind: "ok" });
     } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
   });
   // v3.205.0 Phase 295: Apex 🔗 リンク (?view=apex&code=) — auto-fire 無効、投入のみで停止
@@ -6017,6 +6028,9 @@ async function doFetchLoginHistory() {
   const unlock = lockBtn("btnFetchLogin");
   const limit = parseInt(document.getElementById("loginLimit").value, 10) || 50;
   const statusFilter = document.getElementById("loginStatus").value;
+  // v3.237.0 Phase 327: 期間フィルタ (LAST_N_DAYS:N) — セキュリティ監査ワークフロー強化
+  const periodEl = document.getElementById("loginPeriod");
+  const periodDays = periodEl && periodEl.value ? parseInt(periodEl.value, 10) : 0;
   const meta = document.getElementById("loginMeta");
   meta.innerHTML = `<span class="pill loading">ログイン履歴を取得しています…</span>`;
   meta.classList.add("loading-pulse");
@@ -6025,8 +6039,12 @@ async function doFetchLoginHistory() {
   // WHERE Status='Success' を入れると INVALID_FIELD / "No such filterable column" エラーになっていた。
   // WHERE 句を撤廃し、取得後にクライアント側で Status フィルタを適用する。
   // 取得件数を保証するため LIMIT を 2 倍に増やしフィルタ後に slice
+  // v3.237.0 Phase 327: LoginTime は filterable なので期間 WHERE 句を追加可能
   const fetchLimit = statusFilter ? Math.min(limit * 3, 1000) : limit;
-  const soql = `SELECT Id, UserId, LoginTime, LoginType, Application, Status, ApiType, ApiVersion, ClientVersion, Browser, Platform, SourceIp FROM LoginHistory ORDER BY LoginTime DESC LIMIT ${fetchLimit}`;
+  const whereParts = [];
+  if (periodDays > 0) whereParts.push(`LoginTime = LAST_N_DAYS:${periodDays}`);
+  const whereClause = whereParts.length ? `WHERE ${whereParts.join(" AND ")} ` : "";
+  const soql = `SELECT Id, UserId, LoginTime, LoginType, Application, Status, ApiType, ApiVersion, ClientVersion, Browser, Platform, SourceIp FROM LoginHistory ${whereClause}ORDER BY LoginTime DESC LIMIT ${fetchLimit}`;
 
   const t0 = performance.now();
   const r = await runSoql({ host: state.host, sid: state.sid, soql, apiVersion: state.apiVersion });

@@ -533,6 +533,12 @@ System.debug('Now: ' + System.now());</textarea>
             <option value="Success">成功のみ</option>
             <option value="Failed">失敗のみ</option>
           </select>
+          <select id="loginPeriod" title="取得対象の期間 — セキュリティ監査で「直近 24h の失敗ログイン」等を確認する際に使用 (Phase 327)">
+            <option value="">全期間</option>
+            <option value="1">直近 24 時間</option>
+            <option value="7">直近 7 日</option>
+            <option value="30">直近 30 日</option>
+          </select>
           <button id="btnFetchLogin" class="primary" title="指定した条件で LoginHistory を取得します">取得</button>
           <span class="grow"></span>
           <button id="btnLoginCsv" title="ログイン履歴を CSV ファイルとしてダウンロードします">CSV</button>
