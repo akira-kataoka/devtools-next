@@ -169,7 +169,7 @@
           <button id="btnCopyCsv" title="クエリ結果を CSV としてクリップボードにコピーします (ダウンロード不要)">📋 CSV</button>
           <button id="btnExportCsv" title="クエリ結果を CSV ファイルとしてダウンロードします">📥 CSV</button>
           <button id="btnRunSoql" class="primary" title="SOQL クエリを実行します (Ctrl+Enter でも実行できます)">▶ 実行 (Ctrl+Enter)</button>
-          <button id="btnBulkInsert" title="CSV (1 行目ヘッダ・カンマ区切り) から複数レコードを Composite API で一括 INSERT します。本番組織での実行は実データに影響するためご注意ください">📤 CSV → INSERT</button>
+          <button id="btnBulkInsert" title="CSV (1 行目ヘッダ・カンマ区切り) から複数レコードを Composite API で一括 INSERT / UPDATE / UPSERT します。本番組織での実行は実データに影響するためご注意ください">📤 CSV → DML</button>
           <button id="btnSoqlEvidence" aria-label="SOQL クエリと結果をエビデンスとしてダウンロード" title="現在の SOQL クエリと結果を Markdown 形式のエビデンスとしてダウンロードします (テスト工程の証跡用)">📸 エビデンス</button>
         </div>
         <textarea id="soqlText" rows="8" spellcheck="false" placeholder="SOQL クエリを入力してください&#10;例 1: SELECT Id, Name FROM Account WHERE CreatedDate = LAST_N_DAYS:30 ORDER BY CreatedDate DESC LIMIT 50&#10;例 2: SELECT Id, Subject, Status FROM Case WHERE Owner.Name = 'John Doe' AND IsClosed = false&#10;例 3: SELECT Id, Name, (SELECT Id, Subject FROM Tasks) FROM Account WHERE Industry = 'Manufacturing' LIMIT 10&#10;&#10;Ctrl+Enter で実行できます (入力中にオートコンプリート候補が表示されます)" title="SOQL クエリを入力します。Tooling API オブジェクト (ApexClass / ValidationRule 等) は左の『Tooling API を使用』にチェックしてください。日付リテラル (LAST_N_DAYS / TODAY / THIS_MONTH 等) と親子クエリ (サブクエリ) もサポートします">SELECT Id, Name, CreatedDate FROM Account ORDER BY CreatedDate DESC LIMIT 50</textarea>
