@@ -267,6 +267,7 @@ function flashToast(text) {
         <div class="row">
           <button class="hdr-close" id="useId" title="現在のページのレコード ID を WHERE Id='...' でクエリに挿入します" style="border-color:#1b96ff;color:#1b96ff">📋 ID をクエリに挿入</button>
           <button class="hdr-close" id="copyCsv" title="クエリ結果を CSV としてクリップボードにコピーします">📋 CSV コピー</button>
+          <button class="hdr-close" id="copyMd" title="📝 クエリ結果を Markdown テーブル形式でクリップボードにコピー — Slack / Confluence / Notion 等に貼り付け可能 (Phase 263、3 モード整合性)">📝 MD</button>
           <button class="hdr-close" id="dlCsv" title="クエリ結果を CSV ファイルとしてダウンロードします">📥 CSV DL</button>
           <span class="meta" id="mta">Ctrl+Enter でクエリを実行できます</span>
           <button class="primary" id="run">▶ 実行</button>
@@ -758,6 +759,40 @@ function flashToast(text) {
       meta.innerHTML = `<span class="ok">📋 CSV ${lastRecs.length} 行をクリップボードにコピーしました</span>`;
     } catch (e) {
       meta.innerHTML = `<span class="err">❌ クリップボードへのコピーに失敗しました: ${String(e.message || e)}</span>`;
+    }
+  });
+  // v3.173.0 Phase 263: Markdown テーブル形式でコピー (3 モード整合性、panel の Phase 151 と同パターン)
+  const copyMdBtn = $("copyMd");
+  if (copyMdBtn) copyMdBtn.addEventListener("click", async () => {
+    if (!lastRecs.length) { meta.innerHTML = `<span class="err">📭 コピー対象のデータがありません</span>`; return; }
+    try {
+      const cols = new Set();
+      lastRecs.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
+      const headers = Array.from(cols);
+      const flatten = (v) => {
+        if (v == null) return "";
+        if (typeof v === "object") {
+          if (v.attributes) {
+            const f = Object.keys(v).filter((k) => k !== "attributes");
+            const pref = ["Name", "Subject", "Title"].find((p) => f.includes(p) && v[p]);
+            return pref ? `${v[pref]}${v.Id ? ` [${v.Id.substring(0, 18)}]` : ""}` : JSON.stringify(v);
+          }
+          return JSON.stringify(v);
+        }
+        const s = String(v);
+        const m = s.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+        return m ? `${m[1]} ${m[2]}` : s;
+      };
+      // Markdown テーブル: パイプ \| エスケープ + 改行→半角スペースで崩れ防止
+      const mdEsc = (v) => String(flatten(v)).replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+      const lines = [];
+      lines.push("| " + headers.map(mdEsc).join(" | ") + " |");
+      lines.push("|" + headers.map(() => "---").join("|") + "|");
+      for (const r of lastRecs) lines.push("| " + headers.map((h) => mdEsc(r[h])).join(" | ") + " |");
+      await navigator.clipboard.writeText(lines.join("\n"));
+      meta.innerHTML = `<span class="ok">📝 Markdown テーブル ${lastRecs.length} 行をコピーしました</span>`;
+    } catch (e) {
+      meta.innerHTML = `<span class="err">❌ コピー失敗: ${String(e.message || e)}</span>`;
     }
   });
 
