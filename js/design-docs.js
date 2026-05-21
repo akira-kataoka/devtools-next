@@ -421,6 +421,10 @@ async function buildProfileList({ host, sid, apiVersion }) {
     ["プロファイルとは", "ユーザ作成時に必須となる権限の母体。ユーザ毎にちょうど 1 つ割当てる (権限セットと違い複数割当不可)"],
     ["ライセンス", "プロファイルが紐づく UserLicense。Salesforce / Salesforce Platform / Customer Community 等が代表"],
     ["ユーザ種別", "標準 = 内部ユーザ、Power〇〇 / Customer〇〇 = 外部 (Experience Cloud / コミュニティ) ユーザ"],
+    // v3.258.0 Phase 348 (Team D): 凡例に Phase 225 新規列の説明を補完
+    ["割当全ユーザー", "そのプロファイルに紐づく User レコード総数 (有効/無効すべて)。0 件は未使用プロファイル"],
+    ["アクティブ", "上記のうち IsActive=true (ログイン可能) のユーザー数。年次セキュリティ監査・棚卸しの主指標"],
+    ["未使用", "○ 完全未使用 = 一度も割当履歴なし (即削除候補) / △ 全員無効 = 割当履歴ありだが現在は全員無効 (監査対象)"],
     ["設計指針", "近年は『最小プロファイル + 権限セットで加算』が推奨 (Spring '26 でプロファイル機能の一部廃止予定)"],
   ];
   // v2.73.0: note サマリ - ライセンス別件数 + 内部/外部ユーザ別件数
@@ -492,6 +496,8 @@ async function buildPermSetList({ host, sid, apiVersion }) {
     ["ライセンス", "(なし) = 機能限定 / Salesforce 等 = そのライセンスに紐づくユーザにのみ割当可能"],
     ["ネームスペース", "(なし) = 自組織のカスタム / 値あり = AppExchange パッケージや管理パッケージ由来"],
     ["種別", "カスタム = 管理者が作成・編集可、標準/パッケージ = Salesforce 標準またはパッケージ提供で編集制限あり"],
+    // v3.258.0 Phase 348 (Team D): 凡例に Phase 225 新規列の説明を補完
+    ["割当ユーザー数", "PermissionSetAssignment を経由した直接割当のユーザー数。0 件は未割当 (削除候補または PermissionSetGroup 経由のみで運用中)"],
     ["除外条件", "IsOwnedByProfile=false (プロファイルに付随する内部 PermissionSet は本一覧から除外)"],
   ];
   // v2.73.0: note サマリ - カスタム/標準別 + ライセンス別 + ネームスペース (組織独自/パッケージ) 別件数
