@@ -1,9 +1,22 @@
 # Salesforce DevTool (Chrome / Edge 拡張)  v3.x
 
-> 🎊🎊🎊🎊🎊🎊🎊 **Phase 160 マイルストーン達成** (2026-05-21) — 通算 270+ リリース、サイクル 1-249+ 継続中
-> v3.0.0 (Phase 90) → v3.70.0 (Phase 160) を継続的自律改修ループで磨き上げ。**v3 系 70 連続リリース完遂!**
+> 🎊🎊🎊🎊🎊🎊🎊 **Phase 240 マイルストーン達成** (2026-05-22) — 通算 350+ リリース、サイクル 1-249+ 継続中
+> v3.0.0 (Phase 90) → v3.150.0 (Phase 240) を継続的自律改修ループで磨き上げ。**v3 系 150 連続リリース完遂!**
 > **GitHub Governance 完成** — CI / Issue / PR / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT すべて整備
 > **Inspector ↔ SOQL 双方向ナビ** (Phase 155-157) + **SQL/Apex 整形** (Phase 153-154) + **SOQL/Apex テンプレート挿入** (Phase 159-160) すべて完成
+> 🎯 **Phase 219-240 新機能群完成 (2026-05-21〜22)**:
+> - 👥 **ユーザー・ライセンス管理ダッシュボード** (admin ビュー、7 カード、Phase 219-220-234-235)
+> - 📁 **ストレージ詳細抽出 + Apex 削減テンプレ** (Phase 235-236)
+> - ⏰ **未活動ユーザー抽出 (30/90日)** (Phase 230)
+> - 🔓 **代理ログイン (Login as User) 統合** (Phase 229)
+> - 🌐 **グローバル検索 (SOSL) 新ビュー + ハイライト + 履歴** (Phase 227-238-239)
+> - 📋 **レコード抽出 SOQL/項目選択 モード統合** (Phase 228)
+> - 🔗 **ER 図 2-hop オプション + MD のみフィルタ** (Phase 232)
+> - 📐 **オブジェクト定義書 項目集計サマリ** (Phase 231)
+> - 🔆 **設計書 5 種強化** (fieldSetList / profileList / permsetList / customSettingList / accessControl / appList、Phase 225-226)
+> - ⭐ **「組織全体スナップショット」設計書追加** (23 種目、Phase 240 集大成)
+> - 📤 **popup → admin/search クロスナビ** (?view= URL クエリ、Phase 233)
+> - 🔎 **最近候補・履歴 datalist 統合** (Phase 223、chrome.storage 永続化キー 16 種)
 >
 > ## 🏆 Phase 1-160 主要マイルストーン (年表)
 >
@@ -44,15 +57,27 @@
 > - **Phase 151-154**: v3.61-3.64 結果表 Markdown コピー + Apex エラー抽出 + SOQL 整形 (キーワード大文字化) + Apex 整形 (`{ }` インデント)
 > - **Phase 155-158**: v3.65-3.68 Inspector ↔ SOQL 双方向ナビ完成 (親方向 chip / 同レコード SOQL / 子レコード SOQL) + README 文書化
 > - **Phase 159-160**: v3.69-3.70 🎊 **マイルストーン** Apex/SOQL view にテンプレート挿入 (業務 12 種類)
+> - **Phase 161-180**: v3.71-3.90 SOQL my_open_cases User ID 自動補完 / mini-panel SOQL テンプレ + sessionUser Chatter 取得 / chrome.storage 永続化 9 種大台 / 設計書「対象」入力履歴 / Inspector レコード履歴 + scrollTop 復元 / Apex/SOQL 履歴永続化 / 設定エクスポート・インポート / 設定リセット (5 カテゴリ) / 見えない不具合 3 件修正 / popup dead code -322 行 / panel dead code -468 行 / CSS デザイントークン導入 (8 種 sp-* / 5 種 r-*) 🎊
+> - **Phase 181-200**: v3.91-3.110 CSS padding/border-radius トークン化 (累計 170 箇所) / r-pill/r-tag/sp-card-y/sp-hair/sp-tag-y 命名化 / id↔JS comm diff 監査 / class↔HTML/JS comm diff (popup 31 行 + panel 38 行 dead 削除) / chrome.storage キー名不一致 2 バグ修正 🎊 / Limits sticky 緊急修正 / DataExport オブジェクト確定で項目自動読込 / LoginHistory 検索+ソート / 大量 popup 説明 1 行+ホバー
+> - **Phase 201-220**: v3.111-3.131 DataExport 項目自動読込 / Limits 固定上限解説 / Inspector 風一括 DML (DELETE/INSERT/UPDATE/UPSERT/Bulk API v2、5 機能) / Setup Audit Trail / SOQL 業務監査系 5 種 + Apex 5 種拡充 / **ユーザー管理/ライセンス管理 SOQL+Apex テンプレ 8 種追加** (Phase 211) / Apex 一括凍結・解除・無効化 / ナビ再編 + 代理ログイン即候補 / REST API クイック実行 8 種 / 説明文 details 折りたたみ / Limits API + 固定上限を同一一覧に統合 / 👥 **ユーザー・ライセンス管理ダッシュボード新設** (Phase 219、6 カード) / **凍結ユーザー解除モーダル** (Phase 220、fallback 対応)
+> - **Phase 221-230**: v3.132-3.140 admin-howto 折りたたみ式 (Phase 221) / 🎨 **Limits 画面 UX 改善 3 点** (1行化・stickyヘッダ強化・admin と表示統一、Phase 222) / 🔍 **最近使ったオブジェクト/レコード datalist** (chrome.storage 16 種目、Phase 223) / mini-panel 説明簡素化 (Phase 224) / 設計書 6 種完全強化 (fieldSetList の中身項目リスト / profileList・permsetList の割当ユーザー数 / customSettingList のレコード件数 / accessControl の Group/Queue / appList の Profile 別、Phase 225-226) / 🌐 **グローバル検索 SOSL 新ビュー** (Phase 227) / 📋 **レコード抽出 SOQL/項目選択 モード統合** (Phase 228) / 🔓 **admin に Login as User 統合 + 残席アラート + 再取得** (Phase 229) / ⏰ **未活動ユーザー 30/90日抽出** (Phase 230)
+> - **Phase 231-240**: v3.141-3.150 📐 **objectDef 項目集計サマリ + a11y モーダル強化** (Phase 231) / 🔗 **ER 図 2-hop オプション + MD のみフィルタ** (Phase 232) / 📤 **popup → admin/search クロスナビ** (?view= URL クエリ、Phase 233) / 🏢 **admin 組織情報サマリカード (7 カード目)** (Phase 234) / 📁 **ストレージ詳細抽出** (ContentVersion 拡張子別 + Top 20、Phase 235) / 🟧 **Apex 削減テンプレ 3 種** (大型ファイル / 古い Attachment / 空 Account、Phase 236) / 🔎 **SOQL 管理者向け 5 種** (ストレージ / Public Group / Queue / メンバー集計、Phase 237) / 🔆 **グローバル検索ハイライト** (Phase 238) / 📜 **検索履歴チップ** (chrome.storage、Phase 239) / ⭐ **新設計書「組織全体スナップショット」(23 種目)** (Team D 集大成、Phase 240)
 >
-> ## 📈 累計実績 (Phase 160 時点)
-> - **リリース数**: v1 系 + v2 系 100 リリース + **v3 系 70 リリース** = **270+ リリース**
-> - **GitHub push 数**: 310+ コミット
-> - **対応ユーザー報告**: 50+ 件 (UX 改善 / 機能追加 / バグ修正)
-> - **CRITICAL バグ修正**: 6 件 (runBtn 二重宣言 / addEventListener null セーフ x2 / Flow メタデータ取得 / Limits ReferenceError / ログイン履歴 WHERE filterable / var(--muted) 未定義変数 + Markdown bold 見えない不具合)
-> - **業務担当者向け磨き**: 設計書 22/22 種 note + 凡例 + 章番号 chip + 文書管理 ID + 機密区分 + 環境バッジ + ロール別 FAQ 19 問 + トラブルシューティング 13 症状 + PDF 保存手順 + アンインストール手順
-> - **a11y 実績**: 3 モード fade-in アニメーション統一、prefers-reduced-motion 対応、focus-visible/aria-label 全面適用、PROD バッジ警告パルス、`.pill.loading` 統一スピナー、ソート `⇅` マーカー
+> ## 📈 累計実績 (Phase 240 時点)
+> - **リリース数**: v1 系 + v2 系 100 リリース + **v3 系 150 リリース** = **350+ リリース**
+> - **GitHub push 数**: 400+ コミット
+> - **対応ユーザー報告**: 80+ 件 (UX 改善 / 機能追加 / バグ修正)
+> - **CRITICAL バグ修正**: 8 件 (runBtn 二重宣言 / addEventListener null セーフ x2 / Flow メタデータ取得 / Limits ReferenceError / ログイン履歴 WHERE filterable / var(--muted) 未定義変数 + Markdown bold 見えない不具合 / **メタデータ一覧 CustomObject Name 列 INVALID_FIELD (Phase 219)** / **chrome.storage キー名不一致 2 バグ (Phase 190)**)
+> - **業務担当者向け磨き**: 設計書 23/23 種 note + 凡例 + 章番号 chip + 文書管理 ID + 機密区分 + 環境バッジ + ロール別 FAQ 19 問 + トラブルシューティング 13 症状 + PDF 保存手順 + アンインストール手順
+> - **a11y 実績**: 3 モード fade-in アニメーション統一、prefers-reduced-motion 対応、focus-visible/aria-label 全面適用、PROD バッジ警告パルス、`.pill.loading` 統一スピナー、ソート `⇅` マーカー、**admin モーダルのフォーカス trap (Phase 231)**
 > - **3 モード UI 統一達成**: popup (⚙️ 管理者) / panel + tool (💻 開発者) / mini-panel (👤 ユーザー) — fade-in / versionBadge / 空状態ガイド / button transition / a11y outline すべて整合
+> - **chrome.storage 永続化キー**: 16 種 (最近 SOQL / Apex / REST / Inspector / Login as User / 設計書「対象」/ メタデータ type / SOQL Tooling チェック状態 / Apex Debug ログ / 最近検索ワード + スコープ 等)
+> - **CSS デザイントークン**: 18 種 (--sp-0 〜 --sp-7 + --r-xs 〜 --r-xl + --r-pill + --r-tag + --sp-card-y + --sp-hair + --sp-tag-y)、累計 170+ 箇所トークン化
+> - **業務シナリオ完全カバー**:
+>   - **データ抽出**: SOQL モード / 項目選択モード / グローバル検索 (SOSL)
+>   - **組織監査**: 1 クリック「組織全体スナップショット」+ admin ダッシュボード (7 カード)
+>   - **ユーザー管理**: 凍結 / 凍結解除 / 代理ログイン / MFA 未設定者抽出 / 未活動者抽出 (30/90 日)
+>   - **ストレージ削減**: 詳細抽出 + 大型 ContentVersion / 古い Attachment / 空 Account の Apex テンプレ連携
 
 ## v3 系の主要機能 (v2.71 → v3.3 累計まとめ)
 
