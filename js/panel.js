@@ -488,28 +488,58 @@ function setupDesignTypeFilter() {
   const filter = document.getElementById("designTypeFilter");
   const sel = document.getElementById("designType");
   if (!filter || !sel) return;
-  // 起動時に option 一覧を保持 (絞込み復元用)
-  const allOptions = Array.from(sel.options).map((o) => ({ value: o.value, text: o.textContent }));
+  // v3.236.0 Phase 326: 起動時に optgroup 構造ごと保持して絞込み後も復元可能に
+  // Phase 318 で optgroup 5 カテゴリ化したが、旧フィルタはフラット化していたため optgroup が消えてしまっていた
+  const groupStructure = []; // [{label, options: [{value, text}]}]
+  Array.from(sel.children).forEach((child) => {
+    if (child.tagName === "OPTGROUP") {
+      const opts = Array.from(child.children).map((o) => ({ value: o.value, text: o.textContent }));
+      groupStructure.push({ label: child.label, options: opts });
+    } else if (child.tagName === "OPTION") {
+      // optgroup 外の option (今は存在しないが念のため null グループ扱い)
+      groupStructure.push({ label: null, options: [{ value: child.value, text: child.textContent }] });
+    }
+  });
+  // 全件のフラット集計 (検索カウント用)
+  const totalCount = groupStructure.reduce((acc, g) => acc + g.options.length, 0);
+
   const refresh = () => {
     const q = (filter.value || "").toLowerCase().trim();
     const current = sel.value;
-    const matched = q ? allOptions.filter((o) => o.text.toLowerCase().includes(q) || o.value.toLowerCase().includes(q)) : allOptions;
     sel.innerHTML = "";
-    matched.forEach((o) => {
-      const opt = document.createElement("option");
-      opt.value = o.value;
-      opt.textContent = o.text;
-      sel.appendChild(opt);
+    let matchedCount = 0;
+    groupStructure.forEach((g) => {
+      const matched = q ? g.options.filter((o) => o.text.toLowerCase().includes(q) || o.value.toLowerCase().includes(q)) : g.options;
+      if (!matched.length) return;
+      matchedCount += matched.length;
+      if (g.label) {
+        const og = document.createElement("optgroup");
+        og.label = g.label;
+        matched.forEach((o) => {
+          const opt = document.createElement("option");
+          opt.value = o.value;
+          opt.textContent = o.text;
+          og.appendChild(opt);
+        });
+        sel.appendChild(og);
+      } else {
+        matched.forEach((o) => {
+          const opt = document.createElement("option");
+          opt.value = o.value;
+          opt.textContent = o.text;
+          sel.appendChild(opt);
+        });
+      }
     });
     // 元の選択を可能なら復元、無理なら先頭を選択
-    if (matched.some((o) => o.value === current)) sel.value = current;
-    else if (matched.length) {
-      sel.value = matched[0].value;
-      // 種別が変わったので setupDesignPicker のロジック (placeholder/disable) を再評価
+    const allValues = Array.from(sel.querySelectorAll("option")).map((o) => o.value);
+    if (allValues.includes(current)) {
+      sel.value = current;
+    } else if (allValues.length) {
+      sel.value = allValues[0];
       sel.dispatchEvent(new Event("change", { bubbles: true }));
     }
-    // 検索結果メタ
-    filter.title = `${allOptions.length} 種類中 ${matched.length} 件マッチ`;
+    filter.title = `${totalCount} 種類中 ${matchedCount} 件マッチ`;
   };
   filter.addEventListener("input", refresh);
   filter.addEventListener("keydown", (e) => {
