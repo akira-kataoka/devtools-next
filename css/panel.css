@@ -1846,3 +1846,37 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .admin-modal-body .admin-table {
   width: 100%;
 }
+
+/* v3.132.0 Phase 221: admin-howto を折りたたみ式に変更 (ユーザー要望「上長で煩雑」) */
+details.admin-howto {
+  margin: 6px 12px 4px;
+  padding: 0;
+  background: rgba(27,150,255,0.04);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-md);
+}
+details.admin-howto summary {
+  cursor: pointer;
+  padding: 6px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--fg);
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+details.admin-howto summary::-webkit-details-marker { display: none; }
+details.admin-howto[open] summary { border-bottom: 1px dashed var(--line); }
+details.admin-howto[open] .collapse-hint { transform: rotate(180deg); }
+details.admin-howto .collapse-hint { transition: transform 0.2s ease; }
+details.admin-howto .admin-howto-steps {
+  margin: 8px 0;
+  padding: 0 12px 4px 32px;
+  font-size: 11px;
+  line-height: 1.7;
+  color: var(--fg-dim);
+}
+details.admin-howto .admin-howto-steps li { margin-bottom: 2px; }
+details.admin-howto .admin-howto-steps strong { color: var(--fg); }

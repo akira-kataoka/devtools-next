@@ -550,15 +550,15 @@ System.debug('Now: ' + System.now());</textarea>
 
       <!-- v3.129.0 Phase 219 (Team U): ユーザー・ライセンス管理ダッシュボード -->
       <div class="view hidden" data-view="admin">
-        <div class="admin-howto">
-          <div class="admin-howto-title">👥 ユーザー・ライセンス管理ダッシュボードの使い方</div>
+        <details class="admin-howto collapsible-help" title="使い方ガイドを表示 / 非表示 (折りたたみ)">
+          <summary>💡 使い方 (クリックで展開)<span class="collapse-hint">▼</span></summary>
           <ol class="admin-howto-steps">
-            <li><strong>① まず「▶ すべて取得」を押す</strong> — 6 種類の管理データを Salesforce から取得して全カードに表示します</li>
-            <li><strong>② 各カードを確認</strong> — 使用率 90% 超のライセンス・凍結ユーザー・MFA 未設定者・パッケージ等が一覧に</li>
-            <li><strong>③ アクション実行</strong> — 凍結ユーザー行の「🔓 凍結解除」、ライセンス行の「👥 使用者を見る」、MFA カードの「🚨 未設定者を抽出」等で即操作可能</li>
-            <li><strong>④ レポート保存</strong> — 「📥 サマリ CSV」で取得済みの全カードを 1 つの CSV にまとめてダウンロード</li>
+            <li><strong>① 「▶ すべて取得」</strong> — 6 種類の管理データを Salesforce から取得 (本番組織でも参照のみで安全)</li>
+            <li><strong>② 各カード確認</strong> — 使用率 90% 超ライセンス・凍結ユーザー・MFA 未設定者等が一覧に</li>
+            <li><strong>③ アクション</strong> — 「🔓 凍結解除」「👥 使用者を見る」「🚨 未設定者を抽出」等で即操作</li>
+            <li><strong>④ 「📥 サマリ CSV」</strong> — 全カードを 1 ファイルでダウンロード</li>
           </ol>
-        </div>
+        </details>
         <div class="toolbar admin-toolbar">
           <div class="admin-toolbar-info">
             <strong style="font-size:13px">👥 ユーザー・ライセンス管理</strong>
