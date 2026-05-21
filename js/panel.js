@@ -141,6 +141,9 @@ async function init() {
       // v3.189.0 Phase 279: ?q=<SOQL> 対応 — soql ビュー起動時にクエリを自動投入 + 接続済みなら自動実行
       var initialQFromQuery = params.get("q");
       window._sfdtInitialQFromQuery = initialQFromQuery || null;
+      // v3.191.0 Phase 281: ?kw=<検索ワード>&scope=<standard|extended|all> 対応 — search ビュー起動時に検索を自動実行
+      window._sfdtInitialKwFromQuery = params.get("kw") || null;
+      window._sfdtInitialScopeFromQuery = params.get("scope") || null;
     } catch {}
     // v2.93.0: リフレッシュ時の直前 view 復元 (ユーザー要望「リフレッシュしても前のページ状態を残して」)
     try {
@@ -168,6 +171,33 @@ async function init() {
         };
         if (!tryRun()) {
           // sid 未取得 — 接続完了後リトライ (最大 5 秒)
+          let waited = 0;
+          const iv = setInterval(() => {
+            waited += 250;
+            if (tryRun() || waited >= 5000) clearInterval(iv);
+          }, 250);
+        }
+      }
+    }
+    // v3.191.0 Phase 281: ?kw= が指定されかつ search view なら、検索ワード入力 + 接続済みなら自動実行
+    if (window._sfdtInitialKwFromQuery && initialViewFromQuery === "search") {
+      const kwVal = String(window._sfdtInitialKwFromQuery);
+      const kwInp = document.getElementById("searchQuery");
+      const scopeSel = document.getElementById("searchScope");
+      if (kwInp && kwVal) {
+        kwInp.value = kwVal;
+        const scopeVal = window._sfdtInitialScopeFromQuery;
+        if (scopeSel && scopeVal && Array.from(scopeSel.options).some((o) => o.value === scopeVal)) {
+          scopeSel.value = scopeVal;
+        }
+        const tryRun = () => {
+          if (state.sid) {
+            try { doGlobalSearch(); } catch {}
+            return true;
+          }
+          return false;
+        };
+        if (!tryRun()) {
           let waited = 0;
           const iv = setInterval(() => {
             waited += 250;
@@ -6148,13 +6178,25 @@ async function doGlobalSearch() {
     groups.get(type).push(rec);
   }
 
-  meta.innerHTML = `<span class="pill ok">✓ ${records.length} 件</span> <span class="meta">${dt}ms / ${groups.size} オブジェクト</span> <button id="btnSearchExportCsv" class="admin-row-action" style="margin-left:8px" title="検索結果全体を CSV ファイルとしてダウンロードします (SObject 列付き、全グループ統合)">📥 CSV</button> <button id="btnSearchExportMd" class="admin-row-action" style="margin-left:4px" title="検索結果全体を Markdown ドキュメントとしてクリップボードコピー (オブジェクト別セクション付き、議事録/Notion 向け)">📝 全 MD</button>`;
+  meta.innerHTML = `<span class="pill ok">✓ ${records.length} 件</span> <span class="meta">${dt}ms / ${groups.size} オブジェクト</span> <button id="btnSearchExportCsv" class="admin-row-action" style="margin-left:8px" title="検索結果全体を CSV ファイルとしてダウンロードします (SObject 列付き、全グループ統合)">📥 CSV</button> <button id="btnSearchExportMd" class="admin-row-action" style="margin-left:4px" title="検索結果全体を Markdown ドキュメントとしてクリップボードコピー (オブジェクト別セクション付き、議事録/Notion 向け)">📝 全 MD</button> <button id="btnSearchCopyLink" class="admin-row-action" style="margin-left:4px" title="この検索を再実行できる URL (?view=search&kw=&scope=) をクリップボードコピー — Slack/Notion 共有用 (Phase 281)">🔗 リンク</button>`;
   // v3.155.0 Phase 245: CSV ダウンロードボタン (グローバル検索結果)
   const csvBtn = document.getElementById("btnSearchExportCsv");
   if (csvBtn) csvBtn.addEventListener("click", () => exportSearchCsv(records, kw));
   // v3.182.0 Phase 272: 全体 MD コピーボタン (グローバル検索結果)
   const mdBtn = document.getElementById("btnSearchExportMd");
   if (mdBtn) mdBtn.addEventListener("click", () => exportSearchMd(groups, kw));
+  // v3.191.0 Phase 281: 検索リンクコピー (?view=search&kw=&scope= URL を生成)
+  const linkBtn = document.getElementById("btnSearchCopyLink");
+  if (linkBtn) linkBtn.addEventListener("click", async () => {
+    try {
+      const qp = new URLSearchParams({ view: "search", kw, scope });
+      const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
+      await navigator.clipboard.writeText(url);
+      panelToast(`🔗 検索リンクをコピーしました (${kw})`, { kind: "ok" });
+    } catch (e) {
+      panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" });
+    }
+  });
 
   if (!records.length) {
     root.innerHTML = `<div class="empty-state" style="padding:24px 12px">
