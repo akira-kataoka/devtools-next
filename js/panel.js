@@ -4526,6 +4526,8 @@ async function doSoql() {
 }
 
 // v3.46.0: 3 モード共有 SOQL 履歴 (panel + tool + mini-panel) — chrome.storage.local の sfdtRecentSoql キー
+// v3.316.0 Phase 406: 履歴最大 5 件保存は 3 モード共通の magic number (panel/popup/content/design-docs すべて slice(0, 5))。
+//                     panel-tool は 5 件表示、mini-panel は先頭 3 件のみ表示 (content.js renderMiniHistory)。
 const SHARED_SOQL_HISTORY_KEY = "sfdtRecentSoql";
 async function loadSharedSoqlHistory() {
   try {
