@@ -620,6 +620,7 @@ System.debug('Now: ' + System.now());</textarea>
             <div class="admin-card-hdr">
               <h3 class="admin-card-title">📊 ユーザーライセンス使用状況</h3>
               <button class="mini-btn" id="btnAdminLicenses" aria-label="ユーザーライセンス使用状況を取得" title="UserLicense (Salesforce / Salesforce Platform / Identity / Customer Community 等) の TotalLicenses vs UsedLicenses を取得">取得</button>
+              <button class="mini-btn admin-card-csv" data-card="licenses" aria-label="ユーザーライセンスを CSV エクスポート" title="📥 このカード単独の CSV をダウンロード (Phase 258)">📥 CSV</button>
             </div>
             <div class="admin-card-desc">どのライセンスに何席残っているか即把握。年次更新前のライセンス調達判断、未使用ライセンスの棚卸しに使用。</div>
             <div id="adminLicensesResult" class="admin-card-body">
@@ -631,6 +632,7 @@ System.debug('Now: ' + System.now());</textarea>
             <div class="admin-card-hdr">
               <h3 class="admin-card-title">🔑 権限セットライセンス</h3>
               <button class="mini-btn" id="btnAdminPermSetLicenses" aria-label="権限セットライセンス使用状況を取得" title="PermissionSetLicense (Sales Cloud User / Service Cloud User / Knowledge User 等) の使用率と有効期限">取得</button>
+              <button class="mini-btn admin-card-csv" data-card="permsetLicenses" aria-label="権限セットライセンスを CSV エクスポート" title="📥 このカード単独の CSV をダウンロード (Phase 258)">📥 CSV</button>
             </div>
             <div class="admin-card-desc">Sales Cloud / Service Cloud などのアドオンライセンスの使用率と有効期限を表示。期限切れ前に再契約判断。</div>
             <div id="adminPermSetLicensesResult" class="admin-card-body">
@@ -655,6 +657,7 @@ System.debug('Now: ' + System.now());</textarea>
             <div class="admin-card-hdr">
               <h3 class="admin-card-title">❄️ 凍結ユーザー一覧</h3>
               <button class="mini-btn" id="btnAdminFrozen" aria-label="凍結ユーザー一覧を取得" title="UserLogin.IsFrozen=true のユーザー一覧 (ログインのみ禁止・ライセンスは保持)">取得</button>
+              <button class="mini-btn admin-card-csv" data-card="frozen" aria-label="凍結ユーザーを CSV エクスポート" title="📥 このカード単独の CSV をダウンロード (Phase 258)">📥 CSV</button>
             </div>
             <div class="admin-card-desc">退職予定者の一時凍結・休職対応・不正アクセス疑い時の緊急ロック対象を一覧で確認。クリックで一括解除 Apex も呼出可。</div>
             <div id="adminFrozenResult" class="admin-card-body">
@@ -678,6 +681,7 @@ System.debug('Now: ' + System.now());</textarea>
             <div class="admin-card-hdr">
               <h3 class="admin-card-title">🔌 インストールパッケージ</h3>
               <button class="mini-btn" id="btnAdminPackages" aria-label="インストールパッケージ一覧を取得" title="InstalledSubscriberPackage (Tooling API) — AppExchange / 管理パッケージのインストール状況とバージョン">取得</button>
+              <button class="mini-btn admin-card-csv" data-card="packages" aria-label="パッケージ一覧を CSV エクスポート" title="📥 このカード単独の CSV をダウンロード (Phase 258)">📥 CSV</button>
             </div>
             <div class="admin-card-desc">AppExchange パッケージ・社内 ManagedPackage 一覧をバージョン付きで表示。バージョンアップ前の互換性把握に。</div>
             <div id="adminPackagesResult" class="admin-card-body">

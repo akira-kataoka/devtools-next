@@ -1273,6 +1273,12 @@ function bindEvents() {
       doAdminListInactiveUsers(days);
       return;
     }
+    // v3.168.0 Phase 258: admin カード別 CSV エクスポート
+    const csvBtn = e.target.closest && e.target.closest(".admin-card-csv");
+    if (csvBtn) {
+      adminExportCardCsv(csvBtn.dataset.card);
+      return;
+    }
     // v3.145.0 Phase 235: ストレージ大量消費オブジェクト抽出
     const storage = e.target.closest && e.target.closest(".admin-action-storage-detail");
     if (storage) {
@@ -6581,6 +6587,57 @@ async function doAdminLoadAll() {
   const reload = document.getElementById("btnAdminReload");
   if (reload) reload.addEventListener("click", () => doAdminLoadAll());
   panelToast(`✓ ユーザー・ライセンス管理 7 カードを取得しました (${dt} ms)`, { kind: "ok" });
+}
+
+// v3.168.0 Phase 258: admin カード別 個別 CSV エクスポート
+function adminExportCardCsv(cardKey) {
+  const cardDef = {
+    licenses: {
+      data: adminState.licenses,
+      headers: ["ライセンス", "API 名", "総数", "使用中", "残り", "使用率", "状態"],
+      label: "ユーザーライセンス",
+    },
+    permsetLicenses: {
+      data: adminState.permsetLicenses,
+      headers: ["ライセンス", "API 名", "総数", "使用中", "残り", "使用率", "有効期限", "状態"],
+      label: "権限セットライセンス",
+    },
+    frozen: {
+      data: adminState.frozen,
+      headers: ["氏名", "ユーザ名", "メール", "プロファイル", "IsActive", "User Id"],
+      label: "凍結ユーザー",
+    },
+    packages: {
+      data: adminState.packages,
+      headers: ["パッケージ名", "名前空間", "バージョン名", "バージョン番号", "形態", "Beta"],
+      label: "インストールパッケージ",
+    },
+  };
+  const def = cardDef[cardKey];
+  if (!def || !def.data || !def.data.length) {
+    panelToast(`📭 ${def ? def.label : cardKey} のデータがまだ取得されていません — 先に「取得」ボタンを押してください`, { kind: "warn" });
+    return;
+  }
+  // CSV セル整形 (__html セル除外、Excel BOM 付与)
+  const escCsv = (v) => {
+    if (v && typeof v === "object" && v.__html) {
+      const m = v.__html.match(/admin-bar-label">([^<]+)</);
+      v = m ? m[1] : String(v.__html).replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+    }
+    const s = v == null ? "" : String(v);
+    return /[",\n\t]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines = [def.headers.map(escCsv).join(",")];
+  for (const r of def.data) lines.push(def.headers.map((h) => escCsv(r[h])).join(","));
+  const csv = "﻿" + lines.join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  const ts = new Date().toISOString().substring(0, 19).replace(/[-T:]/g, "");
+  a.href = URL.createObjectURL(blob);
+  a.download = `devtoolsnext-admin-${cardKey}-${ts}.csv`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  panelToast(`📥 ${def.label} CSV をダウンロードしました (${def.data.length} 件)`, { kind: "ok" });
 }
 
 function adminExportCsv() {
