@@ -16,6 +16,8 @@ const state = {
   userId: null,
   userInfo: null,
   // v3.318.0 Phase 408: SF API バージョン default = v62.0 (Winter '26 対応、2026 年 1 月時点、panel.js と同期)
+  // v3.327.0 Phase 417: panel.js state.apiVersion (line 17) と cross reference — 2 ファイルで同 default 値、
+  //                     ユーザーが popup の info-apiver select 変更すると state.apiVersion 更新、その後 sf-api.js が参照
   apiVersion: "62.0",
   lastRecords: null,
 };
