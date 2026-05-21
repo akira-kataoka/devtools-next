@@ -112,7 +112,7 @@
 | 🔐 **FLS 設計書 ProfileReader 化** | 項目 × プロファイル/権限セットのマトリクス (RW/R/--)、タイプ日本語化 |
 | ✏️ **Inspector レコード編集** | 編集可フィールドクリック → 型別 input → PATCH 保存 |
 | 📸 **エビデンス取得機能** | SOQL/Inspector/Limits/ログイン履歴 を Markdown レポート化 (テスト工程向け) |
-| 📄 **設計書 22 種に表紙適用** | 全設計書冒頭に統一表紙 (タイトル/対象/組織/作成者/日時/Ver/改訂) でプロジェクト成果物品質 |
+| 📄 **設計書 21 種に表紙適用** | 全設計書冒頭に統一表紙 (タイトル/対象/組織/作成者/日時/Ver/改訂) でプロジェクト成果物品質 (Phase 90-93 で導入、Phase 240 で orgSnapshot 追加、Phase 319 で実装数確認 21 種) |
 | 🐛 **CRITICAL バグ修正多数** | runBtn 二重宣言 SyntaxError / addEventListener null セーフ x2 / Flow メタデータ取得 / ログイン履歴 WHERE filterable=false / Limits ReferenceError 等 |
 | 🎨 **デザイン品質** | アイコン SVG モダン化 / a11y (aria-live/role/aria-current/focus-visible) / popup CTA 大型 / 冗長説明削除 |
 
