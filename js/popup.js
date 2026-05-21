@@ -277,6 +277,15 @@ function bindEvents() {
       window.close();
     });
   }
+  // v3.143.0 Phase 233: 主要ビューへの直接導線 (URL クエリ ?view=xxx で panel.js init が拾う)
+  const openToolView = (view) => {
+    chrome.tabs.create({ url: chrome.runtime.getURL(`html/tool.html?view=${encodeURIComponent(view)}`) });
+    window.close();
+  };
+  const btnOpenAdmin = document.getElementById("btnOpenAdmin");
+  if (btnOpenAdmin) btnOpenAdmin.addEventListener("click", () => openToolView("admin"));
+  const btnOpenSearch = document.getElementById("btnOpenSearch");
+  if (btnOpenSearch) btnOpenSearch.addEventListener("click", () => openToolView("search"));
 
   document.querySelectorAll("[data-act]").forEach((btn) => {
     btn.addEventListener("click", () => runQuickAction(btn.dataset.act));

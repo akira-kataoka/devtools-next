@@ -446,3 +446,23 @@ details.links-group:not([open]) > a { display: none; }
 .toast.loading { background: #1a2540; border-left-color: var(--fg-dim); color: var(--fg-dim); animation: fadein 0.15s ease-out, popupPulse 1.2s ease-in-out infinite; }
 @keyframes popupPulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.55 } }
 @keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+/* v3.143.0 Phase 233: popup の主要ビュー直接導線 (admin / search) */
+.cta-sub-row { padding: 0 14px; }
+.cta-mini {
+  flex: 1;
+  background: rgba(27,150,255,0.08);
+  color: #1b96ff;
+  border: 1px solid rgba(27,150,255,0.3);
+  border-radius: 6px;
+  padding: 7px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.cta-mini:hover {
+  background: rgba(27,150,255,0.18);
+  border-color: rgba(27,150,255,0.6);
+}
+.cta-mini:focus-visible { outline: 2px solid #1b96ff; outline-offset: 1px; }

@@ -120,11 +120,25 @@ async function init() {
     // 検索系入力欄に ✕ クリア共通化
     // v3.89.0: csFilter は Phase 179 で削除 (変更セット view は v2.88.0 以降 HTML 非実装)
     ["inspectFilter", "exFieldFilter", "exObj", "descObj", "apiObj", "inspectRef"].forEach(attachClearButton);
+    // v3.143.0 Phase 233: URL クエリ ?view=xxx で起動時に該当ビューを開く (popup の admin/search 直接導線)
+    // sfdtLastView より優先 (明示的なナビ指定)
+    let initialViewFromQuery = null;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const v = params.get("view");
+      if (v && document.querySelector(`.view[data-view="${v}"]`)) {
+        initialViewFromQuery = v;
+      }
+    } catch {}
     // v2.93.0: リフレッシュ時の直前 view 復元 (ユーザー要望「リフレッシュしても前のページ状態を残して」)
     try {
-      const { sfdtLastView } = await chrome.storage.local.get("sfdtLastView");
-      if (sfdtLastView && sfdtLastView !== "home" && document.querySelector(`.view[data-view="${sfdtLastView}"]`)) {
-        switchToView(sfdtLastView);
+      if (initialViewFromQuery) {
+        switchToView(initialViewFromQuery);
+      } else {
+        const { sfdtLastView } = await chrome.storage.local.get("sfdtLastView");
+        if (sfdtLastView && sfdtLastView !== "home" && document.querySelector(`.view[data-view="${sfdtLastView}"]`)) {
+          switchToView(sfdtLastView);
+        }
       }
     } catch {}
     // v2.93.0: レコード詳細をデフォルト表示時、現在ページのレコード ID を自動入力 (ユーザー要望「現在のレコードをデフォルト表示」)
