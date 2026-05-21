@@ -25,8 +25,9 @@
   /* スペーシング (4px ベース) — panel.css と完全同期 */
   --sp-0: 2px; --sp-1: 4px; --sp-2: 6px; --sp-3: 8px;
   --sp-4: 10px; --sp-5: 12px; --sp-6: 16px; --sp-7: 24px;
-  /* セマンティックスペーシング — panel.css と完全同期 (v3.95.0 Phase 185 追加) */
-  --sp-card-y: 32px;
+  /* セマンティックスペーシング — panel.css と完全同期 */
+  --sp-hair: 1px; /* v3.96.0 Phase 186 追加 */
+  --sp-card-y: 32px; /* v3.95.0 Phase 185 追加 */
   /* 角丸 — panel.css と完全同期 (v3.94.0 Phase 184: --r-tag 5px 追加) */
   --r-xs: 3px; --r-sm: 4px; --r-tag: 5px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px; --r-pill: 12px;
 }
@@ -421,7 +422,7 @@ details.links-group:not([open]) > a { display: none; }
 }
 .history-item .qmeta { font-size: 9px; color: var(--fg-dim); white-space: nowrap; }
 .history-item .qbadge {
-  font-size: 9px; padding: 1px 5px; border-radius: var(--r-lg);
+  font-size: 9px; padding: var(--sp-hair) 5px; border-radius: var(--r-lg);
   background: var(--bg3); color: var(--fg-dim);
 }
 .history-item .qbadge.tool { background: rgba(243,156,18,0.2); color: var(--warn); }
@@ -433,7 +434,7 @@ details.links-group:not([open]) > a { display: none; }
 .whats-new { border: 1px solid var(--accent); background: linear-gradient(180deg, rgba(27,150,255,0.08) 0%, var(--bg2) 100%); }
 .whats-new h2 { color: var(--accent); font-size: 11px; line-height: 1.4; }
 .whats-new-body { font-size: 11px; color: var(--fg-dim); }
-.whats-new-body kbd { background: var(--bg3); padding: 1px 5px; border-radius: var(--r-xs); border: 1px solid var(--line); color: var(--fg); font-family: ui-monospace, Consolas, monospace; font-size: 10px; }
+.whats-new-body kbd { background: var(--bg3); padding: var(--sp-hair) 5px; border-radius: var(--r-xs); border: 1px solid var(--line); color: var(--fg); font-family: ui-monospace, Consolas, monospace; font-size: 10px; }
 .whats-new-list { margin: 8px 0 6px; padding: 0 0 0 8px; list-style: none; }
 .whats-new-list li { padding: 2px 0; color: var(--fg); }
 .whats-new-body kbd {

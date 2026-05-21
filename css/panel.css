@@ -51,8 +51,9 @@
   /* スペーシング (4px ベース) */
   --sp-0: 2px; --sp-1: 4px; --sp-2: 6px; --sp-3: 8px;
   --sp-4: 10px; --sp-5: 12px; --sp-6: 16px; --sp-7: 24px;
-  /* セマンティックスペーシング (v3.95.0 Phase 185: empty-state 中央配置の縦 padding 9 箇所統一) */
-  --sp-card-y: 32px;
+  /* セマンティックスペーシング (Phase 185-186 で導入) */
+  --sp-hair: 1px; /* v3.96.0 Phase 186: 極小 badge/chip/kbd の縦 padding (16 箇所統一) */
+  --sp-card-y: 32px; /* v3.95.0 Phase 185: empty-state 中央配置の縦 padding (9 箇所統一) */
   /* 角丸 (v3.94.0 Phase 184: --r-tag 5px 追加 — フォーム input / list-item / コード preview で 6 箇所使われていたため) */
   --r-xs: 3px; --r-sm: 4px; --r-tag: 5px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px; --r-pill: 12px;
 }
@@ -71,10 +72,10 @@ html, body {
 .brand { color: var(--accent); font-weight: 700; cursor: pointer; }
 .org { color: var(--fg-dim); font-size: 11px; padding: var(--sp-0) var(--sp-3); background: var(--bg3); border-radius: var(--r-xl); }
 .kbd-hint { color: var(--fg-dim); font-size: 10px; opacity: 0.7; }
-.kbd-hint kbd { background: var(--bg3); border: 1px solid var(--line); border-radius: var(--r-xs); padding: 1px 4px; font-size: 9px; font-family: ui-monospace, Consolas, monospace; }
+.kbd-hint kbd { background: var(--bg3); border: 1px solid var(--line); border-radius: var(--r-xs); padding: var(--sp-hair) var(--sp-1); font-size: 9px; font-family: ui-monospace, Consolas, monospace; }
 @media (max-width: 900px) { .kbd-hint { display: none; } }
 .env-badge {
-  display: inline-block; padding: 1px 6px; border-radius: var(--r-sm);
+  display: inline-block; padding: var(--sp-hair) var(--sp-2); border-radius: var(--r-sm);
   font-size: 10px; font-weight: 700; letter-spacing: 0.5px; margin-right: 4px;
   transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
   cursor: help;
@@ -107,7 +108,7 @@ html, body {
 .ref-rel-name {
   display: inline-block;
   margin-left: 8px;
-  padding: 1px 6px;
+  padding: var(--sp-hair) var(--sp-2);
   background: rgba(46,204,113,0.10);
   color: var(--ok);
   border: 1px solid rgba(46,204,113,0.3);
@@ -270,7 +271,7 @@ textarea {
 .empty-state strong { color: var(--accent); font-weight: 600; }
 .empty-state code {
   background: var(--bg3); color: var(--fg);
-  padding: 1px 5px; border-radius: var(--r-xs);
+  padding: var(--sp-hair) 5px; border-radius: var(--r-xs);
   font-size: 11px; border: 1px solid var(--line);
 }
 .grid table { width: 100%; border-collapse: collapse; font-size: 11px; }
@@ -359,7 +360,7 @@ td.cell-nested { word-break: break-word; }
   border: 1px solid rgba(46,204,113,0.4);
 }
 
-.pill { display: inline-block; padding: 1px 8px; border-radius: var(--r-xl); background: var(--bg3); color: var(--fg-dim); font-size: 10px; }
+.pill { display: inline-block; padding: var(--sp-hair) var(--sp-3); border-radius: var(--r-xl); background: var(--bg3); color: var(--fg-dim); font-size: 10px; }
 .pill.ok { color: var(--ok); background: rgba(46,204,113,0.15); }
 .pill.err { color: var(--err); background: rgba(255,107,107,0.15); }
 .pill.warn { color: var(--warn); background: rgba(243,156,18,0.15); }
@@ -498,7 +499,7 @@ td.cell-nested { word-break: break-word; }
 .api-guide-steps li b { color: var(--fg); }
 .api-guide-steps code {
   background: rgba(27,150,255,0.12);
-  padding: 1px 6px;
+  padding: var(--sp-hair) var(--sp-2);
   border-radius: var(--r-xs);
   font-family: ui-monospace, Consolas, monospace;
   font-size: 11px;
@@ -808,7 +809,7 @@ td.cell-nested { word-break: break-word; }
 .rest-hist-method {
   display: inline-block;
   font-weight: 700;
-  padding: 1px 6px;
+  padding: var(--sp-hair) var(--sp-2);
   border-radius: 8px 0 0 8px;
   font-size: 9px;
   letter-spacing: 0.3px;
@@ -838,7 +839,7 @@ td.cell-nested { word-break: break-word; }
 .design-preview code {
   background: rgba(27,150,255,0.10);
   border: 1px solid rgba(27,150,255,0.25);
-  padding: 1px 6px;
+  padding: var(--sp-hair) var(--sp-2);
   border-radius: var(--r-xs);
   font: 11px ui-monospace, Consolas, "MS Gothic", monospace;
   color: #d6e0f5;
@@ -941,9 +942,9 @@ td.cell-nested { word-break: break-word; }
 }
 .design-preview blockquote strong { color: var(--accent); }
 .design-preview hr { border: none; border-top: 1px solid var(--line); margin: 10px 0; }
-.design-preview .badge-required { background: rgba(255,107,107,0.2); color: var(--err); padding: 1px 5px; border-radius: var(--r-lg); font-size: 9px; }
-.design-preview .badge-unique { background: rgba(243,156,18,0.2); color: var(--warn); padding: 1px 5px; border-radius: var(--r-lg); font-size: 9px; }
-.design-preview .badge-ref { background: rgba(27,150,255,0.2); color: var(--accent); padding: 1px 5px; border-radius: var(--r-lg); font-size: 9px; }
+.design-preview .badge-required { background: rgba(255,107,107,0.2); color: var(--err); padding: var(--sp-hair) 5px; border-radius: var(--r-lg); font-size: 9px; }
+.design-preview .badge-unique { background: rgba(243,156,18,0.2); color: var(--warn); padding: var(--sp-hair) 5px; border-radius: var(--r-lg); font-size: 9px; }
+.design-preview .badge-ref { background: rgba(27,150,255,0.2); color: var(--accent); padding: var(--sp-hair) 5px; border-radius: var(--r-lg); font-size: 9px; }
 
 /* ==== レコード Inspector ==== */
 .inspector-layout {
@@ -986,7 +987,7 @@ td.cell-nested { word-break: break-word; }
 .child-rel-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .child-rel-item .child-fk { color: var(--fg-dim); font-family: ui-monospace, Consolas, monospace; font-size: 9px; }
 .child-rel-item .child-rel-name {
-  margin-left: auto; padding: 1px 5px; font-size: 9px;
+  margin-left: auto; padding: var(--sp-hair) 5px; font-size: 9px;
   background: rgba(46,204,113,0.10); color: var(--ok);
   border: 1px solid rgba(46,204,113,0.3); border-radius: var(--r-lg);
   font-family: ui-monospace, Consolas, monospace;
@@ -1036,7 +1037,7 @@ td.cell-nested { word-break: break-word; }
 }
 .mini-btn {
   background: transparent; color: var(--fg-dim); border: 1px solid var(--line);
-  padding: 1px 6px; border-radius: var(--r-sm); font-size: 10px;
+  padding: var(--sp-hair) var(--sp-2); border-radius: var(--r-sm); font-size: 10px;
 }
 .mini-btn:hover { color: var(--accent); border-color: var(--accent); }
 .export-field-list {
@@ -1303,11 +1304,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .changeset-list-item .cs-meta { color: var(--fg-dim); font-size: 9px; }
 .changeset-list-item .cs-type-badge {
   background: var(--bg3); color: var(--fg-dim);
-  padding: 1px 6px; border-radius: var(--r-md); font-size: 9px;
+  padding: var(--sp-hair) var(--sp-2); border-radius: var(--r-md); font-size: 9px;
 }
 .changeset-list-item .cs-remove {
   background: rgba(255,107,107,0.15); color: var(--err);
-  padding: 1px 6px; border-radius: var(--r-sm); cursor: pointer;
+  padding: var(--sp-hair) var(--sp-2); border-radius: var(--r-sm); cursor: pointer;
   font-size: 10px;
 }
 
@@ -1512,6 +1513,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .home-tips-list { margin: 0; padding-left: 20px; font-size: 11px; line-height: 1.8; color: var(--fg-dim); }
 .home-tips-list kbd {
   background: #142447; border: 1px solid var(--line);
-  padding: 1px 5px; border-radius: var(--r-xs); font-size: 10px; color: var(--accent);
+  padding: var(--sp-hair) 5px; border-radius: var(--r-xs); font-size: 10px; color: var(--accent);
   font-family: ui-monospace, Consolas, monospace;
 }
