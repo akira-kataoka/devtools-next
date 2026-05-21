@@ -1085,6 +1085,37 @@ function bindEvents() {
       panelToast(`📋 Apex の実行結果をコピーしました (${txt.length.toLocaleString()} 文字)`, { kind: "ok" });
     } catch (e) { panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" }); }
   });
+  // v3.172.0 Phase 262: Apex コード + 実行結果を Markdown 形式でコピー (REST Phase 261 と整合)
+  $on("btnApexCopyMd", "click", async () => {
+    const resultEl = document.getElementById("apexResult");
+    const codeEl = document.getElementById("apexCode");
+    const result = (resultEl && resultEl.textContent) || "";
+    const code = (codeEl && codeEl.value) || "";
+    if (!result.trim() && !code.trim()) { panelToast("📭 コピーする内容がありません (Apex コードまたは実行結果が必要)", { kind: "warn" }); return; }
+    const parts = [];
+    parts.push("## 匿名 Apex 実行");
+    parts.push("");
+    if (code.trim()) {
+      parts.push("### コード");
+      parts.push("");
+      parts.push("```apex");
+      parts.push(code.trim());
+      parts.push("```");
+      parts.push("");
+    }
+    if (result.trim()) {
+      parts.push("### 実行結果 / Debug ログ");
+      parts.push("");
+      parts.push("```");
+      parts.push(result.trim());
+      parts.push("```");
+    }
+    const md = parts.join("\n");
+    try {
+      await navigator.clipboard.writeText(md);
+      panelToast(`📝 Apex を Markdown 形式でコピーしました (${md.length.toLocaleString()} 文字、code + result セクション付き)`, { kind: "ok" });
+    } catch (e) { panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" }); }
+  });
   // v3.62.0: Apex Debug ログから「エラーのみ」抽出するトグルボタン
   // パターン: USER_DEBUG ERROR / FATAL_ERROR / EXCEPTION_THROWN / LIMIT_USAGE / SYSTEM.EXCEPTION
   // 状態: aria-pressed=false (全表示) / true (エラーのみ)、フルログは _apexFullLog にバックアップ

@@ -392,7 +392,8 @@ System.debug('Latest Account: ' + a);
 System.debug('Now: ' + System.now());</textarea>
         <div id="apexMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
         <div class="toolbar">
-          <button id="btnApexCopy" title="Apex 結果をクリップボードへコピー">📋 結果コピー</button>
+          <button id="btnApexCopy" title="Apex 結果をクリップボードへコピー (生テキスト)">📋 結果コピー</button>
+          <button id="btnApexCopyMd" title="📝 Apex コード + 結果を Markdown 形式でコピー (Phase 262)">📝 MD コピー</button>
           <button id="btnApexErrorsOnly" title="Debug ログから「USER_DEBUG ERROR」「FATAL_ERROR」「EXCEPTION_THROWN」「LIMIT_USAGE」等のエラー/警告行のみを抽出して表示します (元の全ログは「全ログ表示」で復元)" aria-pressed="false">⚠ エラーのみ</button>
           <button id="btnApexDebugOnly" title="💬 USER_DEBUG 行のみを抽出 (Phase 247)" aria-pressed="false">💬 DEBUG のみ</button>
           <button id="btnApexLimitsOnly" title="📊 ガバナ消費 (LIMIT_USAGE / SOQL queries / CPU time) 行のみを抽出 (Phase 254)" aria-pressed="false">📊 リミット消費</button>
