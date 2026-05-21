@@ -1524,6 +1524,8 @@ function bindEvents() {
 
   // Limits
   $on("btnLimitsCsv", "click", exportLimitsCsv);
+  // v3.174.0 Phase 264: Limits を Markdown テーブル形式でコピー
+  $on("btnLimitsCopyMd", "click", copyLimitsMd);
   $on("limitsSort", "change", renderLimitsList);
   $on("limitsOnlyUsed", "change", renderLimitsList);
   // v3.54.0: Limits 検索フィルタ — input でリアルタイム絞込み、Esc でクリア
@@ -2998,6 +3000,40 @@ function exportLimitsCsv() {
   const sz = csv.length;
   const label = sz < 1024 ? `${sz} B` : `${(sz / 1024).toFixed(1)} KB`;
   panelToast(`📥 Limits CSV ダウンロード (${lines.length - 1} 項目 / ${label})`, { kind: "ok" });
+}
+
+// v3.174.0 Phase 264: Limits を Markdown テーブル形式でクリップボードにコピー
+async function copyLimitsMd() {
+  if (!lastLimitsData) { panelToast("📭 Limits 情報が未取得です。先に「取得」ボタンをクリックしてください", { kind: "warn" }); return; }
+  const lines = [
+    "## 組織 Limits 使用状況",
+    "",
+    `_取得日時: ${new Date().toLocaleString("ja-JP")}_`,
+    "",
+    "| 項目 | 使用 | 残量 | 上限 | 使用率 |",
+    "|---|---:|---:|---:|---:|",
+  ];
+  // 使用率降順でソート (危険な項目を上に)
+  const rows = Object.entries(lastLimitsData).map(([k, v]) => {
+    const max = (v && v.Max != null) ? v.Max : 0;
+    const rem = (v && v.Remaining != null) ? v.Remaining : 0;
+    const used = max - rem;
+    const pct = max > 0 ? Math.round((used / max) * 100) : 0;
+    return { k, used, rem, max, pct };
+  }).sort((a, b) => b.pct - a.pct);
+  for (const r of rows) {
+    // 90% 超は ⚠ 警告マーク、70% 超は 注意
+    const indicator = r.pct >= 90 ? "🚨 " : r.pct >= 70 ? "⚠ " : "";
+    const ja = limitJa(r.k) || r.k;
+    const mdEsc = (v) => String(v).replace(/\|/g, "\\|");
+    lines.push(`| ${mdEsc(indicator + ja)} | ${r.used.toLocaleString()} | ${r.rem.toLocaleString()} | ${r.max.toLocaleString()} | ${r.pct}% |`);
+  }
+  try {
+    await navigator.clipboard.writeText(lines.join("\n"));
+    panelToast(`📝 Limits Markdown テーブルをコピーしました (${rows.length} 項目)`, { kind: "ok" });
+  } catch (e) {
+    panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
+  }
 }
 
 // ====== 設計書ジェネレータ ======
