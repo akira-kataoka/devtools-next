@@ -289,6 +289,7 @@ function flashToast(text) {
             <option value="stale_cases">⏰ 長期未対応 Case 30 日超 (Phase 306)</option>
             <option value="recent_contacts">👤 最近作成された取引先責任者 10 件 (Phase 306)</option>
             <option value="top_revenue">💰 売上 Top 10 取引先 (Phase 306)</option>
+            <option value="setup_audit">📋 設定変更履歴 (Setup Audit Trail) 最新 30 件 (Phase 312)</option>
           </select>
         </div>
         <textarea id="qry" placeholder="SOQL を入力 (例: SELECT Id, Name FROM Account LIMIT 5) / Ctrl+Enter で実行 / 入力中に候補表示" spellcheck="false" title="軽量 SOQL 実行ツールです。上の『📋 ID をクエリに挿入』で現在レコードの WHERE Id='...' を簡単挿入できます。Tooling API オブジェクトは利用できません — 全機能は ↗ 全画面 (開発者モード) で">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 5</textarea>
@@ -373,6 +374,8 @@ function flashToast(text) {
         stale_cases: `SELECT Id, CaseNumber, Subject, Status, Priority, Owner.Name, CreatedDate\nFROM Case\nWHERE IsClosed = false AND CreatedDate < LAST_N_DAYS:30\nORDER BY CreatedDate ASC\nLIMIT 50`,
         recent_contacts: `SELECT Id, Name, Email, Phone, Account.Name, CreatedDate\nFROM Contact\nORDER BY CreatedDate DESC\nLIMIT 10`,
         top_revenue: `SELECT Id, Name, AnnualRevenue, Industry, Owner.Name\nFROM Account\nWHERE AnnualRevenue != null\nORDER BY AnnualRevenue DESC NULLS LAST\nLIMIT 10`,
+        // v3.222.0 Phase 312: セキュリティ監査向け Setup Audit Trail (180 日保持)
+        setup_audit: `SELECT Id, Action, Section, Display, CreatedBy.Name, CreatedDate, DelegateUser\nFROM SetupAuditTrail\nORDER BY CreatedDate DESC\nLIMIT 30`,
       };
       const code = TEMPLATES[key];
       if (!code) return;
