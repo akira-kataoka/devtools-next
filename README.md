@@ -1,8 +1,8 @@
 # Salesforce DevTool (Chrome / Edge 拡張)  v3.x
 
-> 🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊 **Phase 280 マイルストーン達成** (2026-05-22) — 通算 390+ リリース、サイクル 1-280 完遂
-> v3.0.0 (Phase 90) → **v3.190.0 (Phase 280)** を継続的自律改修ループで磨き上げ。**🎊 v3 系 190 連続リリース完遂!**
-> **「📝 MD コピー」横断 14 箇所達成 + URL クエリ統一パターン 5 種完成 + describe 4 入口統一完成** (Phase 271-279)
+> 🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊🎊 **Phase 290 マイルストーン達成 — v3 系 200 連続リリース!** (2026-05-22) — 通算 400+ リリース、サイクル 1-290 完遂
+> v3.0.0 (Phase 90) → **v3.200.0 (Phase 290)** を継続的自律改修ループで磨き上げ。**🎊 v3 系 200 連続リリース完遂!**
+> **URL クエリ統一 9 種 + 🔗 リンク 7 箇所 + 📝 MD コピー 14 箇所 + PROD 2 段階防御 (視覚警告 + 動作ゲート)**
 > **GitHub Governance 完成** — CI / Issue / PR / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT すべて整備
 > **Inspector ↔ SOQL 双方向ナビ** (Phase 155-157) + **SQL/Apex 整形** (Phase 153-154) + **SOQL/Apex テンプレート挿入** (Phase 159-160) すべて完成
 > 🎯 **Phase 219-250 新機能群完成 (2026-05-21〜22)**:
@@ -71,11 +71,15 @@
 > - **Phase 251-260**: v3.161-3.170 📊 **設計書フォーマットに JSON 追加** (API 連携・自動処理、Phase 251) / ♿ **admin 取得ボタン aria-label 整備 (WCAG 2.1 SC 2.4.6 準拠)** (Phase 252) / ❄️📁 **mini-panel SOQL テンプレ管理者向け 2 種追加** (Phase 253) / 📊 **Apex「リミット消費」フィルタ追加 (3 フィルタ完成)** (Phase 254) / 📝 **Inspector「MD リンク」コピー** (Phase 255) / 📝 **mini-panel「MD」リンクコピー** (3 モード整合性、Phase 256) / 📥 **検索結果グループ別 CSV エクスポート** (Phase 257) / 📥 **admin 主要 4 カード個別 CSV エクスポート** (Phase 258) / 📜 **設計書「過去 5 件履歴」chip 拡張** (Phase 259) / 🎊 **v3 系 170 連続リリース達成 + マイルストーン記念** (Phase 260)
 > - **Phase 261-270**: v3.171-3.180 📝 **REST API レスポンス「MD コピー」** (Phase 261) / 📝 **Apex 実行結果「MD コピー」** (Phase 262) / 📝 **mini-panel SOQL 結果「MD」テーブルコピー** (3 モード整合性、Phase 263) / 📝 **Limits 画面「MD コピー」** (Phase 264) / 📝 **ログイン履歴「MD コピー」** (セキュリティ監査向け、Phase 265) / 📝 **メタデータ一覧「MD コピー」** (Phase 266) / 📝 **Apex Debug ログ「MD コピー」+ 汎用関数化 (Markdown 10 箇所目 🎊)** (Phase 267) / 📊 **Apex 実行結果「ガバナ消費サマリ pill」自動表示** (Phase 268) / 📋 **Inspector「全項目 MD」コピー** (バグ報告/監査資料用、Phase 269) / 🎊🎊 **v3 系 180 連続リリース達成 + マイルストーン記念** (Phase 270)
 > - **Phase 271-280**: v3.181-3.190 📝 **admin モーダルに「📝 MD」コピー (使用者/ストレージ/未活動)** (Phase 271) / 📝 **グローバル検索結果に「📝 全 MD」(オブジェクト別セクション)** (Phase 272) / 📋📝 **API URL ビルダー実行結果に「📋/📝」+ サイズ表示** (Phase 273) / 📐 **Describe ビューに項目統計サマリ pill + custom 列 + 権限 pill (組織監査向け)** (Phase 274) / 📝 **Describe ビューに「📝 設計書 MD」コピー (タイトル + 統計 + 全項目表)** (Phase 275) / 📐 **mini-panel に「📐 構造」ボタン + URL `?obj=` で describe 自動実行** (Phase 276) / 📐 **popup に「📐 オブジェクト構造」追加で 4 入口統一完成** (Phase 277) / 🔎 **Inspector に `?id=` URL クエリ + mini-panel「🔎 Inspector」ボタン** (Phase 278) / ↗ **SOQL ビューに `?q=` URL クエリ + mini-panel「↗ 全画面で実行」ボタン** (Phase 279) / 🎊🎊🎊 **v3 系 190 連続リリース達成 + マイルストーン記念** (Phase 280)
+> - **Phase 281-290**: v3.191-3.200 🔗 **グローバル検索に `?kw=` URL クエリ + 「🔗 リンクコピー」ボタン** (Phase 281) / 🔗 **SOQL/Describe/Inspector に「🔗 リンク」ボタン横展開** (Phase 282) / 🔗 **メタデータ一覧に `?type=` URL クエリ + 「🔗 リンク」** (Phase 283) / 🔗 **設計書ビューに `?type=&target=&format=` URL クエリ + 「🔗 リンク」** (Phase 284) / 🔗 **REST API ビューに `?method=&path=&body=` URL クエリ + 「🔗 リンク」(GET のみ auto-fire、POST/PATCH/DELETE は安全のため投入のみ)** (Phase 285) / 📚 **README に「URL クエリ統一パターン 9 種」セクション追加** (Phase 286) / 📐 **Home に「📐 オブジェクト構造」ミニカード追加 (4 入口統一の補完)** (Phase 287) / ⚠ **mini-panel に ENV (Sandbox/PROD) バッジ追加 — PROD はパルスアニメーション (誤操作防止)** (Phase 288) / 🛡️ **PROD 環境での破壊的操作に confirm ダイアログ (Apex DML / REST POST/PATCH/DELETE) — 2 段階防御完成** (Phase 289) / 🎊🎊🎊🎊 **v3 系 200 連続リリース達成 + マイルストーン記念** (Phase 290)
 >
-> ## 📈 累計実績 (Phase 280 時点)
-> - **リリース数**: v1 系 + v2 系 100 リリース + **🎊 v3 系 190 リリース** = **390+ リリース**
-> - **GitHub push 数**: **440+ コミット**
+> ## 📈 累計実績 (Phase 290 時点)
+> - **リリース数**: v1 系 + v2 系 100 リリース + **🎊 v3 系 200 リリース** = **400+ リリース**
+> - **GitHub push 数**: **450+ コミット**
 > - **対応ユーザー報告**: **100+ 件** (UX 改善 / 機能追加 / バグ修正)
+> - **URL クエリ統一パターン**: **9 種** (`?view=admin/search/describe&obj/inspector&id&obj/soql&q/search&kw&scope/metadata&type/design&type&target&format/rest&method&path&body`)
+> - **🔗 リンクコピーボタン**: **7 箇所** (search/SOQL/describe/inspector/metadata/design/rest)
+> - **PROD 2 段階防御**: 視覚警告 (ENV badge パルス) + 動作ゲート (confirm ダイアログ)
 > - **CRITICAL バグ修正**: 8 件 (runBtn 二重宣言 / addEventListener null セーフ x2 / Flow メタデータ取得 / Limits ReferenceError / ログイン履歴 WHERE filterable / var(--muted) 未定義変数 + Markdown bold 見えない不具合 / **メタデータ一覧 CustomObject Name 列 INVALID_FIELD (Phase 219)** / **chrome.storage キー名不一致 2 バグ (Phase 190)**)
 > - **業務担当者向け磨き**: 設計書 23/23 種 note + 凡例 + 章番号 chip + 文書管理 ID + 機密区分 + 環境バッジ + ロール別 FAQ 19 問 + トラブルシューティング 13 症状 + PDF 保存手順 + アンインストール手順
 > - **a11y 実績**: 3 モード fade-in アニメーション統一、prefers-reduced-motion 対応、focus-visible/aria-label 全面適用、PROD バッジ警告パルス、`.pill.loading` 統一スピナー、ソート `⇅` マーカー、**admin モーダルのフォーカス trap (Phase 231)**
