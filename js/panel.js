@@ -11,6 +11,11 @@ const state = {
   apiHost: null,
   sid: null,
   orgId: null,
+  // v3.315.0 Phase 405: userId / isProd / envLabel / lastDescribe を初期定義に追加 (元は動的代入のみで type-discoverable 性が低かった、code reader が把握しやすいよう明示化)
+  userId: null,         // Phase 161 で動的代入
+  isProd: false,        // Phase 289/382 で env 判定後に代入
+  envLabel: null,       // Phase 289/382 で env 判定後に代入
+  lastDescribe: null,   // Phase 275 で動的代入 (設計書 MD コピー用)
   apiVersion: "62.0",
   lastRecords: null,
   lastLoginRecords: null,
