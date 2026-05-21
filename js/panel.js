@@ -5964,10 +5964,13 @@ async function doGlobalSearch() {
     groups.get(type).push(rec);
   }
 
-  meta.innerHTML = `<span class="pill ok">✓ ${records.length} 件</span> <span class="meta">${dt}ms / ${groups.size} オブジェクト</span> <button id="btnSearchExportCsv" class="admin-row-action" style="margin-left:8px" title="検索結果全体を CSV ファイルとしてダウンロードします (SObject 列付き、全グループ統合)">📥 CSV</button>`;
+  meta.innerHTML = `<span class="pill ok">✓ ${records.length} 件</span> <span class="meta">${dt}ms / ${groups.size} オブジェクト</span> <button id="btnSearchExportCsv" class="admin-row-action" style="margin-left:8px" title="検索結果全体を CSV ファイルとしてダウンロードします (SObject 列付き、全グループ統合)">📥 CSV</button> <button id="btnSearchExportMd" class="admin-row-action" style="margin-left:4px" title="検索結果全体を Markdown ドキュメントとしてクリップボードコピー (オブジェクト別セクション付き、議事録/Notion 向け)">📝 全 MD</button>`;
   // v3.155.0 Phase 245: CSV ダウンロードボタン (グローバル検索結果)
   const csvBtn = document.getElementById("btnSearchExportCsv");
   if (csvBtn) csvBtn.addEventListener("click", () => exportSearchCsv(records, kw));
+  // v3.182.0 Phase 272: 全体 MD コピーボタン (グローバル検索結果)
+  const mdBtn = document.getElementById("btnSearchExportMd");
+  if (mdBtn) mdBtn.addEventListener("click", () => exportSearchMd(groups, kw));
 
   if (!records.length) {
     root.innerHTML = `<div class="empty-state" style="padding:24px 12px">
@@ -6086,6 +6089,78 @@ function exportSearchCsv(records, keyword) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 500);
   panelToast(`📥 検索結果 CSV をダウンロードしました (${records.length} 件)`, { kind: "ok" });
+}
+
+// v3.182.0 Phase 272: グローバル検索結果全体を Markdown ドキュメントとしてクリップボードコピー
+// オブジェクト別セクション (## SObject) + 各セクションに Markdown 表 — 議事録/Notion/Slack 向け
+async function exportSearchMd(groups, keyword) {
+  if (!groups || !groups.size) {
+    panelToast("📭 エクスポート対象の結果がありません", { kind: "warn" });
+    return;
+  }
+  // 値の整形 (CSV と同じネスト object 平坦化 + datetime)
+  const fmt = (v) => {
+    if (v == null) return "";
+    if (typeof v === "object") {
+      if (v.attributes && typeof v.attributes === "object") {
+        const fields = Object.keys(v).filter((k) => k !== "attributes");
+        const prefer = ["Name", "Subject", "Title", "DeveloperName", "MasterLabel"];
+        for (const p of prefer) {
+          if (fields.includes(p) && v[p] != null) {
+            const id = fields.includes("Id") && v.Id ? ` [${String(v.Id).substring(0, 18)}]` : "";
+            return `${v[p]}${id}`;
+          }
+        }
+        return fields.length ? `${fields[0]}=${v[fields[0]]}` : "";
+      }
+      return JSON.stringify(v);
+    }
+    const s = String(v);
+    const m = s.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/);
+    return m ? `${m[1]} ${m[2]}` : s;
+  };
+  const esc = (s) => String(s).replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+  const totalCount = Array.from(groups.values()).reduce((acc, recs) => acc + recs.length, 0);
+  const lines = [
+    `# 🔎 グローバル検索結果: ${keyword || ""}`,
+    "",
+    `_取得日時: ${new Date().toLocaleString("ja-JP")} / 合計: ${totalCount} 件 / オブジェクト数: ${groups.size}_`,
+    "",
+  ];
+  const SObject_ICONS = {
+    Account: "🏢", Contact: "👤", Lead: "🎯", Opportunity: "💰",
+    Case: "📞", User: "👨", Task: "📋", Event: "📅", Note: "📝", Campaign: "📣",
+  };
+  // 件数の多い順にセクション化
+  const sortedTypes = Array.from(groups.keys()).sort((a, b) => groups.get(b).length - groups.get(a).length);
+  for (const type of sortedTypes) {
+    const recs = groups.get(type);
+    const icon = SObject_ICONS[type] || "📦";
+    lines.push(`## ${icon} ${type} — ${recs.length} 件`);
+    lines.push("");
+    // 各 SObject の項目集合
+    const keys = new Set();
+    recs.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && keys.add(k)));
+    const headers = Array.from(keys);
+    if (!headers.length) {
+      lines.push(`_(項目なし)_`);
+      lines.push("");
+      continue;
+    }
+    lines.push("| " + headers.map((h) => esc(h)).join(" | ") + " |");
+    lines.push("|" + headers.map(() => "---").join("|") + "|");
+    for (const rec of recs) {
+      const row = headers.map((h) => esc(fmt(rec[h])));
+      lines.push("| " + row.join(" | ") + " |");
+    }
+    lines.push("");
+  }
+  try {
+    await navigator.clipboard.writeText(lines.join("\n"));
+    panelToast(`📝 検索結果 Markdown をコピーしました (${totalCount} 件 / ${groups.size} オブジェクト)`, { kind: "ok" });
+  } catch (e) {
+    panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
+  }
 }
 
 // v3.148.0 Phase 238: 検索結果セル内のキーワードハイライト
