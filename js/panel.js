@@ -5631,11 +5631,24 @@ async function doGlobalSearch() {
       <summary class="search-group-summary">
         <span style="font-size:14px">${icon} <strong>${escape(type)}</strong></span>
         <span class="pill ok" style="font-size:10px">${recs.length} 件</span>
+        <button class="search-group-export-csv admin-row-action" data-sobject="${escape(type)}" title="📥 この ${escape(type)} グループ単独の CSV ファイルをダウンロード (Phase 257)" aria-label="${escape(type)} を CSV エクスポート" style="margin-left:auto">📥 CSV</button>
       </summary>
       <div class="search-group-body">${recordsTable(recs)}</div>
     </details>`;
   });
   root.innerHTML = sections.join("");
+  // v3.167.0 Phase 257: グループ別 CSV ダウンロードボタンのイベント
+  root.querySelectorAll(".search-group-export-csv").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const t = btn.dataset.sobject;
+      const recs = groups.get(t);
+      if (!recs) return;
+      // 既存 exportSearchCsv を SObject 別に呼び出し (キーワードに SObject 名を入れてファイル名を明示化)
+      exportSearchCsv(recs, `${kw}-${t}`);
+    });
+  });
   // v3.148.0 Phase 238: 検索ワードのハイライト処理
   // ユーザー入力 kw を元にテーブル内のセル text を <mark> でマーク (大文字小文字無視)
   // wildcard * は無視して文字列マッチ部分のみ
