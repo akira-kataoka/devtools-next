@@ -235,6 +235,7 @@ function flashToast(text) {
         <span class="hdr-ver" id="hdrVer" title="現在の拡張バージョン">v?</span>
         <span class="hdr-mode" title="ユーザーモード — Salesforce 画面上で軽量に SOQL を実行できます">👤 ユーザー</span>
         <button class="hdr-open" id="opn" title="DevToolsNext を新しいタブで全画面起動します (SOQL/Inspector/設計書など全機能)" aria-label="DevToolsNext を全画面で開く">↗ 全画面</button>
+        <button class="hdr-open" id="opnSearch" title="🌐 グローバル検索 (SOSL) を全画面で開きます — Account/Contact/Lead 等を横断検索 (Phase 243)" aria-label="グローバル検索を全画面で開く">🌐 検索</button>
         <button class="hdr-close" id="cls" title="ミニパネルを閉じます" aria-label="ミニパネルを閉じる">✕</button>
       </div>
       <div class="body">
@@ -502,6 +503,14 @@ function flashToast(text) {
   openFullBtn.addEventListener("click", () => {
     try {
       const url = chrome.runtime.getURL("html/tool.html");
+      window.open(url, "_blank");
+    } catch {}
+  });
+  // v3.153.0 Phase 243: グローバル検索を全画面で直接開く (URL クエリ ?view=search)
+  const openSearchBtn = $("opnSearch");
+  if (openSearchBtn) openSearchBtn.addEventListener("click", () => {
+    try {
+      const url = chrome.runtime.getURL("html/tool.html?view=search");
       window.open(url, "_blank");
     } catch {}
   });
