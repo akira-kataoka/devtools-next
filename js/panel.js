@@ -138,6 +138,9 @@ async function init() {
       // v3.188.0 Phase 278: ?id=<recordId> 対応 — inspector ビュー起動時にレコード ID を自動入力 + 接続済みなら自動取得
       var initialIdFromQuery = params.get("id");
       window._sfdtInitialIdFromQuery = initialIdFromQuery || null;
+      // v3.189.0 Phase 279: ?q=<SOQL> 対応 — soql ビュー起動時にクエリを自動投入 + 接続済みなら自動実行
+      var initialQFromQuery = params.get("q");
+      window._sfdtInitialQFromQuery = initialQFromQuery || null;
     } catch {}
     // v2.93.0: リフレッシュ時の直前 view 復元 (ユーザー要望「リフレッシュしても前のページ状態を残して」)
     try {
@@ -165,6 +168,28 @@ async function init() {
         };
         if (!tryRun()) {
           // sid 未取得 — 接続完了後リトライ (最大 5 秒)
+          let waited = 0;
+          const iv = setInterval(() => {
+            waited += 250;
+            if (tryRun() || waited >= 5000) clearInterval(iv);
+          }, 250);
+        }
+      }
+    }
+    // v3.189.0 Phase 279: ?q= が指定されかつ soql view なら、SOQL を投入 + 接続済みなら自動実行
+    if (window._sfdtInitialQFromQuery && initialViewFromQuery === "soql") {
+      const qVal = String(window._sfdtInitialQFromQuery);
+      const ta = document.getElementById("soqlText");
+      if (ta && qVal) {
+        ta.value = qVal;
+        const tryRun = () => {
+          if (state.sid) {
+            try { doSoql(); } catch {}
+            return true;
+          }
+          return false;
+        };
+        if (!tryRun()) {
           let waited = 0;
           const iv = setInterval(() => {
             waited += 250;

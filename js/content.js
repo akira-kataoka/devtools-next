@@ -271,6 +271,7 @@ function flashToast(text) {
           <button class="hdr-close" id="copyCsv" title="クエリ結果を CSV としてクリップボードにコピーします">📋 CSV コピー</button>
           <button class="hdr-close" id="copyMd" title="📝 クエリ結果を Markdown テーブル形式でクリップボードにコピー — Slack / Confluence / Notion 等に貼り付け可能 (Phase 263、3 モード整合性)">📝 MD</button>
           <button class="hdr-close" id="dlCsv" title="クエリ結果を CSV ファイルとしてダウンロードします">📥 CSV DL</button>
+          <button class="hdr-close" id="runFull" title="↗ 現在の SOQL を全画面 panel に転送して実行 — Tooling API / 編集 / 一括 DML / オートコンプリート等の高機能版 (Phase 279、?q= URL クエリ経由)">↗ 全画面で実行</button>
           <span class="meta" id="mta">Ctrl+Enter でクエリを実行できます</span>
           <button class="primary" id="run">▶ 実行</button>
         </div>
@@ -466,6 +467,22 @@ function flashToast(text) {
       meta.innerHTML = `<span class="ok">📐 ${obj || "describe"} の構造を全画面で開きました</span>`;
     } catch (e) {
       meta.innerHTML = `<span class="err">❌ 構造画面を開けませんでした: ${e.message || e}</span>`;
+    }
+  });
+  // v3.189.0 Phase 279: ↗ 全画面で実行 — 現在の SOQL を全画面 panel に転送して実行 (?view=soql&q=)
+  const runFullBtn = $("runFull");
+  if (runFullBtn) runFullBtn.addEventListener("click", () => {
+    const q = (qry && qry.value || "").trim();
+    if (!q) {
+      meta.innerHTML = `<span class="err">⚠ SOQL を入力してください</span>`;
+      return;
+    }
+    try {
+      const url = chrome.runtime.getURL(`html/tool.html?view=soql&q=${encodeURIComponent(q)}`);
+      window.open(url, "_blank");
+      meta.innerHTML = `<span class="ok">↗ 全画面 panel で SOQL を実行しています…</span>`;
+    } catch (e) {
+      meta.innerHTML = `<span class="err">❌ 全画面起動に失敗: ${e.message || e}</span>`;
     }
   });
   // v3.188.0 Phase 278: 🔎 Inspector — 現在のレコードを全画面 Inspector で開く (?view=inspector&id=&obj=)
