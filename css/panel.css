@@ -1315,11 +1315,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   font-size: 11px;
 }
 /* v2.93.0: Limits sticky ヘッダの重なり修正 + ソート可能列の視覚化 + ピン留め行強調 */
+/* v3.109.0 Phase 199 緊急修正: sticky ヘッダがデータ行と重なって見づらかったため、背景濃色化 + 強い影 + ピン留め行強調 padding を明示 */
 .limit-row.header {
-  background: #112042; color: var(--accent); font-weight: 700;
+  background: #0d1933; color: var(--accent); font-weight: 700;
   position: sticky; top: 0; z-index: 10;
-  border-bottom: 2px solid var(--accent);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  border-bottom: 3px solid var(--accent);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 0, 0, 0.3);
+  padding-top: var(--sp-3); padding-bottom: var(--sp-3);
 }
 .lim-sortable { cursor: pointer; user-select: none; }
 .lim-sortable:hover { color: #fff; background: rgba(27,150,255,0.2); }
