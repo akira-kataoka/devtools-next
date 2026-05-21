@@ -364,6 +364,9 @@
             <option value="bulk_freeze_users">❄️ ユーザー一括凍結 (UserLogin.IsFrozen 一覧+UPDATE)</option>
             <option value="bulk_unfreeze_users">🔓 ユーザー一括凍結解除</option>
             <option value="bulk_deactivate_users">🚫 ユーザー一括無効化 (IsActive=false, ライセンス開放)</option>
+            <option value="large_files_cleanup">📁 大型 ContentVersion 削除候補抽出 (50 MB 超 Top 50)</option>
+            <option value="old_attachment_cleanup">🗑️ 古い Attachment 削除候補抽出 (365 日未更新 Top 200)</option>
+            <option value="empty_records_cleanup">🧹 空の Account 削除候補抽出 (関連 0 件 + 1 年活動なし)</option>
           </select>
           <select id="apexSaved"></select>
           <button id="btnLoadApex">読込</button>
