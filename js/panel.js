@@ -2223,6 +2223,8 @@ function exBuildSoql() {
   let soql = `SELECT ${fields.join(", ")} FROM ${exState.obj}`;
   if (where) soql += ` WHERE ${where}`;
   if (order) soql += ` ORDER BY ${order}`;
+  // v3.322.0 Phase 412: SOQL ガバナ上限 50,000 行 (SF 公式制限、line 3463 の Limits API でも明示) で cap
+  //                     ユーザー入力が 50000 超でも cap = 50000 で安全側に処理
   soql += ` LIMIT ${Math.min(limit, 50000)}`;
   document.getElementById("exSoql").value = soql;
 }
