@@ -266,7 +266,7 @@ function flashToast(text) {
           <span class="meta" id="mta">Ctrl+Enter でクエリを実行できます</span>
           <button class="primary" id="run">▶ 実行</button>
         </div>
-        <div class="result" id="res"><div class="empty-state">👆 SOQL を入力して <strong>Ctrl+Enter</strong> または「▶ 実行」を押すと、ここに結果が表示されます。<br/><br/><strong>💡 ヒント</strong>: 「📋 ID をクエリに挿入」で現在開いているレコードの ID を <code>WHERE Id='...'</code> に挿入できます。「🔎 最近 5 件」は現在オブジェクトの最近作成 5 件を一発取得。テーブルは列ヘッダクリックでソート可能。複雑なクエリやエクスポートは ↗ 全画面 (開発者モード) でどうぞ。</div></div>
+        <div class="result" id="res"><div class="empty-state" title="📋 ID をクエリに挿入 = 現在レコードを WHERE 句へ / 🔎 最近 5 件 = 同オブジェクトの直近データ / 複雑な操作は ↗ 全画面 で">👆 SOQL を入力して <strong>Ctrl+Enter</strong> または「▶ 実行」</div></div>
       </div>
     </div>
   `;

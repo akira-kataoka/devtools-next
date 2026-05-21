@@ -96,6 +96,9 @@ async function init() {
     loadSoqlDraft();
     loadApexDraft();
     loadRestBodyDraft();
+    // v3.134.0 Phase 223 (Team H): 最近使ったオブジェクト / レコード ID をロード
+    await loadRecentObjects();
+    refreshRecordIdDatalist();
     // v3.46.0: chrome.storage.local 変更を監視して、別画面/mini-panel での履歴更新を即時反映
     if (chrome.storage && chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, area) => {
@@ -1924,6 +1927,10 @@ async function doInspect(opts = {}) {
   inspectState.record = recR.data;
   // v3.67.0: 子リレーション セクションをレンダリング
   renderInspectorChildRelations();
+  // v3.134.0 Phase 223 (Team H): 成功時のみ最近使った候補に push (オブジェクト + レコード ID)
+  pushRecentObject(objName);
+  const recLabel = (recR.data && (recR.data.Name || recR.data.Subject || recR.data.CaseNumber || recR.data.Title)) || objName;
+  pushRecentRecordId(id, `${objName}: ${recLabel}`);
 
   const fieldCount = (descR.data.fields || []).length;
   const filledCount = (descR.data.fields || []).filter((f) => {
@@ -2679,6 +2686,8 @@ async function doGenerateDesign() {
                    : "PROD";
     const result = await generateDesign({ type, host: state.host, sid: state.sid, apiVersion: state.apiVersion, obj, format, onProgress, orgId: state.orgId, envLabel });
     if (myId !== designRunId) { console.log(`[DevToolsNext] discard stale Design result #${myId}`); return; }
+    // v3.134.0 Phase 223 (Team H): 設計書生成成功時、対象オブジェクト名を最近使った候補に push
+    if (obj && /^[A-Za-z][A-Za-z0-9_]*$/.test(obj)) pushRecentObject(obj);
     const dt = Math.round(performance.now() - t0);
     lastDesign = result;
     const totalRows = result.sections.reduce((n, s) => n + ((s.rows && s.rows.length) || (s.kvRows && s.kvRows.length) || 0), 0);
@@ -3131,6 +3140,64 @@ function onSoqlAutocompleteKey(e, textarea) {
 // v2.6.0: 全オブジェクト入力欄 (#exObj, #apiObj, #descObj, #designObj) で list="dl-sobjects" を参照
 // describe global の結果をキャッシュして option を生成、再接続時のみ更新
 let _datalistObjsCached = null;
+// v3.134.0 Phase 223 (Team H): 最近使ったオブジェクト/レコード ID を chrome.storage に保存し datalist 先頭に並べる
+const RECENT_OBJ_KEY = "sfdtRecentObjects";
+const RECENT_RECORD_ID_KEY = "sfdtRecentRecordIds";
+const RECENT_MAX = 10;
+let _recentObjsCache = [];
+let _recentRecordIdsCache = [];
+async function loadRecentObjects() {
+  try {
+    const d = await chrome.storage.local.get([RECENT_OBJ_KEY, RECENT_RECORD_ID_KEY]);
+    _recentObjsCache = Array.isArray(d[RECENT_OBJ_KEY]) ? d[RECENT_OBJ_KEY] : [];
+    _recentRecordIdsCache = Array.isArray(d[RECENT_RECORD_ID_KEY]) ? d[RECENT_RECORD_ID_KEY] : [];
+  } catch {}
+}
+async function pushRecentObject(name) {
+  if (!name || typeof name !== "string") return;
+  const norm = name.trim();
+  if (!norm || norm.length > 80) return;
+  try {
+    const d = await chrome.storage.local.get(RECENT_OBJ_KEY);
+    const list = Array.isArray(d[RECENT_OBJ_KEY]) ? d[RECENT_OBJ_KEY] : [];
+    const next = [norm, ...list.filter((n) => n !== norm)].slice(0, RECENT_MAX);
+    await chrome.storage.local.set({ [RECENT_OBJ_KEY]: next });
+    _recentObjsCache = next;
+    refreshSObjectDatalist();
+    refreshRecordIdDatalist();
+  } catch (e) { console.warn("[recent] push obj failed", e); }
+}
+async function pushRecentRecordId(id, label = "") {
+  if (!id || typeof id !== "string") return;
+  const norm = id.trim();
+  if (!/^[a-zA-Z0-9]{15,18}$/.test(norm)) return;
+  try {
+    const d = await chrome.storage.local.get(RECENT_RECORD_ID_KEY);
+    const list = Array.isArray(d[RECENT_RECORD_ID_KEY]) ? d[RECENT_RECORD_ID_KEY] : [];
+    const entry = { id: norm, label: String(label || "").substring(0, 60), ts: Date.now() };
+    const next = [entry, ...list.filter((e) => e && e.id !== norm)].slice(0, RECENT_MAX);
+    await chrome.storage.local.set({ [RECENT_RECORD_ID_KEY]: next });
+    _recentRecordIdsCache = next;
+    refreshRecordIdDatalist();
+  } catch (e) { console.warn("[recent] push record id failed", e); }
+}
+function refreshRecordIdDatalist() {
+  // record ID 入力欄 (Inspector の #inspectRef、API ビルダの #apiId 等) 用の datalist
+  let dl = document.getElementById("dl-record-ids");
+  if (!dl) {
+    dl = document.createElement("datalist");
+    dl.id = "dl-record-ids";
+    document.body.appendChild(dl);
+  }
+  dl.innerHTML = _recentRecordIdsCache
+    .map((e) => `<option value="${escape(e.id)}" label="★ ${escape(e.label || "")} (${escape(e.id)})">`)
+    .join("");
+  // 既存の input に list 属性を付与
+  ["inspectRef", "apiId"].forEach((id) => {
+    const inp = document.getElementById(id);
+    if (inp && !inp.getAttribute("list")) inp.setAttribute("list", "dl-record-ids");
+  });
+}
 async function refreshSObjectDatalist() {
   if (!state.sid || !state.host) return;
   const dl = document.getElementById("dl-sobjects");
@@ -3144,10 +3211,18 @@ async function refreshSObjectDatalist() {
         .filter((s) => s.queryable)
         .map((s) => ({ name: s.name, label: s.label }));
     }
-    // option 形式: value=API 名 / label="API 名 — ラベル" でラベルも補完候補に表示
-    dl.innerHTML = _datalistObjsCached
+    // v3.134.0 Phase 223: 最近使ったオブジェクトを ★ 付きで上位に表示
+    // option 形式: value=API 名 / label="(ラベル)" でブラウザの datalist suggestion でも表示
+    const recent = _recentObjsCache.filter((n) => !!n);
+    const labelMap = new Map(_datalistObjsCached.map((s) => [s.name, s.label || s.name]));
+    const recentHtml = recent
+      .filter((n) => labelMap.has(n))
+      .map((n) => `<option value="${escape(n)}" label="★ 最近使った: ${escape(labelMap.get(n))}">`)
+      .join("");
+    const allHtml = _datalistObjsCached
       .map((s) => `<option value="${escape(s.name)}" label="${escape(s.label || s.name)}">`)
       .join("");
+    dl.innerHTML = recentHtml + allHtml;
   } catch (e) { console.warn("[DevToolsNext] datalist refresh failed:", e); }
 }
 
@@ -3441,6 +3516,11 @@ async function doSoql() {
   document.getElementById("soqlResult").innerHTML = recordsTable(recs);
   // v3.46.0: 共有 SOQL 履歴に push (mini-panel と同期)
   pushSharedSoqlHistory(soql);
+  // v3.134.0 Phase 223 (Team H): SOQL 結果の先頭 5 件の Id を最近使った候補に保存
+  captureSoqlRecentIds(recs);
+  // SOQL から FROM <Object> も解析して push
+  const fromMatch = soql.match(/\bFROM\s+([A-Za-z][A-Za-z0-9_]*)/i);
+  if (fromMatch) pushRecentObject(fromMatch[1]);
 }
 
 // v3.46.0: 3 モード共有 SOQL 履歴 (panel + tool + mini-panel) — chrome.storage.local の sfdtRecentSoql キー
@@ -3629,6 +3709,20 @@ async function copyCsvToClipboard() {
     panelToast(`📋 CSV ${ordered.length} 行をクリップボードへ${hint}`, { kind: "ok" });
   } catch (e) {
     panelToast("❌ コピー失敗: " + (e.message || e), { kind: "err" });
+  }
+}
+
+// v3.134.0 Phase 223 (Team H): SOQL 結果の Id 列で見つかった ID を最近使った候補に push する
+function captureSoqlRecentIds(records) {
+  if (!Array.isArray(records)) return;
+  for (const rec of records.slice(0, 5)) {
+    if (!rec || typeof rec !== "object") continue;
+    const id = rec.Id;
+    if (typeof id !== "string" || !/^[a-zA-Z0-9]{15,18}$/.test(id)) continue;
+    const objName = (rec.attributes && rec.attributes.type) || "";
+    const label = rec.Name || rec.Subject || rec.CaseNumber || rec.Title || "";
+    pushRecentRecordId(id, `${objName}${label ? ": " + label : ""}`);
+    if (objName) pushRecentObject(objName);
   }
 }
 
