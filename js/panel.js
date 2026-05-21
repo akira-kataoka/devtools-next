@@ -4799,14 +4799,14 @@ async function doRest() {
     if (inp) inp.focus();
     return;
   }
-  // v3.199.0 Phase 289: PROD 環境で破壊的 REST 呼び出し (POST/PATCH/DELETE) 前に confirm ダイアログ
+  // v3.199.0 Phase 289 / v3.304.0 Phase 394: PROD 環境で破壊的 REST 呼び出し (POST/PATCH/DELETE) 前に confirm ダイアログ — Phase 394 で 6 経路の format 統一 (🚨🚨 sandwich style)
   if (state.isProd && ["POST", "PATCH", "DELETE"].includes(method)) {
     const ok = window.confirm(
-      `⚠️ 本番組織 (PROD) で破壊的 REST 呼び出し (${method}) を実行しようとしています。\n\n` +
-      `対象組織: ${state.host || "?"}\n` +
+      `🚨🚨 本番組織 (PROD) での 破壊的 REST 呼び出し (${method}) 🚨🚨\n` +
+      `対象組織: ${state.host || "?"}\n\n` +
       `Method: ${method}\nPath: ${path}\n\n` +
       `実データが変更・削除される可能性があります。\n本当に実行してよろしいですか？\n\n` +
-      `(キャンセル推奨。Sandbox での事前テストを推奨します)`
+      `(Sandbox での事前テストを強く推奨します)`
     );
     if (!ok) {
       meta.innerHTML = `<span class="pill warn">⚠ PROD ${method} 実行をキャンセルしました</span>`;
@@ -5884,15 +5884,15 @@ async function doRunApex() {
     if (ta) ta.focus();
     return;
   }
-  // v3.199.0 Phase 289: PROD 環境で破壊的 DML を含む Apex 実行前に confirm ダイアログ (誤操作防止)
+  // v3.199.0 Phase 289 / v3.304.0 Phase 394: PROD 環境で破壊的 DML を含む Apex 実行前に confirm ダイアログ — Phase 394 で 6 経路 format 統一 (🚨🚨 sandwich style)
   if (state.isProd) {
     const dmlPattern = /\b(insert|update|upsert|delete|undelete|merge)\b|database\.(insert|update|upsert|delete|undelete|merge|executeBatch)/i;
     if (dmlPattern.test(code)) {
       const ok = window.confirm(
-        `⚠️ 本番組織 (PROD) で DML 操作を含む Apex を実行しようとしています。\n\n` +
+        `🚨🚨 本番組織 (PROD) での DML 操作を含む Apex 実行 🚨🚨\n` +
         `対象組織: ${state.host || "?"}\n\n` +
         `実データが変更・削除される可能性があります。\n本当に実行してよろしいですか？\n\n` +
-        `(キャンセル推奨。Sandbox での事前テストを推奨します)`
+        `(Sandbox での事前テストを強く推奨します)`
       );
       if (!ok) {
         meta.innerHTML = `<span class="pill warn">⚠ PROD 実行をキャンセルしました</span>`;
