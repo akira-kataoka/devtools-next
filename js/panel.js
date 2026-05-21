@@ -4208,11 +4208,56 @@ async function doFetchLoginHistory() {
   meta.innerHTML = `<span class="pill ok">${recs.length} 件</span> ` +
     `<span class="pill ok">Success ${successCount}</span> ` +
     `<span class="pill err">失敗 ${failedCount} 件</span> / ${dt}ms`;
-  document.getElementById("loginResult").innerHTML = loginHistoryTable(rows);
+  state.lastLoginRows = rows;
+  renderLoginHistory();
 }
 
-function loginHistoryTable(rows) {
-  if (!rows.length) return `<div class="meta" style="padding:8px">📭 該当するログイン履歴はありません</div>`;
+// v3.110.0 Phase 200: ログイン履歴に検索 + ソート機能 (ユーザー要望)
+let _loginSort = { col: "LoginTime", dir: "desc" };
+let _loginFilter = "";
+function renderLoginHistory() {
+  const rows = state.lastLoginRows || [];
+  const q = _loginFilter.trim().toLowerCase();
+  const filtered = q
+    ? rows.filter((r) => Object.values(r).some((v) => String(v).toLowerCase().includes(q)))
+    : rows;
+  const { col, dir } = _loginSort;
+  const sorted = [...filtered].sort((a, b) => {
+    const va = String(a[col] ?? "");
+    const vb = String(b[col] ?? "");
+    if (va < vb) return dir === "asc" ? -1 : 1;
+    if (va > vb) return dir === "asc" ? 1 : -1;
+    return 0;
+  });
+  const root = document.getElementById("loginResult");
+  if (!root) return;
+  root.innerHTML = loginHistoryTable(sorted, filtered.length, rows.length);
+  // 検索 input イベント
+  const filterInput = root.querySelector("#loginFilter");
+  if (filterInput) {
+    filterInput.value = _loginFilter;
+    filterInput.addEventListener("input", (e) => {
+      _loginFilter = e.target.value;
+      renderLoginHistory();
+      const fi = document.getElementById("loginFilter");
+      if (fi) { fi.focus(); fi.setSelectionRange(_loginFilter.length, _loginFilter.length); }
+    });
+    filterInput.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") { _loginFilter = ""; renderLoginHistory(); }
+    });
+  }
+  // ヘッダクリックでソート
+  root.querySelectorAll("th[data-sort]").forEach((th) => {
+    th.addEventListener("click", () => {
+      const c = th.dataset.sort;
+      if (_loginSort.col === c) _loginSort.dir = _loginSort.dir === "asc" ? "desc" : "asc";
+      else { _loginSort.col = c; _loginSort.dir = "asc"; }
+      renderLoginHistory();
+    });
+  });
+}
+
+function loginHistoryTable(rows, filteredCount, totalCount) {
   // 列名を業務用語に変換するマッピング (内部キーは SF フィールド名のまま)
   const colLabels = {
     LoginTime: "ログイン日時",
@@ -4228,7 +4273,19 @@ function loginHistoryTable(rows) {
     UserId: "ユーザ ID",
   };
   const headers = Object.keys(colLabels);
-  const head = `<tr>${headers.map((h) => `<th title="${escape(h)} (Salesforce API 名)">${escape(colLabels[h])}</th>`).join("")}</tr>`;
+  // v3.110.0: 検索ボックス + 件数表示
+  const filterBar = `
+    <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; background:var(--bg2); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:11;">
+      <input type="search" id="loginFilter" placeholder="🔎 検索 (全列横断・Esc でクリア) … 例: 田中 / Failed / 192.168" style="flex:1; padding:5px 8px; font-size:11px; border:1px solid var(--line); border-radius:var(--r-tag); background:#0a1224; color:var(--fg);" />
+      <span style="font-size:10px; color:var(--fg-dim); white-space:nowrap;">${filteredCount}/${totalCount} 件</span>
+    </div>`;
+  if (!rows.length) {
+    if (totalCount === 0) return filterBar + `<div class="meta" style="padding:8px">📭 該当するログイン履歴はありません</div>`;
+    return filterBar + `<div class="meta" style="padding:8px">🔍 検索条件に一致する履歴がありません (取得 ${totalCount} 件中 0 件)</div>`;
+  }
+  // ソート矢印
+  const arrow = (h) => _loginSort.col === h ? (_loginSort.dir === "asc" ? " ▲" : " ▼") : " ⇅";
+  const head = `<tr>${headers.map((h) => `<th class="sortable" data-sort="${escape(h)}" title="${escape(h)} (Salesforce API 名・クリックでソート)" style="cursor:pointer; user-select:none;">${escape(colLabels[h])}<span style="opacity:${_loginSort.col === h ? 1 : 0.4}; font-size:9px;">${arrow(h)}</span></th>`).join("")}</tr>`;
   const body = rows.map((r) => {
     const statusOk = (r.Status || "").startsWith("Success");
     const statusLabel = statusOk ? `✓ ${escape(r.Status)}` : `✗ ${escape(r.Status)}`;
@@ -4243,7 +4300,7 @@ function loginHistoryTable(rows) {
       return `<td>${escape(stringify(r[h]))}</td>`;
     }).join("")}</tr>`;
   }).join("");
-  return `<table>${head}${body}</table>`;
+  return filterBar + `<table>${head}${body}</table>`;
 }
 
 function exportLoginCsv() {
