@@ -500,8 +500,6 @@ function flashToast(text) {
   }
   closeBtn.addEventListener("click", () => panel.classList.remove("open"));
   openFullBtn.addEventListener("click", () => {
-    chrome.runtime.sendMessage({ type: "sfdt:openTool" }, () => {});
-    // fallback: open chrome-extension://.../html/tool.html via runtime
     try {
       const url = chrome.runtime.getURL("html/tool.html");
       window.open(url, "_blank");
