@@ -1279,6 +1279,8 @@ function bindEvents() {
   // LoginHistory
   $on("btnFetchLogin", "click", doFetchLoginHistory);
   $on("btnLoginCsv", "click", exportLoginCsv);
+  // v3.175.0 Phase 265: ログイン履歴 Markdown コピー (Markdown 機能 8 箇所目)
+  $on("btnLoginCopyMd", "click", copyLoginHistoryMd);
 
   // v3.137.0 Phase 227 (Team G2): グローバル検索 (SOSL)
   $on("btnSearch", "click", doGlobalSearch);
@@ -5526,6 +5528,56 @@ function exportLoginCsv() {
   const sz = csv.length;
   const label = sz < 1024 ? `${sz} B` : `${(sz / 1024).toFixed(1)} KB`;
   panelToast(`📥 ログイン履歴 CSV をダウンロードしました (${state.lastLoginRecords.length} 件 / ${label})`, { kind: "ok" });
+}
+
+// v3.175.0 Phase 265: ログイン履歴を Markdown テーブル形式でコピー (セキュリティ監査用)
+async function copyLoginHistoryMd() {
+  if (!state.lastLoginRecords || !state.lastLoginRecords.length) {
+    panelToast("📭 ログイン履歴が未取得です。先に「取得」ボタンをクリックしてください", { kind: "warn" });
+    return;
+  }
+  const recs = state.lastLoginRecords;
+  // 主要列のみ抽出 (LoginTime / Username / Status / SourceIp / LoginType / Browser / Platform)
+  const headers = ["LoginTime", "Username", "Status", "SourceIp", "LoginType", "Browser", "Platform"];
+  // 表示用列名 (業務用日本語)
+  const headerLabels = ["日時", "ユーザー", "結果", "送信元 IP", "種別", "ブラウザ", "プラットフォーム"];
+  const lines = [
+    "## Salesforce ログイン履歴",
+    "",
+    `_取得日時: ${new Date().toLocaleString("ja-JP")} / 件数: ${recs.length}_`,
+    "",
+    "| " + headerLabels.join(" | ") + " |",
+    "|" + headers.map(() => "---").join("|") + "|",
+  ];
+  const mdEsc = (v) => String(v == null ? "" : v).replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+  // Status 別マーカー (✓ Success / ✗ Failed)
+  const statusIcon = (s) => s === "Success" ? "✓ Success" : s === "Failed" ? "✗ Failed" : (s || "");
+  for (const r of recs) {
+    const row = headers.map((h) => {
+      if (h === "LoginTime" && r.LoginTime) {
+        const m = String(r.LoginTime).match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+        return mdEsc(m ? `${m[1]} ${m[2]}` : r.LoginTime);
+      }
+      if (h === "Status") return mdEsc(statusIcon(r.Status));
+      if (h === "Username") {
+        // Username は r.LoginHistoryRelationships の Username (リレーション)、または直接 r.Username
+        return mdEsc((r.User && r.User.Username) || r.UserName || r.Username || "");
+      }
+      return mdEsc(r[h] || "");
+    });
+    lines.push("| " + row.join(" | ") + " |");
+  }
+  // セキュリティ統計: 成功 vs 失敗
+  const okCount = recs.filter((r) => r.Status === "Success").length;
+  const failCount = recs.filter((r) => r.Status === "Failed").length;
+  lines.push("");
+  lines.push(`**集計**: ✓ Success ${okCount} 件 / ✗ Failed ${failCount} 件${failCount > 0 ? " ⚠ 認証失敗あり、要監査" : ""}`);
+  try {
+    await navigator.clipboard.writeText(lines.join("\n"));
+    panelToast(`📝 ログイン履歴を Markdown でコピーしました (${recs.length} 件 / 失敗 ${failCount} 件)`, { kind: "ok" });
+  } catch (e) {
+    panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
+  }
 }
 
 // ====== saved queries (chrome.storage.local) ======
