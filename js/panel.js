@@ -776,6 +776,7 @@ function bindEvents() {
 
   // SOQL
   $on("btnRunSoql", "click", doSoql);
+  $on("btnBulkInsert", "click", openBulkInsertDialog);
   // v3.70.0: SOQL テンプレート挿入 — Apex 同様、よく使う 6 種を 1 クリックで textarea へ
   $on("soqlTemplate", "change", (e) => {
     const key = e.target.value;
@@ -4041,6 +4042,161 @@ async function doBulkDelete(tableId) {
   // 件数カウンタリセット
   const ctr = document.querySelector(`.table-selected-count[data-target="${tableId}"]`);
   if (ctr) ctr.textContent = "0";
+}
+
+// v3.114.0 Phase 204: CSV から一括 INSERT (Inspector 風一括操作 第 2 弾)
+// 業務シナリオ: Excel で作成した取引先候補リストを一気に INSERT、テスト環境のシードデータ投入
+function openBulkInsertDialog() {
+  if (!state.host || !state.sid) { panelToast("⚠ セッション未取得です。popup の ⟳ で再取得してください", { kind: "err" }); return; }
+  // 既存ダイアログがあれば閉じる
+  const existing = document.getElementById("bulkInsertOverlay");
+  if (existing) existing.remove();
+  // モーダル overlay
+  const overlay = document.createElement("div");
+  overlay.id = "bulkInsertOverlay";
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;";
+  overlay.innerHTML = `
+    <div style="background:var(--bg2);border:1px solid var(--accent);border-radius:var(--r-lg);width:min(720px,95vw);max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.6);">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;">
+        <div style="color:var(--accent);font-weight:700;font-size:13px;">📤 CSV から一括 INSERT</div>
+        <button id="bulkInsertClose" style="background:transparent;border:1px solid var(--line);color:var(--fg);padding:4px 10px;border-radius:var(--r-tag);cursor:pointer;">✖ 閉じる (Esc)</button>
+      </div>
+      <div style="padding:14px 16px;overflow:auto;display:flex;flex-direction:column;gap:10px;font-size:11px;color:var(--fg);">
+        <div class="meta" style="padding:6px 8px;background:rgba(243,156,18,0.1);border-left:3px solid var(--warn);border-radius:var(--r-sm);color:var(--warn);">
+          ⚠ 本番組織での INSERT は実データに影響します。テスト環境または十分検証した上でご利用ください。
+        </div>
+        <label style="display:flex;align-items:center;gap:8px;">
+          <span style="width:90px;">対象オブジェクト:</span>
+          <input id="bulkInsertObj" type="text" placeholder="例: Account / Contact / Lead / カスタムオブジェクト__c" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:6px 8px;border-radius:var(--r-tag);" />
+        </label>
+        <label style="display:flex;flex-direction:column;gap:4px;">
+          <span>CSV (1 行目はヘッダ = フィールド API 名・カンマ区切り):</span>
+          <textarea id="bulkInsertCsv" rows="10" placeholder="Name,Industry,Phone&#10;Acme Corp,Technology,03-1234-5678&#10;Beta Inc,Manufacturing,06-9876-5432&#10;Gamma LLC,Healthcare,&#10;&#10;💡 値にカンマを含む場合は &quot;...&quot; で囲む / 空欄は NULL 扱い / Boolean は true/false / Date は YYYY-MM-DD" style="background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:8px;border-radius:var(--r-tag);font:11px/1.5 ui-monospace,Consolas,monospace;resize:vertical;"></textarea>
+        </label>
+        <div id="bulkInsertPreview" style="font-size:10px;color:var(--fg-dim);"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:10px;">
+          <button id="bulkInsertPreviewBtn" style="background:var(--bg3);color:var(--fg);border:1px solid var(--line);padding:6px 14px;border-radius:var(--r-tag);cursor:pointer;">🔍 プレビュー</button>
+          <button id="bulkInsertExecBtn" style="background:var(--accent);color:#fff;border:1px solid var(--accent-2);padding:6px 14px;border-radius:var(--r-tag);cursor:pointer;font-weight:700;">▶ INSERT 実行</button>
+        </div>
+        <div id="bulkInsertResult" style="font-size:10px;max-height:200px;overflow:auto;"></div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  document.getElementById("bulkInsertClose").addEventListener("click", close);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  document.addEventListener("keydown", function onEsc(e) { if (e.key === "Escape") { close(); document.removeEventListener("keydown", onEsc); } });
+  document.getElementById("bulkInsertPreviewBtn").addEventListener("click", () => previewBulkInsert());
+  document.getElementById("bulkInsertExecBtn").addEventListener("click", () => doBulkInsert());
+  document.getElementById("bulkInsertObj").focus();
+}
+
+// CSV パース: シンプル実装 (RFC 4180 部分対応 — ダブルクォート囲み + エスケープ "")
+function parseCsvSimple(text) {
+  const lines = text.split(/\r?\n/).filter((l) => l.length > 0);
+  if (!lines.length) return { headers: [], records: [] };
+  const parseLine = (line) => {
+    const cells = [];
+    let cur = ""; let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (inQ) {
+        if (c === '"' && line[i + 1] === '"') { cur += '"'; i++; }
+        else if (c === '"') { inQ = false; }
+        else { cur += c; }
+      } else {
+        if (c === '"') inQ = true;
+        else if (c === ",") { cells.push(cur); cur = ""; }
+        else cur += c;
+      }
+    }
+    cells.push(cur);
+    return cells;
+  };
+  const headers = parseLine(lines[0]).map((h) => h.trim());
+  const records = lines.slice(1).map((line) => {
+    const vals = parseLine(line);
+    const rec = {};
+    headers.forEach((h, i) => {
+      const v = (vals[i] ?? "").trim();
+      if (v === "") return; // 空欄はキー追加せず (Salesforce 側で NULL 扱い)
+      // 型推測: Boolean / Number / 日付はそのまま文字列で送り Salesforce 側で coerce
+      if (v === "true") rec[h] = true;
+      else if (v === "false") rec[h] = false;
+      else rec[h] = v;
+    });
+    return rec;
+  });
+  return { headers, records };
+}
+
+function previewBulkInsert() {
+  const obj = document.getElementById("bulkInsertObj").value.trim();
+  const csv = document.getElementById("bulkInsertCsv").value;
+  const previewEl = document.getElementById("bulkInsertPreview");
+  if (!obj) { previewEl.innerHTML = `<span style="color:var(--warn)">⚠ 対象オブジェクト名を入力してください</span>`; return; }
+  const { headers, records } = parseCsvSimple(csv);
+  if (!headers.length) { previewEl.innerHTML = `<span style="color:var(--warn)">⚠ CSV データを入力してください</span>`; return; }
+  const samples = records.slice(0, 3).map((r) => JSON.stringify(r)).join("<br>");
+  previewEl.innerHTML = `
+    <div style="background:var(--bg);padding:8px;border-radius:var(--r-sm);border:1px solid var(--line);">
+      <div><strong>オブジェクト:</strong> <code>${escape(obj)}</code></div>
+      <div><strong>フィールド:</strong> ${headers.map((h) => `<code>${escape(h)}</code>`).join(", ")}</div>
+      <div><strong>レコード数:</strong> ${records.length} 件 (Composite API 上限 200/コール、自動チャンク)</div>
+      <div style="margin-top:6px;color:var(--fg-dim);"><strong>先頭 3 件プレビュー:</strong><br>${samples}</div>
+    </div>`;
+}
+
+async function doBulkInsert() {
+  const obj = document.getElementById("bulkInsertObj").value.trim();
+  const csv = document.getElementById("bulkInsertCsv").value;
+  const resultEl = document.getElementById("bulkInsertResult");
+  if (!obj) { resultEl.innerHTML = `<span style="color:var(--warn)">⚠ 対象オブジェクト名を入力してください</span>`; return; }
+  const { records } = parseCsvSimple(csv);
+  if (!records.length) { resultEl.innerHTML = `<span style="color:var(--warn)">⚠ CSV データを入力してください</span>`; return; }
+  // 2 段階確認
+  if (!window.confirm(`⚠ ${records.length} 件のレコードを ${obj} に INSERT します\n\n本番組織では実データが追加されます。続行しますか?`)) return;
+  const apiVer = state.apiVersion || "62.0";
+  let success = 0, failed = 0;
+  const errors = [];
+  const successIds = [];
+  resultEl.innerHTML = `<span class="pill loading">⏳ INSERT 実行中…</span>`;
+  // 200 件ずつ Composite POST (要 attributes.type 属性)
+  for (let i = 0; i < records.length; i += 200) {
+    const chunk = records.slice(i, i + 200).map((r) => ({ attributes: { type: obj }, ...r }));
+    const path = `/services/data/v${apiVer}/composite/sobjects`;
+    try {
+      const r = await sfFetch({
+        host: state.host, sid: state.sid, path, method: "POST",
+        body: { allOrNone: false, records: chunk },
+      });
+      if (Array.isArray(r.data)) {
+        r.data.forEach((res, idx) => {
+          if (res.success) { success++; successIds.push(res.id); }
+          else {
+            failed++;
+            const errMsg = (res.errors && res.errors[0] && res.errors[0].message) || "unknown";
+            errors.push(`行 ${i + idx + 2}: ${errMsg}`); // +2: ヘッダ行 1 + 1-indexed
+          }
+        });
+      } else {
+        failed += chunk.length;
+        errors.push(`Chunk ${i}-${i + chunk.length}: ${JSON.stringify(r.data).substring(0, 200)}`);
+      }
+    } catch (e) {
+      failed += chunk.length;
+      errors.push(`Chunk ${i}: ${String(e && e.message || e)}`);
+    }
+  }
+  const kind = failed === 0 ? "ok" : (success > 0 ? "warn" : "err");
+  panelToast(`📤 INSERT 完了: 成功 ${success} 件 / 失敗 ${failed} 件`, { kind });
+  // 結果詳細をモーダル内に表示
+  resultEl.innerHTML = `
+    <div style="background:var(--bg);padding:8px;border-radius:var(--r-sm);border:1px solid ${failed === 0 ? "var(--ok)" : "var(--warn)"};margin-top:6px;">
+      <div><strong>✓ 成功:</strong> ${success} 件 / <strong style="color:var(--err)">✗ 失敗:</strong> ${failed} 件</div>
+      ${successIds.length ? `<div style="margin-top:4px;color:var(--fg-dim);">作成された Id (先頭 5 件): ${successIds.slice(0, 5).map((id) => `<code>${escape(id)}</code>`).join(", ")}${successIds.length > 5 ? ` …他 ${successIds.length - 5} 件` : ""}</div>` : ""}
+      ${errors.length ? `<details style="margin-top:6px;"><summary style="cursor:pointer;color:var(--err);">❌ エラー詳細 (${errors.length} 件)</summary><pre style="font-size:9px;white-space:pre-wrap;color:var(--err);margin-top:4px;">${escape(errors.slice(0, 20).join("\n"))}${errors.length > 20 ? `\n…他 ${errors.length - 20} 件` : ""}</pre></details>` : ""}
+    </div>`;
 }
 
 // th クリックで in-place ソート (asc → desc → unsort トグル)
