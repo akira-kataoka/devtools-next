@@ -125,12 +125,16 @@ async function init() {
     // v3.143.0 Phase 233: URL クエリ ?view=xxx で起動時に該当ビューを開く (popup の admin/search 直接導線)
     // sfdtLastView より優先 (明示的なナビ指定)
     let initialViewFromQuery = null;
+    let initialObjFromQuery = null;
     try {
       const params = new URLSearchParams(window.location.search);
       const v = params.get("view");
       if (v && document.querySelector(`.view[data-view="${v}"]`)) {
         initialViewFromQuery = v;
       }
+      // v3.186.0 Phase 276: ?obj=<API名> 対応 — describe ビュー起動時にオブジェクト名を自動入力 + 接続済みなら自動実行
+      const objParam = params.get("obj");
+      if (objParam) initialObjFromQuery = objParam;
     } catch {}
     // v2.93.0: リフレッシュ時の直前 view 復元 (ユーザー要望「リフレッシュしても前のページ状態を残して」)
     try {
@@ -143,6 +147,29 @@ async function init() {
         }
       }
     } catch {}
+    // v3.186.0 Phase 276: ?obj= が指定されかつ describe view なら、入力欄に投入 + 接続済みなら自動実行
+    if (initialObjFromQuery && initialViewFromQuery === "describe") {
+      const descInp = document.getElementById("descObj");
+      if (descInp) {
+        descInp.value = initialObjFromQuery;
+        // 接続後 describe 実行 (sid を待つ)
+        const tryRun = () => {
+          if (state.sid) {
+            try { doDescribe(); } catch {}
+            return true;
+          }
+          return false;
+        };
+        if (!tryRun()) {
+          // sid 未取得 — 接続完了後リトライ (最大 5 秒)
+          let waited = 0;
+          const iv = setInterval(() => {
+            waited += 250;
+            if (tryRun() || waited >= 5000) clearInterval(iv);
+          }, 250);
+        }
+      }
+    }
     // v2.93.0: レコード詳細をデフォルト表示時、現在ページのレコード ID を自動入力 (ユーザー要望「現在のレコードをデフォルト表示」)
     try {
       const inspectRefEl = document.getElementById("inspectRef");

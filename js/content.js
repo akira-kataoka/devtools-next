@@ -248,6 +248,7 @@ function flashToast(text) {
           <button class="quick-btn" id="qCopyMd" title="📝 「[Object:Id](URL)」形式の Markdown リンクをコピー — Slack / バグ報告書 / Confluence 等に貼り付け可能 (Phase 256、3 モード整合)">📝 MD</button>
           <button class="quick-btn" id="qOpenNew" title="現在のレコードを新しいタブで開く">↗ 新タブ</button>
           <button class="quick-btn" id="qRelated" title="現在のオブジェクトの最近 5 件を一覧表示">🔎 最近 5 件</button>
+          <button class="quick-btn" id="qDescribe" title="📐 現在のオブジェクト構造 (describe) を全画面で表示 — 全項目/型/必須/参照先を統計サマリ付きで確認 (Phase 276)">📐 構造</button>
         </div>
         <!-- v2.86.0 Team K: 直近 SOQL クエリ 3 件をチップ表示 (ワンクリック再実行) -->
         <div class="history-row" id="histRow"></div>
@@ -452,6 +453,19 @@ function flashToast(text) {
     const url = `${location.origin}/lightning/r/${info.obj || "Account"}/${info.id}/view`;
     window.open(url, "_blank");
     meta.innerHTML = `<span class="ok">↗ 新しいタブで開きました: ${info.obj || "?"}:${info.id}</span>`;
+  });
+  // v3.186.0 Phase 276: 📐 構造 — 現在のオブジェクトの describe を全画面で開く (?view=describe&obj=)
+  const qDescribeBtn = $("qDescribe");
+  if (qDescribeBtn) qDescribeBtn.addEventListener("click", () => {
+    const info = extractRecordContext();
+    const obj = info && info.obj;
+    try {
+      const url = chrome.runtime.getURL(`html/tool.html?view=describe${obj ? `&obj=${encodeURIComponent(obj)}` : ""}`);
+      window.open(url, "_blank");
+      meta.innerHTML = `<span class="ok">📐 ${obj || "describe"} の構造を全画面で開きました</span>`;
+    } catch (e) {
+      meta.innerHTML = `<span class="err">❌ 構造画面を開けませんでした: ${e.message || e}</span>`;
+    }
   });
   // v3.166.0 Phase 256: 📝 MD リンク (Slack/Confluence 貼付用 Markdown 形式コピー、Inspector Phase 255 と整合性)
   const qCopyMdBtn = $("qCopyMd");
