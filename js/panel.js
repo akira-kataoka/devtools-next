@@ -1103,6 +1103,13 @@ function bindEvents() {
       adminLoginAsUser(userId, userName);
       return;
     }
+    // v3.140.0 Phase 230: 未活動ユーザー抽出 (admin ユーザー集計カード内ボタン)
+    const inactive = e.target.closest && e.target.closest(".admin-action-inactive-users");
+    if (inactive) {
+      const days = parseInt(inactive.dataset.days || "30", 10);
+      doAdminListInactiveUsers(days);
+      return;
+    }
   });
   // 設計書
   $on("btnDesignGen", "click", doGenerateDesign);
@@ -5655,6 +5662,48 @@ async function doAdminListMfaMissing() {
   document.getElementById("adminMfaResult").innerHTML = summary + note + adminTableHtml(headers, rows);
   // CSV エクスポート用に保存
   adminState.mfaMissing = rows;
+}
+
+// v3.140.0 Phase 230: 未活動ユーザー抽出 (N 日以上ログインなしの IsActive ユーザー)
+// 業務シナリオ: 退職予定者特定 / 休職者の凍結候補 / ライセンス棚卸し
+async function doAdminListInactiveUsers(days = 30) {
+  if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
+  // モーダル即表示
+  adminShowModal(`⏰ ${days} 日以上ログインなしのアクティブユーザー`, `<div style="padding:24px;text-align:center"><span class="pill loading">ユーザーを抽出中…</span></div>`);
+  // SOQL: LastLoginDate < LAST_N_DAYS:N AND IsActive = true (LastLoginDate が null = 一度もログインしていないユーザーも対象)
+  const soql = `SELECT Id, Name, Username, Email, Profile.Name, UserType, LastLoginDate, CreatedDate FROM User WHERE IsActive = true AND (LastLoginDate = null OR LastLoginDate < LAST_N_DAYS:${days}) ORDER BY LastLoginDate ASC NULLS FIRST LIMIT 1000`;
+  const r = await runSoql({ host: state.host, sid: state.sid, apiVersion: state.apiVersion, soql });
+  if (!r.ok) {
+    adminUpdateModalBody(`<div class="meta admin-card-err" style="padding:12px">HTTP ${r.status}: ${escape(JSON.stringify(r.data || {}).slice(0, 240))}</div>`);
+    return;
+  }
+  const recs = (r.data || {}).records || [];
+  const neverLoggedIn = recs.filter((u) => !u.LastLoginDate).length;
+  const rows = recs.map((u) => {
+    const lastLogin = u.LastLoginDate ? String(u.LastLoginDate).substring(0, 10) : "🚨 未ログイン";
+    const created = u.CreatedDate ? String(u.CreatedDate).substring(0, 10) : "";
+    const elapsedDays = u.LastLoginDate ? Math.floor((Date.now() - new Date(u.LastLoginDate).getTime()) / 86400000) : null;
+    const elapsedHtml = elapsedDays != null ? `${elapsedDays} 日前` : "—";
+    return {
+      "氏名": u.Name,
+      "ユーザ名": u.Username,
+      "メール": u.Email || "",
+      "プロファイル": u.Profile ? u.Profile.Name : "(未設定)",
+      "種別": u.UserType || "",
+      "最終ログイン": lastLogin,
+      "経過": elapsedHtml,
+      "作成日": created,
+      "アクション": { __html: `<button class="admin-action-login-as admin-row-action" data-user-id="${escape(u.Id || "")}" data-user-name="${escape(u.Name || "")}" title="このユーザーとして代理ログインし、状況確認">👤 代理ログイン</button>` },
+    };
+  });
+  const headers = ["氏名", "ユーザ名", "メール", "プロファイル", "種別", "最終ログイン", "経過", "作成日", "アクション"];
+  const summary = `<div class="admin-card-summary admin-card-warn">⏰ ${days} 日以上ログインなしのアクティブユーザー: <strong>${recs.length}</strong> 名${neverLoggedIn > 0 ? ` (うち 🚨 未ログイン ${neverLoggedIn} 名)` : ""}</div>`;
+  const note = `<div class="meta" style="padding:6px 8px;font-size:11px;color:var(--fg-dim);line-height:1.6">
+    ※ 「経過」列で長期未活動を即特定。<strong>業務シナリオ</strong>: 退職予定者の凍結候補 / 休職者の整理 / ライセンス棚卸し。<br>
+    ※ 「👤 代理ログイン」で個別動作確認可能。 一括凍結は Apex タブの「❄️ ユーザー一括凍結」テンプレを利用してください。<br>
+    ※ 最大 1,000 名まで表示 (それ以上は SOQL 直接実行を検討)。
+  </div>`;
+  adminUpdateModalBody(summary + note + adminTableHtml(headers, rows, { compact: true }));
 }
 
 // 特定ライセンスの使用ユーザー一覧 — モーダルで中央表示 (Phase 220 ユーザー要望対応)

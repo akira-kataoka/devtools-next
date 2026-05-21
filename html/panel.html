@@ -601,10 +601,12 @@ System.debug('Now: ' + System.now());</textarea>
             <div class="admin-card-hdr">
               <h3 class="admin-card-title">👥 ユーザー集計</h3>
               <button class="mini-btn" id="btnAdminUserStats" title="アクティブ・非アクティブ・凍結ユーザー数およびプロファイル分布を集計 (組織健全性の指標)">取得</button>
+              <button class="mini-btn admin-action-inactive-users" data-days="30" title="30 日以上ログインなしのアクティブユーザーを抽出 (Phase 230 — 棚卸し・代理ログイン候補)">⏰ 30日未活動</button>
+              <button class="mini-btn admin-action-inactive-users" data-days="90" title="90 日以上ログインなしのアクティブユーザーを抽出 (退職予定者・休職者特定)">⏰ 90日未活動</button>
             </div>
-            <div class="admin-card-desc">アクティブ / 非アクティブ / 凍結を即集計し、プロファイル別の人数分布も表示。棚卸しと組織再編判断に。</div>
+            <div class="admin-card-desc">アクティブ / 非アクティブ / 凍結を即集計し、プロファイル別の人数分布も表示。「⏰ 未活動」ボタンで長期未ログインユーザーを抽出 (棚卸し・退職者特定用)。</div>
             <div id="adminUserStatsResult" class="admin-card-body">
-              <div class="empty-state" style="padding:24px 12px">取得ボタンをクリックすると、<strong>ユーザー総数 / アクティブ / 非アクティブ / 凍結数</strong> およびプロファイル別人数を表示します。</div>
+              <div class="empty-state" style="padding:24px 12px">取得ボタンをクリックすると、<strong>ユーザー総数 / アクティブ / 非アクティブ / 凍結数</strong> およびプロファイル別人数を表示します。<br>「⏰ 30日/90日未活動」ボタンで長期未ログインユーザーを抽出できます。</div>
             </div>
           </div>
 
