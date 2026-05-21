@@ -1165,6 +1165,10 @@ function bindEvents() {
       public_groups: `// 👥 Public Group (パブリックグループ) 一覧 — 共有ルール・フォルダ共有等の対象\n// Type=Regular がパブリックグループ (Queue は別 Type)\nSELECT Id, Name, DeveloperName, Type, RelatedId, OwnerId, Email\nFROM Group\nWHERE Type = 'Regular'\nORDER BY Name\nLIMIT 200`,
       queues: `// 📋 Queue (キュー) 一覧 — Case / Lead / カスタムオブジェクトの受け皿、担当未定レコードの初期所有者\nSELECT Id, Name, DeveloperName, Type, Email, OwnerId\nFROM Group\nWHERE Type = 'Queue'\nORDER BY Name\nLIMIT 200`,
       group_members_summary: `// 🧑‍🤝‍🧑 Group / Queue メンバー集計 — 各 Group のメンバー数 (Public Group や Queue の規模把握)\nSELECT GroupId, Group.Name, Group.Type, COUNT(Id) memberCount\nFROM GroupMember\nGROUP BY GroupId, Group.Name, Group.Type\nORDER BY COUNT(Id) DESC\nLIMIT 200`,
+      // v3.218.0 Phase 308: 棚卸し・引継ぎ向け 3 種追加
+      recent_modified_flows: `// 🔄 最近 30 日に更新された Active Flow (引継ぎ向け / 影響範囲調査)\n// 業務シナリオ: フロー変更履歴の追跡、担当者引き継ぎ時の重要 Flow 把握\nSELECT Id, MasterLabel, ProcessType, Status, VersionNumber, LastModifiedDate, LastModifiedBy.Name\nFROM FlowDefinitionView\nWHERE LastModifiedDate = LAST_N_DAYS:30 AND IsActive = true\nORDER BY LastModifiedDate DESC\nLIMIT 50`,
+      email_templates: `// ✉️ EmailTemplate 一覧 — メールテンプレート棚卸し (Lightning / Classic 両方)\n// 業務シナリオ: 不要 EmailTemplate の整理、配信内容の確認、フォルダ別管理\nSELECT Id, Name, DeveloperName, FolderId, IsActive, TemplateStyle, TemplateType, LastUsedDate, CreatedBy.Name\nFROM EmailTemplate\nORDER BY LastUsedDate DESC NULLS LAST, Name\nLIMIT 100`,
+      dashboards: `// 📊 Dashboard 一覧 — レポート/ダッシュボード棚卸し\n// 業務シナリオ: 利用されていないダッシュボードの整理、ユーザ別 Running User 監査\nSELECT Id, Title, DeveloperName, FolderId, FolderName, RunningUserId, RunningUser.Name, BackgroundEndColor, CreatedDate, LastModifiedDate\nFROM Dashboard\nORDER BY LastModifiedDate DESC\nLIMIT 100`,
     };
     const code = TEMPLATES[key];
     if (!code) return;
