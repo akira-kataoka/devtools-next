@@ -286,6 +286,9 @@ function bindEvents() {
   if (btnOpenAdmin) btnOpenAdmin.addEventListener("click", () => openToolView("admin"));
   const btnOpenSearch = document.getElementById("btnOpenSearch");
   if (btnOpenSearch) btnOpenSearch.addEventListener("click", () => openToolView("search"));
+  // v3.187.0 Phase 277: 📐 オブジェクト構造 (describe) を全画面で開く — 4 入口統一達成 (popup ⇄ mini-panel ⇄ panel ⇄ tool)
+  const btnOpenDescribe = document.getElementById("btnOpenDescribe");
+  if (btnOpenDescribe) btnOpenDescribe.addEventListener("click", () => openToolView("describe"));
 
   document.querySelectorAll("[data-act]").forEach((btn) => {
     btn.addEventListener("click", () => runQuickAction(btn.dataset.act));

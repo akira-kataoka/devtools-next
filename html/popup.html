@@ -39,12 +39,16 @@
       <span class="cta-arrow">→</span>
     </button>
     <!-- v3.143.0 Phase 233: 主要ビューへの直接導線 (URL クエリ ?view=xxx で起動) -->
-    <div class="cta-sub-row" style="display:flex;gap:6px;margin-top:6px">
+    <!-- v3.187.0 Phase 277: 📐 構造 (describe) も追加して 4 入口統一達成 (popup ⇄ mini-panel ⇄ panel ⇄ tool) -->
+    <div class="cta-sub-row" style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">
       <button id="btnOpenAdmin" class="cta-mini" title="👥 ユーザー・ライセンス管理ダッシュボードを全画面で開く (ライセンス使用率 / 凍結ユーザー / MFA / パッケージ等を 1 画面で確認)">
         👥 ユーザー・ライセンス管理
       </button>
       <button id="btnOpenSearch" class="cta-mini" title="🌐 グローバル検索 (SOSL) を全画面で開く — Account/Contact/Lead/Opportunity/Case/User 横断検索">
         🌐 グローバル検索
+      </button>
+      <button id="btnOpenDescribe" class="cta-mini" title="📐 オブジェクト構造 (describe) を全画面で開く — 全項目/型/必須/参照先を統計サマリ付きで確認 + 設計書 MD コピー対応 (Phase 277)">
+        📐 オブジェクト構造
       </button>
     </div>
 
