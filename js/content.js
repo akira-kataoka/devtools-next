@@ -257,7 +257,7 @@ function flashToast(text) {
         <span class="hdr-ver" id="hdrVer" title="現在の拡張バージョン">v?</span>
         <span class="hdr-mode" title="ユーザーモード — Salesforce 画面上で軽量に SOQL を実行できます">👤 ユーザー</span>
         <span class="hdr-env" id="hdrEnv" title="現在の組織環境 (Sandbox / Production) — PROD は誤操作防止のため警告表示 (Phase 288)"></span>
-        <button class="hdr-open" id="opn" title="DevToolsNext を新しいタブで全画面起動します (SOQL/Inspector/設計書など全機能)" aria-label="DevToolsNext を全画面で開く">↗ 全画面</button>
+        <button class="hdr-open" id="opn" title="DevToolsNext を新しいタブで全画面起動します (SOQL/Inspector/設計書など全機能)。SOQL textarea に入力があれば全画面 SOQL ビューに直接遷移して続きから実行可能 (Phase 365)" aria-label="DevToolsNext を全画面で開く">↗ 全画面</button>
         <button class="hdr-open" id="opnSearch" title="🌐 グローバル検索 (SOSL) を全画面で開きます — Account/Contact/Lead 等を横断検索 (Phase 243)" aria-label="グローバル検索を全画面で開く">🌐 検索</button>
         <button class="hdr-open" id="opnAdmin" title="👥 ユーザー・ライセンス管理ダッシュボード (7 カード) を全画面で開きます — ライセンス使用率 / 凍結ユーザー / MFA / パッケージ / 組織情報 / ストレージ等を 1 画面で確認 (Phase 244)" aria-label="ユーザー・ライセンス管理を全画面で開く">👥 管理</button>
         <button class="hdr-close" id="cls" title="ミニパネルを閉じます" aria-label="ミニパネルを閉じる">✕</button>
@@ -652,7 +652,12 @@ function flashToast(text) {
   closeBtn.addEventListener("click", () => panel.classList.remove("open"));
   openFullBtn.addEventListener("click", () => {
     try {
-      const url = chrome.runtime.getURL("html/tool.html");
+      // v3.275.0 Phase 365 (UX 改善): mini-panel SOQL textarea に入力があれば ?view=soql&q= で全画面 SOQL ビューに直接遷移
+      // 業務シナリオ: mini-panel で書きかけの SOQL を全画面で続きから実行 (Phase 282 URL クエリ system 活用)
+      const soql = (qry && qry.value || "").trim();
+      const url = soql
+        ? chrome.runtime.getURL("html/tool.html?view=soql&q=" + encodeURIComponent(soql))
+        : chrome.runtime.getURL("html/tool.html");
       window.open(url, "_blank");
     } catch {}
   });
