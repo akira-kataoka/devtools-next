@@ -2044,3 +2044,62 @@ mark.search-hl {
   font-weight: 700;
   box-shadow: 0 0 0 1px rgba(251,191,36,0.6);
 }
+
+/* v3.149.0 Phase 239: グローバル検索 履歴チップ */
+.search-history-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  font-size: 11px;
+  color: var(--fg-dim);
+}
+.search-history-row:empty { padding: 0; }
+.search-hist-label {
+  color: var(--fg-dim);
+  font-weight: 600;
+  margin-right: 4px;
+}
+.search-hist-chip {
+  background: var(--bg2);
+  border: 1px solid var(--line);
+  color: var(--fg);
+  padding: 3px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.12s ease, border-color 0.12s ease;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.search-hist-chip:hover {
+  background: rgba(27,150,255,0.12);
+  border-color: var(--accent);
+}
+.search-hist-chip .search-hist-scope {
+  font-size: 10px;
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.search-hist-chip .search-hist-kw {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.search-hist-clear {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--fg-dim);
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 10px;
+  cursor: pointer;
+  margin-left: 6px;
+}
+.search-hist-clear:hover { color: var(--err); border-color: var(--err); }

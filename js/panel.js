@@ -656,6 +656,8 @@ function switchToView(v) {
           const q = document.getElementById("searchQuery");
           if (q && !q.value) q.focus();
         }, 80);
+        // v3.149.0 Phase 239: 検索履歴を表示 (chrome.storage から非同期ロード)
+        loadSearchHistory().then((list) => renderSearchHistory(list));
       }
     } catch (e) { console.warn("[DevToolsNext] auto-fetch on view switch failed:", e); }
   }
@@ -5213,6 +5215,64 @@ async function loadSelectedQuery() {
 // v3.137.0 Phase 227 (Team G2): グローバル検索 (SOSL ベース)
 // 検索ワードを SOSL FIND 句に渡し、複数オブジェクト横断で結果を取得
 // =============================================================================
+// v3.149.0 Phase 239: グローバル検索履歴 (chrome.storage.local 永続化)
+const SEARCH_HISTORY_KEY = "sfdtRecentSearches";
+const SEARCH_HISTORY_MAX = 10;
+async function loadSearchHistory() {
+  try {
+    const d = await chrome.storage.local.get(SEARCH_HISTORY_KEY);
+    return Array.isArray(d[SEARCH_HISTORY_KEY]) ? d[SEARCH_HISTORY_KEY] : [];
+  } catch { return []; }
+}
+async function pushSearchHistory(entry) {
+  // entry: { kw, scope, ts }
+  if (!entry || !entry.kw) return;
+  try {
+    const list = await loadSearchHistory();
+    const norm = String(entry.kw).trim();
+    if (!norm) return;
+    const next = [{ kw: norm, scope: entry.scope || "standard", ts: Date.now() }, ...list.filter((e) => e && e.kw !== norm)].slice(0, SEARCH_HISTORY_MAX);
+    await chrome.storage.local.set({ [SEARCH_HISTORY_KEY]: next });
+    renderSearchHistory(next);
+  } catch (e) { console.warn("[search] push history failed", e); }
+}
+function renderSearchHistory(list) {
+  const row = document.getElementById("searchHistoryRow");
+  if (!row) return;
+  if (!list || !list.length) {
+    row.innerHTML = "";
+    return;
+  }
+  const scopeLabelMap = { standard: "📌主要", extended: "📚拡張", all: "🌐全" };
+  const chips = list.map((e) => {
+    const lbl = scopeLabelMap[e.scope] || "📌";
+    return `<button class="search-hist-chip" data-kw="${escape(e.kw)}" data-scope="${escape(e.scope || "standard")}" title="${escape(e.kw)} (${escape(e.scope || "standard")} スコープ) で再検索">
+      <span class="search-hist-scope">${lbl}</span>
+      <span class="search-hist-kw">${escape(e.kw)}</span>
+    </button>`;
+  }).join("");
+  row.innerHTML = `<span class="search-hist-label">📜 最近の検索:</span>${chips}<button class="search-hist-clear" title="検索履歴をすべて削除">✕ 履歴削除</button>`;
+  // 各 chip にクリックハンドラ
+  row.querySelectorAll(".search-hist-chip").forEach((b) => {
+    b.addEventListener("click", () => {
+      const inp = document.getElementById("searchQuery");
+      const sel = document.getElementById("searchScope");
+      if (inp) inp.value = b.dataset.kw || "";
+      if (sel) sel.value = b.dataset.scope || "standard";
+      doGlobalSearch();
+    });
+  });
+  const clearBtn = row.querySelector(".search-hist-clear");
+  if (clearBtn) clearBtn.addEventListener("click", async () => {
+    if (!window.confirm("検索履歴を全て削除しますか？")) return;
+    try {
+      await chrome.storage.local.remove(SEARCH_HISTORY_KEY);
+      renderSearchHistory([]);
+      panelToast("✓ 検索履歴を削除しました", { kind: "ok" });
+    } catch (e) { console.warn("[search] clear history failed", e); }
+  });
+}
+
 const SEARCH_SCOPES = {
   standard: [
     { obj: "Account", fields: "Id, Name, Type, Industry, Phone, Website, Owner.Name" },
@@ -5345,6 +5405,8 @@ async function doGlobalSearch() {
   // ユーザー入力 kw を元にテーブル内のセル text を <mark> でマーク (大文字小文字無視)
   // wildcard * は無視して文字列マッチ部分のみ
   highlightSearchTerm(root, kw);
+  // v3.149.0 Phase 239: 履歴に push (chrome.storage 永続化)
+  pushSearchHistory({ kw, scope });
 }
 
 // v3.148.0 Phase 238: 検索結果セル内のキーワードハイライト
