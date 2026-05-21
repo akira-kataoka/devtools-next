@@ -258,6 +258,8 @@ function flashToast(text) {
             <option value="active_users">👥 アクティブユーザー一覧</option>
             <option value="last_modified">🕒 過去 7 日に更新された取引先</option>
             <option value="my_open_cases">📬 未解決 Case (Owner.Name = '私')</option>
+            <option value="frozen_users">❄️ 凍結ユーザー一覧 (Phase 253)</option>
+            <option value="large_files">📁 大型 ContentVersion Top 20 (Phase 253)</option>
           </select>
         </div>
         <textarea id="qry" placeholder="SOQL を入力 (例: SELECT Id, Name FROM Account LIMIT 5) / Ctrl+Enter で実行 / 入力中に候補表示" spellcheck="false" title="軽量 SOQL 実行ツールです。上の『📋 ID をクエリに挿入』で現在レコードの WHERE Id='...' を簡単挿入できます。Tooling API オブジェクトは利用できません — 全機能は ↗ 全画面 (開発者モード) で">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 5</textarea>
@@ -314,6 +316,9 @@ function flashToast(text) {
         active_users: `SELECT Id, Name, Email, IsActive\nFROM User\nWHERE IsActive = true\nORDER BY Name\nLIMIT 50`,
         last_modified: `SELECT Id, Name, LastModifiedDate, LastModifiedBy.Name\nFROM Account\nWHERE LastModifiedDate = LAST_N_DAYS:7\nORDER BY LastModifiedDate DESC\nLIMIT 50`,
         my_open_cases: `SELECT Id, CaseNumber, Subject, Status, Priority, CreatedDate\nFROM Case\nWHERE Owner.Username = '${(sessionUser && sessionUser.username) || "PASTE_USERNAME"}' AND IsClosed = false\nORDER BY Priority ASC, CreatedDate DESC\nLIMIT 30`,
+        // v3.163.0 Phase 253: 管理者向けテンプレ 2 種追加 (3 モード整合性継続)
+        frozen_users: `SELECT UserId, User.Name, User.Username, User.Profile.Name\nFROM UserLogin\nWHERE IsFrozen = true\nORDER BY User.Name\nLIMIT 50`,
+        large_files: `SELECT Id, Title, FileExtension, ContentSize, CreatedBy.Name\nFROM ContentVersion\nWHERE IsLatest = true\nORDER BY ContentSize DESC\nLIMIT 20`,
       };
       const code = TEMPLATES[key];
       if (!code) return;
