@@ -5697,6 +5697,40 @@ async function copyResultTableAsMd(resultId, title) {
   }
 }
 
+// v3.181.0 Phase 271: admin モーダル本体の table を Markdown でコピー
+async function copyAdminModalAsMd(overlay, title) {
+  const body = overlay && overlay.querySelector(".admin-modal-body");
+  const table = body && body.querySelector("table");
+  if (!table) {
+    panelToast("📭 モーダル内に表がありません", { kind: "warn" });
+    return;
+  }
+  const ths = Array.from(table.querySelectorAll("thead th"));
+  const headers = ths.map((th) => th.textContent.trim()).filter((h) => h && !["", "選択"].includes(h));
+  const trs = Array.from(table.querySelectorAll("tbody tr"));
+  const lines = [
+    `## ${title}`,
+    "",
+    `_取得日時: ${new Date().toLocaleString("ja-JP")} / 件数: ${trs.length}_`,
+    "",
+    "| " + headers.map((h) => h.replace(/\|/g, "\\|")).join(" | ") + " |",
+    "|" + headers.map(() => "---").join("|") + "|",
+  ];
+  for (const tr of trs) {
+    const tds = Array.from(tr.querySelectorAll("td"));
+    const adjusted = tds.length > headers.length ? tds.slice(tds.length - headers.length) : tds;
+    const row = adjusted.slice(0, headers.length).map((td) => (td.textContent || "").trim().replace(/\|/g, "\\|").replace(/\r?\n/g, " "));
+    while (row.length < headers.length) row.push("");
+    lines.push("| " + row.join(" | ") + " |");
+  }
+  try {
+    await navigator.clipboard.writeText(lines.join("\n"));
+    panelToast(`📝 ${title}を Markdown でコピーしました (${trs.length} 件)`, { kind: "ok" });
+  } catch (e) {
+    panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
+  }
+}
+
 // v3.175.0 Phase 265: ログイン履歴を Markdown テーブル形式でコピー (セキュリティ監査用)
 async function copyLoginHistoryMd() {
   if (!state.lastLoginRecords || !state.lastLoginRecords.length) {
@@ -6734,11 +6768,19 @@ function adminShowModal(title, bodyHtml) {
     <div class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle" tabindex="-1">
       <div class="admin-modal-hdr">
         <h3 id="adminModalTitle" class="admin-modal-title">${escape(title)}</h3>
-        <button class="admin-modal-close" title="閉じる (Esc)" aria-label="モーダルを閉じる">✕</button>
+        <div class="admin-modal-actions">
+          <button class="admin-modal-md" title="表を Markdown でクリップボードコピー" aria-label="表を Markdown でコピー">📝 MD</button>
+          <button class="admin-modal-close" title="閉じる (Esc)" aria-label="モーダルを閉じる">✕</button>
+        </div>
       </div>
       <div class="admin-modal-body">${bodyHtml}</div>
     </div>`;
   document.body.appendChild(overlay);
+  // v3.181.0 Phase 271: モーダル本体の table を Markdown でコピー (使用者を見る/ストレージ詳細/未活動ユーザー等)
+  const mdBtn = overlay.querySelector(".admin-modal-md");
+  if (mdBtn) {
+    mdBtn.addEventListener("click", () => copyAdminModalAsMd(overlay, title));
+  }
   // v3.141.0 Phase 231 (a11y): 初期フォーカスを ✕ ボタンに (Esc で閉じられる旨も title で示す)
   const closeBtn = overlay.querySelector(".admin-modal-close");
   if (closeBtn) {
