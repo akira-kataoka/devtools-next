@@ -452,6 +452,8 @@ function flashToast(text) {
 
   // v3.44.0: SOQL 履歴を chrome.storage.local に永続化
   // v3.46.0: panel/tool と共有のキー sfdtRecentSoql に統一 (最大 5 件保存、mini-panel は先頭 3 件表示)
+  // v3.324.0 Phase 414: panel.js SHARED_SOQL_HISTORY_KEY (Phase 406 で documentation 化) と同一キー
+  //                     3 モード (panel + tool + mini-panel) すべて同一 chrome.storage.local キーで履歴同期
   const SHARED_KEY = "sfdtRecentSoql";
   const LEGACY_KEY = "sfdtMiniSoqlHistory"; // v3.44 互換: 旧キーから 1 回だけマイグレーション
   let _miniHistory = [];
