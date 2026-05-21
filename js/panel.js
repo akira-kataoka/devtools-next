@@ -1056,6 +1056,45 @@ function bindEvents() {
     btn.textContent = "📜 全ログ表示";
     panelToast(`⚠ エラー/警告 ${matched.length} 行を抽出しました (元 ${lines.length} 行)`, { kind: "ok" });
   });
+  // v3.157.0 Phase 247: Apex Debug ログから USER_DEBUG 行のみを抽出するトグル (System.debug() 出力だけ)
+  $on("btnApexDebugOnly", "click", () => {
+    const resultEl = document.getElementById("apexResult");
+    if (!resultEl) return;
+    const btn = document.getElementById("btnApexDebugOnly");
+    const pressed = btn.getAttribute("aria-pressed") === "true";
+    if (pressed) {
+      // 復元: _apexFullLog (エラーフィルタと共有のバックアップ) があれば使用
+      if (_apexFullLog != null) resultEl.textContent = _apexFullLog;
+      btn.setAttribute("aria-pressed", "false");
+      btn.textContent = "💬 DEBUG のみ";
+      panelToast("📜 全ログ表示に戻しました", { kind: "ok" });
+      return;
+    }
+    const full = resultEl.textContent || "";
+    if (!full.trim()) { panelToast("📭 抽出する Apex ログがありません (まず Apex を実行してください)", { kind: "warn" }); return; }
+    // エラーフィルタが ON ならいったん復元してから USER_DEBUG に切替
+    const errBtn = document.getElementById("btnApexErrorsOnly");
+    if (errBtn && errBtn.getAttribute("aria-pressed") === "true") {
+      if (_apexFullLog != null) resultEl.textContent = _apexFullLog;
+      errBtn.setAttribute("aria-pressed", "false");
+      errBtn.textContent = "⚠ エラーのみ";
+    } else {
+      _apexFullLog = full;
+    }
+    const fullNow = resultEl.textContent || "";
+    const lines = fullNow.split(/\r?\n/);
+    const DBG_RE = /USER_DEBUG/;
+    const matched = lines.filter((l) => DBG_RE.test(l));
+    if (!matched.length) {
+      panelToast("📭 USER_DEBUG 行が見つかりませんでした (System.debug() を Apex コード内で呼び出してください)", { kind: "warn" });
+      return;
+    }
+    resultEl.textContent = `===== 💬 USER_DEBUG 行のみ (${matched.length} / ${lines.length} 行) =====\n` + matched.join("\n") +
+      `\n\n===== 「💬 DEBUG のみ」ボタンを再クリックで全ログ表示に戻る =====`;
+    btn.setAttribute("aria-pressed", "true");
+    btn.textContent = "📜 全ログ表示";
+    panelToast(`💬 USER_DEBUG ${matched.length} 行を抽出しました (元 ${lines.length} 行)`, { kind: "ok" });
+  });
   $on("btnRestCopy", "click", async () => {
     const resultEl = document.getElementById("restResult");
     const txt = (resultEl && resultEl.textContent) || "";
