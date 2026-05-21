@@ -23,7 +23,7 @@
 > - 💬 **Apex DEBUG のみフィルタ** (USER_DEBUG 抽出、Phase 247)
 > - 🔄 **設計書 直前生成 chip + クリアボタン** (機密配慮、Phase 248-249)
 >
-> ## 🏆 Phase 1-360 主要マイルストーン (年表) — Phase 360 で v3 系 270 連続リリース達成
+> ## 🏆 Phase 1-380 主要マイルストーン (年表) — Phase 380 で v3 系 290 連続リリース達成
 >
 > - **Phase 1-49**: v2.1-2.58 まで自律改善ループ — 設計書 22 種・凡例追加・apiError 統一・a11y
 > - **Phase 50-61**: v2.59-2.70 ユーザー要望「カラム名・値・桁数」対応 (fmtNum/fmtBytes/fmtTrunc/fmtPercent ヘルパー導入、集計 note 拡充)
