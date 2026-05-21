@@ -2063,9 +2063,23 @@ async function apiRunRequest() {
   unlock();
   const statusCls = r.ok ? "ok" : "err";
   const statusIcon = r.ok ? "✓" : "❌";
-  meta.innerHTML = `<span class="pill ${statusCls}">${statusIcon} HTTP ${r.status}</span> <span class="meta">${dt}ms</span>`;
   const formatted = (typeof r.data === "object") ? JSON.stringify(r.data, null, 2) : String(r.data || "");
   out.textContent = formatted;
+  // v3.183.0 Phase 273: API URL ビルダー実行結果にサイズ表示 + 📋/📝 コピーボタン追加 (REST view と整合)
+  const bodySize = formatted ? formatted.length : 0;
+  const sizeLabel = bodySize < 1024 ? `${bodySize} B` : `${(bodySize / 1024).toFixed(1)} KB`;
+  meta.innerHTML = `<span class="pill ${statusCls}">${statusIcon} HTTP ${r.status}</span> <span class="meta">${dt}ms / ${sizeLabel}</span> <button id="btnApiRunCopy" class="admin-row-action" style="margin-left:8px" title="実行結果 (JSON) をクリップボードにコピー">📋 結果コピー</button> <button id="btnApiRunCopyMd" class="admin-row-action" style="margin-left:4px" title="実行結果を Markdown コードブロック形式でコピー (\`\`\`json … \`\`\`) — バグ報告/Slack/Notion 向け">📝 MD コピー</button>`;
+  const copyBtn = document.getElementById("btnApiRunCopy");
+  if (copyBtn) copyBtn.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(formatted); panelToast("📋 実行結果をコピーしました", { kind: "ok" }); }
+    catch (e) { panelToast("❌ コピー失敗: " + (e.message || e), { kind: "err" }); }
+  });
+  const copyMdBtn = document.getElementById("btnApiRunCopyMd");
+  if (copyMdBtn) copyMdBtn.addEventListener("click", async () => {
+    const md = `## API URL ビルダー実行結果\n\n_実行日時: ${new Date().toLocaleString("ja-JP")} / ${method} ${path} / HTTP ${r.status} / ${dt}ms / ${sizeLabel}_\n\n\`\`\`json\n${formatted}\n\`\`\`\n`;
+    try { await navigator.clipboard.writeText(md); panelToast("📝 実行結果を Markdown でコピーしました", { kind: "ok" }); }
+    catch (e) { panelToast("❌ コピー失敗: " + (e.message || e), { kind: "err" }); }
+  });
 }
 
 function apiBuildUrl() {
