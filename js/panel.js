@@ -1213,6 +1213,23 @@ function bindEvents() {
       panelToast(`📋 REST のレスポンスをコピーしました (${txt.length.toLocaleString()} 文字)`, { kind: "ok" });
     } catch (e) { panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" }); }
   });
+  // v3.171.0 Phase 261: REST レスポンスを Markdown コードブロック形式でコピー
+  $on("btnRestCopyMd", "click", async () => {
+    const resultEl = document.getElementById("restResult");
+    const txt = (resultEl && resultEl.textContent) || "";
+    if (!txt.trim()) { panelToast("📭 コピーする結果がありません", { kind: "warn" }); return; }
+    // メソッド + パスをコンテキストとして含める
+    const method = (document.getElementById("restMethod") || {}).value || "?";
+    const path = (document.getElementById("restPath") || {}).value || "";
+    // JSON 判定 (先頭が { or [ かどうか)
+    const lang = /^\s*[{\[]/.test(txt) ? "json" : "text";
+    const header = path ? `## REST ${method} ${path}\n\n` : "";
+    const md = `${header}\`\`\`${lang}\n${txt}\n\`\`\``;
+    try {
+      await navigator.clipboard.writeText(md);
+      panelToast(`📝 Markdown 形式でコピーしました (${md.length.toLocaleString()} 文字、\`\`\`${lang}\`\`\` ブロック付き)`, { kind: "ok" });
+    } catch (e) { panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" }); }
+  });
   const apexCodeEl = document.getElementById("apexCode");
   if (apexCodeEl) enableTabToSpaces(apexCodeEl);
   // v3.82.0: Apex textarea の入力中 draft 自動保存 (Phase 171 SOQL と同パターン)
