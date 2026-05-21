@@ -249,6 +249,7 @@ function flashToast(text) {
           <button class="quick-btn" id="qOpenNew" title="現在のレコードを新しいタブで開く">↗ 新タブ</button>
           <button class="quick-btn" id="qRelated" title="現在のオブジェクトの最近 5 件を一覧表示">🔎 最近 5 件</button>
           <button class="quick-btn" id="qDescribe" title="📐 現在のオブジェクト構造 (describe) を全画面で表示 — 全項目/型/必須/参照先を統計サマリ付きで確認 (Phase 276)">📐 構造</button>
+          <button class="quick-btn" id="qInspector" title="🔎 現在のレコードを全画面 Inspector で開く — 全項目/関連レコード/編集/エビデンス取得など高機能版 (Phase 278)">🔎 Inspector</button>
         </div>
         <!-- v2.86.0 Team K: 直近 SOQL クエリ 3 件をチップ表示 (ワンクリック再実行) -->
         <div class="history-row" id="histRow"></div>
@@ -465,6 +466,24 @@ function flashToast(text) {
       meta.innerHTML = `<span class="ok">📐 ${obj || "describe"} の構造を全画面で開きました</span>`;
     } catch (e) {
       meta.innerHTML = `<span class="err">❌ 構造画面を開けませんでした: ${e.message || e}</span>`;
+    }
+  });
+  // v3.188.0 Phase 278: 🔎 Inspector — 現在のレコードを全画面 Inspector で開く (?view=inspector&id=&obj=)
+  const qInspectorBtn = $("qInspector");
+  if (qInspectorBtn) qInspectorBtn.addEventListener("click", () => {
+    const info = extractRecordContext();
+    if (!info || !info.id) {
+      meta.innerHTML = `<span class="err">⚠ レコードページで利用してください</span>`;
+      return;
+    }
+    try {
+      const qp = new URLSearchParams({ view: "inspector", id: info.id });
+      if (info.obj) qp.set("obj", info.obj);
+      const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
+      window.open(url, "_blank");
+      meta.innerHTML = `<span class="ok">🔎 ${info.obj || "?"}:${info.id} を全画面 Inspector で開きました</span>`;
+    } catch (e) {
+      meta.innerHTML = `<span class="err">❌ Inspector を開けませんでした: ${e.message || e}</span>`;
     }
   });
   // v3.166.0 Phase 256: 📝 MD リンク (Slack/Confluence 貼付用 Markdown 形式コピー、Inspector Phase 255 と整合性)

@@ -135,6 +135,9 @@ async function init() {
       // v3.186.0 Phase 276: ?obj=<API名> 対応 — describe ビュー起動時にオブジェクト名を自動入力 + 接続済みなら自動実行
       const objParam = params.get("obj");
       if (objParam) initialObjFromQuery = objParam;
+      // v3.188.0 Phase 278: ?id=<recordId> 対応 — inspector ビュー起動時にレコード ID を自動入力 + 接続済みなら自動取得
+      var initialIdFromQuery = params.get("id");
+      window._sfdtInitialIdFromQuery = initialIdFromQuery || null;
     } catch {}
     // v2.93.0: リフレッシュ時の直前 view 復元 (ユーザー要望「リフレッシュしても前のページ状態を残して」)
     try {
@@ -162,6 +165,29 @@ async function init() {
         };
         if (!tryRun()) {
           // sid 未取得 — 接続完了後リトライ (最大 5 秒)
+          let waited = 0;
+          const iv = setInterval(() => {
+            waited += 250;
+            if (tryRun() || waited >= 5000) clearInterval(iv);
+          }, 250);
+        }
+      }
+    }
+    // v3.188.0 Phase 278: ?id= が指定されかつ inspector view なら、レコード ID 入力欄に投入 + 接続済みなら自動取得
+    if (window._sfdtInitialIdFromQuery && initialViewFromQuery === "inspector") {
+      const idVal = String(window._sfdtInitialIdFromQuery).trim();
+      const refInp = document.getElementById("inspectRef");
+      if (refInp && idVal) {
+        // ?obj= も併用された場合は「オブジェクト名:ID」形式にする (Inspector の入力規約)
+        refInp.value = initialObjFromQuery ? `${initialObjFromQuery}:${idVal}` : idVal;
+        const tryRun = () => {
+          if (state.sid) {
+            try { doInspect(); } catch {}
+            return true;
+          }
+          return false;
+        };
+        if (!tryRun()) {
           let waited = 0;
           const iv = setInterval(() => {
             waited += 250;
