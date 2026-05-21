@@ -295,6 +295,9 @@ function bindEvents() {
   // v3.232.0 Phase 322: 🟧 Apex 実行を全画面で開く — 開発者の主要ニーズ「匿名 Apex でデータ操作・調査」
   const btnOpenApex = document.getElementById("btnOpenApex");
   if (btnOpenApex) btnOpenApex.addEventListener("click", () => openToolView("apex"));
+  // v3.238.0 Phase 328: 🔐 ログイン履歴を全画面で開く — セキュリティ担当者向け 6 ボタン目
+  const btnOpenLogin = document.getElementById("btnOpenLogin");
+  if (btnOpenLogin) btnOpenLogin.addEventListener("click", () => openToolView("login"));
 
   document.querySelectorAll("[data-act]").forEach((btn) => {
     btn.addEventListener("click", () => runQuickAction(btn.dataset.act));
