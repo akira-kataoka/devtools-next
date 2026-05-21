@@ -190,7 +190,7 @@ async function showSettingsDialog() {
       `3. UI 状態系 (${countFor("uistate")} キー保存中) — ${RESET_CATEGORIES.uistate.label}\n` +
       `4. 保存系 (${countFor("saved")} キー保存中) — ${RESET_CATEGORIES.saved.label}\n` +
       `5. 全削除 (${sfdtKeys.length} キーすべて、約 ${sizeLabel})\n` +
-      `■ 移行 (v3.88.0 新機能)\n` +
+      `■ 移行 (設定エクスポート/インポート — v3.88.0 で導入)\n` +
       `6. 📤 エクスポート (現在の設定を JSON ファイルでダウンロード — 別 PC への移行用)\n` +
       `7. 📥 インポート (JSON ファイルから設定を取込 — 既存キーは上書き)\n` +
       `0. キャンセル\n\n` +
