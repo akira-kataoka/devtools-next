@@ -1210,6 +1210,60 @@ function bindEvents() {
     switchToView("soql");
     panelToast(`🔎 SOQL を生成しました (${inspectState.obj} ${uniqueCols.length} 項目)。Ctrl+Enter で実行`, { kind: "ok" });
   });
+  // v3.152.0 Phase 242: 関連レコード横断 SOQL (子オブジェクト Top 5 をサブクエリで一括取得)
+  $on("btnInspectRelatedSoql", "click", () => {
+    if (!inspectState.obj || !inspectState.id) {
+      panelToast("⚠ Inspector でレコードを開いてから実行してください", { kind: "warn" });
+      return;
+    }
+    const describe = inspectState.describe || {};
+    const allChildren = (describe.childRelationships || []).filter((c) => c.childSObject && c.relationshipName);
+    if (!allChildren.length) {
+      panelToast(`📭 ${inspectState.obj} に子オブジェクトが見つかりませんでした`, { kind: "warn" });
+      return;
+    }
+    // 主要な子オブジェクトを優先 (標準業務オブジェクト + cascadeDelete=true / 名前で判別)
+    const PREFERRED_CHILD = ["Contact", "Opportunity", "Case", "Task", "Event", "Note", "Attachment", "ContentDocumentLink", "OpportunityLineItem", "Order", "Asset", "Lead"];
+    const sorted = allChildren.slice().sort((a, b) => {
+      const aP = PREFERRED_CHILD.indexOf(a.childSObject);
+      const bP = PREFERRED_CHILD.indexOf(b.childSObject);
+      if (aP !== -1 && bP === -1) return -1;
+      if (bP !== -1 && aP === -1) return 1;
+      if (aP !== -1 && bP !== -1) return aP - bP;
+      // 標準名前判定 (cascadeDelete もしくはアルファベット順)
+      if (a.cascadeDelete !== b.cascadeDelete) return a.cascadeDelete ? -1 : 1;
+      return a.childSObject.localeCompare(b.childSObject);
+    });
+    // Top 5 のみ採用 (1 クエリにサブクエリ多すぎるとパフォーマンス低下 + 出力過多)
+    const picked = sorted.slice(0, 5);
+    // 各 子オブジェクトの SOQL サブクエリ部分を組み立て (主要項目のみ)
+    const COMMON_FIELDS = {
+      Contact: ["Id", "Name", "Email", "Phone", "Title"],
+      Opportunity: ["Id", "Name", "StageName", "Amount", "CloseDate"],
+      Case: ["Id", "CaseNumber", "Subject", "Status", "Priority"],
+      Task: ["Id", "Subject", "Status", "ActivityDate", "Priority"],
+      Event: ["Id", "Subject", "ActivityDate", "DurationInMinutes"],
+      Note: ["Id", "Title", "Body"],
+      Attachment: ["Id", "Name", "BodyLength", "ContentType"],
+      ContentDocumentLink: ["Id", "ContentDocumentId", "LinkedEntityId"],
+      OpportunityLineItem: ["Id", "Product2Id", "Quantity", "UnitPrice"],
+      Order: ["Id", "OrderNumber", "Status", "TotalAmount"],
+      Asset: ["Id", "Name", "Status", "InstallDate"],
+      Lead: ["Id", "Name", "Email", "Status"],
+    };
+    const subqueries = picked.map((c) => {
+      const fields = COMMON_FIELDS[c.childSObject] || ["Id", "Name"];
+      return `    (SELECT ${fields.join(", ")} FROM ${c.relationshipName} LIMIT 10)`;
+    });
+    // 親オブジェクトの主要項目
+    const parentFields = ["Id", "Name"].filter((f) => (describe.fields || []).some((df) => df.name === f));
+    if (!parentFields.includes("Id")) parentFields.unshift("Id");
+    const soql = `SELECT ${parentFields.join(", ")},\n${subqueries.join(",\n")}\nFROM ${inspectState.obj}\nWHERE Id = '${inspectState.id}'\nLIMIT 1`;
+    const ta = document.getElementById("soqlText");
+    if (ta) ta.value = soql;
+    switchToView("soql");
+    panelToast(`🔗 関連レコード SOQL を生成しました (${inspectState.obj} + ${picked.length} 子オブジェクト)。Ctrl+Enter で実行`, { kind: "ok" });
+  });
   $on("btnInspectExportJson", "click", () => exportInspect("json"));
   $on("btnInspectExportCsv", "click", () => exportInspect("csv"));
   $on("btnInspectCopyJson", "click", async () => {
