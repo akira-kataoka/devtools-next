@@ -2932,6 +2932,26 @@ async function saveInspectorEdit(el) {
   else if (fieldType === "int") newVal = newVal === "" ? null : parseInt(newVal, 10);
   else if (newVal === "") newVal = null;
 
+  // v3.202.0 Phase 292: PROD 環境での Inspector インライン編集前に confirm ダイアログ (5 経路目の防御)
+  if (state.isProd) {
+    const origVal = el.dataset.original || "";
+    const displayNew = newVal === null ? "(null)" : String(newVal);
+    const ok = window.confirm(
+      `🚨🚨 本番組織 (PROD) でレコード編集 🚨🚨\n` +
+      `対象組織: ${state.host || "?"}\n\n` +
+      `${inspectState.obj || "?"}: ${inspectState.id || "?"}\n` +
+      `項目: ${fieldName}\n\n` +
+      `変更前: ${origVal}\n` +
+      `変更後: ${displayNew}\n\n` +
+      `この変更は実データに即時反映されます (PATCH)。続行しますか?\n\n` +
+      `(Sandbox での事前テストを強く推奨します)`
+    );
+    if (!ok) {
+      panelToast("⚠ PROD インライン編集をキャンセルしました", { kind: "warn" });
+      return;
+    }
+  }
+
   const saveBtn = el.querySelector(".inline-save");
   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "⏳"; }
 
