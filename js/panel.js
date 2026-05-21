@@ -5740,21 +5740,35 @@ function adminShowModal(title, bodyHtml) {
   // 既存モーダル削除
   const existing = document.getElementById("adminModalOverlay");
   if (existing) existing.remove();
+  // v3.141.0 Phase 231 (a11y): モーダル表示直前のフォーカス要素を保存し、閉じた時に戻す
+  const prevFocus = document.activeElement;
   const overlay = document.createElement("div");
   overlay.id = "adminModalOverlay";
   overlay.className = "admin-modal-overlay";
   overlay.innerHTML = `
-    <div class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
+    <div class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle" tabindex="-1">
       <div class="admin-modal-hdr">
         <h3 id="adminModalTitle" class="admin-modal-title">${escape(title)}</h3>
-        <button class="admin-modal-close" title="閉じる (Esc)" aria-label="閉じる">✕</button>
+        <button class="admin-modal-close" title="閉じる (Esc)" aria-label="モーダルを閉じる">✕</button>
       </div>
       <div class="admin-modal-body">${bodyHtml}</div>
     </div>`;
   document.body.appendChild(overlay);
+  // v3.141.0 Phase 231 (a11y): 初期フォーカスを ✕ ボタンに (Esc で閉じられる旨も title で示す)
+  const closeBtn = overlay.querySelector(".admin-modal-close");
+  if (closeBtn) {
+    // 短い遅延でフォーカス (DOM 描画完了後)
+    setTimeout(() => closeBtn.focus(), 50);
+  }
   // 閉じる
-  const close = () => overlay.remove();
-  overlay.querySelector(".admin-modal-close").addEventListener("click", close);
+  const close = () => {
+    overlay.remove();
+    // フォーカスを元に戻す (a11y 標準パターン)
+    if (prevFocus && typeof prevFocus.focus === "function") {
+      try { prevFocus.focus(); } catch {}
+    }
+  };
+  closeBtn.addEventListener("click", close);
   overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
   // Esc キー
   const onKey = (e) => { if (e.key === "Escape") { close(); document.removeEventListener("keydown", onKey); } };

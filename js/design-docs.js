@@ -278,9 +278,59 @@ async function buildObjectDef({ host, sid, apiVersion, obj }) {
     ["必須", "保存時に値が必須の項目 (○) — null 不可制約"],
     ["参照先", "参照型 (reference) の場合、関連する親オブジェクト名"],
     ["FLS R/W", "プロファイル/権限セットで参照可能/編集可能を制御 (詳細は FLS レポート参照)"],
-    ["子リレーション", "本オブジェクトを親とする子レコード関係 (削除時の影響範囲)"],
+    ["子リレーション", "本オブジェクトを親とする子リレーション関係 (削除時の影響範囲)"],
     ["レコードタイプ", "同一オブジェクトを業務別に使い分ける単位 (詳細はレコードタイプ一覧参照)"],
   ];
+
+  // v3.141.0 Phase 231 (Team D): 項目集計サマリ追加 (型別件数 / 必須 / 参照 / 計算 / 暗号化 / カスタム vs 標準)
+  const typeBreakdown = {};
+  fields.forEach((f) => {
+    const t = f.type || "(不明)";
+    typeBreakdown[t] = (typeBreakdown[t] || 0) + 1;
+  });
+  const requiredCount = fields.filter((f) => !f.nillable && !f.defaultedOnCreate && f.createable).length;
+  const refCount = fields.filter((f) => f.type === "reference").length;
+  const calcCount = fields.filter((f) => f.calculated).length;
+  const encryptedCount = fields.filter((f) => f.encrypted).length;
+  const customCount = fields.filter((f) => f.custom).length;
+  const standardCount = fields.length - customCount;
+  const externalIdCount = fields.filter((f) => f.externalId).length;
+  const uniqueCount = fields.filter((f) => f.unique).length;
+  const picklistCount = fields.filter((f) => f.type === "picklist" || f.type === "multipicklist").length;
+  // 参照先別の集計 (どのオブジェクトをどのくらい参照しているか)
+  const refTargetMap = {};
+  fields.filter((f) => f.type === "reference").forEach((f) => {
+    (f.referenceTo || []).forEach((to) => {
+      refTargetMap[to] = (refTargetMap[to] || 0) + 1;
+    });
+  });
+  const refTargetBreakdown = Object.entries(refTargetMap)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([obj, cnt]) => `${obj} (${cnt})`).join(", ");
+  const typeBreakdownRows = Object.entries(typeBreakdown)
+    .sort((a, b) => b[1] - a[1])
+    .map(([t, cnt], i) => ({
+      "No": i + 1,
+      "データ型 (原文)": t,
+      "データ型 (日本語)": fieldTypeJa(t, null),
+      "件数": fmtNum(cnt),
+      "割合": fmtPercent(cnt / Math.max(fields.length, 1)),
+    }));
+  // 集計サマリ kvRows
+  const summaryKv = [
+    ["全項目数", `${fmtNum(fields.length)} 件`],
+    ["標準項目", `${fmtNum(standardCount)} 件 (${fmtPercent(standardCount / Math.max(fields.length, 1))})`],
+    ["カスタム項目", `${fmtNum(customCount)} 件 (${fmtPercent(customCount / Math.max(fields.length, 1))})`],
+    ["必須項目", `${fmtNum(requiredCount)} 件 (${fmtPercent(requiredCount / Math.max(fields.length, 1))})`],
+    ["参照型 (reference)", `${fmtNum(refCount)} 件${refTargetBreakdown ? ` — 参照先内訳 Top10: ${refTargetBreakdown}` : ""}`],
+    ["計算項目 (formula)", `${fmtNum(calcCount)} 件 (${fmtPercent(calcCount / Math.max(fields.length, 1))})`],
+    ["選択リスト系", `${fmtNum(picklistCount)} 件 (picklist + multipicklist)`],
+    ["暗号化項目", `${fmtNum(encryptedCount)} 件${encryptedCount > 0 ? " — Shield Platform Encryption 利用" : ""}`],
+    ["外部 ID 項目", `${fmtNum(externalIdCount)} 件${externalIdCount > 0 ? " — 外部システム連携キー" : ""}`],
+    ["一意 (unique) 項目", `${fmtNum(uniqueCount)} 件`],
+  ];
+
   return {
     title: `オブジェクト定義書: ${d.label} (${d.name})`,
     type: "objectDef",
@@ -288,11 +338,14 @@ async function buildObjectDef({ host, sid, apiVersion, obj }) {
       cover,
       { heading: "0. 凡例", kvRows: objLegend },
       { heading: "1. オブジェクト概要", kvRows: meta },
-      { heading: "2. 項目定義", headers, rows },
-      ...(childRels.length ? [{ heading: "3. 子リレーション", headers: Object.keys(childRels[0] || {}), rows: childRels }] : []),
-      ...(rts.length ? [{ heading: "4. レコードタイプ", headers: Object.keys(rts[0] || {}), rows: rts }] : []),
+      // v3.141.0 Phase 231: 項目集計サマリを項目定義の前に挿入 (全体俯瞰用)
+      { heading: "2. 項目集計サマリ", kvRows: summaryKv },
+      { heading: "3. 項目タイプ別件数", headers: Object.keys(typeBreakdownRows[0] || {}), rows: typeBreakdownRows },
+      { heading: "4. 項目定義", headers, rows },
+      ...(childRels.length ? [{ heading: "5. 子リレーション", headers: Object.keys(childRels[0] || {}), rows: childRels }] : []),
+      ...(rts.length ? [{ heading: "6. レコードタイプ", headers: Object.keys(rts[0] || {}), rows: rts }] : []),
     ],
-    note: `項目数 ${fmtNum(rows.length)} / 子リレーション ${fmtNum(childRels.length)} / レコードタイプ ${fmtNum(rts.length)}。**業務担当者向け**: 「項目定義」シートが入力画面の項目一覧と一致します。「2. 項目定義」を Excel でフィルタ → 「カスタム=○」絞り込みで自組織独自項目のみ抽出できます。新規実装時はこのシートをレビュー対象資料として活用してください。`,
+    note: `項目数 ${fmtNum(rows.length)} (標準 ${fmtNum(standardCount)} / カスタム ${fmtNum(customCount)}) / 必須 ${fmtNum(requiredCount)} 件 / 参照 ${fmtNum(refCount)} 件 / 計算 ${fmtNum(calcCount)} 件 / 子リレーション ${fmtNum(childRels.length)} / レコードタイプ ${fmtNum(rts.length)}。**業務担当者向け**: 「項目定義」シートが入力画面の項目一覧と一致します。「2. 項目集計サマリ」「3. 項目タイプ別件数」(Phase 231 追加) で全体構造を即把握 — オブジェクトの拡張度 (カスタム項目割合) / 業務複雑度 (必須項目数 / 計算項目数) / 連携密度 (参照型数) の指標として活用できます。Excel で「4. 項目定義」を「カスタム=○」絞り込みで自組織独自項目のみ抽出可能。`,
   };
 }
 

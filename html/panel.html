@@ -524,6 +524,7 @@ System.debug('Now: ' + System.now());</textarea>
       <div class="view hidden" data-view="search">
         <div class="toolbar search-toolbar">
           <input id="searchQuery" placeholder="🔎 検索ワードを入力 (例: 'Acme' / '田中' / 'test@example.com')" title="SOSL FIND 句に渡される検索ワード — 単語の前方一致 + 部分一致 (wildcard *) で検索されます。3 文字以上推奨。"
+            aria-label="グローバル検索: 検索ワードを入力 (3 文字以上推奨、Enter で実行)"
             style="flex:1;min-width:280px" />
           <select id="searchScope" title="検索対象オブジェクトを切替えます (主要 6 種 / カスタムオブジェクト含む全件)">
             <option value="standard">📌 主要 6 種 (Account/Contact/Lead/Opportunity/Case/User)</option>
