@@ -62,7 +62,7 @@ const RESET_CATEGORIES = {
   },
   uistate: {
     label: "UI 状態系 (Limits ピン・各種チェック・サイドバー折りたたみ・最後の view 等)",
-    keys: ["sfdtLastView", "sfdtLimitsPinned", "sfdtLimitsSort", "sfdtMdType", "sfdtSoqlTooling", "sfdtApexFetchLog", "sfdtNavCollapsedCats", "sideCollapsed", "whatsNewCollapsed"],
+    keys: ["sfdtLastView", "sfdtLimitsPinned", "sfdtLimitsSortState", "sfdtMdType", "sfdtSoqlTooling", "sfdtApexFetchLog", "sfdtPopupLinksCollapsed", "sfdtNavCollapsedCats", "sideCollapsed", "whatsNewCollapsed"],
   },
   saved: {
     label: "保存系 (savedQueries / savedApex — 手動命名保存した SOQL・Apex)",
