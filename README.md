@@ -100,6 +100,14 @@
 >   - **組織監査**: 1 クリック「組織全体スナップショット」+ admin ダッシュボード (7 カード)
 >   - **ユーザー管理**: 凍結 / 凍結解除 / 代理ログイン / MFA 未設定者抽出 / 未活動者抽出 (30/90 日)
 >   - **ストレージ削減**: 詳細抽出 + 大型 ContentVersion / 古い Attachment / 空 Account の Apex テンプレ連携
+> - **💡 競合 SF 拡張機能との差別化 (Phase 351 整理)**:
+>   - **設計書ジェネレータ 21 種**: Inspector Reloaded × / DevTools (lvshanbi) △ Object 定義のみ / Profile Reader △ Profile のみ → **我々が唯一 21 種を業務文書品質で生成**
+>   - **Apex 匿名実行**: 我々のみ実装。20 templates × 5 カテゴリ optgroup (基本確認 / 業務 SOQL / 開発・テスト・運用 / ユーザー管理・凍結 / 監査・ストレージ削減)
+>   - **Inspector Inline edit**: Inspector Reloaded ✅ / 我々 ✅ (Phase 292 で実装、PROD は確認ダイアログ込み)
+>   - **PROD 2 段階防御 × 6 経路**: 他拡張に類似機能なし — Apex DML / REST POST,PATCH,DELETE / SOQL Bulk DELETE,DML / Inspector PATCH / admin 凍結解除すべて confirm
+>   - **3 モード ENV 100% 統一バッジ**: ORGanizer の Color tagging に着想、Phase 117/288/333 で popup/panel-tool/mini-panel 全モード対応
+>   - **URL クエリ統一 12 種 + 🔗 リンクコピー 10 箇所**: Slack/Notion でクイック共有可能 — 他拡張で類似機能なし
+>   - **自動アップデート機構**: 独自 VERSION.txt 機構で chrome.storage 経由通知 — 他拡張は手動更新
 
 ## v3 系の主要機能 (v2.71 → v3.3 累計まとめ)
 
