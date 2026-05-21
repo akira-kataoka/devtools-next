@@ -1,7 +1,7 @@
 // DevTools パネル本体。inspectedWindow から URL を取って sid を引く。
 import {
   isSalesforceHost, toApiHost, getSessionId, parseOrgIdFromSid,
-  runSoql, sfFetch, recordsToCsv, to18CharId, getUserInfo,
+  runSoql, sfFetch, getLimits, recordsToCsv, to18CharId, getUserInfo,
 } from "./sf-api.js";
 import { generateDesign, markdownToHtml } from "./design-docs.js";
 import { showPicker, invalidatePickerCache } from "./picker.js";
@@ -2242,7 +2242,7 @@ async function doLimits() {
   // v3.32.0: loading 表示を統一スピナーに
   const limitsResultEl = document.getElementById("limitsResult");
   if (limitsResultEl) limitsResultEl.innerHTML = `<div class="empty-state"><span class="pill loading">組織制限を取得しています…</span></div>`;
-  const r = await sfFetch({ host: state.host, sid: state.sid, path: `/services/data/v${state.apiVersion}/limits` });
+  const r = await getLimits({ host: state.host, sid: state.sid, apiVersion: state.apiVersion });
   unlock();
   if (!r.ok) {
     document.getElementById("limitsResult").innerHTML = `<pre class="code">${escape(JSON.stringify(r.data, null, 2))}</pre>`;
