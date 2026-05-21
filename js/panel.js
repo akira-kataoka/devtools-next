@@ -4826,6 +4826,18 @@ async function doRest() {
     const bodySize = r.raw ? r.raw.length : 0;
     const sizeLabel = bodySize < 1024 ? `${bodySize} B` : `${(bodySize / 1024).toFixed(1)} KB`;
     meta.innerHTML = `<span class="pill ok">HTTP ${r.status}</span> <span class="pill" title="HTTP メソッド">${escape(method)}</span> <span class="pill" title="リクエストパス">${escape(path.length > 60 ? path.substring(0, 60) + "…" : path)}</span> <span class="meta">${dt}ms / ${sizeLabel}</span>`;
+    // v3.259.0 Phase 349 (Team R/H): REST 成功時、path から SObject 名 + レコード ID を抽出して最近使った候補に push
+    // 経路パターン: /services/data/v62.0/sobjects/<Object>/<Id>?... または /sobjects/<Object>/describe
+    const m = path.match(/\/sobjects\/([A-Za-z][A-Za-z0-9_]*)(?:\/([a-zA-Z0-9]{15,18}))?/);
+    if (m) {
+      const objName = m[1];
+      const recId = m[2];
+      pushRecentObject(objName);
+      if (recId) {
+        const lbl = (r.data && typeof r.data === "object" && (r.data.Name || r.data.Subject || r.data.CaseNumber || r.data.Title)) || objName;
+        pushRecentRecordId(recId, `${objName}${lbl ? ": " + lbl : ""}`);
+      }
+    }
   }
   // Phase 225 改善: 空レスポンス (204 No Content / DELETE 成功) でも親切メッセージ
   const resultEl = document.getElementById("restResult");
