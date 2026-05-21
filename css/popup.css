@@ -25,8 +25,8 @@
   /* スペーシング (4px ベース) — panel.css と完全同期 */
   --sp-0: 2px; --sp-1: 4px; --sp-2: 6px; --sp-3: 8px;
   --sp-4: 10px; --sp-5: 12px; --sp-6: 16px; --sp-7: 24px;
-  /* 角丸 — panel.css と完全同期 */
-  --r-xs: 3px; --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px;
+  /* 角丸 — panel.css と完全同期 (v3.93.0 Phase 183: --r-pill 12px 追加) */
+  --r-xs: 3px; --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px; --r-pill: 12px;
 }
 * { box-sizing: border-box; }
 /* v2.78.0: popup 幅 460→480 拡大 + リサイズ可能化試行
@@ -242,7 +242,7 @@ details.card[open] > :last-child { padding-bottom: 10px; }
   border: 1px solid var(--line);
   color: var(--fg-dim);
   padding: 3px 8px;
-  border-radius: 12px;
+  border-radius: var(--r-pill);
   font-size: 10px;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s, color 0.15s;

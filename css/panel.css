@@ -51,8 +51,8 @@
   /* スペーシング (4px ベース) */
   --sp-0: 2px; --sp-1: 4px; --sp-2: 6px; --sp-3: 8px;
   --sp-4: 10px; --sp-5: 12px; --sp-6: 16px; --sp-7: 24px;
-  /* 角丸 */
-  --r-xs: 3px; --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px;
+  /* 角丸 (v3.93.0 Phase 183: チップ/ピル用 --r-pill 12px 追加 — 4 箇所 12px が使われていたため) */
+  --r-xs: 3px; --r-sm: 4px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px; --r-pill: 12px;
 }
 * { box-sizing: border-box; }
 html, body {
@@ -314,7 +314,7 @@ td.cell-nested { word-break: break-word; }
   background: rgba(27,150,255,0.15);
   color: var(--accent);
   padding: var(--sp-0) var(--sp-3);
-  border-radius: 12px;
+  border-radius: var(--r-pill);
   font-size: 10px;
   text-decoration: none;
   border: 1px solid var(--line);
@@ -513,7 +513,7 @@ td.cell-nested { word-break: break-word; }
   color: var(--accent);
   border: 1px solid rgba(27,150,255,0.3);
   padding: 3px 10px;
-  border-radius: 12px;
+  border-radius: var(--r-pill);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
@@ -1448,7 +1448,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .home-card {
   background: var(--bg2);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: var(--r-pill);
   padding: 20px 18px;
   cursor: pointer;
   text-align: left;
