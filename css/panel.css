@@ -2034,3 +2034,13 @@ details.search-group[open] summary {
   cursor: default;
 }
 .extract-mode-tab.active:hover { background: var(--bg2); }
+
+/* v3.148.0 Phase 238: グローバル検索結果のキーワードハイライト */
+mark.search-hl {
+  background: linear-gradient(180deg, rgba(251,191,36,0.8) 0%, rgba(251,191,36,0.5) 100%);
+  color: #1a1a1a;
+  padding: 0 2px;
+  border-radius: 2px;
+  font-weight: 700;
+  box-shadow: 0 0 0 1px rgba(251,191,36,0.6);
+}

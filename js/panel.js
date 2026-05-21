@@ -5341,6 +5341,68 @@ async function doGlobalSearch() {
     </details>`;
   });
   root.innerHTML = sections.join("");
+  // v3.148.0 Phase 238: 検索ワードのハイライト処理
+  // ユーザー入力 kw を元にテーブル内のセル text を <mark> でマーク (大文字小文字無視)
+  // wildcard * は無視して文字列マッチ部分のみ
+  highlightSearchTerm(root, kw);
+}
+
+// v3.148.0 Phase 238: 検索結果セル内のキーワードハイライト
+// 検索ワードを大文字小文字無視で <mark class="search-hl"> でラップ
+// XSS 防止: textNode のみ対象、HTML 構造は触らない (mark 要素のみ作成)
+function highlightSearchTerm(rootEl, keyword) {
+  if (!rootEl || !keyword) return;
+  // ワイルドカード * ? を除外し、特殊文字エスケープした単純文字列を取り出す
+  const plain = String(keyword).replace(/[*?]/g, "").trim();
+  if (plain.length < 2) return; // 1 文字は誤マークしやすい
+  const esc = plain.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`(${esc})`, "ig");
+  // 全テーブルの td 要素を走査
+  const cells = rootEl.querySelectorAll("td");
+  cells.forEach((td) => {
+    // 既にネスト要素 (button 等) を含むセルはスキップ — search 結果は単純テキスト想定
+    if (td.children.length > 0) {
+      // テキストノードだけ処理
+      td.childNodes.forEach((n) => {
+        if (n.nodeType === Node.TEXT_NODE) {
+          const text = n.nodeValue;
+          if (re.test(text)) {
+            const frag = document.createDocumentFragment();
+            const parts = text.split(re);
+            parts.forEach((p) => {
+              if (re.test(p)) {
+                const m = document.createElement("mark");
+                m.className = "search-hl";
+                m.textContent = p;
+                frag.appendChild(m);
+              } else if (p) {
+                frag.appendChild(document.createTextNode(p));
+              }
+              re.lastIndex = 0;
+            });
+            n.parentNode.replaceChild(frag, n);
+          }
+        }
+      });
+      return;
+    }
+    const text = td.textContent || "";
+    if (!re.test(text)) return;
+    re.lastIndex = 0;
+    const parts = text.split(re);
+    td.textContent = "";
+    parts.forEach((p) => {
+      if (re.test(p)) {
+        const m = document.createElement("mark");
+        m.className = "search-hl";
+        m.textContent = p;
+        td.appendChild(m);
+      } else if (p) {
+        td.appendChild(document.createTextNode(p));
+      }
+      re.lastIndex = 0;
+    });
+  });
 }
 
 // =============================================================================
