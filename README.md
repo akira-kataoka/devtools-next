@@ -115,6 +115,7 @@
 >   - **3 モード ENV 100% 統一バッジ**: ORGanizer の Color tagging に着想、Phase 117/288/333 で popup/panel-tool/mini-panel 全モード対応
 >   - **URL クエリ統一 12 種 + 🔗 リンクコピー 10 機能種別 × 2 モード**: Slack/Notion でクイック共有可能 — 他拡張で類似機能なし
 >   - **自動アップデート機構**: 独自 VERSION.txt 機構で chrome.storage 経由通知 — 他拡張は手動更新
+>   - **🏆 継続的整合性磨き (Phase 351-396 連続 46 サイクル)**: 「Phase 117 から 5 ヶ月放置の visual bug」「Phase 289 から 3 ヶ月放置の format drift」を自律改修ループで系統的発見・解消 — **他拡張は単発リリースで終わるが、我々は実装と documentation の整合性磨きを継続中**
 
 ## v3 系の主要機能 (v2.71 → v3.298 / Phase 380 で v3 系 290 連続リリース達成、累計まとめ)
 
