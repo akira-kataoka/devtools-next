@@ -260,14 +260,44 @@ textarea {
   flex: 1; overflow: auto; min-height: 100px;
   background: #0a1224; border: 1px solid var(--line); border-radius: var(--r-md);
 }
-/* v3.15.0: 結果領域 (grid/limits-grid) の初期空状態ガイド統一スタイル — メタデータ/Inspector/Limits/Login/SOQL/Apex 各画面で同じ見た目 */
+/* v3.15.0: 結果領域 (grid/limits-grid) の初期空状態ガイド統一スタイル */
+/* v3.126.0 Phase 216: ユーザー要望「説明文煩雑、折りたたみまたはマウスオーバーで出る形に」 */
+/* 初期は 1 行 (簡潔) + ホバーで全文展開、説明文を縦長 → 横コンパクトに */
 .empty-state {
-  padding: 24px 16px;
+  padding: var(--sp-2) var(--sp-3);
   color: var(--fg-dim);
-  font-size: 13px;
-  line-height: 1.7;
+  font-size: 11px;
+  line-height: 1.6;
   background: linear-gradient(180deg, rgba(27,150,255,0.04) 0%, transparent 100%);
   border-radius: var(--r-sm);
+  max-height: 2.4em;
+  overflow: hidden;
+  cursor: zoom-in;
+  position: relative;
+  transition: max-height 0.2s ease, padding 0.2s ease;
+}
+.empty-state:hover, .empty-state:focus-within {
+  max-height: 600px;
+  overflow: auto;
+  cursor: zoom-out;
+  padding: var(--sp-card-y) var(--sp-6);
+  font-size: 13px;
+  line-height: 1.7;
+}
+.empty-state::after {
+  content: "▼ ホバーで詳細";
+  position: absolute;
+  bottom: 0; right: 8px;
+  font-size: 9px;
+  color: var(--accent);
+  opacity: 0.6;
+  background: var(--bg2);
+  padding: 0 4px;
+  border-radius: var(--r-xs);
+  pointer-events: none;
+}
+.empty-state:hover::after, .empty-state:focus-within::after {
+  display: none;
 }
 .empty-state strong { color: var(--accent); font-weight: 600; }
 .empty-state code {
