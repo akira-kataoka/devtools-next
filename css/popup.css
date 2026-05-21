@@ -25,6 +25,8 @@
   /* スペーシング (4px ベース) — panel.css と完全同期 */
   --sp-0: 2px; --sp-1: 4px; --sp-2: 6px; --sp-3: 8px;
   --sp-4: 10px; --sp-5: 12px; --sp-6: 16px; --sp-7: 24px;
+  /* セマンティックスペーシング — panel.css と完全同期 (v3.95.0 Phase 185 追加) */
+  --sp-card-y: 32px;
   /* 角丸 — panel.css と完全同期 (v3.94.0 Phase 184: --r-tag 5px 追加) */
   --r-xs: 3px; --r-sm: 4px; --r-tag: 5px; --r-md: 6px; --r-lg: 8px; --r-xl: 10px; --r-pill: 12px;
 }
