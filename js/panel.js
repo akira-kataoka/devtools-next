@@ -790,6 +790,12 @@ function bindEvents() {
       last_modified: `SELECT Id, Name, LastModifiedDate, LastModifiedBy.Name\nFROM Account\nWHERE LastModifiedDate = LAST_N_DAYS:7\nORDER BY LastModifiedDate DESC\nLIMIT 50`,
       // v3.117.0 Phase 207: 設定変更履歴 (Setup Audit Trail) — 標準 API、保持期間 180 日 (Field Audit Trail 未購入の場合)
       setup_audit_trail: `// Setup Audit Trail (設定変更履歴) — 保持期間 180 日 / Field Audit Trail を購入していない場合\nSELECT Id, Action, Section, Display, CreatedBy.Name, CreatedDate, DelegateUser\nFROM SetupAuditTrail\nORDER BY CreatedDate DESC\nLIMIT 200`,
+      // v3.119.0 Phase 209: 業務監査系テンプレート 5 種追加 (棚卸し / ガバナンス / 不正検知用)
+      top_account_owners: `// 取引先所有者ランキング — 誰が最も多く取引先を所有しているか (組織健全性チェック)\nSELECT OwnerId, Owner.Name, COUNT(Id) AccountCount\nFROM Account\nGROUP BY OwnerId, Owner.Name\nORDER BY COUNT(Id) DESC\nLIMIT 20`,
+      inactive_users_with_records: `// 棚卸し: 非アクティブだが取引先を所有しているユーザー — 所有者移管が必要なレコード抽出\nSELECT OwnerId, Owner.Name, Owner.IsActive, COUNT(Id) AccountCount\nFROM Account\nWHERE Owner.IsActive = false\nGROUP BY OwnerId, Owner.Name, Owner.IsActive\nORDER BY COUNT(Id) DESC\nLIMIT 50`,
+      my_permission_sets: `// 自分の権限セット割当一覧 — どの権限を持っているか確認 (ガバナンス監査)\nSELECT Id, PermissionSet.Name, PermissionSet.Label, PermissionSet.Description, AssigneeId, Assignee.Name, ExpirationDate\nFROM PermissionSetAssignment\nWHERE AssigneeId = '${state.userId || "REPLACE_USER_ID"}'\nORDER BY PermissionSet.Label`,
+      large_attachments: `// 大型添付ファイル上位 50 件 — ストレージ容量圧迫の原因特定 (Files Storage 削減用)\nSELECT Id, Title, FileExtension, ContentSize, CreatedBy.Name, CreatedDate, FirstPublishLocationId\nFROM ContentVersion\nWHERE IsLatest = true\nORDER BY ContentSize DESC\nLIMIT 50`,
+      stale_open_cases: `// 長期未対応 Case — 30 日以上更新がない未クローズ Case (SLA 違反候補)\nSELECT Id, CaseNumber, Subject, Status, Priority, Owner.Name, CreatedDate, LastModifiedDate, Account.Name\nFROM Case\nWHERE IsClosed = false AND LastModifiedDate < LAST_N_DAYS:30\nORDER BY LastModifiedDate ASC\nLIMIT 100`,
     };
     const code = TEMPLATES[key];
     if (!code) return;
@@ -808,10 +814,11 @@ function bindEvents() {
       saveSoqlTooling(toolingCb.checked);
     }
     e.target.value = "";
-    // v3.71.0: user_id 自動補完の状態を toast で明示
-    if (key === "my_open_cases" && !state.userId) {
+    // v3.71.0: user_id 自動補完の状態を toast で明示 (v3.119.0 Phase 209: my_permission_sets も同パターン対応)
+    const needsUserId = (key === "my_open_cases" || key === "my_permission_sets");
+    if (needsUserId && !state.userId) {
       panelToast(`📝 SOQL サンプルを挿入しました。⚠ ユーザー ID 未取得のため "REPLACE_USER_ID" を実 ID に書き換えてください`, { kind: "warn" });
-    } else if (key === "my_open_cases" && state.userId) {
+    } else if (needsUserId && state.userId) {
       panelToast(`📝 SOQL サンプルを挿入しました (✓ あなたのユーザー ID ${state.userId} を自動補完)`, { kind: "ok" });
     } else {
       panelToast(`📝 SOQL サンプルを挿入しました (元クエリは上書きされました)`, { kind: "ok" });
