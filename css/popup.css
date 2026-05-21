@@ -323,8 +323,8 @@ select { font-family: inherit; }
   font-weight: 600;
 }
 .links a:hover { border-color: var(--accent); color: var(--accent); }
+/* v3.122.0 Phase 212: grid-column は Phase 198 で flex に変更後不要、ユーザー「便利リンク重なる」報告の根本原因として削除 */
 .links-group-title {
-  grid-column: 1 / -1;
   font-size: 10px;
   color: var(--accent);
   font-weight: 700;
@@ -332,6 +332,8 @@ select { font-family: inherit; }
   padding: var(--sp-3) var(--sp-0) var(--sp-0);
   border-bottom: 1px solid var(--line);
   margin-top: 2px;
+  display: block;
+  width: 100%;
 }
 .links-group-title:first-child { margin-top: 0; padding-top: 0; }
 /* v3.45.0: カテゴリ折りたたみ (details/summary) — 状態は chrome.storage 永続化 */
@@ -353,6 +355,8 @@ details.links-group[open] {
 }
 details.links-group[open] > a {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: block; width: 100%; box-sizing: border-box;
+  min-height: 28px; line-height: 1.4;
 }
 details.links-group:not([open]) > a { display: none; }
 

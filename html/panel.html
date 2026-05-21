@@ -35,9 +35,9 @@
         <!-- v2.91.0: 抜本再設計 (5 カテゴリ→3 カテゴリ集約 / REST 統合 / Describe 廃止) -->
         <button class="nav-sep" data-cat="data" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 📦 データ</button>
         <div class="nav-group" data-cat="data">
-          <button class="nav-btn" data-view="soql" data-cat="data" title="SOQL でレコードを検索 / CSV エクスポート (オートコンプリート対応)"><span class="nav-label">🔎 SOQL クエリ</span><kbd class="nav-kbd">Q</kbd></button>
-          <button class="nav-btn" data-view="inspector" data-cat="data" title="レコード ID を指定して全項目の値を表示 / 参照辿り / 値コピー"><span class="nav-label">🔍 レコード詳細</span><kbd class="nav-kbd">I</kbd></button>
-          <button class="nav-btn" data-view="dataexport" data-cat="data" title="オブジェクトの全項目を Excel / CSV / JSON で一括ダウンロード"><span class="nav-label">📥 一括エクスポート</span></button>
+          <button class="nav-btn" data-view="inspector" data-cat="data" title="レコード ID を指定して全項目の値を表示 / 参照辿り / 値コピー / 編集モードでフィールド値更新"><span class="nav-label">🔍 レコード確認</span><kbd class="nav-kbd">I</kbd></button>
+          <button class="nav-btn" data-view="soql" data-cat="data" title="🔎 SOQL でレコードを検索 / CSV/Excel/JSON エクスポート / オートコンプリート / Tooling API / 一括 DML (DELETE/INSERT/UPDATE/UPSERT/Bulk API v2) — v3.122.0 Phase 212 以降は「📥 レコードエクスポート」へ統合予定"><span class="nav-label">📥 レコードエクスポート</span><kbd class="nav-kbd">Q</kbd></button>
+          <button class="nav-btn" data-view="dataexport" data-cat="data" title="オブジェクトの全項目を Excel / CSV / JSON で一括ダウンロード (フィールド指定型・SOQL を書かずに) — 将来「📥 レコードエクスポート」(SOQL 統合) に統合予定"><span class="nav-label">📦 全項目ダウンロード</span></button>
         </div>
 
         <button class="nav-sep" data-cat="dev" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 💻 開発</button>
