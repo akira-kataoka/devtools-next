@@ -478,7 +478,8 @@ System.debug('Now: ' + System.now());</textarea>
       <div class="view hidden" data-view="logs">
         <div class="toolbar">
           <button id="btnFetchLogs" class="primary" title="最新 20 件の ApexLog (Debug ログ) を取得します">最新 20 件</button>
-          <button id="btnEnableDebug" title="自身に対する DebugLevel + TraceFlag を有効化します (Apex 実行ログ取得のため)">DebugLevel ON</button>
+          <button id="btnEnableDebug" title="自身に対する DebugLevel + TraceFlag を有効化します">DebugLevel ON</button>
+          <button id="btnLogsCopyMd" title="📝 Apex Debug ログ一覧を Markdown 形式でコピー (Phase 267)">📝 MD コピー</button>
         </div>
         <div id="logsResult" class="grid"><div class="empty-state">👆 「最新 20 件」を押すと、自身が直近で生成した ApexLog (Debug ログ) を取得できます。<br/><br/><strong>💡 ヒント</strong>: ログが取得できない場合は先に「DebugLevel ON」を押して TraceFlag を有効化してください (24 時間有効)。匿名 Apex 実行時は自動でログ取得されるため、本画面で確認できます。各行クリックでログ本文をモーダル表示します。</div></div>
       </div>

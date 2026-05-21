@@ -1281,6 +1281,8 @@ function bindEvents() {
   $on("btnLoginCsv", "click", exportLoginCsv);
   // v3.175.0 Phase 265: ログイン履歴 Markdown コピー (Markdown 機能 8 箇所目)
   $on("btnLoginCopyMd", "click", copyLoginHistoryMd);
+  // v3.177.0 Phase 267: Apex Debug ログ一覧 Markdown コピー (Markdown 機能 10 箇所目 🎊)
+  $on("btnLogsCopyMd", "click", () => copyResultTableAsMd("logsResult", "Apex Debug ログ一覧"));
   // v3.176.0 Phase 266: メタデータ一覧 Markdown コピー (Markdown 機能 9 箇所目)
   $on("btnMetadataCopyMd", "click", async () => {
     const resultEl = document.getElementById("metadataResult");
@@ -5566,6 +5568,39 @@ function exportLoginCsv() {
   const sz = csv.length;
   const label = sz < 1024 ? `${sz} B` : `${(sz / 1024).toFixed(1)} KB`;
   panelToast(`📥 ログイン履歴 CSV をダウンロードしました (${state.lastLoginRecords.length} 件 / ${label})`, { kind: "ok" });
+}
+
+// v3.177.0 Phase 267: 結果テーブルから Markdown を生成する汎用関数 (logs/metadata 等で共通利用)
+async function copyResultTableAsMd(resultId, title) {
+  const resultEl = document.getElementById(resultId);
+  const table = resultEl ? resultEl.querySelector("table") : null;
+  if (!table) {
+    panelToast(`📭 ${title}が未取得です。先に取得ボタンを押してください`, { kind: "warn" });
+    return;
+  }
+  const ths = Array.from(table.querySelectorAll("thead th"));
+  const headers = ths.map((th) => th.textContent.trim()).filter((h) => h && !["", "選択"].includes(h));
+  const trs = Array.from(table.querySelectorAll("tbody tr"));
+  const lines = [];
+  lines.push(`## ${title}`);
+  lines.push("");
+  lines.push(`_取得日時: ${new Date().toLocaleString("ja-JP")} / 件数: ${trs.length}_`);
+  lines.push("");
+  lines.push("| " + headers.map((h) => h.replace(/\|/g, "\\|")).join(" | ") + " |");
+  lines.push("|" + headers.map(() => "---").join("|") + "|");
+  for (const tr of trs) {
+    const tds = Array.from(tr.querySelectorAll("td"));
+    const adjusted = tds.length > headers.length ? tds.slice(tds.length - headers.length) : tds;
+    const row = adjusted.slice(0, headers.length).map((td) => (td.textContent || "").trim().replace(/\|/g, "\\|").replace(/\r?\n/g, " "));
+    while (row.length < headers.length) row.push("");
+    lines.push("| " + row.join(" | ") + " |");
+  }
+  try {
+    await navigator.clipboard.writeText(lines.join("\n"));
+    panelToast(`📝 ${title}を Markdown でコピーしました (${trs.length} 件)`, { kind: "ok" });
+  } catch (e) {
+    panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
+  }
 }
 
 // v3.175.0 Phase 265: ログイン履歴を Markdown テーブル形式でコピー (セキュリティ監査用)
