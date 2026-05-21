@@ -236,6 +236,7 @@ function flashToast(text) {
         <span class="hdr-mode" title="ユーザーモード — Salesforce 画面上で軽量に SOQL を実行できます">👤 ユーザー</span>
         <button class="hdr-open" id="opn" title="DevToolsNext を新しいタブで全画面起動します (SOQL/Inspector/設計書など全機能)" aria-label="DevToolsNext を全画面で開く">↗ 全画面</button>
         <button class="hdr-open" id="opnSearch" title="🌐 グローバル検索 (SOSL) を全画面で開きます — Account/Contact/Lead 等を横断検索 (Phase 243)" aria-label="グローバル検索を全画面で開く">🌐 検索</button>
+        <button class="hdr-open" id="opnAdmin" title="👥 ユーザー・ライセンス管理ダッシュボード (7 カード) を全画面で開きます — ライセンス使用率 / 凍結ユーザー / MFA / パッケージ / 組織情報 / ストレージ等を 1 画面で確認 (Phase 244)" aria-label="ユーザー・ライセンス管理を全画面で開く">👥 管理</button>
         <button class="hdr-close" id="cls" title="ミニパネルを閉じます" aria-label="ミニパネルを閉じる">✕</button>
       </div>
       <div class="body">
@@ -511,6 +512,14 @@ function flashToast(text) {
   if (openSearchBtn) openSearchBtn.addEventListener("click", () => {
     try {
       const url = chrome.runtime.getURL("html/tool.html?view=search");
+      window.open(url, "_blank");
+    } catch {}
+  });
+  // v3.154.0 Phase 244: 管理ダッシュボードを全画面で直接開く (URL クエリ ?view=admin)
+  const openAdminBtn = $("opnAdmin");
+  if (openAdminBtn) openAdminBtn.addEventListener("click", () => {
+    try {
+      const url = chrome.runtime.getURL("html/tool.html?view=admin");
       window.open(url, "_blank");
     } catch {}
   });
