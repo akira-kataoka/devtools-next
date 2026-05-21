@@ -347,11 +347,13 @@ details.links-group > summary::before {
   display: inline-block;
 }
 details.links-group[open] > summary::before { transform: rotate(90deg); }
-/* details 内のリンクは 2 列 grid */
+/* details 内のリンクは 1 列縦並び (v3.108.0 Phase 198: 2 列だと長いリンクテキストが折り返されてレイアウトが崩れていた緊急修正) */
 details.links-group[open] {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+  display: flex; flex-direction: column; gap: 4px;
 }
-details.links-group[open] > summary { grid-column: 1 / -1; }
+details.links-group[open] > a {
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
 details.links-group:not([open]) > a { display: none; }
 
 .ftr {
