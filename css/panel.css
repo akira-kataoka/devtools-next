@@ -48,9 +48,9 @@
   --accent: #1b96ff; --accent-2: #0c66e4;
   --ok: #2ecc71; --warn: #f39c12; --err: #ff6b6b;
   --line: #1f2c46;
-  /* スペーシング (4px ベース) */
+  /* スペーシング (4px ベース) — v3.107.0 Phase 197 で参照 0 の --sp-7 (24px) を撤去 */
   --sp-0: 2px; --sp-1: 4px; --sp-2: 6px; --sp-3: 8px;
-  --sp-4: 10px; --sp-5: 12px; --sp-6: 16px; --sp-7: 24px;
+  --sp-4: 10px; --sp-5: 12px; --sp-6: 16px;
   /* セマンティックスペーシング (Phase 185-187 で導入) */
   --sp-hair: 1px; /* v3.96.0 Phase 186: 極小 badge/chip/kbd の縦 padding (18 箇所統一) */
   --sp-tag-y: 5px; /* v3.97.0 Phase 187: フォーム input / grid セル / list-item の縦 padding (--r-tag と命名整合性、6 箇所統一) */
