@@ -432,19 +432,25 @@ System.debug('Now: ' + System.now());</textarea>
           <button id="btnRest" class="primary" title="指定したパスとメソッドで REST API を送信します">送信</button>
         </div>
         <div class="toolbar" style="margin-top:4px;">
-          <select id="restTemplate" title="よく使う REST API を選んで Method/Path に自動セット + 即実行します (Phase 215 ユーザー要望)">
-            <option value="">📌 クイック REST 実行 (選択で即実行)</option>
-            <option value="limits">📊 GET /limits — 組織制限</option>
-            <option value="userinfo">👤 GET /chatter/users/me — 現在ユーザー情報</option>
-            <option value="org">🏢 GET /sobjects/Organization — 組織情報</option>
-            <option value="sobjects">📋 GET /sobjects — 全 SObject 一覧</option>
-            <option value="installed_packages">🔌 GET /tooling/InstalledSubscriberPackage — パッケージ</option>
-            <option value="async_jobs">⏰ GET /tooling/AsyncApexJob — 非同期 Apex ジョブ</option>
-            <option value="bulk_jobs">📦 GET /jobs/ingest — Bulk API ジョブ一覧</option>
-            <option value="versions">🔖 GET /services/data — API バージョン一覧</option>
-            <option value="recent">🕒 GET /recent — 最近表示したレコード (Phase 305)</option>
-            <option value="theme">🎨 GET /theme — Salesforce テーマ情報 (アイコン/色、Phase 305)</option>
-            <option value="actions">⚡ GET /actions — Invocable Actions 一覧 (Phase 305)</option>
+          <select id="restTemplate" title="よく使う REST API (Phase 316 で 3 カテゴリ optgroup 化、計 11 種)">
+            <option value="">📌 クイック REST 実行 (11 種、3 カテゴリ・選択で即実行)</option>
+            <optgroup label="🔍 組織・基本情報">
+              <option value="limits">📊 GET /limits — 組織制限</option>
+              <option value="userinfo">👤 GET /chatter/users/me — 現在ユーザー情報</option>
+              <option value="org">🏢 GET /sobjects/Organization — 組織情報</option>
+              <option value="theme">🎨 GET /theme — Salesforce テーマ情報 (アイコン/色、Phase 305)</option>
+              <option value="versions">🔖 GET /services/data — API バージョン一覧</option>
+            </optgroup>
+            <optgroup label="📦 メタデータ・SObject">
+              <option value="sobjects">📋 GET /sobjects — 全 SObject 一覧</option>
+              <option value="installed_packages">🔌 GET /tooling/InstalledSubscriberPackage — パッケージ</option>
+              <option value="actions">⚡ GET /actions — Invocable Actions 一覧 (Phase 305)</option>
+            </optgroup>
+            <optgroup label="🕒 レコード/ジョブ">
+              <option value="recent">🕒 GET /recent — 最近表示したレコード (Phase 305)</option>
+              <option value="async_jobs">⏰ GET /tooling/AsyncApexJob — 非同期 Apex ジョブ</option>
+              <option value="bulk_jobs">📦 GET /jobs/ingest — Bulk API ジョブ一覧</option>
+            </optgroup>
           </select>
         </div>
         <textarea id="restBody" rows="6" placeholder="POST / PATCH の場合は JSON ボディを入力してください (GET / DELETE では不要)"></textarea>
