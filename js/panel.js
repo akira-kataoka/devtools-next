@@ -633,6 +633,12 @@ function switchToView(v) {
         if (result && result.querySelector(".empty-state")) {
           setTimeout(() => doAdminLoadAll(), 100); // 描画後に開始
         }
+      } else if (v === "search") {
+        // v3.137.0 Phase 227: グローバル検索ビューに来たら、searchQuery にフォーカス
+        setTimeout(() => {
+          const q = document.getElementById("searchQuery");
+          if (q && !q.value) q.focus();
+        }, 80);
       }
     } catch (e) { console.warn("[DevToolsNext] auto-fetch on view switch failed:", e); }
   }
@@ -1047,6 +1053,13 @@ function bindEvents() {
   // LoginHistory
   $on("btnFetchLogin", "click", doFetchLoginHistory);
   $on("btnLoginCsv", "click", exportLoginCsv);
+
+  // v3.137.0 Phase 227 (Team G2): グローバル検索 (SOSL)
+  $on("btnSearch", "click", doGlobalSearch);
+  $on("searchQuery", "keydown", (e) => {
+    if (e.isComposing || e.keyCode === 229) return;
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); doGlobalSearch(); }
+  });
 
   // v3.129.0 Phase 219 (Team U): ユーザー・ライセンス管理ダッシュボード
   $on("btnAdminLicenses", "click", doAdminLicenses);
@@ -5134,6 +5147,140 @@ async function loadSelectedQuery() {
   if (!name) return;
   const { savedQueries = {} } = await chrome.storage.local.get("savedQueries");
   if (savedQueries[name]) document.getElementById("soqlText").value = savedQueries[name];
+}
+
+// =============================================================================
+// v3.137.0 Phase 227 (Team G2): グローバル検索 (SOSL ベース)
+// 検索ワードを SOSL FIND 句に渡し、複数オブジェクト横断で結果を取得
+// =============================================================================
+const SEARCH_SCOPES = {
+  standard: [
+    { obj: "Account", fields: "Id, Name, Type, Industry, Phone, Website, Owner.Name" },
+    { obj: "Contact", fields: "Id, Name, Email, Phone, Account.Name, Title, Owner.Name" },
+    { obj: "Lead", fields: "Id, Name, Email, Phone, Company, Status, Owner.Name" },
+    { obj: "Opportunity", fields: "Id, Name, StageName, Amount, CloseDate, Account.Name, Owner.Name" },
+    { obj: "Case", fields: "Id, CaseNumber, Subject, Status, Priority, Account.Name, Owner.Name" },
+    { obj: "User", fields: "Id, Name, Username, Email, Profile.Name, IsActive" },
+  ],
+  extended: [
+    { obj: "Account", fields: "Id, Name, Type, Industry, Phone, Owner.Name" },
+    { obj: "Contact", fields: "Id, Name, Email, Phone, Account.Name, Owner.Name" },
+    { obj: "Lead", fields: "Id, Name, Email, Phone, Company, Status" },
+    { obj: "Opportunity", fields: "Id, Name, StageName, Amount, CloseDate, Account.Name" },
+    { obj: "Case", fields: "Id, CaseNumber, Subject, Status, Priority, Account.Name" },
+    { obj: "User", fields: "Id, Name, Username, Email, IsActive" },
+    { obj: "Task", fields: "Id, Subject, Status, Priority, ActivityDate, Who.Name, What.Name" },
+    { obj: "Event", fields: "Id, Subject, ActivityDate, Who.Name, What.Name" },
+    { obj: "Note", fields: "Id, Title, ParentId" },
+    { obj: "Campaign", fields: "Id, Name, Status, Type, StartDate, EndDate" },
+  ],
+  // "all" は SOSL の RETURNING 句を空にして全 SObject を対象 (Salesforce 標準仕様)
+};
+
+function buildSoslQuery(keyword, scope) {
+  // ワイルドカード: ユーザー入力に * を含まない場合は前後に * を付けて部分一致化
+  let kw = String(keyword || "").trim();
+  if (!kw) return null;
+  // SOSL の予約文字エスケープ ( \ + ? * { } ( ) [ ] " & | ! - )
+  // ここでは最小限: 単一引用符と バックスラッシュのみエスケープ
+  kw = kw.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  // ユーザーが * を入れていなければ自動 wildcard 化 (3 文字以上の場合)
+  if (kw.length >= 3 && !kw.includes("*") && !kw.includes("?")) {
+    kw = kw + "*"; // 前方一致 + 部分一致
+  }
+  const scopeDef = SEARCH_SCOPES[scope];
+  if (!scopeDef) {
+    // "all" 等: RETURNING 句なしで全 SObject
+    return `FIND {${kw}} IN ALL FIELDS RETURNING Account(Id, Name), Contact(Id, Name, Email), Lead(Id, Name, Email), Opportunity(Id, Name, StageName), Case(Id, CaseNumber, Subject), User(Id, Name, Username)`;
+  }
+  const returning = scopeDef.map((s) => `${s.obj}(${s.fields})`).join(", ");
+  return `FIND {${kw}} IN ALL FIELDS RETURNING ${returning}`;
+}
+
+async function doGlobalSearch() {
+  if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
+  const kw = document.getElementById("searchQuery").value.trim();
+  const scope = document.getElementById("searchScope").value || "standard";
+  const meta = document.getElementById("searchMeta");
+  const root = document.getElementById("searchResultRoot");
+  if (!kw) {
+    if (meta) meta.innerHTML = `<span class="pill warn">⚠ 検索ワードを入力してください</span>`;
+    document.getElementById("searchQuery").focus();
+    return;
+  }
+  if (kw.length < 2) {
+    if (meta) meta.innerHTML = `<span class="pill warn">⚠ 2 文字以上で検索してください (Salesforce SOSL の最低要件)</span>`;
+    return;
+  }
+  const sosl = buildSoslQuery(kw, scope);
+  if (!sosl) return;
+  meta.innerHTML = `<span class="pill loading">検索中…</span>`;
+  root.innerHTML = `<div class="empty-state" style="padding:18px">⏳ SOSL を実行中… (検索ワード: <strong>${escape(kw)}</strong>)</div>`;
+
+  const unlock = lockBtn("btnSearch");
+  const t0 = performance.now();
+  const url = `/services/data/v${state.apiVersion}/search/?q=${encodeURIComponent(sosl)}`;
+  const r = await sfFetch({ host: state.host, sid: state.sid, path: url });
+  const dt = Math.round(performance.now() - t0);
+  unlock();
+
+  if (!r.ok) {
+    meta.innerHTML = `<span class="pill err">HTTP ${r.status}</span>`;
+    const errBody = r.data && r.data[0] && r.data[0].message ? r.data[0].message : (typeof r.data === "string" ? r.data : JSON.stringify(r.data || {}).slice(0, 240));
+    root.innerHTML = `<div class="meta admin-card-err" style="padding:12px">
+      <strong>HTTP ${escape(String(r.status))}</strong>: ${escape(String(errBody)).substring(0, 240)}
+      <br><br><strong>SOSL:</strong> <code>${escape(sosl)}</code>
+      <br><br><strong>原因の可能性</strong>: 検索ワードが Salesforce 検索インデックスにヒットしない (Salesforce 検索インデックスは編集後 30 秒〜数分遅延あり) / 検索対象オブジェクトが Search Layout 設定されていない / 権限不足</div>`;
+    return;
+  }
+
+  // SOSL レスポンスは Salesforce のバージョンにより形式が異なる:
+  // v36+ : { searchRecords: [...] } (フラット)
+  // v40+ : { searchRecords: [{ attributes: { type }, ...fields }] } (フラットだが attributes.type で SObject 区別)
+  const records = (r.data && r.data.searchRecords) || [];
+  // SObject 別にグループ化
+  const groups = new Map();
+  for (const rec of records) {
+    const type = (rec.attributes && rec.attributes.type) || "?";
+    if (!groups.has(type)) groups.set(type, []);
+    groups.get(type).push(rec);
+  }
+
+  meta.innerHTML = `<span class="pill ok">✓ ${records.length} 件</span> <span class="meta">${dt}ms / ${groups.size} オブジェクト</span>`;
+
+  if (!records.length) {
+    root.innerHTML = `<div class="empty-state" style="padding:24px 12px">
+      📭 「<strong>${escape(kw)}</strong>」に一致するレコードが見つかりませんでした。<br><br>
+      <strong>確認ポイント</strong>:
+      <ul style="text-align:left;display:inline-block;margin-top:8px">
+        <li>検索ワードを <strong>3 文字以上</strong> にする (短いワードは Salesforce 検索インデックス対象外)</li>
+        <li>ワイルドカード <code>*</code> を付ける (例: <code>${escape(kw)}*</code>)</li>
+        <li>Salesforce 検索インデックスは編集後 <strong>30 秒〜数分</strong>遅延あります</li>
+        <li>検索対象オブジェクトの「検索レイアウト」に項目が設定されているか Setup で確認</li>
+      </ul>
+    </div>`;
+    return;
+  }
+
+  // 各 SObject ごとにテーブル表示
+  const sortedTypes = Array.from(groups.keys()).sort();
+  const SObject_ICONS = {
+    "Account": "🏢", "Contact": "👤", "Lead": "🎯", "Opportunity": "💰",
+    "Case": "📞", "User": "👨", "Task": "📋", "Event": "📅",
+    "Note": "📝", "Campaign": "📣",
+  };
+  const sections = sortedTypes.map((type) => {
+    const recs = groups.get(type);
+    const icon = SObject_ICONS[type] || "📦";
+    return `<details class="search-group" open>
+      <summary class="search-group-summary">
+        <span style="font-size:14px">${icon} <strong>${escape(type)}</strong></span>
+        <span class="pill ok" style="font-size:10px">${recs.length} 件</span>
+      </summary>
+      <div class="search-group-body">${recordsTable(recs)}</div>
+    </details>`;
+  });
+  root.innerHTML = sections.join("");
 }
 
 // =============================================================================

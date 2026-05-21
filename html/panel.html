@@ -36,6 +36,7 @@
         <button class="nav-sep" data-cat="data" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 📦 データ</button>
         <div class="nav-group" data-cat="data">
           <button class="nav-btn" data-view="inspector" data-cat="data" title="レコード ID を指定して全項目の値を表示 / 参照辿り / 値コピー / 編集モードでフィールド値更新"><span class="nav-label">🔍 レコード確認</span><kbd class="nav-kbd">I</kbd></button>
+          <button class="nav-btn" data-view="search" data-cat="data" title="🌐 グローバル検索 (SOSL) — 検索ワードを入力すると Account/Contact/Lead/Opportunity/Case/User 等 横断で一致するレコードを高速検索 (Phase 227)"><span class="nav-label">🌐 グローバル検索</span></button>
           <button class="nav-btn" data-view="soql" data-cat="data" title="🔎 SOQL でレコードを検索 / CSV/Excel/JSON エクスポート / オートコンプリート / Tooling API / 一括 DML (DELETE/INSERT/UPDATE/UPSERT/Bulk API v2) — v3.122.0 Phase 212 以降は「📥 レコードエクスポート」へ統合予定"><span class="nav-label">📥 レコードエクスポート</span><kbd class="nav-kbd">Q</kbd></button>
           <button class="nav-btn" data-view="dataexport" data-cat="data" title="オブジェクトの全項目を Excel / CSV / JSON で一括ダウンロード (フィールド指定型・SOQL を書かずに) — 将来「📥 レコードエクスポート」(SOQL 統合) に統合予定"><span class="nav-label">📦 全項目ダウンロード</span></button>
         </div>
@@ -100,6 +101,7 @@
         <div class="home-secondary">
           <div class="home-secondary-title">他の機能</div>
           <div class="home-secondary-grid">
+            <button class="home-mini-card" data-go="search" title="🌐 検索ワードを入力すると Account/Contact/Lead/Opportunity/Case/User 等 横断で一致するレコードを高速検索 (SOSL ベース)">🌐 グローバル検索</button>
             <button class="home-mini-card" data-go="admin" title="👥 ユーザー数・ライセンス使用状況・凍結ユーザー・MFA 設定状況・インストールパッケージ等を 1 画面で把握できる管理者向けダッシュボード">👥 ユーザー・ライセンス管理</button>
             <button class="home-mini-card" data-go="apiurl" title="REST API を組み立てて実行 (URL ビルダー + 実行を統合)">🌐 REST API</button>
             <button class="home-mini-card" data-go="metadata" title="ApexClass / Flow / Profile 等のメタデータ一覧">📦 メタデータ一覧</button>
@@ -504,6 +506,38 @@ System.debug('Now: ' + System.now());</textarea>
           <div class="design-pane">
             <div class="design-pane-label">ソース</div>
             <pre id="designSource" class="code"></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- v3.137.0 Phase 227 (Team G2): グローバル検索 (SOSL ベース) — 検索ワード横断検索 -->
+      <div class="view hidden" data-view="search">
+        <div class="toolbar search-toolbar">
+          <input id="searchQuery" placeholder="🔎 検索ワードを入力 (例: 'Acme' / '田中' / 'test@example.com')" title="SOSL FIND 句に渡される検索ワード — 単語の前方一致 + 部分一致 (wildcard *) で検索されます。3 文字以上推奨。"
+            style="flex:1;min-width:280px" />
+          <select id="searchScope" title="検索対象オブジェクトを切替えます (主要 6 種 / カスタムオブジェクト含む全件)">
+            <option value="standard">📌 主要 6 種 (Account/Contact/Lead/Opportunity/Case/User)</option>
+            <option value="extended">📚 拡張 (主要 6 + Task/Event/Note/Campaign)</option>
+            <option value="all">🌐 全オブジェクト (FIND IN ALL FIELDS RETURNING のデフォルト)</option>
+          </select>
+          <button id="btnSearch" class="primary" title="SOSL を発行して指定スコープの全オブジェクトから検索 (Ctrl+Enter でも実行)">▶ 検索</button>
+          <span class="grow"></span>
+          <span class="meta" id="searchMeta" role="status" aria-live="polite" aria-atomic="true"></span>
+        </div>
+        <details class="search-howto collapsible-help" title="使い方ガイド (折りたたみ)">
+          <summary>💡 使い方 (クリックで展開)<span class="collapse-hint">▼</span></summary>
+          <ol style="margin:6px 0;padding-left:20px;font-size:11px;line-height:1.7;color:var(--fg-dim)">
+            <li><strong>検索ワード</strong>: 単語 / メールアドレス / 電話番号 / 日本語名 等を入力 (大文字小文字区別なし、3 文字以上推奨)</li>
+            <li><strong>ワイルドカード</strong>: <code>*</code> で前方/後方一致 (例: <code>Acm*</code> / <code>*Corp</code>)</li>
+            <li><strong>スコープ</strong>: 主要 6 種は高速、拡張 10 種、全オブジェクトは時間がかかります</li>
+            <li><strong>結果クリック</strong>: 表内の Id をクリックでレコード確認 (Inspector) に遷移</li>
+            <li><strong>制限</strong>: SOSL は 1 オブジェクトあたり最大 200 件、合計 2,000 件まで返ります</li>
+          </ol>
+        </details>
+        <div id="searchResultRoot" class="search-result-root">
+          <div class="empty-state" style="padding:24px 12px">
+            上の検索ボックスに <strong>検索ワード</strong> を入力して「▶ 検索」を押すと、ここに結果が表示されます。<br>
+            検索結果は <strong>オブジェクト別にグループ化</strong> されて表示されます。
           </div>
         </div>
       </div>
