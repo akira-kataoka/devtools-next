@@ -3913,6 +3913,9 @@ async function reconnect() {
     console.log("[DevToolsNext] Inspector history cleared (Org change)");
   }
   // sandbox / developer / production の判定 + 色付きバッジ
+  // v3.325.0 Phase 415: state.isProd / state.envLabel の初期定義は Phase 405 で state object に追加済 (line 9-17)。
+  //                     ここで env 判定後に代入し、Phase 289-403 の PROD 確認ダイアログ 6 経路で参照される。
+  //                     色定義は panel.css `.env-badge.env-sbx/.env-dev/.env-prod` (Phase 117/382 で Sandbox=オレンジ / Dev=緑 統一)。
   const h = state.apiHost || "";
   let envLabel = "PROD", envClass = "env-prod";
   if (/\.sandbox\./.test(h)) { envLabel = "SBX"; envClass = "env-sbx"; }
