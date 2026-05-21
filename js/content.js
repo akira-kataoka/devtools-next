@@ -109,6 +109,11 @@ function flashToast(text) {
         background: rgba(243,156,18,0.18); color: #f39c12;
         border: 1px solid rgba(243,156,18,0.5);
       }
+      /* v3.293.0 Phase 383: Dev 組織 (.develop. / .scratch.) 判定 + 緑バッジ追加で 3 モード ENV 100% 統一完成 (panel.css/popup.css と整合) */
+      .hdr-env.env-dev {
+        background: rgba(46,204,113,0.18); color: #2ecc71;
+        border: 1px solid rgba(46,204,113,0.5);
+      }
       .hdr-env.env-prod {
         background: rgba(255,107,107,0.22); color: #ff6b6b;
         border: 1px solid rgba(255,107,107,0.6);
@@ -341,11 +346,17 @@ function flashToast(text) {
   if (hdrEnv) {
     try {
       const host = (location.hostname || "").toLowerCase();
+      // v3.293.0 Phase 383: Dev 組織判定追加で 3 モード ENV 100% 統一完成 (panel.js / popup.js と同じ判定ロジック)
       const isSandbox = host.includes(".sandbox.") || host.includes(".cs") || host === "test.salesforce.com";
+      const isDev = host.includes(".develop.") || host.includes(".scratch.");
       if (isSandbox) {
         hdrEnv.textContent = "🧪 Sandbox";
         hdrEnv.classList.add("env-sandbox");
         hdrEnv.title = `Sandbox 環境 (${host}) — テスト用組織です。本番影響なし`;
+      } else if (isDev) {
+        hdrEnv.textContent = "🔧 Dev";
+        hdrEnv.classList.add("env-dev");
+        hdrEnv.title = `Developer / Scratch 組織 (${host}) — 学習・検証用途`;
       } else {
         hdrEnv.textContent = "⚠ PROD";
         hdrEnv.classList.add("env-prod");
