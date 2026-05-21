@@ -1128,6 +1128,12 @@ function bindEvents() {
       doAdminListInactiveUsers(days);
       return;
     }
+    // v3.145.0 Phase 235: ストレージ大量消費オブジェクト抽出
+    const storage = e.target.closest && e.target.closest(".admin-action-storage-detail");
+    if (storage) {
+      doAdminStorageDetail();
+      return;
+    }
   });
   // 設計書
   $on("btnDesignGen", "click", doGenerateDesign);
@@ -5775,6 +5781,93 @@ async function doAdminListMfaMissing() {
   document.getElementById("adminMfaResult").innerHTML = summary + note + adminTableHtml(headers, rows);
   // CSV エクスポート用に保存
   adminState.mfaMissing = rows;
+}
+
+// v3.145.0 Phase 235: ストレージ大量消費オブジェクト抽出 — ファイル種別別 + 添付サイズ Top
+async function doAdminStorageDetail() {
+  if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
+  adminShowModal(`📁 ストレージ大量消費の内訳`, `<div style="padding:24px;text-align:center"><span class="pill loading">ストレージ詳細を取得中…</span></div>`);
+
+  // 1. ContentVersion を FileExtension 別に集計 (SUM(ContentSize), COUNT(Id))
+  const cvR = await runSoql({
+    host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+    soql: `SELECT FileExtension, COUNT(Id) cnt, SUM(ContentSize) total FROM ContentVersion WHERE IsLatest = true GROUP BY FileExtension ORDER BY SUM(ContentSize) DESC NULLS LAST LIMIT 100`,
+  });
+  // 2. 個別 Top 20 大型ファイル (削除候補の特定用)
+  const cvTopR = await runSoql({
+    host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+    soql: `SELECT Id, Title, FileExtension, ContentSize, CreatedBy.Name, CreatedDate, FirstPublishLocationId FROM ContentVersion WHERE IsLatest = true ORDER BY ContentSize DESC NULLS LAST LIMIT 20`,
+  });
+
+  if (!cvR.ok) {
+    adminUpdateModalBody(`<div class="meta admin-card-err" style="padding:12px">HTTP ${cvR.status}: ${escape(JSON.stringify(cvR.data || {}).slice(0, 200))}<br>※ ContentVersion 集計失敗。「View All Data」権限が必要な可能性があります。</div>`);
+    return;
+  }
+
+  const extRecs = (cvR.data || {}).records || [];
+  const totalBytes = extRecs.reduce((s, r) => s + (Number(r.total) || 0), 0);
+  const totalFiles = extRecs.reduce((s, r) => s + (Number(r.cnt) || 0), 0);
+
+  // バイト数を人間可読化
+  const fmtSize = (n) => {
+    const v = Number(n) || 0;
+    if (v < 1024) return `${v.toLocaleString("ja-JP")} B`;
+    if (v < 1024 * 1024) return `${(v / 1024).toFixed(1)} KB`;
+    if (v < 1024 * 1024 * 1024) return `${(v / 1024 / 1024).toFixed(2)} MB`;
+    return `${(v / 1024 / 1024 / 1024).toFixed(2)} GB`;
+  };
+
+  // 拡張子別の業務用語マップ
+  const extMap = {
+    "pdf": "PDF (Adobe PDF)", "xlsx": "Excel ブック", "xls": "Excel ブック (旧形式)",
+    "docx": "Word 文書", "doc": "Word 文書 (旧形式)", "pptx": "PowerPoint", "ppt": "PowerPoint (旧形式)",
+    "jpg": "JPEG 画像", "jpeg": "JPEG 画像", "png": "PNG 画像", "gif": "GIF 画像", "bmp": "ビットマップ画像",
+    "zip": "ZIP アーカイブ", "rar": "RAR アーカイブ", "7z": "7zip アーカイブ",
+    "txt": "テキストファイル", "csv": "CSV", "json": "JSON", "xml": "XML",
+    "mp4": "MP4 動画", "mov": "MOV 動画", "mp3": "MP3 音声", "wav": "WAV 音声",
+    "html": "HTML", "css": "CSS", "js": "JavaScript", "log": "ログファイル",
+  };
+  const extRows = extRecs.map((r, i) => {
+    const ext = (r.FileExtension || "(拡張子なし)").toLowerCase();
+    const total = Number(r.total) || 0;
+    return {
+      "順位": i + 1,
+      "拡張子": ext,
+      "種別": extMap[ext] || "(その他)",
+      "ファイル数": Number(r.cnt).toLocaleString("ja-JP"),
+      "合計サイズ": fmtSize(total),
+      "全体に占める割合": totalBytes > 0 ? `${(total / totalBytes * 100).toFixed(1)}%` : "—",
+    };
+  });
+
+  const topRecs = cvTopR.ok ? (cvTopR.data.records || []) : [];
+  const topRows = topRecs.map((r, i) => ({
+    "順位": i + 1,
+    "タイトル": r.Title || "",
+    "拡張子": r.FileExtension || "",
+    "サイズ": fmtSize(r.ContentSize),
+    "作成者": r.CreatedBy ? r.CreatedBy.Name : "",
+    "作成日": r.CreatedDate ? String(r.CreatedDate).substring(0, 10) : "",
+    "親レコード Id": r.FirstPublishLocationId || "",
+  }));
+
+  const extHeaders = ["順位", "拡張子", "種別", "ファイル数", "合計サイズ", "全体に占める割合"];
+  const topHeaders = ["順位", "タイトル", "拡張子", "サイズ", "作成者", "作成日", "親レコード Id"];
+
+  const summary = `<div class="admin-card-summary">📊 ContentVersion 合計: <strong>${totalFiles.toLocaleString("ja-JP")}</strong> ファイル / <strong>${fmtSize(totalBytes)}</strong></div>`;
+  const note = `<div class="meta" style="padding:6px 8px;font-size:11px;color:var(--fg-dim);line-height:1.6">
+    ※ 「合計サイズ」が大きい拡張子から削減検討。<br>
+    ※ <strong>削減方法</strong>: ContentVersion を「最終アクセス日」「親レコード」で絞込み、不要ファイルは Apex タブの DML テンプレで一括削除可能。<br>
+    ※ Attachment (旧添付) は別途集計が必要。ContentDocument に統合移行を推奨。<br>
+    ※ 取得は最大 100 拡張子・Top 20 個別ファイルまで。
+  </div>`;
+
+  const html = summary + note
+    + `<div class="admin-card-subtitle" style="margin-top:12px">📦 ファイル種別 (拡張子) 別 合計サイズ</div>`
+    + adminTableHtml(extHeaders, extRows, { compact: true })
+    + `<div class="admin-card-subtitle" style="margin-top:12px">🔝 個別ファイル サイズ Top 20</div>`
+    + adminTableHtml(topHeaders, topRows, { compact: true });
+  adminUpdateModalBody(html);
 }
 
 // v3.140.0 Phase 230: 未活動ユーザー抽出 (N 日以上ログインなしの IsActive ユーザー)
