@@ -622,6 +622,14 @@ function switchToView(v) {
       } else if (v === "metadata") {
         const result = document.getElementById("metadataResult");
         if (result && !result.innerHTML.trim()) doMetadataList();
+      } else if (v === "admin") {
+        // v3.131.0 Phase 220: ユーザー要望「取得ボタンを押さなくても取得してほしい」
+        // admin ビューに切り替えた瞬間、未取得なら 6 カード自動一括取得
+        const result = document.getElementById("adminLicensesResult");
+        // empty-state テキストが残っている = まだ取得していない、と判定
+        if (result && result.querySelector(".empty-state")) {
+          setTimeout(() => doAdminLoadAll(), 100); // 描画後に開始
+        }
       }
     } catch (e) { console.warn("[DevToolsNext] auto-fetch on view switch failed:", e); }
   }
@@ -5196,11 +5204,62 @@ async function doAdminUserStats() {
 async function doAdminFrozen() {
   if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
   adminSetCardLoading("adminFrozenResult", "凍結ユーザーを取得中…");
-  const r = await runSoql({
+  // v3.131.0 Phase 220: フォールバック付きクエリ (User リレーション解決不可な組織への対応)
+  // 段階 1: User.Name 等のフルリレーション取得を試行
+  let r = await runSoql({
     host: state.host, sid: state.sid, apiVersion: state.apiVersion,
     soql: `SELECT Id, UserId, User.Name, User.Username, User.Profile.Name, User.IsActive, User.Email FROM UserLogin WHERE IsFrozen = true ORDER BY User.Name LIMIT 500`,
   });
-  if (!r.ok) { adminSetCardError("adminFrozenResult", r.status, r.data); return; }
+  // 段階 2: 失敗した場合、UserLogin の最小限のみ取得し、User は別 SOQL で引く
+  if (!r.ok) {
+    console.warn("[admin] UserLogin リレーションクエリ失敗、フォールバック実行:", r.status, r.data);
+    const r2 = await runSoql({
+      host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+      soql: `SELECT Id, UserId FROM UserLogin WHERE IsFrozen = true LIMIT 500`,
+    });
+    if (!r2.ok) {
+      // UserLogin 自体取れない (API バージョン < 39 等)
+      const el = document.getElementById("adminFrozenResult");
+      if (el) el.innerHTML = `<div class="admin-card-summary admin-card-warn">⚠ UserLogin の取得に失敗しました (HTTP ${r2.status})</div>
+        <div class="meta" style="padding:8px;font-size:11px;color:var(--fg-dim)">
+          ${escape(String((r2.data && (r2.data[0] && r2.data[0].message)) || r2.data || "詳細不明")).substring(0, 240)}<br><br>
+          ※ UserLogin オブジェクトは API バージョン 39.0 以上が必要です。<br>
+          ※ または「ユーザーログインを管理」権限が必要な場合があります。<br>
+          ※ 代替: Apex タブの「❄️ ユーザー一括凍結」テンプレを利用してください。
+        </div>`;
+      return;
+    }
+    const minRecs = (r2.data && r2.data.records) || [];
+    if (!minRecs.length) {
+      document.getElementById("adminFrozenResult").innerHTML = `<div class="admin-card-summary admin-card-ok">✓ 凍結中のユーザーはいません</div>`;
+      adminState.frozen = [];
+      return;
+    }
+    const ids = minRecs.map((m) => `'${m.UserId}'`).join(",");
+    const userR = await runSoql({
+      host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+      soql: `SELECT Id, Name, Username, Email, IsActive, Profile.Name FROM User WHERE Id IN (${ids}) ORDER BY Name`,
+    });
+    const userMap = new Map();
+    if (userR.ok) (userR.data.records || []).forEach((u) => userMap.set(u.Id, u));
+    // 合成 records
+    r = {
+      ok: true,
+      data: {
+        records: minRecs.map((m) => ({
+          Id: m.Id,
+          UserId: m.UserId,
+          User: userMap.get(m.UserId) ? {
+            Name: userMap.get(m.UserId).Name,
+            Username: userMap.get(m.UserId).Username,
+            Email: userMap.get(m.UserId).Email,
+            IsActive: userMap.get(m.UserId).IsActive,
+            Profile: userMap.get(m.UserId).Profile,
+          } : null,
+        })),
+      },
+    };
+  }
   const recs = (r.data && r.data.records) || [];
   const rows = recs.map((rec) => ({
     "氏名": rec.User ? rec.User.Name : "",
@@ -5285,58 +5344,123 @@ async function doAdminListMfaMissing() {
   adminState.mfaMissing = rows;
 }
 
-// 特定ライセンスの使用ユーザー一覧 (Profile.UserLicense.Name 経由で逆引き)
+// 特定ライセンスの使用ユーザー一覧 — モーダルで中央表示 (Phase 220 ユーザー要望対応)
 async function doAdminShowLicenseUsers(apiName) {
   if (!state.sid || !apiName) return;
-  panelToast(`🔎 ${apiName} ライセンス使用ユーザーを抽出中…`, { kind: "ok" });
+  // モーダルを即表示 (loading 状態)
+  adminShowModal(`📊 ${apiName} ライセンス使用ユーザー`, `<div style="padding:24px;text-align:center"><span class="pill loading">ユーザーを抽出中…</span></div>`);
   const r = await runSoql({
     host: state.host, sid: state.sid, apiVersion: state.apiVersion,
-    soql: `SELECT Id, Name, Username, IsActive, Profile.Name, LastLoginDate FROM User WHERE Profile.UserLicense.Name = '${apiName.replace(/'/g, "")}' AND IsActive = true ORDER BY LastLoginDate DESC NULLS LAST LIMIT 1000`,
+    soql: `SELECT Id, Name, Username, IsActive, Profile.Name, LastLoginDate, Email FROM User WHERE Profile.UserLicense.Name = '${apiName.replace(/'/g, "")}' AND IsActive = true ORDER BY LastLoginDate DESC NULLS LAST LIMIT 1000`,
   });
-  if (!r.ok) { panelToast(`❌ 抽出失敗 HTTP ${r.status}`, { kind: "err" }); return; }
+  if (!r.ok) {
+    adminUpdateModalBody(`<div class="meta admin-card-err" style="padding:12px"><strong>HTTP ${r.status}</strong> 抽出に失敗しました</div>`);
+    return;
+  }
   const recs = (r.data || {}).records || [];
   const rows = recs.map((u) => ({
     "氏名": u.Name,
     "ユーザ名": u.Username,
+    "メール": u.Email || "",
     "プロファイル": u.Profile ? u.Profile.Name : "",
     "最終ログイン": u.LastLoginDate ? String(u.LastLoginDate).substring(0, 10) : "未ログイン",
     "状態": u.IsActive ? "○ 有効" : "− 無効",
   }));
-  // モーダル風: adminLicensesResult の下に展開
-  const target = document.getElementById("adminLicensesResult");
-  if (!target) return;
-  const headers = ["氏名", "ユーザ名", "プロファイル", "最終ログイン", "状態"];
-  const detailHtml = `
-    <div class="admin-card-detail">
-      <div class="admin-card-detail-hdr">
-        <strong>${escape(apiName)} ライセンス 使用ユーザー (${recs.length} 名)</strong>
-        <button class="admin-card-detail-close" title="閉じる">✕</button>
-      </div>
-      ${adminTableHtml(headers, rows, { compact: true })}
-    </div>`;
-  // 既存 detail を置換
-  const existing = target.querySelector(".admin-card-detail");
+  const headers = ["氏名", "ユーザ名", "メール", "プロファイル", "最終ログイン", "状態"];
+  const summary = `<div class="admin-card-summary">合計 <strong>${recs.length}</strong> 名 (アクティブのみ・最大 1000 件)</div>`;
+  adminUpdateModalBody(summary + adminTableHtml(headers, rows, { compact: true }));
+}
+
+// ====== 共通モーダル (Phase 220 — Admin 詳細表示用) ======
+function adminShowModal(title, bodyHtml) {
+  // 既存モーダル削除
+  const existing = document.getElementById("adminModalOverlay");
   if (existing) existing.remove();
-  target.insertAdjacentHTML("beforeend", detailHtml);
-  const closeBtn = target.querySelector(".admin-card-detail-close");
-  if (closeBtn) closeBtn.addEventListener("click", () => {
-    const d = target.querySelector(".admin-card-detail"); if (d) d.remove();
-  });
+  const overlay = document.createElement("div");
+  overlay.id = "adminModalOverlay";
+  overlay.className = "admin-modal-overlay";
+  overlay.innerHTML = `
+    <div class="admin-modal" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
+      <div class="admin-modal-hdr">
+        <h3 id="adminModalTitle" class="admin-modal-title">${escape(title)}</h3>
+        <button class="admin-modal-close" title="閉じる (Esc)" aria-label="閉じる">✕</button>
+      </div>
+      <div class="admin-modal-body">${bodyHtml}</div>
+    </div>`;
+  document.body.appendChild(overlay);
+  // 閉じる
+  const close = () => overlay.remove();
+  overlay.querySelector(".admin-modal-close").addEventListener("click", close);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  // Esc キー
+  const onKey = (e) => { if (e.key === "Escape") { close(); document.removeEventListener("keydown", onKey); } };
+  document.addEventListener("keydown", onKey);
+}
+
+function adminUpdateModalBody(html) {
+  const overlay = document.getElementById("adminModalOverlay");
+  if (!overlay) return;
+  const body = overlay.querySelector(".admin-modal-body");
+  if (body) body.innerHTML = html;
 }
 
 async function doAdminMfa() {
   if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
   adminSetCardLoading("adminMfaResult", "MFA 設定状況を取得中…");
-  const r = await runSoql({
+  // v3.131.0 Phase 220: フォールバック付きクエリ
+  let r = await runSoql({
     host: state.host, sid: state.sid, apiVersion: state.apiVersion,
     soql: `SELECT UserId, User.Name, User.Username, User.Profile.Name, MethodDefinition FROM TwoFactorMethodsInfo ORDER BY User.Name LIMIT 500`,
   });
   if (!r.ok) {
-    // 一部組織で TwoFactorMethodsInfo が無効化されている場合のフォールバック説明
-    adminSetCardError("adminMfaResult", r.status, r.data);
-    const el = document.getElementById("adminMfaResult");
-    if (el) el.innerHTML += `<div class="meta admin-card-hint" style="padding:8px;font-size:11px;color:var(--fg-dim)">※ TwoFactorMethodsInfo は Identity Verification 機能の組織のみ参照可能です。古い組織では Spring '20 以降の有効化が必要です。</div>`;
-    return;
+    // フォールバック 1: User リレーション無しで再試行
+    const r2 = await runSoql({
+      host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+      soql: `SELECT UserId, MethodDefinition FROM TwoFactorMethodsInfo LIMIT 500`,
+    });
+    if (r2.ok) {
+      // User を別途引く
+      const userIds = [...new Set((r2.data.records || []).map((rec) => rec.UserId).filter(Boolean))];
+      const userMap = new Map();
+      if (userIds.length) {
+        const ids = userIds.map((i) => `'${i}'`).join(",");
+        const userR = await runSoql({
+          host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+          soql: `SELECT Id, Name, Username, Profile.Name FROM User WHERE Id IN (${ids})`,
+        });
+        if (userR.ok) (userR.data.records || []).forEach((u) => userMap.set(u.Id, u));
+      }
+      r = {
+        ok: true,
+        data: {
+          records: (r2.data.records || []).map((rec) => ({
+            UserId: rec.UserId,
+            MethodDefinition: rec.MethodDefinition,
+            User: userMap.get(rec.UserId) ? {
+              Name: userMap.get(rec.UserId).Name,
+              Username: userMap.get(rec.UserId).Username,
+              Profile: userMap.get(rec.UserId).Profile,
+            } : null,
+          })),
+        },
+      };
+    } else {
+      // 両方失敗 → 詳細説明
+      const el = document.getElementById("adminMfaResult");
+      const errBody = r.data && r.data[0] && r.data[0].message ? r.data[0].message : (typeof r.data === "string" ? r.data : JSON.stringify(r.data || {}));
+      if (el) el.innerHTML = `<div class="admin-card-summary admin-card-warn">⚠ TwoFactorMethodsInfo を取得できませんでした (HTTP ${r.status})</div>
+        <div class="meta" style="padding:8px;font-size:11px;color:var(--fg-dim);line-height:1.6">
+          ${escape(String(errBody)).substring(0, 240)}<br><br>
+          <strong>原因の可能性:</strong><br>
+          • TwoFactorMethodsInfo は Identity Verification 機能を有効化した組織のみ参照可能 (Spring '20 以降)<br>
+          • API バージョン 47.0 未満では存在しない<br>
+          • 「Manage Multi-Factor Authentication」権限が必要<br><br>
+          <strong>代替手段:</strong><br>
+          • Setup → Identity → Identity Verification History でユーザー別 MFA 利用履歴確認<br>
+          • SOQL タブ「🛡️ MFA 設定状況」テンプレを Tooling API で実行
+        </div>`;
+      return;
+    }
   }
   const recs = (r.data && r.data.records) || [];
   // 方式別集計

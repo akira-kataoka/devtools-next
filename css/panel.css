@@ -1784,3 +1784,65 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   color: var(--fg);
   padding: 4px 0;
 }
+
+/* v3.131.0 Phase 220: Admin 詳細表示用 共通モーダル */
+.admin-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(2px);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: adminFadeIn 0.15s ease;
+}
+@keyframes adminFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.admin-modal {
+  background: var(--bg2);
+  border: 1px solid var(--accent);
+  border-radius: var(--r-lg);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  max-width: 90vw;
+  max-height: 85vh;
+  width: 900px;
+  display: flex;
+  flex-direction: column;
+  animation: adminSlideUp 0.2s ease;
+}
+@keyframes adminSlideUp { from { transform: translateY(8px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }
+.admin-modal-hdr {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(135deg, rgba(27,150,255,0.12), rgba(27,150,255,0.04));
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+}
+.admin-modal-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--fg);
+}
+.admin-modal-close {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--fg-dim);
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.admin-modal-close:hover { background: var(--err); color: #fff; border-color: var(--err); }
+.admin-modal-body {
+  padding: 14px 18px;
+  overflow: auto;
+  flex: 1;
+  font-size: 12px;
+}
+.admin-modal-body .admin-table {
+  width: 100%;
+}
