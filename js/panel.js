@@ -158,6 +158,10 @@ async function init() {
       // v3.207.0 Phase 297: ?limit=&status= 対応 — login ビュー起動時に件数/ステータス投入 + 自動取得
       window._sfdtInitialLimitFromQuery = params.get("limit") || null;
       window._sfdtInitialStatusFromQuery = params.get("status") || null;
+      // v3.208.0 Phase 298: ?op=&apiObj=&apiId= 対応 — apiurl ビュー起動時に投入 + URL ビルド自動実行
+      window._sfdtInitialOpFromQuery = params.get("op") || null;
+      window._sfdtInitialApiObjFromQuery = params.get("apiObj") || null;
+      window._sfdtInitialApiIdFromQuery = params.get("apiId") || null;
     } catch {}
     // v2.93.0: リフレッシュ時の直前 view 復元 (ユーザー要望「リフレッシュしても前のページ状態を残して」)
     try {
@@ -192,6 +196,20 @@ async function init() {
           }, 250);
         }
       }
+    }
+    // v3.208.0 Phase 298: ?op=&apiObj=&apiId= が指定されかつ apiurl view なら投入 + URL ビルド自動実行 (実行はしない、安全)
+    if (initialViewFromQuery === "apiurl" && (window._sfdtInitialOpFromQuery || window._sfdtInitialApiObjFromQuery || window._sfdtInitialApiIdFromQuery)) {
+      const opSel = document.getElementById("apiOp");
+      const apiObjInp = document.getElementById("apiObj");
+      const apiIdInp = document.getElementById("apiId");
+      if (opSel && window._sfdtInitialOpFromQuery) {
+        const op = String(window._sfdtInitialOpFromQuery);
+        if (Array.from(opSel.options).some((o) => o.value === op)) opSel.value = op;
+      }
+      if (apiObjInp && window._sfdtInitialApiObjFromQuery) apiObjInp.value = String(window._sfdtInitialApiObjFromQuery);
+      if (apiIdInp && window._sfdtInitialApiIdFromQuery) apiIdInp.value = String(window._sfdtInitialApiIdFromQuery);
+      // URL ビルドのみ自動実行 (▶ 実行は手動)
+      try { const btn = document.getElementById("btnApiBuild"); if (btn) btn.click(); } catch {}
     }
     // v3.207.0 Phase 297: ?limit=&status= が指定されかつ login view なら投入 + 自動取得
     if (initialViewFromQuery === "login" && (window._sfdtInitialLimitFromQuery || window._sfdtInitialStatusFromQuery)) {
@@ -1245,6 +1263,21 @@ function bindEvents() {
       const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
       await navigator.clipboard.writeText(url);
       panelToast(`🔗 ${inspectState.obj || "?"}:${inspectState.id} の Inspector リンクをコピー`, { kind: "ok" });
+    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+  });
+  // v3.208.0 Phase 298: API URL ビルダー 🔗 リンク (?view=apiurl&op=&apiObj=&apiId=)
+  $on("btnApiUrlCopyLink", "click", async () => {
+    const op = (document.getElementById("apiOp").value || "");
+    const apiObj = (document.getElementById("apiObj").value || "").trim();
+    const apiId = (document.getElementById("apiId").value || "").trim();
+    if (!op) { panelToast("⚠ 操作種別を選択してください", { kind: "warn" }); return; }
+    try {
+      const qp = new URLSearchParams({ view: "apiurl", op });
+      if (apiObj) qp.set("apiObj", apiObj);
+      if (apiId) qp.set("apiId", apiId);
+      const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
+      await navigator.clipboard.writeText(url);
+      panelToast(`🔗 API URL ビルダーリンクをコピー (${op}${apiObj ? ` / ${apiObj}` : ""})`, { kind: "ok" });
     } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
   });
   // v3.207.0 Phase 297: ログイン履歴 🔗 リンク (?view=login&limit=&status=)
