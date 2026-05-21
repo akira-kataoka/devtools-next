@@ -99,8 +99,7 @@
 > - **a11y 実績**: 3 モード fade-in アニメーション統一、prefers-reduced-motion 対応、focus-visible/aria-label 全面適用、PROD バッジ警告パルス、`.pill.loading` 統一スピナー、ソート `⇅` マーカー、**admin モーダルのフォーカス trap (Phase 231)**
 > - **3 モード UI 統一達成**: popup (⚙️ 管理者) / panel + tool (💻 開発者) / mini-panel (👤 ユーザー) — fade-in / versionBadge / 空状態ガイド / button transition / a11y outline すべて整合 + **ENV バッジ 100% 統一 (Phase 117/288/333/382-383 で Sandbox=オレンジ / Dev=緑 / PROD=赤パルス が 3 モード全て一致)**
 > - **ファイル整合性磨き (Phase 372-375)**: manifest.json description + _locales/ja+en messages.json + PR テンプレート + bug_report.yml の機能要約 / ENV バッジ色 / 運用ルールを Phase 354/372 改訂と整合 (Chrome Web Store / GitHub UI で利用者に最新機能をアピール)
-> - **🏆 磨きシリーズ 40 サイクル (Phase 351-390 連続、新機能追加停止フェーズ)**: documentation drift cleanup (Phase 351-360) → 現在ガイド drift cleanup + mini-panel UX 動線改善 (Phase 361-370) → ファイル整合性磨きフェーズ (Phase 371-380) → 3 モード ENV 100% 統一の真の完成 + TOC anchor drift cleanup (Phase 381-390) — Phase 117 から 5 ヶ月放置の visual bug 発見 + 数字 drift 9 件 + 設計書 22→21 漏れ 3 件 + 見出し更新 4 件 + ファイル整合性 4 件 + Z-INDEX HIERARCHY 1 件 + SECURITY 1 件 + TOC anchor 3 件 = **計 30 件超の整合性磨き**
-> - **🏆 磨きシリーズ第 5 弾 (Phase 391-395 進行中、5 サイクル)**: 3 モード toast duration 統一 (Phase 391-392) + toast CSS audit (Phase 393) + **Phase 289 から 3 ヶ月放置の PROD 確認ダイアログ format drift (Apex/REST ⚠️ vs 他 🚨🚨) を 6 経路 sandwich style に統一** (Phase 394-395) — visual / API 整合性磨きを継続
+> - **🏆 磨きシリーズ 50 サイクル (Phase 351-400 連続、新機能追加停止フェーズ)**: documentation drift cleanup (Phase 351-360) → 現在ガイド drift cleanup + mini-panel UX 動線改善 (Phase 361-370) → ファイル整合性磨きフェーズ (Phase 371-380) → 3 モード ENV 100% 統一の真の完成 + TOC anchor drift cleanup (Phase 381-390) → 3 モード visual/API 整合性磨き (toast + PROD ダイアログ) + 競合差別化拡張 (Phase 391-400) — **Phase 117 から 5 ヶ月放置の visual bug + Phase 289 から 3 ヶ月放置の PROD format drift** を含む過去 Phase drift 系統的発見 + 数字 drift 9 件 + 設計書 22→21 漏れ 3 件 + 見出し更新 6 件 + ファイル整合性 4 件 + Z-INDEX HIERARCHY 1 件 + SECURITY 1 件 + TOC anchor 3 件 + 3 モード visual 統一 2 件 = **計 35 件超の整合性磨き**
 > - **chrome.storage 永続化キー**: **25+ 種** (履歴系: SOQL / Apex / REST / Inspector / Picker / Login as User / 検索ワード + 最近ユーザー、Draft 系: SOQL / Apex / REST body、UI 状態系: 最終 view / Limits ピン + ソート / Tooling チェック / メタデータ type / Apex Debug log / popup 便利リンク折りたたみ / ナビ折りたたみ / sideCollapsed / whatsNewCollapsed、最近候補系: オブジェクト / レコード ID / view / 検索ワード / 設計書「対象」/ 直前生成設計書 / 過去 5 件設計書履歴、その他: KnownVersion 等 — Phase 358 で再 count 18→25+ 実数化)
 > - **CSS デザイントークン**: 17 種 (スペーシング 10 種: --sp-0 〜 --sp-6 + --sp-hair + --sp-tag-y + --sp-card-y / 角丸 7 種: --r-xs + --r-sm + --r-tag + --r-md + --r-lg + --r-xl + --r-pill)、累計 170+ 箇所トークン化 (Phase 361 で「18 種」「--sp-7」表記を panel.css 実定義と照合・修正)
 > - **業務シナリオ完全カバー**:
@@ -116,7 +115,7 @@
 >   - **3 モード ENV 100% 統一バッジ**: ORGanizer の Color tagging に着想、Phase 117/288/333 で popup/panel-tool/mini-panel 全モード対応
 >   - **URL クエリ統一 12 種 + 🔗 リンクコピー 10 機能種別 × 2 モード**: Slack/Notion でクイック共有可能 — 他拡張で類似機能なし
 >   - **自動アップデート機構**: 独自 VERSION.txt 機構で chrome.storage 経由通知 — 他拡張は手動更新
->   - **🏆 継続的整合性磨き (Phase 351-396 連続 46 サイクル)**: 「Phase 117 から 5 ヶ月放置の visual bug」「Phase 289 から 3 ヶ月放置の format drift」を自律改修ループで系統的発見・解消 — **他拡張は単発リリースで終わるが、我々は実装と documentation の整合性磨きを継続中**
+>   - **🏆 継続的整合性磨き (Phase 351-400 連続 50 サイクル)**: 「Phase 117 から 5 ヶ月放置の visual bug」「Phase 289 から 3 ヶ月放置の format drift」を自律改修ループで系統的発見・解消 — **他拡張は単発リリースで終わるが、我々は実装と documentation の整合性磨きを継続中**
 
 ## v3 系の主要機能 (v2.71 → v3.308 / Phase 390 で v3 系 300 連続リリース大台達成、累計まとめ)
 
