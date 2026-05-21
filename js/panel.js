@@ -3718,6 +3718,9 @@ async function reconnect() {
   let envLabel = "PROD", envClass = "env-prod";
   if (/\.sandbox\./.test(h)) { envLabel = "SBX"; envClass = "env-sbx"; }
   else if (/\.develop\./.test(h) || /\.scratch\./.test(h)) { envLabel = "DEV"; envClass = "env-dev"; }
+  // v3.199.0 Phase 289: state.isProd を保持して破壊的操作前の confirm ダイアログで参照
+  state.isProd = (envLabel === "PROD");
+  state.envLabel = envLabel;
   const envTitle =
     envLabel === "SBX" ? "Sandbox 環境です。本番影響なくテスト可能ですが、定期的なリフレッシュで内容が初期化される場合があります" :
     envLabel === "DEV" ? "Developer / Scratch 組織です。学習・検証用途。共有データではないため自由に操作可能" :
@@ -4603,6 +4606,20 @@ async function doRest() {
     const inp = document.getElementById("restPath");
     if (inp) inp.focus();
     return;
+  }
+  // v3.199.0 Phase 289: PROD 環境で破壊的 REST 呼び出し (POST/PATCH/DELETE) 前に confirm ダイアログ
+  if (state.isProd && ["POST", "PATCH", "DELETE"].includes(method)) {
+    const ok = window.confirm(
+      `⚠️ 本番組織 (PROD) で破壊的 REST 呼び出し (${method}) を実行しようとしています。\n\n` +
+      `対象組織: ${state.host || "?"}\n` +
+      `Method: ${method}\nPath: ${path}\n\n` +
+      `実データが変更・削除される可能性があります。\n本当に実行してよろしいですか？\n\n` +
+      `(キャンセル推奨。Sandbox での事前テストを推奨します)`
+    );
+    if (!ok) {
+      meta.innerHTML = `<span class="pill warn">⚠ PROD ${method} 実行をキャンセルしました</span>`;
+      return;
+    }
   }
   const myId = ++restRunId;
   meta.textContent = `📡 送信中… #${myId}`;
@@ -5646,6 +5663,22 @@ async function doRunApex() {
     const ta = document.getElementById("apexCode");
     if (ta) ta.focus();
     return;
+  }
+  // v3.199.0 Phase 289: PROD 環境で破壊的 DML を含む Apex 実行前に confirm ダイアログ (誤操作防止)
+  if (state.isProd) {
+    const dmlPattern = /\b(insert|update|upsert|delete|undelete|merge)\b|database\.(insert|update|upsert|delete|undelete|merge|executeBatch)/i;
+    if (dmlPattern.test(code)) {
+      const ok = window.confirm(
+        `⚠️ 本番組織 (PROD) で DML 操作を含む Apex を実行しようとしています。\n\n` +
+        `対象組織: ${state.host || "?"}\n\n` +
+        `実データが変更・削除される可能性があります。\n本当に実行してよろしいですか？\n\n` +
+        `(キャンセル推奨。Sandbox での事前テストを推奨します)`
+      );
+      if (!ok) {
+        meta.innerHTML = `<span class="pill warn">⚠ PROD 実行をキャンセルしました</span>`;
+        return;
+      }
+    }
   }
   const myId = ++apexRunId;
   meta.innerHTML = `<span class="pill loading">匿名 Apex を実行しています… #${myId}</span>`;
