@@ -1086,6 +1086,11 @@ function bindEvents() {
     if (e.isComposing || e.keyCode === 229) return;
     if (e.key === "Enter") exLoadFields();
   });
+  // v3.111.0 Phase 201: オブジェクト確定時 (datalist 候補選択 / blur) に項目自動読込 (ユーザー要望)
+  $on("exObj", "change", () => {
+    const v = document.getElementById("exObj").value.trim();
+    if (v) exLoadFields();
+  });
 
   // API URL ビルダー + v2.96.0 「▶ 実行」ボタン
   $on("btnApiBuild", "click", apiBuildUrl);
