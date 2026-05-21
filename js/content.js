@@ -245,6 +245,7 @@ function flashToast(text) {
           <span class="quick-label">📍 現在のレコード:</span>
           <span class="quick-info" id="quickInfo">--</span>
           <button class="quick-btn" id="qCopyId" title="現在ページのレコード ID をクリップボードにコピー">📋 ID コピー</button>
+          <button class="quick-btn" id="qCopyMd" title="📝 「[Object:Id](URL)」形式の Markdown リンクをコピー — Slack / バグ報告書 / Confluence 等に貼り付け可能 (Phase 256、3 モード整合)">📝 MD</button>
           <button class="quick-btn" id="qOpenNew" title="現在のレコードを新しいタブで開く">↗ 新タブ</button>
           <button class="quick-btn" id="qRelated" title="現在のオブジェクトの最近 5 件を一覧表示">🔎 最近 5 件</button>
         </div>
@@ -450,6 +451,31 @@ function flashToast(text) {
     const url = `${location.origin}/lightning/r/${info.obj || "Account"}/${info.id}/view`;
     window.open(url, "_blank");
     meta.innerHTML = `<span class="ok">↗ 新しいタブで開きました: ${info.obj || "?"}:${info.id}</span>`;
+  });
+  // v3.166.0 Phase 256: 📝 MD リンク (Slack/Confluence 貼付用 Markdown 形式コピー、Inspector Phase 255 と整合性)
+  const qCopyMdBtn = $("qCopyMd");
+  if (qCopyMdBtn) qCopyMdBtn.addEventListener("click", () => {
+    const info = extractRecordContext();
+    if (!info || !info.id) {
+      meta.innerHTML = `<span class="err">⚠ レコードページで利用してください</span>`;
+      return;
+    }
+    const obj = info.obj || "Record";
+    const id = info.id;
+    const url = `${location.origin}/lightning/r/${obj}/${id}/view`;
+    // mini-panel では DOM の title を取得 (現在ページのレコード名)
+    let displayName = "";
+    try {
+      const titleEl = document.querySelector("h1.slds-page-header__title, .slds-page-header__title, h1");
+      if (titleEl) displayName = (titleEl.textContent || "").trim().substring(0, 80);
+    } catch {}
+    if (!displayName) displayName = `${obj}:${id}`;
+    const md = `[${displayName}](${url}) — ${obj} \`${id}\``;
+    navigator.clipboard.writeText(md).then(() => {
+      meta.innerHTML = `<span class="ok">📝 Markdown リンクをコピーしました: ${displayName}</span>`;
+    }).catch((e) => {
+      meta.innerHTML = `<span class="err">❌ コピー失敗: ${e.message || e}</span>`;
+    });
   });
   dlCsvBtn.addEventListener("click", () => {
     if (!lastRecs.length) {
