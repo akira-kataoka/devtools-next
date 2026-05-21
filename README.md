@@ -1,7 +1,7 @@
 # Salesforce DevTool (Chrome / Edge 拡張)  v3.x
 
-> 🎊🎊🎊🎊🎊🎊🎊🎊 **Phase 250 マイルストーン達成** (2026-05-22) — 通算 360+ リリース、サイクル 1-250 完遂
-> v3.0.0 (Phase 90) → **v3.160.0 (Phase 250)** を継続的自律改修ループで磨き上げ。**🎊 v3 系 160 連続リリース完遂!**
+> 🎊🎊🎊🎊🎊🎊🎊🎊🎊 **Phase 260 マイルストーン達成** (2026-05-22) — 通算 370+ リリース、サイクル 1-260 完遂
+> v3.0.0 (Phase 90) → **v3.170.0 (Phase 260)** を継続的自律改修ループで磨き上げ。**🎊 v3 系 170 連続リリース完遂!**
 > **GitHub Governance 完成** — CI / Issue / PR / CONTRIBUTING / SECURITY / CODE_OF_CONDUCT すべて整備
 > **Inspector ↔ SOQL 双方向ナビ** (Phase 155-157) + **SQL/Apex 整形** (Phase 153-154) + **SOQL/Apex テンプレート挿入** (Phase 159-160) すべて完成
 > 🎯 **Phase 219-250 新機能群完成 (2026-05-21〜22)**:
@@ -67,16 +67,17 @@
 > - **Phase 221-230**: v3.132-3.140 admin-howto 折りたたみ式 (Phase 221) / 🎨 **Limits 画面 UX 改善 3 点** (1行化・stickyヘッダ強化・admin と表示統一、Phase 222) / 🔍 **最近使ったオブジェクト/レコード datalist** (chrome.storage 16 種目、Phase 223) / mini-panel 説明簡素化 (Phase 224) / 設計書 6 種完全強化 (fieldSetList の中身項目リスト / profileList・permsetList の割当ユーザー数 / customSettingList のレコード件数 / accessControl の Group/Queue / appList の Profile 別、Phase 225-226) / 🌐 **グローバル検索 SOSL 新ビュー** (Phase 227) / 📋 **レコード抽出 SOQL/項目選択 モード統合** (Phase 228) / 🔓 **admin に Login as User 統合 + 残席アラート + 再取得** (Phase 229) / ⏰ **未活動ユーザー 30/90日抽出** (Phase 230)
 > - **Phase 231-240**: v3.141-3.150 📐 **objectDef 項目集計サマリ + a11y モーダル強化** (Phase 231) / 🔗 **ER 図 2-hop オプション + MD のみフィルタ** (Phase 232) / 📤 **popup → admin/search クロスナビ** (?view= URL クエリ、Phase 233) / 🏢 **admin 組織情報サマリカード (7 カード目)** (Phase 234) / 📁 **ストレージ詳細抽出** (ContentVersion 拡張子別 + Top 20、Phase 235) / 🟧 **Apex 削減テンプレ 3 種** (大型ファイル / 古い Attachment / 空 Account、Phase 236) / 🔎 **SOQL 管理者向け 5 種** (ストレージ / Public Group / Queue / メンバー集計、Phase 237) / 🔆 **グローバル検索ハイライト** (Phase 238) / 📜 **検索履歴チップ** (chrome.storage、Phase 239) / ⭐ **新設計書「組織全体スナップショット」(23 種目)** (Team D 集大成、Phase 240)
 > - **Phase 241-250**: v3.151-3.160 🎊 **マイルストーン年表** 📝 **README に Phase 161-240 累計年表 + 累計実績更新** (Phase 241) / 🔗 **Inspector「関連レコード」横断 SOQL** (子オブジェクト Top 5 サブクエリ、Phase 242) / 🌐 **mini-panel「検索」ボタン** (Phase 243) / 👥 **mini-panel「管理」ボタン (4 入口統一達成)** (Phase 244) / 📥 **グローバル検索結果 CSV エクスポート** (Phase 245) / 📋 **Inspector「ID」コピーボタン** (3 モード整合、Phase 246) / 💬 **Apex「DEBUG のみ」フィルタ** (USER_DEBUG 抽出、Phase 247) / 🔄 **設計書「直前生成」再実行 chip** (Phase 248) / 🔒 **chip クリアボタン (機密配慮)** (Phase 249) / 🎊 **v3 系 160 連続リリース達成 + マイルストーン記念** (Phase 250)
+> - **Phase 251-260**: v3.161-3.170 📊 **設計書フォーマットに JSON 追加** (API 連携・自動処理、Phase 251) / ♿ **admin 取得ボタン aria-label 整備 (WCAG 2.1 SC 2.4.6 準拠)** (Phase 252) / ❄️📁 **mini-panel SOQL テンプレ管理者向け 2 種追加** (Phase 253) / 📊 **Apex「リミット消費」フィルタ追加 (3 フィルタ完成)** (Phase 254) / 📝 **Inspector「MD リンク」コピー** (Phase 255) / 📝 **mini-panel「MD」リンクコピー** (3 モード整合性、Phase 256) / 📥 **検索結果グループ別 CSV エクスポート** (Phase 257) / 📥 **admin 主要 4 カード個別 CSV エクスポート** (Phase 258) / 📜 **設計書「過去 5 件履歴」chip 拡張** (Phase 259) / 🎊 **v3 系 170 連続リリース達成 + マイルストーン記念** (Phase 260)
 >
-> ## 📈 累計実績 (Phase 250 時点)
-> - **リリース数**: v1 系 + v2 系 100 リリース + **🎊 v3 系 160 リリース** = **360+ リリース**
-> - **GitHub push 数**: **410+ コミット**
-> - **対応ユーザー報告**: **85+ 件** (UX 改善 / 機能追加 / バグ修正)
+> ## 📈 累計実績 (Phase 260 時点)
+> - **リリース数**: v1 系 + v2 系 100 リリース + **🎊 v3 系 170 リリース** = **370+ リリース**
+> - **GitHub push 数**: **420+ コミット**
+> - **対応ユーザー報告**: **90+ 件** (UX 改善 / 機能追加 / バグ修正)
 > - **CRITICAL バグ修正**: 8 件 (runBtn 二重宣言 / addEventListener null セーフ x2 / Flow メタデータ取得 / Limits ReferenceError / ログイン履歴 WHERE filterable / var(--muted) 未定義変数 + Markdown bold 見えない不具合 / **メタデータ一覧 CustomObject Name 列 INVALID_FIELD (Phase 219)** / **chrome.storage キー名不一致 2 バグ (Phase 190)**)
 > - **業務担当者向け磨き**: 設計書 23/23 種 note + 凡例 + 章番号 chip + 文書管理 ID + 機密区分 + 環境バッジ + ロール別 FAQ 19 問 + トラブルシューティング 13 症状 + PDF 保存手順 + アンインストール手順
 > - **a11y 実績**: 3 モード fade-in アニメーション統一、prefers-reduced-motion 対応、focus-visible/aria-label 全面適用、PROD バッジ警告パルス、`.pill.loading` 統一スピナー、ソート `⇅` マーカー、**admin モーダルのフォーカス trap (Phase 231)**
 > - **3 モード UI 統一達成**: popup (⚙️ 管理者) / panel + tool (💻 開発者) / mini-panel (👤 ユーザー) — fade-in / versionBadge / 空状態ガイド / button transition / a11y outline すべて整合
-> - **chrome.storage 永続化キー**: **17 種** (最近 SOQL / Apex / REST / Inspector / Login as User / 設計書「対象」/ メタデータ type / SOQL Tooling チェック状態 / Apex Debug ログ / 最近検索ワード + スコープ / **直前生成設計書 (Phase 248)** 等)
+> - **chrome.storage 永続化キー**: **18 種** (最近 SOQL / Apex / REST / Inspector / Login as User / 設計書「対象」/ メタデータ type / SOQL Tooling チェック状態 / Apex Debug ログ / 最近検索ワード + スコープ / 直前生成設計書 (Phase 248) / **過去 5 件設計書履歴 (Phase 259)** 等)
 > - **CSS デザイントークン**: 18 種 (--sp-0 〜 --sp-7 + --r-xs 〜 --r-xl + --r-pill + --r-tag + --sp-card-y + --sp-hair + --sp-tag-y)、累計 170+ 箇所トークン化
 > - **業務シナリオ完全カバー**:
 >   - **データ抽出**: SOQL モード / 項目選択モード / グローバル検索 (SOSL)
