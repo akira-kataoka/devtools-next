@@ -90,11 +90,33 @@ function flashToast(text) {
         cursor: help;
       }
       .hdr-mode {
-        flex: 1;
         font-size: 10px; font-weight: 700; letter-spacing: 0.4px;
         padding: 2px 8px; border-radius: 10px;
         background: rgba(46,204,113,0.18); color: #2ecc71;
         border: 1px solid rgba(46,204,113,0.4);
+      }
+      /* v3.198.0 Phase 288: 環境 (Sandbox/PROD) バッジ — PROD はパルス警告 */
+      .hdr-env {
+        flex: 1;
+        font-size: 10px; font-weight: 700; letter-spacing: 0.4px;
+        padding: 2px 8px; border-radius: 10px;
+        cursor: help;
+      }
+      .hdr-env.env-sandbox {
+        background: rgba(243,156,18,0.18); color: #f39c12;
+        border: 1px solid rgba(243,156,18,0.5);
+      }
+      .hdr-env.env-prod {
+        background: rgba(255,107,107,0.22); color: #ff6b6b;
+        border: 1px solid rgba(255,107,107,0.6);
+        animation: envProdPulse 2.4s ease-in-out infinite;
+      }
+      @keyframes envProdPulse {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,107,0.0); }
+        50% { box-shadow: 0 0 0 4px rgba(255,107,107,0.18); }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .hdr-env.env-prod { animation: none; }
       }
       .hdr-close, .hdr-open {
         background: transparent; border: 1px solid #1f2c46;
@@ -234,6 +256,7 @@ function flashToast(text) {
         <span class="hdr-title">🛠 DevToolsNext</span>
         <span class="hdr-ver" id="hdrVer" title="現在の拡張バージョン">v?</span>
         <span class="hdr-mode" title="ユーザーモード — Salesforce 画面上で軽量に SOQL を実行できます">👤 ユーザー</span>
+        <span class="hdr-env" id="hdrEnv" title="現在の組織環境 (Sandbox / Production) — PROD は誤操作防止のため警告表示 (Phase 288)"></span>
         <button class="hdr-open" id="opn" title="DevToolsNext を新しいタブで全画面起動します (SOQL/Inspector/設計書など全機能)" aria-label="DevToolsNext を全画面で開く">↗ 全画面</button>
         <button class="hdr-open" id="opnSearch" title="🌐 グローバル検索 (SOSL) を全画面で開きます — Account/Contact/Lead 等を横断検索 (Phase 243)" aria-label="グローバル検索を全画面で開く">🌐 検索</button>
         <button class="hdr-open" id="opnAdmin" title="👥 ユーザー・ライセンス管理ダッシュボード (7 カード) を全画面で開きます — ライセンス使用率 / 凍結ユーザー / MFA / パッケージ / 組織情報 / ストレージ等を 1 画面で確認 (Phase 244)" aria-label="ユーザー・ライセンス管理を全画面で開く">👥 管理</button>
@@ -294,6 +317,25 @@ function flashToast(text) {
       hdrVer.textContent = "v" + v;
       hdrVer.title = `現在の拡張バージョン v${v} (popup から ⬆ アップデート可能)`;
     } catch (e) { /* manifest 取得不可な環境では何もしない */ }
+  }
+  // v3.198.0 Phase 288: ENV (Sandbox/PROD) バッジを location.hostname から判定
+  // Sandbox URL 例: my-org--sandbox.sandbox.my.salesforce.com / my-org--dev.sandbox.my.salesforce.com
+  // Production URL 例: my-org.my.salesforce.com / login.salesforce.com
+  const hdrEnv = $("hdrEnv");
+  if (hdrEnv) {
+    try {
+      const host = (location.hostname || "").toLowerCase();
+      const isSandbox = host.includes(".sandbox.") || host.includes(".cs") || host === "test.salesforce.com";
+      if (isSandbox) {
+        hdrEnv.textContent = "🧪 Sandbox";
+        hdrEnv.classList.add("env-sandbox");
+        hdrEnv.title = `Sandbox 環境 (${host}) — テスト用組織です。本番影響なし`;
+      } else {
+        hdrEnv.textContent = "⚠ PROD";
+        hdrEnv.classList.add("env-prod");
+        hdrEnv.title = `本番組織 (Production) — ${host} — UPDATE/DELETE 操作は実データに影響します。慎重に！`;
+      }
+    } catch { /* host 取得不可は無視 */ }
   }
   const useIdBtn = $("useId");
   const copyCsvBtn = $("copyCsv");
