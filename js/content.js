@@ -278,18 +278,24 @@ function flashToast(text) {
         <div class="history-row" id="histRow"></div>
         <!-- v3.72.0: SOQL テンプレート挿入 (panel/tool と統一、3 モード UX 整合性) -->
         <div class="row" style="margin-bottom:6px">
-          <select id="qryTemplate" title="よく使う SOQL のサンプルを選んでエディタへ挿入します (上書き)" style="flex:1;background:#0a1224;color:#e6ecf5;border:1px solid #1f2c46;border-radius:4px;padding:4px 6px;font-size:11px">
-            <option value="">📝 サンプル挿入…</option>
-            <option value="recent_accounts">🏢 最近作成された取引先 10 件</option>
-            <option value="active_users">👥 アクティブユーザー一覧</option>
-            <option value="last_modified">🕒 過去 7 日に更新された取引先</option>
-            <option value="my_open_cases">📬 未解決 Case (Owner.Name = '私')</option>
-            <option value="frozen_users">❄️ 凍結ユーザー一覧 (Phase 253)</option>
-            <option value="large_files">📁 大型 ContentVersion Top 20 (Phase 253)</option>
-            <option value="stale_cases">⏰ 長期未対応 Case 30 日超 (Phase 306)</option>
-            <option value="recent_contacts">👤 最近作成された取引先責任者 10 件 (Phase 306)</option>
-            <option value="top_revenue">💰 売上 Top 10 取引先 (Phase 306)</option>
-            <option value="setup_audit">📋 設定変更履歴 (Setup Audit Trail) 最新 30 件 (Phase 312)</option>
+          <select id="qryTemplate" title="よく使う SOQL のサンプルを選んでエディタへ挿入します (上書き)。Phase 313 で 3 カテゴリにグルーピング" style="flex:1;background:#0a1224;color:#e6ecf5;border:1px solid #1f2c46;border-radius:4px;padding:4px 6px;font-size:11px">
+            <option value="">📝 サンプル挿入… (10 種、3 カテゴリ)</option>
+            <optgroup label="🏢 基本 (営業/開発)">
+              <option value="recent_accounts">🏢 最近作成された取引先 10 件</option>
+              <option value="active_users">👥 アクティブユーザー一覧</option>
+              <option value="last_modified">🕒 過去 7 日に更新された取引先</option>
+              <option value="my_open_cases">📬 未解決 Case (Owner.Name = '私')</option>
+            </optgroup>
+            <optgroup label="💰 業務 (Phase 306)">
+              <option value="recent_contacts">👤 最近作成された取引先責任者 10 件</option>
+              <option value="top_revenue">💰 売上 Top 10 取引先</option>
+              <option value="stale_cases">⏰ 長期未対応 Case 30 日超 (SLA 違反候補)</option>
+            </optgroup>
+            <optgroup label="🛡️ 管理者・セキュリティ (Phase 253/312)">
+              <option value="frozen_users">❄️ 凍結ユーザー一覧</option>
+              <option value="large_files">📁 大型 ContentVersion Top 20</option>
+              <option value="setup_audit">📋 設定変更履歴 (Setup Audit Trail) 最新 30 件</option>
+            </optgroup>
           </select>
         </div>
         <textarea id="qry" placeholder="SOQL を入力 (例: SELECT Id, Name FROM Account LIMIT 5) / Ctrl+Enter で実行 / 入力中に候補表示" spellcheck="false" title="軽量 SOQL 実行ツールです。上の『📋 ID をクエリに挿入』で現在レコードの WHERE Id='...' を簡単挿入できます。Tooling API オブジェクトは利用できません — 全機能は ↗ 全画面 (開発者モード) で">SELECT Id, Name FROM Account ORDER BY CreatedDate DESC LIMIT 5</textarea>
