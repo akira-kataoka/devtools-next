@@ -306,7 +306,20 @@ function bindEvents() {
   $on("loginAsSearch", "keydown", (e) => {
     if (e.isComposing || e.keyCode === 229) return;
     if (e.key === "Enter") searchUsersForLogin();
+    if (e.key === "Escape") { e.target.value = ""; showRecentLoginUsers(); }
   });
+  // v3.123.0 Phase 213: 入力即候補表示 (300ms debounce) + 入力なしで最近ユーザー表示 (ユーザー要望)
+  let _loginAsSearchTimer = null;
+  $on("loginAsSearch", "input", (e) => {
+    clearTimeout(_loginAsSearchTimer);
+    const term = e.target.value.trim();
+    _loginAsSearchTimer = setTimeout(() => {
+      if (term.length >= 1) searchUsersForLogin();
+      else showRecentLoginUsers();
+    }, 300);
+  });
+  // 初回 popup 表示時に最近ユーザーを即表示 (storage 読込のみで高速)
+  showRecentLoginUsers();
 
   // 全画面で開く — フッタリンクと最上部 CTA の両方に対応
   const openTool = (e) => {
@@ -522,6 +535,44 @@ async function renderLoginAsHistory() {
       });
     });
   } catch {}
+}
+
+// v3.123.0 Phase 213: 入力なしで最近ログインしたユーザーを表示 (storage から、ネットワーク不要で高速)
+async function showRecentLoginUsers() {
+  const result = document.getElementById("loginAsResult");
+  if (!result) return;
+  try {
+    const data = await chrome.storage.local.get(LOGIN_AS_RECENT_KEY);
+    const list = Array.isArray(data[LOGIN_AS_RECENT_KEY]) ? data[LOGIN_AS_RECENT_KEY] : [];
+    if (!list.length) {
+      result.innerHTML = `<div class="meta" style="padding:10px 8px;text-align:center;line-height:1.7;color:var(--fg-dim);font-size:11px">📋 最近代理ログインしたユーザーはまだいません<br/>🔎 上の検索欄に名前・Username・Email・Alias の一部を入力してください</div>`;
+      return;
+    }
+    const summary = `<div class="meta" style="padding:6px 8px;background:rgba(46,204,113,0.06);border:1px solid rgba(46,204,113,0.2);border-radius:4px;margin-bottom:6px;font-size:10px;color:var(--ok)">📌 最近代理ログインしたユーザー ${list.length} 件 (検索で他のユーザーも検索可能)</div>`;
+    const items = list.map((u) => {
+      const initials = ((u.name || u.username || "?").trim().match(/[A-Za-z一-鿿぀-ゟ゠-ヿ]{1,2}/g) || ["?"]).slice(0, 2).map((s) => s.charAt(0)).join("");
+      const seed = (u.id || "0").substring((u.id || "").length - 6);
+      const hue = parseInt(seed, 36) % 360 || 200;
+      const color = `hsl(${hue}, 60%, 50%)`;
+      return `<div class="user-item recent-user" role="listitem" data-user-id="${escape(u.id)}" data-user-name="${escape(u.name || "")}">
+        <div class="user-avatar" style="background:${color}">${escape(initials)}</div>
+        <div class="user-main">
+          <div class="user-name">${escape(u.name || u.username || "")}</div>
+          <div class="user-sub">${escape(u.username || "")}</div>
+        </div>
+        <div class="user-action">代理ログイン</div>
+      </div>`;
+    }).join("");
+    result.innerHTML = summary + items;
+    // クリックで loginAsUser 呼出
+    result.querySelectorAll(".user-item.recent-user").forEach((el) => {
+      el.addEventListener("click", () => {
+        loginAsUser({ Id: el.dataset.userId, Name: el.dataset.userName });
+      });
+    });
+  } catch (e) {
+    console.log("[popup] showRecentLoginUsers failed:", e);
+  }
 }
 
 async function searchUsersForLogin() {
