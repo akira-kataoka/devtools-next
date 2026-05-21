@@ -432,18 +432,6 @@ details.links-group:not([open]) > a { display: none; }
 .history-item .qbadge.pin { background: rgba(27,150,255,0.25); color: var(--accent); }
 .history-item.pinned { border-color: var(--accent); background: rgba(27,150,255,0.07); }
 
-.whats-new { border: 1px solid var(--accent); background: linear-gradient(180deg, rgba(27,150,255,0.08) 0%, var(--bg2) 100%); }
-.whats-new h2 { color: var(--accent); font-size: 11px; line-height: 1.4; }
-.whats-new-body { font-size: 11px; color: var(--fg-dim); }
-.whats-new-body kbd { background: var(--bg3); padding: var(--sp-hair) 5px; border-radius: var(--r-xs); border: 1px solid var(--line); color: var(--fg); font-family: ui-monospace, Consolas, monospace; font-size: 10px; }
-.whats-new-list { margin: 8px 0 6px; padding: 0 0 0 8px; list-style: none; }
-.whats-new-list li { padding: 2px 0; color: var(--fg); }
-.whats-new-body kbd {
-  background: var(--bg3); color: var(--fg);
-  border: 1px solid var(--line); border-radius: var(--r-xs);
-  padding: 0 5px; font-family: ui-monospace, Consolas, monospace; font-size: 9px;
-}
-
 .toast {
   position: fixed; right: 12px; bottom: 36px;
   background: var(--accent); color: #fff;

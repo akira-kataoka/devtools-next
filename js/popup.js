@@ -277,24 +277,6 @@ function bindEvents() {
       window.close();
     });
   }
-  // whats-new 折りたたみ
-  const toggle = document.getElementById("whatsNewToggle");
-  const body = document.getElementById("whatsNewBody");
-  const arrow = document.getElementById("whatsNewArrow");
-  if (toggle && body && arrow) {
-    chrome.storage.local.get("whatsNewCollapsed", ({ whatsNewCollapsed }) => {
-      if (whatsNewCollapsed) {
-        body.style.display = "none";
-        arrow.textContent = "▶";
-      }
-    });
-    toggle.addEventListener("click", async () => {
-      const collapsed = body.style.display === "none";
-      body.style.display = collapsed ? "" : "none";
-      arrow.textContent = collapsed ? "▼" : "▶";
-      await chrome.storage.local.set({ whatsNewCollapsed: !collapsed });
-    });
-  }
 
   document.querySelectorAll("[data-act]").forEach((btn) => {
     btn.addEventListener("click", () => runQuickAction(btn.dataset.act));
