@@ -3825,21 +3825,28 @@ function recordsTable(records) {
   const cols = new Set();
   records.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
   const headers = Array.from(cols);
+  // v3.113.0 Phase 203: SOQL 結果から Id 列を持つレコードを一括 DELETE 可能化 (Inspector 風の一括操作、ユーザー要望)
+  const hasId = headers.includes("Id") && records.some((r) => /^[a-zA-Z0-9]{15,18}$/.test(String(r.Id || "")));
   // v2.97.0: 全表共通の検索フィルタ (ユーザー要望「ログイン履歴と他の表もソート・検索できるように」)
   // テーブル直上に検索 input を追加、入力で行 textContent.toLowerCase().includes(q) でフィルタ
   const tableId = "tbl_" + Math.random().toString(36).slice(2, 8);
   // v3.7.0: placeholder と件数表示をより業務利用しやすい文言に
+  const deleteBtn = hasId ? `<button class="table-bulk-delete" data-target="${tableId}" title="✓ チェックした行を Salesforce から一括削除します — 削除前に件数と先頭の Id を確認するダイアログが出ます。200 件ずつ Composite API で並列送信、allOrNone=false で部分成功も記録" aria-label="選択した行を一括削除" style="background:rgba(255,107,107,0.15);color:var(--err);border:1px solid var(--err);padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer;font-weight:700">🗑 選択削除 (<span class="table-selected-count" data-target="${tableId}">0</span>)</button>` : "";
   const searchInput = `<div class="table-filter-row" style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11px;color:var(--fg-dim)">
     <span title="🔍 表内検索 — 全列を対象にリアルタイム絞込み、Esc でクリア、各列ヘッダのクリックでソート (昇順→降順→元順)">🔍</span>
     <input class="table-filter-input" data-target="${tableId}" placeholder="🔎 表内を絞り込む… (全列対象 / Esc でクリア / 列ヘッダクリックでソート)" title="全列を対象にリアルタイム絞込みします。Esc でクリア。列ヘッダクリックでソート (昇順→降順→元順)" style="flex:1;background:var(--bg);border:1px solid var(--line);color:var(--fg);padding:4px 8px;border-radius:4px;font-size:11px" />
     <span class="table-filter-count" data-target="${tableId}" title="表示中件数 / 全件数">${records.length} 件</span>
     <button class="table-md-copy" data-target="${tableId}" title="現在の表 (絞込み後) を Markdown テーブル形式でクリップボードへコピー — Slack / Confluence / Notion / GitHub に貼り付け可能" aria-label="表を Markdown としてコピー" style="background:var(--bg3);color:var(--fg);border:1px solid var(--line);padding:3px 8px;border-radius:4px;font-size:10px;cursor:pointer">📋 Markdown</button>
+    ${deleteBtn}
   </div>`;
-  const head = `<tr>${headers.map((h) => `<th class="sortable" data-col="${escape(h)}" title="クリックで ${escape(h)} 列をソート (昇順→降順→元順)">${escape(h)}</th>`).join("")}</tr>`;
+  const selectCol = hasId ? `<th title="チェックでこの行を選択 (一括削除対象)" style="width:28px;text-align:center;cursor:pointer"><input type="checkbox" class="table-select-all" data-target="${tableId}" title="全選択 / 全解除" /></th>` : "";
+  const head = `<tr>${selectCol}${headers.map((h) => `<th class="sortable" data-col="${escape(h)}" title="クリックで ${escape(h)} 列をソート (昇順→降順→元順)">${escape(h)}</th>`).join("")}</tr>`;
   // SF ID 形式判定 (15/18桁 英数字、ただし純数値や URL は除外)
   const isLikelyId = (v) => /^[a-zA-Z0-9]{15,18}$/.test(v) && /[a-zA-Z]/.test(v) && /\d/.test(v);
-  const rows = records.map((r) =>
-    `<tr>${headers.map((h) => {
+  const rows = records.map((r) => {
+    const rid = String(r.Id || "");
+    const selectTd = hasId ? `<td style="text-align:center"><input type="checkbox" class="table-row-select" data-target="${tableId}" data-id="${escape(rid)}" ${/^[a-zA-Z0-9]{15,18}$/.test(rid) ? "" : "disabled"} /></td>` : "";
+    return `<tr data-row-id="${escape(rid)}">${selectTd}${headers.map((h) => {
       const raw = r[h];
       const val = stringify(raw);
       const idCell = isLikelyId(val);
@@ -3867,8 +3874,8 @@ function recordsTable(records) {
       // 長文セルは truncate + 視覚的な切詰インジケータ「…」付き表示 (CSS max-width で省略)
       const cellContent = (val && val.length > 120) ? escape(val.substring(0, 120)) + '<span style="opacity:0.5">…</span>' : escape(val);
       return `<td title="${escape(tip)}" class="${classes}"${dataAttrs}>${cellContent}</td>`;
-    }).join("")}</tr>`
-  ).join("");
+    }).join("")}</tr>`;
+  }).join("");
   // 結果を遅延でセル dblclick + th click ソートリスナーをバインド
   setTimeout(() => {
     document.querySelectorAll("td.cell-copyable:not([data-copy-bound])").forEach((td) => {
@@ -3956,8 +3963,84 @@ function recordsTable(records) {
         }
       });
     });
+    // v3.113.0 Phase 203: 一括削除イベントバインド (全選択 / 個別チェック / 削除ボタン)
+    const updateSelCount = (target) => {
+      const checked = document.querySelectorAll(`.table-row-select[data-target="${target}"]:checked`).length;
+      const ctr = document.querySelector(`.table-selected-count[data-target="${target}"]`);
+      if (ctr) ctr.textContent = checked;
+      const btn = document.querySelector(`.table-bulk-delete[data-target="${target}"]`);
+      if (btn) btn.style.opacity = checked > 0 ? "1" : "0.5";
+    };
+    document.querySelectorAll(".table-select-all:not([data-sel-bound])").forEach((cb) => {
+      cb.dataset.selBound = "true";
+      cb.addEventListener("change", () => {
+        const target = cb.dataset.target;
+        document.querySelectorAll(`.table-row-select[data-target="${target}"]:not([disabled])`).forEach((rc) => { rc.checked = cb.checked; });
+        updateSelCount(target);
+      });
+    });
+    document.querySelectorAll(".table-row-select:not([data-sel-bound])").forEach((cb) => {
+      cb.dataset.selBound = "true";
+      cb.addEventListener("change", () => updateSelCount(cb.dataset.target));
+    });
+    document.querySelectorAll(".table-bulk-delete:not([data-del-bound])").forEach((btn) => {
+      btn.dataset.delBound = "true";
+      btn.style.opacity = "0.5";
+      btn.addEventListener("click", () => doBulkDelete(btn.dataset.target));
+    });
   }, 0);
   return searchInput + `<table id="${tableId}">${head}${rows}</table>`;
+}
+
+// v3.113.0 Phase 203: 一括レコード DELETE (Composite API、200 件チャンク、allOrNone=false で部分成功記録)
+async function doBulkDelete(tableId) {
+  const checked = Array.from(document.querySelectorAll(`.table-row-select[data-target="${tableId}"]:checked`));
+  const ids = checked.map((cb) => cb.dataset.id).filter((v) => /^[a-zA-Z0-9]{15,18}$/.test(v));
+  if (!ids.length) { panelToast("⚠ 削除対象が選択されていません", { kind: "warn" }); return; }
+  // ⚠ 本番組織誤操作防止のため、件数 + 先頭 5 件 ID を出して 2 段階確認
+  const preview = ids.slice(0, 5).join("\n");
+  const more = ids.length > 5 ? `\n…他 ${ids.length - 5} 件` : "";
+  const ok = window.confirm(`⚠ ${ids.length} 件のレコードを削除します\n\n対象 Id (先頭 5 件):\n${preview}${more}\n\nこの操作は取り消せません。続行しますか?`);
+  if (!ok) return;
+  if (!state.host || !state.sid) { panelToast("⚠ セッション未取得です", { kind: "err" }); return; }
+  panelToast(`🗑 削除を開始します (${ids.length} 件)…`, { kind: "loading" });
+  const apiVer = state.apiVersion || "62.0";
+  let success = 0, failed = 0;
+  const errors = [];
+  // 200 件ずつ chunk (Composite API 上限)
+  for (let i = 0; i < ids.length; i += 200) {
+    const chunk = ids.slice(i, i + 200);
+    const path = `/services/data/v${apiVer}/composite/sobjects?ids=${chunk.join(",")}&allOrNone=false`;
+    try {
+      const r = await sfFetch({ host: state.host, sid: state.sid, path, method: "DELETE" });
+      if (Array.isArray(r.data)) {
+        r.data.forEach((res) => {
+          if (res.success) success++;
+          else {
+            failed++;
+            const errMsg = (res.errors && res.errors[0] && res.errors[0].message) || "unknown";
+            errors.push(`${res.id || "?"}: ${errMsg}`);
+          }
+        });
+      } else {
+        failed += chunk.length;
+        errors.push(`Chunk ${i}-${i + chunk.length}: ${JSON.stringify(r.data).substring(0, 200)}`);
+      }
+    } catch (e) {
+      failed += chunk.length;
+      errors.push(`Chunk ${i}-${i + chunk.length}: ${String(e && e.message || e)}`);
+    }
+  }
+  const kind = failed === 0 ? "ok" : (success > 0 ? "warn" : "err");
+  panelToast(`🗑 削除完了: 成功 ${success} 件 / 失敗 ${failed} 件${failed > 0 ? "\n失敗例: " + errors.slice(0, 3).join("; ") : ""}`, { kind });
+  // 削除成功した行をテーブルから視覚的に消す (取消線 + 半透明)
+  checked.forEach((cb, i) => {
+    const tr = cb.closest("tr");
+    if (tr) { tr.style.textDecoration = "line-through"; tr.style.opacity = "0.4"; cb.disabled = true; cb.checked = false; }
+  });
+  // 件数カウンタリセット
+  const ctr = document.querySelector(`.table-selected-count[data-target="${tableId}"]`);
+  if (ctr) ctr.textContent = "0";
 }
 
 // th クリックで in-place ソート (asc → desc → unsort トグル)
