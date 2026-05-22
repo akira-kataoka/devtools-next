@@ -1,5 +1,24 @@
 // 設計書ジェネレータ。Salesforce のメタデータを REST/Tooling API から集めて
 // Markdown / HTML / CSV / TSV / Mermaid で出力する。
+//
+// v3.353.0 Phase 443: ファイルレベル documentation (コード意図 documentation 第 4 弾)
+// ─────────────────────────────────────────
+// 【提供する設計書数】21 種類 (Phase 90-93 で 22 種実装 → Phase 240 で orgSnapshot 統合 → Phase 318 で 21 種確定)
+//   実装一覧は line 181-201 の switch (type) case 文を出典とする (21 case = 21 種類):
+//   Object 系 5: objectDef / fieldSetList / recordTypeList / customSettingList / validationRuleList
+//   セキュリティ系 7: profileList / permsetList / profileDetail / fieldPermMatrix / objectPermMatrix / flsReport / accessControl
+//   自動化系 6: flowList / flowDetail / apexClassList / apexTriggerList / apexDetail / lwcDetail
+//   UI/UX 系 1: appList
+//   設計図系 1: erDiagram (Mermaid)
+//   統合系 1: orgSnapshot (組織全体スナップショット、Phase 240 で追加)
+//
+// 【出力形式】Markdown / HTML (panel/tool 表示) / CSV (Excel) / TSV (clipboard) / Mermaid (erDiagram) — formatOutput() で変換 (line 2630)
+//
+// 【統一表紙】各設計書冒頭に「タイトル/対象/組織/作成者/日時/Ver/改訂」 (Phase 90-93 で導入、プロジェクト成果物品質)
+//
+// 【統一エラー format】HTTP ステータス必須 (`HTTP NNN ctx: body`) — panel.js displayApiError の `/HTTP \d{3}/` 正規表現互換
+//
+// 【設計書一覧の出典】generateDesign() の switch (type) 分岐 (line 181-201) — case 数 = 21 種類確定
 
 import { sfFetch, runSoql } from "./sf-api.js";
 
