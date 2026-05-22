@@ -1,6 +1,11 @@
 // Salesforce REST/Tooling API クライアント。chrome.cookies で sid を取得し、Authorization: Bearer で叩く。
 // background.js / popup.js / devtools panel から共通利用するため module で公開。
 
+// v3.336.0 Phase 426: SF_DOMAINS は isSalesforceHost 判定用 6 ドメイン (endsWith マッチ)。
+//                     manifest.json host_permissions 9 ドメイン (Phase 424 で documentation) との差は意図的:
+//                     ・SF_DOMAINS は「SF 組織として認識する」厳格判定 — sid 取得・API 呼出の対象
+//                     ・host_permissions は「content_script を注入する」寛容判定 — salesforce-setup / -experience も対象
+//                     my.salesforce.com で sandbox.my.salesforce.com も endsWith マッチで判定される
 export const SF_DOMAINS = [
   "salesforce.com",
   "force.com",
