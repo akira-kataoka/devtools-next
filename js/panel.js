@@ -7623,16 +7623,18 @@ function adminUpdateModalBody(html) {
   if (body) body.innerHTML = html;
 }
 
+// v3.131.0 Phase 220: フォールバック付きクエリ
+// v3.437.0 Phase 527: 3 段階フォールバックに拡張 (MethodDefinition 不在組織 / 古い API 対応)
 async function doAdminMfa() {
   if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
   adminSetCardLoading("adminMfaResult", "MFA 設定状況を取得中…");
-  // v3.131.0 Phase 220: フォールバック付きクエリ
+  // 段階 1: フル (User リレーション + MethodDefinition)
   let r = await runSoql({
     host: state.host, sid: state.sid, apiVersion: state.apiVersion,
     soql: `SELECT UserId, User.Name, User.Username, User.Profile.Name, MethodDefinition FROM TwoFactorMethodsInfo ORDER BY User.Name LIMIT 500`,
   });
   if (!r.ok) {
-    // フォールバック 1: User リレーション無しで再試行
+    // 段階 2: User リレーション無しで再試行 (MethodDefinition は維持)
     const r2 = await runSoql({
       host: state.host, sid: state.sid, apiVersion: state.apiVersion,
       soql: `SELECT UserId, MethodDefinition FROM TwoFactorMethodsInfo LIMIT 500`,
@@ -7664,21 +7666,60 @@ async function doAdminMfa() {
         },
       };
     } else {
-      // 両方失敗 → 詳細説明
-      const el = document.getElementById("adminMfaResult");
-      const errBody = r.data && r.data[0] && r.data[0].message ? r.data[0].message : (typeof r.data === "string" ? r.data : JSON.stringify(r.data || {}));
-      if (el) el.innerHTML = `<div class="admin-card-summary admin-card-warn">⚠ TwoFactorMethodsInfo を取得できませんでした (HTTP ${r.status})</div>
-        <div class="meta" style="padding:8px;font-size:11px;color:var(--fg-dim);line-height:1.6">
-          ${escape(String(errBody)).substring(0, 240)}<br><br>
-          <strong>原因の可能性:</strong><br>
-          • TwoFactorMethodsInfo は Identity Verification 機能を有効化した組織のみ参照可能 (Spring '20 以降)<br>
-          • API バージョン 47.0 未満では存在しない<br>
-          • 「Manage Multi-Factor Authentication」権限が必要<br><br>
-          <strong>代替手段:</strong><br>
-          • Setup → Identity → Identity Verification History でユーザー別 MFA 利用履歴確認<br>
-          • SOQL タブ「🛡️ MFA 設定状況」テンプレを Tooling API で実行
-        </div>`;
-      return;
+      // 段階 3: ultra-minimal — Id + UserId のみ (MethodDefinition 不在組織対応、Phase 527)
+      const r3 = await runSoql({
+        host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+        soql: `SELECT Id, UserId FROM TwoFactorMethodsInfo LIMIT 500`,
+      });
+      if (r3.ok) {
+        // User を別途引く (段階 2 と同じ logic)
+        const userIds = [...new Set((r3.data.records || []).map((rec) => rec.UserId).filter(Boolean))];
+        const userMap = new Map();
+        if (userIds.length) {
+          const ids = userIds.map((i) => `'${i}'`).join(",");
+          const userR = await runSoql({
+            host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+            soql: `SELECT Id, Name, Username, Profile.Name FROM User WHERE Id IN (${ids})`,
+          });
+          if (userR.ok) (userR.data.records || []).forEach((u) => userMap.set(u.Id, u));
+        }
+        r = {
+          ok: true,
+          data: {
+            records: (r3.data.records || []).map((rec) => ({
+              UserId: rec.UserId,
+              MethodDefinition: "(取得不可)", // 段階 3 では MethodDefinition 不在のため固定文字列
+              User: userMap.get(rec.UserId) ? {
+                Name: userMap.get(rec.UserId).Name,
+                Username: userMap.get(rec.UserId).Username,
+                Profile: userMap.get(rec.UserId).Profile,
+              } : null,
+            })),
+          },
+        };
+        // 段階 3 で取得した場合は警告表示用フラグ
+        r._degraded = true;
+      } else {
+        // 全 3 段階失敗 → 詳細説明
+        const el = document.getElementById("adminMfaResult");
+        const errBody = r.data && r.data[0] && r.data[0].message ? r.data[0].message : (typeof r.data === "string" ? r.data : JSON.stringify(r.data || {}));
+        if (el) el.innerHTML = `<div class="admin-card-summary admin-card-warn">⚠ TwoFactorMethodsInfo を取得できませんでした (HTTP ${r.status})</div>
+          <div class="meta" style="padding:8px;font-size:11px;color:var(--fg-dim);line-height:1.6">
+            ${escape(String(errBody)).substring(0, 240)}<br><br>
+            <strong>3 段階フォールバック全て失敗 (Phase 527):</strong><br>
+            • 段階 1: フル (User + MethodDefinition)<br>
+            • 段階 2: UserId + MethodDefinition のみ<br>
+            • 段階 3: Id + UserId のみ (ultra-minimal)<br><br>
+            <strong>原因の可能性:</strong><br>
+            • TwoFactorMethodsInfo は Identity Verification 機能を有効化した組織のみ参照可能 (Spring '20 以降)<br>
+            • API バージョン 47.0 未満では存在しない<br>
+            • 「Manage Multi-Factor Authentication」権限が必要<br><br>
+            <strong>代替手段:</strong><br>
+            • Setup → Identity → Identity Verification History でユーザー別 MFA 利用履歴確認<br>
+            • SOQL タブ「🛡️ MFA 設定状況」テンプレを Tooling API で実行
+          </div>`;
+        return;
+      }
     }
   }
   const recs = (r.data && r.data.records) || [];
@@ -7710,12 +7751,16 @@ async function doAdminMfa() {
     "登録方式": u.methods.join(", "),
   }));
   adminState.mfa = { byMethod, userRows };
+  // v3.437.0 Phase 527: 段階 3 (ultra-minimal) で取得した場合の degraded 警告
+  const degradedWarn = r._degraded
+    ? `<div class="admin-card-summary admin-card-warn" style="margin-bottom:6px">⚠ 制限モード: MethodDefinition フィールドが取得できなかったため、方式別集計は不可。ユーザー単位のカウントのみ表示します (Phase 527 段階 3 フォールバック)</div>`
+    : "";
   const summary = `<div class="admin-card-summary">MFA 設定済 <strong>${userMfa.size}</strong> ユーザー / 方式 <strong>${Object.keys(byMethod).length}</strong> 種類 / 登録レコード総数 ${recs.length} 件</div>`;
   const methodSection = `<div class="admin-card-subtitle">方式別集計</div>` + adminTableHtml(["方式", "件数", "説明"], methodRows, { compact: true });
   const userSection = userRows.length
     ? `<div class="admin-card-subtitle" style="margin-top:8px">ユーザー別 MFA 設定 (先頭 100 名)</div>` + adminTableHtml(["氏名", "ユーザ名", "プロファイル", "登録方式"], userRows, { compact: true })
     : "";
-  document.getElementById("adminMfaResult").innerHTML = summary + methodSection + userSection;
+  document.getElementById("adminMfaResult").innerHTML = degradedWarn + summary + methodSection + userSection;
 }
 
 async function doAdminPackages() {
