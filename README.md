@@ -123,7 +123,7 @@
 >   - **🔐 セキュリティ透明性 (Phase 423-424 で確立)**: SECURITY.md に「9 permissions の最小権限原則 + 9 host_permissions 公式 SF ドメイン根拠」表で明示 — **他拡張は permissions を匿名要求で利用者を不安にさせるが、我々は社内 IT セキュリティ部門に説明可能なレベルで透明化**
 >   - **💬 コード意図 documentation 第 1+2+3 弾 16 件 (Phase 405-427)**: state type-discoverable / magic number 意図 (履歴 5 件 / 最近候補 10 件 / API v62.0 / 自動アップデート 30 秒 / SOQL ガバナ 50,000 行) / **cross reference pattern 3 段階 4 件** (同 ファイル内 1 + 2 ファイル間 2 + 3 way 1) / **設計判断 documentation 6 件** (picker.js / panel.js RECENT_KEY 区別 / chrome.storage.local 採用理由 / 9 permissions 根拠 / 9 host_permissions ドメイン根拠 / SF_DOMAINS vs host_permissions 厳格 vs 寛容 / content_scripts matches 7 vs 9 最小化) — 「動く + 意図が読める」code level 磨き + セキュリティ透明性確保
 
-## v3 系の主要機能 (v2.71 → v3.338 / Phase 420 で v3 系 330 連続リリース達成、累計まとめ)
+## v3 系の主要機能 (v2.71 → v3.340 / Phase 430 で v3 系 340 連続リリース達成、累計まとめ)
 
 | カテゴリ | 機能 / 改善 |
 |---|---|
