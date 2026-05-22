@@ -1,4 +1,51 @@
 // DevTools パネル本体。inspectedWindow から URL を取って sid を引く。
+//
+// v3.358.0 Phase 448: ファイルレベル documentation (コード意図 documentation 第 4 弾 / 第 6 ファイル目、最終ファイル 🎊)
+// ─────────────────────────────────────────
+// 【ファイルの役割】開発者モード 💻 の動作担当 — html/panel.html (DevTools 内) + html/tool.html (フルスクリーン) の両方を駆動 (7000+ 行)
+//   ・DevTools 内: chrome.devtools.inspectedWindow から URL 取得 → sid 引き
+//   ・フルスクリーン: tab.url から SF host 検出 → ?view=NNN クエリで初期 view 切替
+//   ・URL クエリ統一 12 種 (Phase 351 競合差別化 6 ポイント目) で Slack/Notion へリンク共有可能
+//
+// 【15 view 一覧】(panel.html data-view 属性 Grep で実装検証済、Phase 443 教訓継続)
+//   ① home (line 33/64): ホーム + 5 大基本指針 + home-tips (差別化 7 ポイント、Phase 434)
+//   ② inspector (line 38/209): レコード詳細 + inline edit (Phase 292、PROD 確認ダイアログ込み)
+//   ③ search (line 39/661): SOSL グローバル検索 (Team G 完了)
+//   ④ soql (line 40/141): SOQL 実行 + 履歴 5 件 + Draft 永続化 + オートコンプリート + Tooling API
+//   ⑤ dataexport (line 41/247): レコード抽出 (Team U2 完了、SOQL 自由入力 + フィールド選択モード統合)
+//   ⑥ apex (line 46/356): Apex 匿名実行 + 20 templates × 5 カテゴリ optgroup (Phase 351 競合差別化 2 ポイント目)
+//   ⑦ apiurl (line 47/293): API URL ビルダー (REST GET 既定)
+//   ⑧ metadata (line 48/489): メタデータ一覧 (Tooling API、CustomObject/ApexClass/Flow/Profile/PermSet 等 15+ type)
+//   ⑨ design (line 49/583): 設計書 21 種類生成 (Phase 443 design-docs.js documentation 21 種類 6 系統 cross reference)
+//   ⑩ admin (line 54/696): admin ダッシュボード 7 カード (Phase 219-220 + Team U 完了)
+//   ⑪ limits (line 55/564): Limits ダッシュボード (50+ 項目、sticky/ピン/desc tooltip、Team L 完了)
+//   ⑫ logs (line 56/526): Apex Debug Log 一覧 + 詳細
+//   ⑬ login (line 57/535): ログイン履歴 (Phase 219 で WHERE filterable=false 修正、Team R 完了)
+//   ⑭ describe (line 419): オブジェクト構造 describe (Phase 276 で全画面 ?view=describe&obj= 経路追加)
+//   ⑮ rest (line 430): REST API ビュー (Team R 完了、POST/PATCH/DELETE は PROD 確認 + auto-fire 禁止)
+//
+// 【依存マップ】14 export from 3 files (Phase 444 / 443 / 446 documentation と cross reference)
+//   ・sf-api.js (10 export): isSalesforceHost, toApiHost, getSessionId, parseOrgIdFromSid, runSoql, sfFetch, getLimits, recordsToCsv, to18CharId, getUserInfo
+//   ・design-docs.js (2 export): generateDesign, markdownToHtml
+//   ・picker.js (2 export): showPicker, invalidatePickerCache
+//
+// 【PROD 2 段階防御 6 経路】(Phase 351 競合差別化 4 ポイント目、Phase 394 で sandwich format 統一)
+//   ① Apex DML / ② REST POST,PATCH,DELETE / ③ SOQL Bulk DELETE / ④ SOQL Bulk DML / ⑤ Inspector PATCH / ⑥ admin 凍結解除
+//   いずれも prodFooter 変数 pattern (Phase 403 で 6 経路統一)
+//
+// 【既存コード意図 documentation】(第 1-3 弾、line 内に Phase 番号で記載済)
+//   ・Phase 405: state field 初期定義 (userId/isProd/envLabel/lastDescribe)
+//   ・Phase 408/417: apiVersion = "62.0" cross reference (popup.js と双方向)
+//   ・Phase 412/413: SOQL 50000 ガバナ上限 cross reference
+//   ・Phase 414/415: SHARED_KEY / env 判定 cross reference (3 way)
+//
+// 【担当チーム残タスク完了状況】(2026-05-20 ユーザー指示「新機能追加停止」前に全完了)
+//   Team L (Limits) ✅ / Team R (REST) ✅ / Team G (グローバル検索 SOSL) ✅ / Team H (datalist 最近候補) ✅
+//   Team U2 (レコード抽出マージ) ✅ / Team D (設計書 5 種強化) ✅ / Team U (admin 7 カード) ✅
+//
+// 【🎊 第 4 弾「ファイルレベル documentation」完成記念】Phase 443-448 で 6 ファイル全完了:
+//   design-docs.js (Phase 443) / sf-api.js (Phase 444) / background.js (Phase 445) / picker.js (Phase 446) / popup.js (Phase 447) / **panel.js (Phase 448、本ファイル)**
+
 import {
   isSalesforceHost, toApiHost, getSessionId, parseOrgIdFromSid,
   runSoql, sfFetch, getLimits, recordsToCsv, to18CharId, getUserInfo,
