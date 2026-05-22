@@ -28,6 +28,24 @@ DevToolsNext は Salesforce セッション (`sid` Cookie) を扱うため、セ
 - **chrome.storage には sid を保存しない** (拡張再起動・タブ再読込で再取得)
 - popup の `⟳` ボタンで明示的に再取得可能
 
+### 🌐 host_permissions 9 ドメイン一覧 + 根拠 (Phase 424 で documentation 化)
+
+manifest.json で要求する 9 host_permissions の各根拠 (Salesforce の多様な domain pattern):
+
+| ドメイン | 用途 |
+|---|---|
+| `*.salesforce.com` | 標準 Production 組織のメイン domain |
+| `*.force.com` | カスタムドメイン (My Domain) を使う組織 |
+| `*.lightning.force.com` | Lightning Experience 組織の UI domain |
+| `*.my.salesforce.com` | API endpoint (My Domain 経由 REST/Tooling) |
+| `*.cloudforce.com` | 旧 Salesforce ドメイン (一部組織で残存) |
+| `*.salesforce-setup.com` | Setup ページ専用 domain (Lightning Setup) |
+| `*.salesforce-experience.com` | Experience Cloud (旧 Community Cloud) 専用 |
+| `*.visualforce.com` | Visualforce ページの iframe content |
+| `*.sandbox.my.salesforce.com` | Sandbox 組織の My Domain 経由 API |
+
+**最小権限原則**: Salesforce が提供する公式 domain のみに限定。外部サーバ (Google Analytics / 解析サービス等) への通信は **一切なし**。各 domain は Salesforce 組織の正規利用形態 (Production / Sandbox / Experience Cloud / Lightning / Setup) に対応。
+
 ### 🔐 拡張機能 permissions 一覧 + 根拠 (Phase 423 で documentation 化)
 
 manifest.json で要求する 9 permissions の各根拠 (最小権限原則):
