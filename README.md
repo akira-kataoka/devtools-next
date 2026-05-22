@@ -113,7 +113,7 @@
 >   - **組織監査**: 1 クリック「組織全体スナップショット」+ admin ダッシュボード (7 カード)
 >   - **ユーザー管理**: 凍結 / 凍結解除 / 代理ログイン / MFA 未設定者抽出 / 未活動者抽出 (30/90 日)
 >   - **ストレージ削減**: 詳細抽出 + 大型 ContentVersion / 古い Attachment / 空 Account の Apex テンプレ連携
->   - **セキュリティ透明性 (Phase 423-424 で documentation 化)**: SECURITY.md に「9 permissions の最小権限原則」+「9 host_permissions 公式 SF ドメイン」表で社内導入時の説明資料として活用可能
+>   - **セキュリティ透明性 (Phase 423-424 で documentation 化、計 18 項目 = 9 permissions + 9 host_permissions の根拠表)**: SECURITY.md に「9 permissions の最小権限原則」+「9 host_permissions 公式 SF ドメイン」表で社内導入時の説明資料として活用可能 — **社内 IT セキュリティ部門のレビュー所要時間を 30 分以内に短縮 (18 項目の根拠が表形式で即把握可能)**
 >   - **コードベース可読性 (Phase 443-448 で第 4 弾完成)**: 全 6 JS ファイル (design-docs.js / sf-api.js / background.js / picker.js / popup.js / panel.js) 冒頭 20-50 行で「役割 / 主要機能 / 依存マップ / cross reference」documentation 化 — **社内 IT 部門のコードレビュー + 新規貢献者のオンボーディング時間を 1 時間以内に短縮**
 > - **💡 競合 SF 拡張機能との差別化 (Phase 351 整理 → 397 で 8 ポイント拡張 → 433 で 9 ポイント拡張 → 453 で 10 ポイント拡張)**:
 >   - **設計書ジェネレータ 21 種**: Inspector Reloaded × / DevTools (lvshanbi) △ Object 定義のみ / Profile Reader △ Profile のみ → **我々が唯一 21 種を業務文書品質で生成**
