@@ -1,4 +1,28 @@
 // popup.js – tab routing, SF info loading, SOQL/REST/ID utilities.
+//
+// v3.357.0 Phase 447: ファイルレベル documentation (コード意図 documentation 第 4 弾 / 第 5 ファイル目、Phase 443-446 design-docs.js / sf-api.js / background.js / picker.js に続く)
+// ─────────────────────────────────────────
+// 【ファイルの役割】管理者モード (⚙️ popup、popup.html の動作ロジック)
+//   manifest.json action.default_popup = "html/popup.html" でツールバーアイコンクリック時に開く 360x600px の小窓
+//   フル機能は panel/tool に遷移する設計 — popup は管理者の「エントリポイント」を担う
+//
+// 【主要機能 7 種】(Grep で実装検証済 — Phase 443 hallucination 教訓継続)
+//   ① タブルーティング (bindTabs line 246、2 タブ: 🏠 ホーム + 🔗 便利リンク、popup.html line 28-29)
+//   ② SF 情報ロード (refreshSession line 358、getActiveSfTab → getSessionId → getUserInfo → state 永続化)
+//   ③ 代理ログイン (searchUsersForLogin line 624、Login as User の URL 構築 line 701-708、サンドボックス専用フロー)
+//   ④ クイックアクション (runQuickAction line 506、SOQL/admin/Limits 等への panel/tool 遷移)
+//   ⑤ 設定エクスポート/インポート (exportSettings line 84 / importSettings line 121 / showSettingsDialog line 175、JSON 形式で chrome.storage.local の 25+ キー一括 export)
+//   ⑥ 便利リンク (renderLinks line 725、Setup / Object Manager / Profile / Limits 等への外部リンク群)
+//   ⑦ admin ダッシュボード遷移 (btnOpenAdmin line 288、`/?view=admin` で panel に遷移、7 カード表示)
+//
+// 【依存】sf-api.js から 6 export import (Phase 444 sf-api.js 14 export 7 カテゴリ documentation と cross reference)
+//   ・getActiveSfTab / getSessionId / parseOrgIdFromSid / toApiHost / runSoql / getUserInfo
+//
+// 【非依存】design-docs.js / picker.js は import しない (popup は設計書生成 + Picker UI を持たない設計、それらは panel/tool 担当)
+//
+// 【dead code 削除履歴】Phase 177 で sfFetch / to18CharId / lookupPrefix / recordsToCsv を import から削除 (v2.78.0 / v2.80.0 で popup の SOQL / ID 解析 / API タブ UI が撤去されたため dead 化)
+//
+// 【default API version】v62.0 (panel.js と同期、Phase 408 / 417 cross reference、line 21)
 
 // v3.87.0: Phase 177 — dead code 削除 (sfFetch / to18CharId / lookupPrefix / recordsToCsv 撤去)
 // これらは popup の SOQL/ID 解析/API タブで使われていたが v2.78.0 と v2.80.0 で UI が撤去され dead 化していた
