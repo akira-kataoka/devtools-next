@@ -1,5 +1,28 @@
 // Salesforce REST/Tooling API クライアント。chrome.cookies で sid を取得し、Authorization: Bearer で叩く。
 // background.js / popup.js / devtools panel から共通利用するため module で公開。
+//
+// v3.354.0 Phase 444: ファイルレベル documentation (コード意図 documentation 第 4 弾 / 第 2 ファイル目、Phase 443 design-docs.js に続く)
+// ─────────────────────────────────────────
+// 【公開 export 14 件】(Grep で実装と整合性検証済 — Phase 443 hallucination 教訓)
+//   定数 2: SF_DOMAINS (6 ドメイン、line 9) / KEY_PREFIX_MAP (Key Prefix → API Name、line 240)
+//   タブ判定 2: getActiveSfTab (3 段階フォールバック、line 22) / isSalesforceHost (endsWith 厳格判定、line 43)
+//   ホスト正規化 1: toApiHost (Lightning → my.salesforce.com、line 52)
+//   認証 2: getSessionId (chrome.cookies で sid 取得、line 68) / parseOrgIdFromSid (sid 先頭 15 文字、line 134)
+//   API 呼出 4: sfFetch (汎用 REST/Tooling、Bearer 認証、line 142) / runSoql (SOQL 実行、line 171) /
+//               getUserInfo (UserInfo API、line 179) / getLimits (Limits API、line 214)
+//   ID 変換 1: to18CharId (15→18 文字 ID 変換、line 222) / lookupPrefix (3 文字 prefix→object、line 252)
+//   CSV 出力 1: recordsToCsv (SOQL 結果 → CSV、line 262)
+//
+// 【認証方式】Cookies permission + Bearer token (Cookie sid を Authorization header で再送、Phase 423 SECURITY.md 9 permissions で documentation)
+//
+// 【default API version】v62.0 (Winter '26、Phase 408 で documentation、panel.js / popup.js state.apiVersion と cross reference)
+//
+// 【SF_DOMAINS 6 vs host_permissions 9 vs content_scripts matches 7 の差】Phase 426/427 で SECURITY.md に documentation
+//   ・SF_DOMAINS 6 = isSalesforceHost 厳格判定 (sid 取得・API 呼出の対象)
+//   ・host_permissions 9 = content_script 注入用寛容判定 (salesforce-setup / -experience / cloudforce / sandbox.my も対象)
+//   ・content_scripts matches 7 = 9 から cloudforce/sandbox.my を除外 (最小化)
+//
+// 【統一エラー format】sfFetch / runSoql は status / body を例外 message に含める (panel.js displayApiError 正規表現 `/HTTP \d{3}/` 互換)
 
 // v3.336.0 Phase 426: SF_DOMAINS は isSalesforceHost 判定用 6 ドメイン (endsWith マッチ)。
 //                     manifest.json host_permissions 9 ドメイン (Phase 424 で documentation) との差は意図的:
