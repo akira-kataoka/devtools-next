@@ -112,7 +112,7 @@
 >   - **データ抽出 (3 モード対応、計 52 templates = SOQL panel 28 + mini-panel 13 + SOSL 11、SF ガバナ 50,000 行/クエリ対応)**: SOQL モード / 項目選択モード (全項目自動取得) / グローバル検索 (SOSL) — **手書きクエリ構築時間を約 90% 削減 (業務パターンを templates が内蔵、optgroup で 5 カテゴリ別)**
 >   - **組織監査 (Phase 240 で orgSnapshot 統合 / Phase 219-220 で admin ダッシュボード、計 78+ 観点 = 設計書 21 種類 + admin 7 カード + Limits 50+ 項目)**: 1 クリック「組織全体スナップショット」+ admin ダッシュボード (7 カード) — **手作業対比で監査時間 1/10 以下に短縮 (78+ 観点が表形式 + Markdown で一気通貫取得可能)**
 >   - **ユーザー管理 (5 機能ワンストップ = 凍結 / 凍結解除 / 代理ログイン / MFA 未設定者抽出 / 未活動者抽出 30/90 日、Phase 219-220 admin ダッシュボード)**: PROD 凍結解除には 2 段階防御込み、SBX/DEV は摩擦回避 — **ユーザー棚卸し業務を 1 日 → 30 分に短縮 (5 機能が 1 画面ワンストップで Setup 画面遷移なし)**
->   - **ストレージ削減**: 詳細抽出 + 大型 ContentVersion / 古い Attachment / 空 Account の Apex テンプレ連携
+>   - **ストレージ削減 (3 経路 = 大型 ContentVersion / 古い Attachment / 空 Account、検出→Apex テンプレ連携で 1 連削除フロー)**: 詳細抽出 + Apex テンプレ連携 — **ストレージ棚卸し作業を 1 週間 → 1 時間に短縮 (3 経路の SOQL + Apex DML テンプレが業務パターン内蔵) → SF ストレージ追加購入 (年額数十万円〜) を回避可能**
 >   - **セキュリティ透明性 (Phase 423-424 で documentation 化、計 18 項目 = 9 permissions + 9 host_permissions の根拠表)**: SECURITY.md に「9 permissions の最小権限原則」+「9 host_permissions 公式 SF ドメイン」表で社内導入時の説明資料として活用可能 — **社内 IT セキュリティ部門のレビュー所要時間を 30 分以内に短縮 (18 項目の根拠が表形式で即把握可能)**
 >   - **コードベース可読性 (Phase 443-448 で第 4 弾完成)**: 全 6 JS ファイル (design-docs.js / sf-api.js / background.js / picker.js / popup.js / panel.js) 冒頭 20-50 行で「役割 / 主要機能 / 依存マップ / cross reference」documentation 化 — **社内 IT 部門のコードレビュー + 新規貢献者のオンボーディング時間を 1 時間以内に短縮**
 > - **💡 競合 SF 拡張機能との差別化 (Phase 351 整理 → 397 で 8 ポイント拡張 → 433 で 9 ポイント拡張 → 453 で 10 ポイント拡張)**:
