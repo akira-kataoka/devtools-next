@@ -21,6 +21,10 @@ const FAVORITES = {
 };
 
 const RECENT_KEY = "sfdtPickerRecent"; // chrome.storage.local — { [orgId|kind]: [value, ...最大10件] }
+// v3.331.0 Phase 421: panel.js RECENT_OBJ_KEY (sfdtRecentObjects) / RECENT_RECORD_ID_KEY (sfdtRecentRecordIds) とは
+//                     **別管理** (kind 別 + Org 別分離保存)。Picker は kind = sobject/field/profile/permset/apexClass/flow/user の汎用、
+//                     panel.js RECENT_OBJ_KEY は datalist 入力補助専用 (Phase 223)。
+//                     共通点: 最大 10 件保持 (Phase 407 で「履歴 5 件と異なる最近候補は 10 件」と documentation 化)。
 // Org 別管理: showPicker 呼出時に orgKey を渡し、orgKey|kind で分離保存
 function _recentMapKey(orgKey, kind) { return `${orgKey || "default"}|${kind}`; }
 async function getRecent(kind, orgKey) {
