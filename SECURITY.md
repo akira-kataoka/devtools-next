@@ -46,6 +46,11 @@ manifest.json で要求する 9 host_permissions の各根拠 (Salesforce の多
 
 **最小権限原則**: Salesforce が提供する公式 domain のみに限定。外部サーバ (Google Analytics / 解析サービス等) への通信は **一切なし**。各 domain は Salesforce 組織の正規利用形態 (Production / Sandbox / Experience Cloud / Lightning / Setup) に対応。
 
+**content_scripts matches との差 (Phase 427 で documentation)**: manifest.json `content_scripts.matches` は 7 ドメイン (上記 9 から `*.cloudforce.com` と `*.sandbox.my.salesforce.com` を除外):
+- `cloudforce.com`: 旧 SF domain、新規組織はほぼ未使用 → mini-panel 注入対象外で OK
+- `sandbox.my.salesforce.com`: `*.my.salesforce.com` の matches で含まれるため明示不要
+- → content_scripts matches **7 ドメイン** = host_permissions **9 ドメイン** - 2 (実質的に上位 wildcard が含む) の最小化
+
 ### 🔐 拡張機能 permissions 一覧 + 根拠 (Phase 423 で documentation 化)
 
 manifest.json で要求する 9 permissions の各根拠 (最小権限原則):
