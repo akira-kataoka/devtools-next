@@ -1,6 +1,6 @@
 # 🤝 DevToolsNext への貢献ガイド
 
-このプロジェクトは **自律改修ループ** で継続的に磨き上げられている Salesforce 開発者向け Chrome / Edge 拡張です。Phase 1-440 の累積で **550+ リリース** (v3 系 350 連続リリース、Phase 440 マイルストーン達成 + 磨きシリーズ 90 サイクル進行中) を重ねてきました。新規貢献者を歓迎します。
+このプロジェクトは **自律改修ループ** で継続的に磨き上げられている Salesforce 開発者向け Chrome / Edge 拡張です。Phase 1-450 の累積で **560+ リリース** (v3 系 360 連続リリース、Phase 450 マイルストーン達成 + 磨きシリーズ 100 サイクル達成 + 第 4 弾「ファイルレベル documentation」6 JS ファイル完成) を重ねてきました。新規貢献者を歓迎します。
 
 ---
 
@@ -41,7 +41,7 @@ cd devtools-next
 |---|---|
 | `manifest.json` | `"version"` を `3.X.Y` の三桁形式で bump |
 | `VERSION.txt` | 同じ `3.X.Y` を改行付きで記載 |
-| `README.md` | **小規模 PR** は `## 更新履歴` の先頭に `- **v3.X.Y (YYYY-MM-DD HH:mm)** — 🎨絵文字 Phase N: タイトル: 詳細` を追記。**自律改修ループの累積 Phase** (v3 系 Phase 100+ 以降) は冒頭の「Phase NNN-NNN ブロック」「累計実績 (Phase 440 時点)」を更新する運用で代替 — 大量 Phase 分の `## 更新履歴` 追記は意図的に省略 (累計整理優先) |
+| `README.md` | **小規模 PR** は `## 更新履歴` の先頭に `- **v3.X.Y (YYYY-MM-DD HH:mm)** — 🎨絵文字 Phase N: タイトル: 詳細` を追記。**自律改修ループの累積 Phase** (v3 系 Phase 100+ 以降) は冒頭の「Phase NNN-NNN ブロック」「累計実績 (Phase 450 時点)」を更新する運用で代替 — 大量 Phase 分の `## 更新履歴` 追記は意図的に省略 (累計整理優先) |
 
 > **CI による自動チェック**: [.github/workflows/version-check.yml](.github/workflows/version-check.yml) が `manifest.json` と `VERSION.txt` の差異を検出します。整合性を必ず保ってください。
 

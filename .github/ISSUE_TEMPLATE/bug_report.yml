@@ -13,7 +13,7 @@ body:
     attributes:
       label: 拡張バージョン
       description: popup / panel ヘッダの `vX.Y.Z` バッジを記載
-      placeholder: 例 v3.350.0
+      placeholder: 例 v3.360.0
     validations:
       required: true
 
