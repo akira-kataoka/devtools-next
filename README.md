@@ -109,7 +109,7 @@
 > - **chrome.storage 永続化キー**: **25+ 種** (履歴系: SOQL / Apex / REST / Inspector / Picker / Login as User / 検索ワード + 最近ユーザー、Draft 系: SOQL / Apex / REST body、UI 状態系: 最終 view / Limits ピン + ソート / Tooling チェック / メタデータ type / Apex Debug log / popup 便利リンク折りたたみ / ナビ折りたたみ / sideCollapsed / whatsNewCollapsed、最近候補系: オブジェクト / レコード ID / view / 検索ワード / 設計書「対象」/ 直前生成設計書 / 過去 5 件設計書履歴、その他: KnownVersion 等 — Phase 358 で再 count 18→25+ 実数化、**Phase 422: `chrome.storage.local` 採用理由 = (1) Salesforce 組織情報 / SOQL 履歴 / Apex draft 等は端末ローカル管理が業務上自然 (機密データを Google Drive sync しない) (2) `sync` の 102,400 byte / 8,192 byte per item 制限を回避 (3) クロスデバイス同期不要なので `local` で十分**)
 > - **CSS デザイントークン**: 17 種 (スペーシング 10 種: --sp-0 〜 --sp-6 + --sp-hair + --sp-tag-y + --sp-card-y / 角丸 7 種: --r-xs + --r-sm + --r-tag + --r-md + --r-lg + --r-xl + --r-pill)、累計 170+ 箇所トークン化 (Phase 361 で「18 種」「--sp-7」表記を panel.css 実定義と照合・修正)
 > - **業務シナリオ完全カバー (Phase 432 で 4 → 5 シナリオ拡張 [セキュリティ透明性] / Phase 452 で 5 → 6 シナリオ拡張 [コードベース可読性])**:
->   - **データ抽出**: SOQL モード / 項目選択モード / グローバル検索 (SOSL)
+>   - **データ抽出 (3 モード対応、計 52 templates = SOQL panel 28 + mini-panel 13 + SOSL 11、SF ガバナ 50,000 行/クエリ対応)**: SOQL モード / 項目選択モード (全項目自動取得) / グローバル検索 (SOSL) — **手書きクエリ構築時間を約 90% 削減 (業務パターンを templates が内蔵、optgroup で 5 カテゴリ別)**
 >   - **組織監査 (Phase 240 で orgSnapshot 統合 / Phase 219-220 で admin ダッシュボード、計 78+ 観点 = 設計書 21 種類 + admin 7 カード + Limits 50+ 項目)**: 1 クリック「組織全体スナップショット」+ admin ダッシュボード (7 カード) — **手作業対比で監査時間 1/10 以下に短縮 (78+ 観点が表形式 + Markdown で一気通貫取得可能)**
 >   - **ユーザー管理**: 凍結 / 凍結解除 / 代理ログイン / MFA 未設定者抽出 / 未活動者抽出 (30/90 日)
 >   - **ストレージ削減**: 詳細抽出 + 大型 ContentVersion / 古い Attachment / 空 Account の Apex テンプレ連携
