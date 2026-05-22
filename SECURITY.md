@@ -28,7 +28,7 @@ DevToolsNext は Salesforce セッション (`sid` Cookie) を扱うため、セ
 - **chrome.storage には sid を保存しない** (拡張再起動・タブ再読込で再取得)
 - popup の `⟳` ボタンで明示的に再取得可能
 
-### 🌐 host_permissions 9 ドメイン一覧 + 根拠 (Phase 424 で documentation 化)
+### 🌐 host_permissions 9 ドメイン一覧 + 根拠 (Phase 424 で documentation 化 + Phase 427 で content_scripts matches 7 vs 9 の差 追記)
 
 manifest.json で要求する 9 host_permissions の各根拠 (Salesforce の多様な domain pattern):
 
