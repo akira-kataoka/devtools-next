@@ -7007,14 +7007,35 @@ function adminTableHtml(headers, rows, opts = {}) {
 }
 
 // v3.144.0 Phase 234: 組織情報サマリ — Organization SOQL + Limits API でストレージ使用量
+// v3.436.0 Phase 526: マルチ通貨組織 (DefaultCurrencyIsoCode → INVALID_FIELD) と Communities 無効組織 (MonthlyPageViews* → INVALID_FIELD) でエラーする問題に対応、3 段階フォールバック
 async function doAdminOrgInfo() {
   if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
   adminSetCardLoading("adminOrgInfoResult", "組織情報を取得中…");
-  // 1. Organization SOQL
-  const orgR = await runSoql({
+  // 1. Organization SOQL — 3 段階フォールバック (Phase 526)
+  //    段階 1: フル (DefaultCurrencyIsoCode + MonthlyPageViews* 込み)
+  //    段階 2: MonthlyPageViews* 除外 (Communities 無効組織対応)
+  //    段階 3: DefaultCurrencyIsoCode も除外 (マルチ通貨組織対応)
+  const FIELDS_FULL = "Id, Name, OrganizationType, InstanceName, IsSandbox, LanguageLocaleKey, TimeZoneSidKey, DefaultCurrencyIsoCode, FiscalYearStartMonth, CreatedDate, NamespacePrefix, TrialExpirationDate, MonthlyPageViewsEntitlement, MonthlyPageViewsUsed";
+  const FIELDS_NO_PV = "Id, Name, OrganizationType, InstanceName, IsSandbox, LanguageLocaleKey, TimeZoneSidKey, DefaultCurrencyIsoCode, FiscalYearStartMonth, CreatedDate, NamespacePrefix, TrialExpirationDate";
+  const FIELDS_MINIMAL = "Id, Name, OrganizationType, InstanceName, IsSandbox, LanguageLocaleKey, TimeZoneSidKey, FiscalYearStartMonth, CreatedDate, NamespacePrefix, TrialExpirationDate";
+  let orgR = await runSoql({
     host: state.host, sid: state.sid, apiVersion: state.apiVersion,
-    soql: `SELECT Id, Name, OrganizationType, InstanceName, IsSandbox, LanguageLocaleKey, TimeZoneSidKey, DefaultCurrencyIsoCode, FiscalYearStartMonth, CreatedDate, NamespacePrefix, TrialExpirationDate, MonthlyPageViewsEntitlement, MonthlyPageViewsUsed FROM Organization LIMIT 1`,
+    soql: `SELECT ${FIELDS_FULL} FROM Organization LIMIT 1`,
   });
+  if (!orgR.ok) {
+    // 段階 2: MonthlyPageViews* 除外
+    orgR = await runSoql({
+      host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+      soql: `SELECT ${FIELDS_NO_PV} FROM Organization LIMIT 1`,
+    });
+  }
+  if (!orgR.ok) {
+    // 段階 3: DefaultCurrencyIsoCode も除外 (マルチ通貨組織対応)
+    orgR = await runSoql({
+      host: state.host, sid: state.sid, apiVersion: state.apiVersion,
+      soql: `SELECT ${FIELDS_MINIMAL} FROM Organization LIMIT 1`,
+    });
+  }
   if (!orgR.ok) { adminSetCardError("adminOrgInfoResult", orgR.status, orgR.data); return; }
   const org = ((orgR.data || {}).records || [])[0] || {};
   // 2. Limits API でストレージ使用量を取得
