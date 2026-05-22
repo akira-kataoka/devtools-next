@@ -23,7 +23,7 @@
 > - 💬 **Apex DEBUG のみフィルタ** (USER_DEBUG 抽出、Phase 247)
 > - 🔄 **設計書 直前生成 chip + クリアボタン** (機密配慮、Phase 248-249)
 >
-> ## 🏆 Phase 1-480 主要マイルストーン (年表) — Phase 480 で **v3 系 390 連続リリース達成 + 磨きシリーズ 130 サイクル達成 + documentation 系列 5 弾全完了マイルストーン (累計 60+ 成果)** 🎊🎊🎊🎊🎊
+> ## 🏆 Phase 1-480 主要マイルストーン (年表) — Phase 480 で **v3 系 390 連続リリース達成 + 磨きシリーズ 130 サイクル達成 + documentation 系列 6 弾全完了マイルストーン (累計 61+ 成果、Phase 484 で第 6 弾「品質保証 pattern」正式命名)** 🎊🎊🎊🎊🎊
 >
 > - **Phase 1-49**: v2.1-2.58 まで自律改善ループ — 設計書 22 種・凡例追加・apiError 統一・a11y
 > - **Phase 50-61**: v2.59-2.70 ユーザー要望「カラム名・値・桁数」対応 (fmtNum/fmtBytes/fmtTrunc/fmtPercent ヘルパー導入、集計 note 拡充)
@@ -133,7 +133,7 @@
 >   - **📊 業務シナリオ定量カタログ化 (Phase 461-466 第 5 弾完成 + Phase 477 で 7 シナリオ目追加、11 ポイント目)**: 7 業務シナリオ × 5 パターン = 35 数値化 (絶対値時間 / 比率時間 / before-after / ワンストップ / 経済効果)、社内 IT 部門 / 経営者まで ROI 訴求可能な業務価値定量カタログ化 — **他拡張は機能列挙のみ、我々は業務時間・項目数・コスト回避を全シナリオで数値化、SF ストレージ追加購入 (年額数十万円〜) 回避 / ユーザー棚卸し 1 日 → 30 分 / 監査時間 1/10 以下 / コードレビュー時間 1/5 以下 等の具体 ROI 提示**
 >   - **💬 コード意図 documentation 第 1+2+3 弾 16 件 (Phase 405-427) + 第 4 弾 6 ファイル (Phase 443-448) + 🎊 第 5 弾 業務シナリオ 6 × 5 パターン定量カタログ化 (Phase 461-466) + 🏆 第 6 弾 品質保証 pattern documentation 系列 4 pattern (Phase 466-483 で確立: 見出し拡張履歴 pattern v3 + 中間時点更新 pattern + 2 層 documentation pattern + 連鎖 self-drift pattern) 完成 = 🏆 documentation 系列 6 弾全完了マイルストーン達成 (累計 16 件 + 6 ファイル + 30 数値化 + 3 pattern = 55+ documentation 成果、Phase 405-470 連続 66 Phase で構築)**: state type-discoverable / magic number 意図 (履歴 5 件 / 最近候補 10 件 / API v62.0 / 自動アップデート 30 秒 / SOQL ガバナ 50,000 行) / **cross reference pattern 3 段階 4 件** (同 ファイル内 1 + 2 ファイル間 2 + 3 way 1) / **設計判断 documentation 6 件** (picker.js / panel.js RECENT_KEY 区別 / chrome.storage.local 採用理由 / 9 permissions 根拠 / 9 host_permissions ドメイン根拠 / SF_DOMAINS vs host_permissions 厳格 vs 寛容 / content_scripts matches 7 vs 9 最小化) / **🎊 第 4 弾「ファイルレベル documentation」6 JS ファイル (Phase 443-448、全 JS ファイル冒頭 20-50 行でファイル全体像把握可能、3 pattern 確立: Grep 検証 / 実装出典明示 / 非依存明示)** — 「動く + 意図が読める」code level 磨き + セキュリティ透明性確保 + 全ファイル俯瞰可能
 
-## v3 系の主要機能 (v2.71 → v3.390 / Phase 480 で v3 系 390 連続リリース達成 + 磨きシリーズ 130 サイクル達成 + 5 弾全完了マイルストーン累計 60+ 成果、累計まとめ)
+## v3 系の主要機能 (v2.71 → v3.390 / Phase 480 で v3 系 390 連続リリース達成 + 磨きシリーズ 130 サイクル達成 + 6 弾全完了マイルストーン累計 61+ 成果 (Phase 484 で第 6 弾「品質保証 pattern」正式命名)、累計まとめ)
 
 | カテゴリ | 機能 / 改善 |
 |---|---|
