@@ -2,7 +2,31 @@
 // 使い方: showPicker({ kind, host, sid, apiVersion, onPick(value, item) })
 // kind: 'sobject' | 'field' | 'profile' | 'permset' | 'apexClass' | 'flow' | 'user'
 // 親要素には autocomplete の overlay を貼り付ける。
-
+//
+// v3.356.0 Phase 446: ファイルレベル documentation (コード意図 documentation 第 4 弾 / 第 4 ファイル目、Phase 443-445 design-docs.js / sf-api.js / background.js に続く)
+// ─────────────────────────────────────────
+// 【公開 export 2 件】(Grep で実装検証済 — Phase 443 hallucination 教訓継続)
+//   ・showPicker ({ kind, host, sid, apiVersion, parentObject, onPick, orgKey }) — line 202、メイン Picker UI 表示
+//   ・invalidatePickerCache (reason?) — line 12、Org 切り替え時のキャッシュ全消去 (panel.js の reconnect から呼ぶ)
+//
+// 【7 kind 定義】PICKER_DEFS (line 47+) で各 kind の title / placeholder / columns / load 関数を定義
+//   ・sobject (line 48): /services/data/v{ver}/sobjects/ — queryable のみ filter
+//   ・field (line 64): /sobjects/{parentObject}/describe — parentObject 必須
+//   ・profile (line 79): SOQL `Profile` 取得 (UserLicense + UserType)
+//   ・permset (line 94): SOQL `PermissionSet` 取得 (IsOwnedByProfile=false で profile 由来除外、value に "@" 接頭辞)
+//   ・apexClass / flow / user (line 110 以降): SOQL ベースで類似実装
+//
+// 【3 永続化機構】(chrome.storage.local / Map / Map)
+//   ① cache Map (line 8): キャッシュキー = `{kind}|{host}|{parentObject}` — 同一 kind 再表示時の SF API 呼出回避
+//   ② scrollMemory Map (line 9): キャッシュキー = `{kind}|{host}|{parentObject}` — 同一 kind 連続オープン時のスクロール位置復元
+//   ③ RECENT_KEY = "sfdtPickerRecent" (line 23): chrome.storage.local、`{orgKey}|{kind}` 別 最大 10 件保持
+//      - Phase 421 で documentation: panel.js RECENT_OBJ_KEY (sfdtRecentObjects) / RECENT_RECORD_ID_KEY (sfdtRecentRecordIds) と **別管理**
+//      - Picker は kind 別 + Org 別の汎用、panel.js は datalist 入力補助専用
+//      - 共通点: 最大 10 件保持 (Phase 407 で「履歴 5 件と異なる最近候補は 10 件」documentation)
+//
+// 【お気に入り】FAVORITES (line 19-21): sobject のみ 10 件固定上部表示 (Account / Contact / Opportunity / Lead / Case / User / Task / Event / Campaign / Product2)
+//
+// 【依存】sf-api.js から sfFetch + runSoql を import (Phase 444 sf-api.js documentation で 14 export 7 カテゴリ確認)
 import { sfFetch, runSoql } from "./sf-api.js";
 
 const cache = new Map(); // key=kind|host|extraKey, value=items[]
