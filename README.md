@@ -119,7 +119,8 @@
 >   - **3 モード ENV 100% 統一バッジ**: ORGanizer の Color tagging に着想、Phase 117/288/333 で popup/panel-tool/mini-panel 全モード対応
 >   - **URL クエリ統一 12 種 + 🔗 リンクコピー 10 機能種別 × 2 モード**: Slack/Notion でクイック共有可能 — 他拡張で類似機能なし
 >   - **自動アップデート機構**: 独自 VERSION.txt 機構で chrome.storage 経由通知 — 他拡張は手動更新
->   - **🏆 継続的整合性磨き (Phase 351-400 連続 50 サイクル + Phase 401+ 継続)**: 「過去 Phase drift 系統的発見」3 件を自律改修ループで解消 — (1) Phase 117 → 382-383 (5 ヶ月放置、SBX/DEV 色逆 + Dev 未判定) / (2) Phase 289 → 394 (3 ヶ月放置、PROD ダイアログ ⚠️ vs 🚨🚨 mix) / (3) Phase 394 → 403 (9 日放置、inline 式 vs prodFooter 変数 pattern) — **他拡張は単発リリースで終わるが、我々は実装と documentation の整合性磨きを継続中**
+>   - **🏆 継続的整合性磨き (Phase 351-430 連続 80 サイクル + Phase 431+ 継続)**: 「過去 Phase drift 系統的発見」3 件を自律改修ループで解消 — (1) Phase 117 → 382-383 (5 ヶ月放置、SBX/DEV 色逆 + Dev 未判定) / (2) Phase 289 → 394 (3 ヶ月放置、PROD ダイアログ ⚠️ vs 🚨🚨 mix) / (3) Phase 394 → 403 (9 日放置、inline 式 vs prodFooter 変数 pattern) — **他拡張は単発リリースで終わるが、我々は実装と documentation の整合性磨きを継続中**
+>   - **🔐 セキュリティ透明性 (Phase 423-424 で確立)**: SECURITY.md に「9 permissions の最小権限原則 + 9 host_permissions 公式 SF ドメイン根拠」表で明示 — **他拡張は permissions を匿名要求で利用者を不安にさせるが、我々は社内 IT セキュリティ部門に説明可能なレベルで透明化**
 >   - **💬 コード意図 documentation 第 1+2+3 弾 16 件 (Phase 405-427)**: state type-discoverable / magic number 意図 (履歴 5 件 / 最近候補 10 件 / API v62.0 / 自動アップデート 30 秒 / SOQL ガバナ 50,000 行) / **cross reference pattern 3 段階 4 件** (同 ファイル内 1 + 2 ファイル間 2 + 3 way 1) / **設計判断 documentation 6 件** (picker.js / panel.js RECENT_KEY 区別 / chrome.storage.local 採用理由 / 9 permissions 根拠 / 9 host_permissions ドメイン根拠 / SF_DOMAINS vs host_permissions 厳格 vs 寛容 / content_scripts matches 7 vs 9 最小化) — 「動く + 意図が読める」code level 磨き + セキュリティ透明性確保
 
 ## v3 系の主要機能 (v2.71 → v3.338 / Phase 420 で v3 系 330 連続リリース達成、累計まとめ)
