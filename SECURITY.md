@@ -28,6 +28,24 @@ DevToolsNext は Salesforce セッション (`sid` Cookie) を扱うため、セ
 - **chrome.storage には sid を保存しない** (拡張再起動・タブ再読込で再取得)
 - popup の `⟳` ボタンで明示的に再取得可能
 
+### 🔐 拡張機能 permissions 一覧 + 根拠 (Phase 423 で documentation 化)
+
+manifest.json で要求する 9 permissions の各根拠 (最小権限原則):
+
+| Permission | 用途 | 根拠 |
+|---|---|---|
+| `cookies` | sid Cookie 取得 (REST API 認証) | SF REST/Tooling API 呼出に必須、host_permissions 配下のみ |
+| `storage` | chrome.storage.local で 25+ 種のキー永続化 | SOQL 履歴 / Apex draft / UI 状態 (Phase 422 で local 採用理由 documentation) |
+| `activeTab` | アクティブタブの URL から SF host 推定 | popup / DevTools panel から SF タブ自動検出 |
+| `scripting` | (将来用、現在未使用) | MV3 で content script 動的注入時に必要、現実装は manifest 静的注入のみ |
+| `tabs` | タブ一覧から SF タブ検索 | popup 起動時に SF タブ自動選択 (sf-api.js getActiveSfTab) |
+| `contextMenus` | 右クリックメニュー (ID として開く / 18 桁変換) | テキスト選択時に SF ID として開く便利機能 |
+| `clipboardWrite` | クリップボードコピー (CSV / Markdown / リンク) | エクスポート機能 / 🔗 リンクコピー 10 機能種別 × 2 モード |
+| `alarms` | VERSION.txt 30 秒ポーリング (自動アップデート) | Phase 411 で「Chrome MV3 最小 0.5 分」制約 documentation 済 |
+| `notifications` | 「🆕 DevToolsNext を自動更新しました」通知 | 自動アップデート時の利用者通知 (background.js) |
+
+**最小権限原則**: 各 permission は具体的機能の実現に必須のものに限定。`tabs` / `activeTab` / `scripting` は冗長に見えるが、popup と DevTools panel で異なる context (popup = activeTab 必要、panel = inspectedWindow 経由) のため両方必須。
+
 ---
 
 ## 🚨 脆弱性報告 (Responsible Disclosure)
