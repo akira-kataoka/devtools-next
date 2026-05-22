@@ -1,5 +1,31 @@
 // Service worker (MV3). コンテキストメニュー登録、popup/devtools からの共通リクエスト処理、
 // + 自動アップデート (VERSION.txt 監視 → chrome.runtime.reload)。
+//
+// v3.355.0 Phase 445: ファイルレベル documentation (コード意図 documentation 第 4 弾 / 第 3 ファイル目、Phase 443 design-docs.js → Phase 444 sf-api.js に続く)
+// ─────────────────────────────────────────
+// 【提供する 3 機能】(Grep で実装検証済 — Phase 443 hallucination 教訓)
+//
+//   ① 自動アップデート機構 (line 10-77、競合他拡張差別化ポイントの 1 つ):
+//      VERSION.txt を 30 秒ポーリング (chrome.alarms) → 変化検知 → chrome.notifications でユーザー通知 → chrome.runtime.reload で全体再ロード
+//      ・VERSION_INTERVAL_MIN = 0.5 (30 秒) は「開発反映の速さ」vs「CPU/network 負荷」のバランス値 (Phase 411 で documentation)
+//      ・Chrome MV3 alarms 制約: 最小 0.5 分 (manifest.json alarms permission)
+//      ・通知 + storage 永続化 (sfdtKnownVersion / sfdtLastReloadAt)
+//
+//   ② コンテキストメニュー (line 5-8、line 78-101):
+//      ・sfdt-open-id-record: 選択 ID → Salesforce レコード詳細ページを開く (15 / 18 桁対応)
+//      ・sfdt-copy-18: 15 桁 ID を 18 桁に変換して clipboard
+//
+//   ③ chrome.runtime.onMessage リレー (line 103+、6 種類):
+//      ・sfdt:getSession (sid 取得、sf-api.js getSessionId 経由)
+//      ・sfdt:soql (SOQL 実行、sf-api.js runSoql 経由)
+//      ・sfdt:fetch (汎用 sfFetch、sf-api.js sfFetch 経由)
+//      ・sfdt:checkUpdate (手動でアップデートチェック)
+//      ・sfdt:reloadNow (即時 reload)
+//      ・sfdt:capture (画面キャプチャ系)
+//
+// 【依存関係】sf-api.js から 5 export を import (getSessionId / sfFetch / runSoql / toApiHost / isSalesforceHost — Phase 444 で sf-api.js 14 export documentation)
+//
+// 【permissions 使用】alarms (line 65/71、自動アップデート) / contextMenus (line 56、ID 操作) / notifications (line 40、アップデート通知) / storage (line 35/49、永続化) / cookies (sf-api.js 経由) — Phase 423 SECURITY.md 9 permissions と整合
 import { getSessionId, sfFetch, runSoql, toApiHost, isSalesforceHost } from "./sf-api.js";
 
 const CONTEXT_MENUS = [
