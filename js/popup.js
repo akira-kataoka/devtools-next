@@ -858,6 +858,29 @@ function escapePopupHtml(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
+// v3.449.0 Phase 539: tokenIssuedAt からの経過時間を人間可読に整形 (popup の接続カード鮮度表示用)
+function formatAuthAge(ts) {
+  if (!ts) return "";
+  const diffMs = Date.now() - ts;
+  if (diffMs < 0) return "now";
+  const min = Math.floor(diffMs / 60000);
+  if (min < 1) return "<1分前";
+  if (min < 60) return `${min}分前`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h}時間前`;
+  const d = Math.floor(h / 24);
+  return `${d}日前`;
+}
+
+// v3.449.0 Phase 539: トークンが古い (> 6 時間) または未発行か判定
+// Salesforce のセッションは標準で 2-12h で失効するため、6h を「警告閾値」として黄色化
+const AUTH_STALE_THRESHOLD_MS = 6 * 60 * 60 * 1000;
+function isAuthStale(c) {
+  if (!c.accessToken) return false; // 未認証は別ステータスなので stale 扱いしない
+  if (!c.tokenIssuedAt) return true; // 認証済みなのに発行時刻不明なら古い扱い
+  return (Date.now() - c.tokenIssuedAt) > AUTH_STALE_THRESHOLD_MS;
+}
+
 async function renderPopupConnections() {
   const wrap = document.getElementById("popupConnList");
   const count = document.getElementById("popupConnCount");
@@ -869,24 +892,31 @@ async function renderPopupConnections() {
   } else {
     wrap.innerHTML = list.map((c) => {
       const authed = !!c.accessToken;
+      const stale = isAuthStale(c); // v3.449.0 Phase 539
       const badge = authed
-        ? `<span style="background:#1a4d2e;color:#7fe9a5;padding:1px 5px;border-radius:3px;font-size:9px">🔓 認証済</span>`
+        ? (stale
+          ? `<span title="トークン発行から 6 時間以上が経過しています。Salesforce セッションは標準で 2-12h で失効するため再認証を推奨します" style="background:#4d3a1a;color:#f5c269;padding:1px 5px;border-radius:3px;font-size:9px">⏰ 古い</span>`
+          : `<span style="background:#1a4d2e;color:#7fe9a5;padding:1px 5px;border-radius:3px;font-size:9px">🔓 認証済</span>`)
         : `<span style="background:#4d3a1a;color:#f5c269;padding:1px 5px;border-radius:3px;font-size:9px">🔒 未認証</span>`;
       const authType = c.authType === "oauth_password" ? "🔑 OAuth" : "🔐 SOAP";
       const inst = c.instanceUrl ? c.instanceUrl.replace(/^https?:\/\//, "") : "";
-      return `<div class="popup-conn-row" style="border:1px solid var(--line,#333);border-radius:4px;padding:5px 7px;background:var(--bg-2,#1a1a1a)">
+      const ageLabel = authed ? formatAuthAge(c.tokenIssuedAt) : ""; // v3.449.0 Phase 539
+      const ageTitle = c.tokenIssuedAt ? new Date(c.tokenIssuedAt).toLocaleString("ja-JP") : "(発行時刻不明)";
+      const rowBorder = stale ? "border:1px solid #6b5318" : "border:1px solid var(--line,#333)"; // 古い接続は黄色枠
+      return `<div class="popup-conn-row" style="${rowBorder};border-radius:4px;padding:5px 7px;background:var(--bg-2,#1a1a1a)">
         <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600">
           <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapePopupHtml(c.name || "(無名)")}">${escapePopupHtml(c.name || "(無名)")}</span>
           ${badge}
         </div>
         <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--fg-dim,#888);margin-top:2px">
           <span>${authType}</span>
+          ${ageLabel ? `<span title="認証日時: ${escapePopupHtml(ageTitle)}" style="color:${stale ? "#f5c269" : "var(--fg-dim,#888)"}">⏱ ${escapePopupHtml(ageLabel)}</span>` : ""}
           ${inst ? `<span title="${escapePopupHtml(inst)}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${escapePopupHtml(inst)}</span>` : ""}
         </div>
         <div style="display:flex;gap:3px;margin-top:4px;flex-wrap:wrap">
           ${authed ? `<button class="mini btn-popup-conn-rest" data-id="${escapePopupHtml(c.id)}" title="この接続を選んだ状態で REST API ビューを全画面表示">🌐 REST</button>` : ""}
           ${authed ? `<button class="mini btn-popup-conn-copytoken" data-id="${escapePopupHtml(c.id)}" title="access_token をクリップボードへコピー">📋 token</button>` : ""}
-          <button class="mini btn-popup-conn-edit" data-id="${escapePopupHtml(c.id)}" title="接続マネージャで編集">✏️ 編集</button>
+          ${stale ? `<button class="mini btn-popup-conn-edit" data-id="${escapePopupHtml(c.id)}" title="接続マネージャで再認証 (🔓 再認証ボタン)" style="border-color:#6b5318;color:#f5c269">🔓 再認証</button>` : `<button class="mini btn-popup-conn-edit" data-id="${escapePopupHtml(c.id)}" title="接続マネージャで編集">✏️ 編集</button>`}
         </div>
       </div>`;
     }).join("");
