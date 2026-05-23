@@ -68,6 +68,8 @@ import {
 } from "./sf-connections.js";
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
+// v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
+import { tsForFilename, formatError } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -898,12 +900,7 @@ function panelToast(msg, opts = {}) {
   setTimeout(() => el.remove(), opts.duration || 1800);
 }
 
-// 共通: ファイル名用タイムスタンプ生成 YYYYMMDD-HHmm
-function tsForFilename() {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
-}
+// v3.454.0 Phase 544 で tsForFilename は ./sf-format-helpers.js に抽出 (上の import 文を参照、テスト対象化が目的)
 
 // textarea で Tab キーを 2 spaces に変換 (focus 移動を防ぐ)
 // 修飾キー時はブラウザ標準挙動に委譲:
@@ -5900,11 +5897,7 @@ function stringify(v) {
 function escape(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
-function formatError(d) {
-  if (Array.isArray(d) && d[0]) return `${d[0].errorCode || ""} ${d[0].message || ""}`.trim();
-  if (d && d.error) return d.error_description || d.error;
-  return JSON.stringify(d);
-}
+// v3.454.0 Phase 544 で formatError は ./sf-format-helpers.js に抽出 (上の import 文を参照)
 
 /**
  * 共通エラー表示ヘルパー: HTTP ステータスと SF エラーレスポンスを「何が起きた + どう直す」形式で表示
