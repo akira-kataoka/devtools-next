@@ -44,6 +44,7 @@
         <div class="nav-group" data-cat="dev">
           <button class="nav-btn" data-view="apex" data-cat="dev" title="匿名 Apex (Developer Console と同じ) を実行・Debug ログ取得"><span class="nav-label">🟧 Apex 実行</span><kbd class="nav-kbd">A</kbd></button>
           <button class="nav-btn" data-view="apiurl" data-cat="dev" title="REST API を組み立てて実行 (URL ビルダー + 実行を統合)"><span class="nav-label">🌐 REST API</span><kbd class="nav-kbd">R</kbd></button>
+          <button class="nav-btn" data-view="connections" data-cat="dev" title="🔐 接続マネージャ — OAuth/SOAP login で取得した access_token を保存し、ブラウザのアクティブタブのセッションに依存せず複数組織へ API 送信できる (Phase 534)"><span class="nav-label">🔐 接続マネージャ</span></button>
           <button class="nav-btn" data-view="metadata" data-cat="dev" title="ApexClass / Flow / Profile 等のメタデータ一覧"><span class="nav-label">📦 メタデータ一覧</span></button>
           <button class="nav-btn" data-view="design" data-cat="dev" title="オブジェクト定義書・プロファイル詳細など 21 種類の設計書を Excel で自動生成 (オブジェクト構造の確認はこちらから)"><span class="nav-label">📋 設計書作成</span><kbd class="nav-kbd">D</kbd></button>
         </div>
@@ -214,7 +215,6 @@
           <button id="btnInspectExportCsv" title="レコードを CSV ファイルとしてダウンロードします">CSV</button>
           <button id="btnInspectOpenInOrg" title="このレコードを Salesforce 組織で開きます (新しいタブ)">レコードを開く</button>
           <button id="btnInspectCopyId" title="📋 現在表示中のレコード ID をクリップボードにコピー (Phase 246)">📋 ID</button>
-          <button id="btnInspectCopyMd" title="📝 「[Name](Salesforce URL)」形式の Markdown リンクをコピー — バグ報告書 / Slack / Confluence / Notion 等にそのまま貼り付け可能 (Phase 255)">📝 MD リンク</button>
           <button id="btnInspectCopyLink" title="🔗 現在のレコードを Inspector で再表示できる URL (?view=inspector&id=&obj=) をクリップボードコピー — Slack/Notion 共有用 (Phase 282)">🔗 リンク</button>
           <button id="btnInspectToSoql" title="このレコード ID を WHERE 句に含む SOQL を生成して SOQL ビューに遷移します (関連レコード検索や類似レコード調査に便利)">🔎 SOQL で開く</button>
           <button id="btnInspectRelatedSoql" title="🔗 このレコードの関連レコード (子オブジェクト Top 5) を 1 つの SOQL (サブクエリ形式) でまとめて取得する SOQL を生成 — Account なら Contact/Opportunity/Case/Task/Note 等が 1 クエリで一括取得 (Phase 242)">🔗 関連レコード</button>
@@ -399,7 +399,6 @@ System.debug('Now: ' + System.now());</textarea>
         <div id="apexMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
         <div class="toolbar">
           <button id="btnApexCopy" title="匿名 Apex の実行結果をクリップボードにコピーします (Debug ログ生テキスト)">📋 結果コピー</button>
-          <button id="btnApexCopyMd" title="📝 Apex コード + 実行結果を Markdown 形式でコピー — バグ報告書 / Slack / Confluence にコードブロック付きで貼り付け (Phase 262)">📝 MD コピー</button>
           <button id="btnApexErrorsOnly" title="Debug ログから「USER_DEBUG ERROR」「FATAL_ERROR」「EXCEPTION_THROWN」「LIMIT_USAGE」等のエラー/警告行のみを抽出して表示します (元の全ログは「全ログ表示」で復元)" aria-pressed="false">⚠ エラーのみ</button>
           <button id="btnApexDebugOnly" title="💬 Debug ログから「USER_DEBUG」行のみを抽出して System.debug() 出力だけを確認 (CALLOUT/CONSTRUCTOR/METHOD 等のシステムログを除外、再クリックで全ログ復元) (Phase 247)" aria-pressed="false">💬 DEBUG のみ</button>
           <button id="btnApexLimitsOnly" title="📊 Debug ログから「LIMIT_USAGE_FOR_NS」「Number of SOQL queries」「Maximum CPU time」等のガバナ消費行を抽出 — ガバナ制限消費量の即把握 (Phase 254)" aria-pressed="false">📊 リミット消費</button>
@@ -415,7 +414,6 @@ System.debug('Now: ' + System.now());</textarea>
           <input id="descObj" placeholder="オブジェクトの API 名を入力してください (例: Account)" list="dl-sobjects" autocomplete="off" />
           <button id="btnDescribe" class="primary" title="指定したオブジェクトの describe 情報を取得します">取得</button>
           <span class="grow"></span>
-          <button id="btnDescribeCopyMd" title="📝 オブジェクト定義 (ラベル + 統計サマリ + 全項目表) を Markdown 形式でクリップボードコピー — 設計書 / 仕様書 / Notion / Confluence に貼り付け (Phase 275)">📝 設計書 MD</button>
           <button id="btnDescribeCopyLink" title="🔗 現在のオブジェクトの構造を再表示できる URL (?view=describe&obj=) をクリップボードコピー — Slack/Notion 共有用 (Phase 282)">🔗 リンク</button>
         </div>
         <div id="describeResult" class="grid"></div>
@@ -423,13 +421,19 @@ System.debug('Now: ' + System.now());</textarea>
 
       <div class="view hidden" data-view="rest">
         <!-- v3.443.0 Phase 533: 3 モード対応 (SF / 汎用 HTTP / SOAP) -->
-        <div class="toolbar" style="gap:8px;align-items:center">
+        <div class="toolbar" style="gap:8px;align-items:center;flex-wrap:wrap">
           <label style="font-weight:600">モード:</label>
           <select id="restMode" title="送信モード切替 (Phase 533)">
             <option value="sf">🔵 Salesforce REST (sid 自動付与・パス指定)</option>
             <option value="http">🌐 汎用 HTTP (任意 URL + ヘッダ)</option>
             <option value="soap">📜 SOAP (XML エンベロープ + SOAPAction)</option>
           </select>
+          <!-- v3.446.0 Phase 534: 接続セレクタ (sf モード時のみ表示) — ブラウザセッションか保存済み接続かを選択 -->
+          <label style="font-weight:600;margin-left:8px" class="rest-conn-row">接続:</label>
+          <select id="restConn" class="rest-conn-row" title="API リクエストの認証元を選択。「ブラウザセッション」は現在の SF タブの sid を使用。保存済み接続は接続マネージャの access_token を使用 (Phase 534)" style="min-width:240px">
+            <option value="">🪟 ブラウザセッション (アクティブタブ)</option>
+          </select>
+          <a href="#" class="rest-conn-row" id="restConnManage" title="接続マネージャを開く" style="font-size:12px">🔐 接続マネージャを開く</a>
         </div>
         <!-- v2.84.0: REST 探索 使い方ガイド -->
         <div class="api-guide">
@@ -494,11 +498,82 @@ System.debug('Now: ' + System.now());</textarea>
         <div id="restMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
         <div class="toolbar">
           <button id="btnRestCopy" title="REST API のレスポンスをクリップボードにコピーします (生 JSON テキスト)">📋 結果コピー</button>
-          <button id="btnRestCopyMd" title="📝 REST レスポンスを Markdown コードブロック形式でコピー (```json ... ```) — バグ報告書 / Slack / Confluence / Notion 等にコードブロック付きで貼り付け (Phase 261)">📝 MD コピー</button>
           <button id="btnRestCopyLink" title="🔗 現在の REST 呼び出し (Method/Path/Body) を再実行できる URL (?view=rest&method=&path=&body=) をクリップボードコピー — チーム共有用 (Phase 285、GET のみ自動実行、POST/PATCH/DELETE は安全のため投入のみ)">🔗 リンク</button>
           <span class="grow"></span>
         </div>
         <pre id="restResult" class="code"><div class="empty-state">👆 上のメソッド (GET/POST/PATCH/DELETE) とパスを指定して「送信」を押してください。レスポンス (JSON) がここに整形表示されます。<br/><br/><strong>💡 ヒント</strong>: SOQL では取得できない情報 (<code>/limits</code>/<code>/userinfo</code>/<code>/sobjects/</code>/<code>/versions</code> 等) を直接叩けます。POST/PATCH の場合はボディに JSON を入力してください。<code>📋 結果コピー</code> でクリップボードに JSON を保存できます。</div></pre>
+      </div>
+
+      <!-- v3.446.0 Phase 534: 接続マネージャビュー — OAuth Username-Password / SOAP login() で取得した access_token を保存・再利用する -->
+      <div class="view hidden" data-view="connections">
+        <div class="api-guide">
+          <div class="api-guide-title">🔐 接続マネージャ — セッション独立 API 接続</div>
+          <ol class="api-guide-steps">
+            <li><b>① 認証方式を選ぶ</b>: <code>OAuth Username-Password</code> (Connected App 必要) / <code>SOAP login()</code> (CK/CS 不要)</li>
+            <li><b>② 認証情報を入力</b>: ユーザー名・パスワード (+ セキュリティトークン)。OAuth では Consumer Key/Secret も必要</li>
+            <li><b>③ 「🔓 認証してトークン取得」</b>: 成功すると <code>access_token</code> と <code>instance_url</code> が保存されます</li>
+            <li><b>④ REST API ビューで「接続:」プルダウン</b>から保存済み接続を選んで送信できます (ブラウザタブ不要)</li>
+          </ol>
+          <div class="api-guide-tip" style="background:#3a1d1d;color:#ffb4b4;border-left:3px solid #d9534f;padding:6px 10px;margin-top:6px;font-size:11px;line-height:1.5">
+            ⚠ <b>セキュリティ注意</b>: Consumer Secret / パスワード / セキュリティトークン / access_token は <code>chrome.storage.local</code> に <b>平文</b>で保存されます。<br/>
+            本機能は <b>開発・テスト用途</b>を想定しています。本番運用には Connected App + JWT Bearer Flow を別途検討してください。<br/>
+            ボタン「🗑 全削除」で全認証情報を削除できます。
+          </div>
+        </div>
+
+        <div class="toolbar" style="margin-top:8px;gap:6px;flex-wrap:wrap">
+          <button id="btnConnNew" class="primary" title="新しい接続を追加します">＋ 新規接続</button>
+          <button id="btnConnRefreshList" title="保存済み接続を再読み込み">🔄 一覧更新</button>
+          <span class="grow"></span>
+          <button id="btnConnExportJson" title="保存済み接続を JSON ファイルとしてエクスポート (バックアップ用)">📤 JSON エクスポート</button>
+          <button id="btnConnImportJson" title="JSON ファイルから接続をインポート">📥 JSON インポート</button>
+          <input type="file" id="connImportFile" accept="application/json,.json" style="display:none" />
+          <button id="btnConnClearAll" title="全接続を削除します (確認ダイアログあり)">🗑 全削除</button>
+        </div>
+        <div id="connMeta" class="meta" role="status" aria-live="polite" aria-atomic="true"></div>
+
+        <div id="connEditor" class="conn-editor hidden" style="border:1px solid var(--border);border-radius:6px;padding:12px;margin-top:8px;background:var(--bg-2)">
+          <h3 style="margin:0 0 8px 0;font-size:14px">🔧 接続の編集</h3>
+          <div class="conn-form" style="display:grid;grid-template-columns:140px 1fr;gap:6px 8px;align-items:center;font-size:12px">
+            <label>名前:</label>
+            <input id="connName" placeholder="例: 開発組織 (sandbox1)" />
+            <label>ログイン URL:</label>
+            <select id="connLoginUrl">
+              <option value="https://login.salesforce.com">https://login.salesforce.com (Production / Developer)</option>
+              <option value="https://test.salesforce.com">https://test.salesforce.com (Sandbox)</option>
+              <option value="custom">カスタム…</option>
+            </select>
+            <label class="conn-custom-url-row hidden">カスタム URL:</label>
+            <input id="connLoginUrlCustom" class="conn-custom-url-row hidden" placeholder="https://my-domain.my.salesforce.com" />
+            <label>API バージョン:</label>
+            <input id="connApiVersion" value="62.0" style="max-width:120px" />
+            <label>認証方式:</label>
+            <select id="connAuthType">
+              <option value="soap_login">🔐 SOAP login() — Consumer Key 不要 (ユーザー名+パスワード+セキュリティトークン)</option>
+              <option value="oauth_password">🔑 OAuth Username-Password — Connected App 必要 (CK/CS + ユーザー名+パスワード+セキュリティトークン)</option>
+            </select>
+            <label>ユーザー名:</label>
+            <input id="connUsername" autocomplete="username" placeholder="user@example.com" />
+            <label>パスワード:</label>
+            <input id="connPassword" type="password" autocomplete="current-password" placeholder="パスワード (セキュリティトークン未含み)" />
+            <label>セキュリティトークン:</label>
+            <input id="connSecurityToken" autocomplete="off" placeholder="(IP 信頼済みなら空でも可)" />
+            <label class="conn-oauth-row hidden">Consumer Key:</label>
+            <input id="connConsumerKey" class="conn-oauth-row hidden" autocomplete="off" placeholder="Connected App の Consumer Key" />
+            <label class="conn-oauth-row hidden">Consumer Secret:</label>
+            <input id="connConsumerSecret" class="conn-oauth-row hidden" type="password" autocomplete="off" placeholder="Connected App の Consumer Secret" />
+          </div>
+          <div class="toolbar" style="margin-top:10px;gap:6px">
+            <button id="btnConnAuth" class="primary" title="認証して access_token を取得・保存">🔓 認証してトークン取得</button>
+            <button id="btnConnSave" title="認証せず情報のみ保存 (後で認証する)">💾 情報のみ保存</button>
+            <button id="btnConnTestQuery" title="保存済み access_token で SOQL 'SELECT Id, Name FROM Organization LIMIT 1' を実行して動作確認">🧪 テスト送信</button>
+            <span class="grow"></span>
+            <button id="btnConnEditCancel" title="編集を中止">取消</button>
+          </div>
+          <div id="connAuthResult" class="meta" style="margin-top:6px" role="status" aria-live="polite"></div>
+        </div>
+
+        <div id="connList" class="grid" style="margin-top:10px"><div class="empty-state">📭 まだ保存済み接続はありません。<br/><br/>「＋ 新規接続」を押して、ユーザー名・パスワード・セキュリティトークンを入力し「🔓 認証してトークン取得」を実行してください。<br/>成功すると <code>access_token</code> と <code>instance_url</code> が <code>chrome.storage.local</code> に保存され、ブラウザタブのセッションに依存せず API 送信できるようになります。</div></div>
       </div>
 
       <div class="view hidden" data-view="metadata">
@@ -531,7 +606,6 @@ System.debug('Now: ' + System.now());</textarea>
             </optgroup>
           </select>
           <button id="btnMetadata" class="primary" title="選択したメタデータ型の一覧を Tooling API から取得します">一覧取得</button>
-          <button id="btnMetadataCopyMd" title="📝 メタデータ一覧を Markdown テーブル形式でクリップボードにコピー — Slack / 設計書 / 監査資料 に貼り付け可能 (Phase 266)">📝 MD コピー</button>
           <button id="btnMetadataEvidence" aria-label="メタデータ一覧をエビデンスとしてダウンロード" title="現在のメタデータ一覧を Markdown 形式のエビデンスとしてダウンロードします">📸 エビデンス</button>
           <button id="btnMetadataCopyLink" title="🔗 現在のメタデータ型を再表示できる URL (?view=metadata&type=) をクリップボードコピー — Slack/Notion 共有用 (Phase 283)">🔗 リンク</button>
         </div>
@@ -542,7 +616,6 @@ System.debug('Now: ' + System.now());</textarea>
         <div class="toolbar">
           <button id="btnFetchLogs" class="primary" title="最新 20 件の ApexLog (Debug ログ) を取得します">最新 20 件</button>
           <button id="btnEnableDebug" title="自身に対する DebugLevel + TraceFlag を有効化します (Apex 実行ログ取得のため)">DebugLevel ON</button>
-          <button id="btnLogsCopyMd" title="📝 Apex Debug ログ一覧を Markdown テーブル形式でコピー (Phase 267)">📝 MD コピー</button>
         </div>
         <div id="logsResult" class="grid"><div class="empty-state">👆 「最新 20 件」を押すと、自身が直近で生成した ApexLog (Debug ログ) を取得できます。<br/><br/><strong>💡 ヒント</strong>: ログが取得できない場合は先に「DebugLevel ON」を押して TraceFlag を有効化してください (24 時間有効)。匿名 Apex 実行時は自動でログ取得されるため、本画面で確認できます。各行クリックでログ本文をモーダル表示します。</div></div>
       </div>
@@ -568,7 +641,6 @@ System.debug('Now: ' + System.now());</textarea>
           <button id="btnFetchLogin" class="primary" title="指定した条件で LoginHistory を取得します">取得</button>
           <span class="grow"></span>
           <button id="btnLoginCsv" title="ログイン履歴を CSV ファイルとしてダウンロードします">CSV</button>
-          <button id="btnLoginCopyMd" title="📝 ログイン履歴を Markdown テーブル形式でクリップボードにコピー — Slack / セキュリティ報告書 / 監査資料に貼り付け (Phase 265)">📝 MD コピー</button>
           <button id="btnLoginEvidence" aria-label="ログイン履歴をエビデンスとしてダウンロード" title="現在のログイン履歴を Markdown 形式のエビデンスとしてダウンロードします (テスト工程の証跡用)">📸 エビデンス</button>
           <button id="btnLoginCopyLink" title="🔗 現在のログイン履歴条件 (件数/ステータス) を再取得できる URL (?view=login&limit=&status=) をクリップボードコピー — セキュリティ監査チーム共有用 (Phase 297)">🔗 リンク</button>
         </div>
@@ -588,7 +660,6 @@ System.debug('Now: ' + System.now());</textarea>
           </select>
           <label class="inspector-opt" title="使用率 0% の項目を一覧から除外します"><input type="checkbox" id="limitsOnlyUsed" /> 使用中のみ表示します</label>
           <button id="btnLimitsCsv" title="Limits 一覧を CSV ファイルとしてダウンロードします">CSV</button>
-          <button id="btnLimitsCopyMd" title="📝 Limits 一覧を Markdown テーブル形式でクリップボードにコピー — Slack / 経営報告 / Confluence にコードブロック付きで貼り付け (Phase 264)">📝 MD コピー</button>
           <button id="btnLimitsEvidence" aria-label="Limits 使用状況をエビデンスとしてダウンロード" title="現在の Limits 使用状況を Markdown 形式のエビデンスとしてダウンロードします (テスト工程の証跡用)">📸 エビデンス</button>
         </div>
         <div id="limitsSummary" class="limits-summary"></div>

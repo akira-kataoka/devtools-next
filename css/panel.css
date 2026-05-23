@@ -214,6 +214,10 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 /* v3.22.0: ビュー切替に fade-in-up アニメーション追加 (Phase 111 mini-panel と同じ Material 風カーブ) */
 .view { display: flex; flex-direction: column; gap: 8px; height: 100%; animation: viewFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1); }
 .view.hidden { display: none; }
+/* v3.446.0 Phase 534: 接続マネージャ・REST ツール・子レコード作成フォームの hidden 制御
+ * 既存の rest-http-extra / rest-soap-extra も同ルールで動作 (それ以前は inline style に依存) */
+.rest-http-extra.hidden, .rest-soap-extra.hidden, .rest-conn-row.hidden,
+.conn-editor.hidden, .conn-oauth-row.hidden, .conn-custom-url-row.hidden { display: none !important; }
 @keyframes viewFadeIn {
   from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }

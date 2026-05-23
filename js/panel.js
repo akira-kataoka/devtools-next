@@ -52,6 +52,18 @@ import {
 } from "./sf-api.js";
 import { generateDesign, markdownToHtml } from "./design-docs.js";
 import { showPicker, invalidatePickerCache } from "./picker.js";
+// v3.446.0 Phase 534: セッション独立 API 接続マネージャ (ユーザー要望対応)
+import {
+  loadConnections as connLoadAll,
+  saveConnections as connSaveAll,
+  upsertConnection as connUpsert,
+  deleteConnection as connDelete,
+  authenticateOAuthPassword as connAuthOAuth,
+  authenticateSoapLogin as connAuthSoap,
+  connFetch,
+  makeConnectionId,
+  maskSecret,
+} from "./sf-connections.js";
 
 const state = {
   host: null,
@@ -145,6 +157,11 @@ async function init() {
     loadInspectHistory();
     loadApexHistory();
     loadRestHistory();
+    // v3.446.0 Phase 534: 接続マネージャを初期化 (chrome.storage.local から接続リストを取得)
+    try {
+      bindConnectionEvents();
+      await connRefreshList();
+    } catch (e) { console.log("[DevToolsNext] connection init skipped:", e); }
     loadMdType();
     loadSoqlTooling();
     loadApexFetchLog();
@@ -1337,8 +1354,6 @@ function bindEvents() {
 
   // Describe / REST / Metadata / Logs / Limits
   $on("btnDescribe", "click", doDescribe);
-  // v3.185.0 Phase 275: 設計書 MD コピー (タイトル + 統計サマリ + 項目表)
-  $on("btnDescribeCopyMd", "click", copyDescribeAsMd);
   // v3.192.0 Phase 282: 🔗 リンクコピー (URL クエリ共有パターン横展開)
   $on("btnDescribeCopyLink", "click", async () => {
     const obj = (document.getElementById("descObj").value || "").trim();
@@ -1586,37 +1601,6 @@ function bindEvents() {
       panelToast(`📋 Apex の実行結果をコピーしました (${txt.length.toLocaleString()} 文字)`, { kind: "ok" });
     } catch (e) { panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" }); }
   });
-  // v3.172.0 Phase 262: Apex コード + 実行結果を Markdown 形式でコピー (REST Phase 261 と整合)
-  $on("btnApexCopyMd", "click", async () => {
-    const resultEl = document.getElementById("apexResult");
-    const codeEl = document.getElementById("apexCode");
-    const result = (resultEl && resultEl.textContent) || "";
-    const code = (codeEl && codeEl.value) || "";
-    if (!result.trim() && !code.trim()) { panelToast("📭 コピーする内容がありません (Apex コードまたは実行結果が必要)", { kind: "warn" }); return; }
-    const parts = [];
-    parts.push("## 匿名 Apex 実行");
-    parts.push("");
-    if (code.trim()) {
-      parts.push("### コード");
-      parts.push("");
-      parts.push("```apex");
-      parts.push(code.trim());
-      parts.push("```");
-      parts.push("");
-    }
-    if (result.trim()) {
-      parts.push("### 実行結果 / Debug ログ");
-      parts.push("");
-      parts.push("```");
-      parts.push(result.trim());
-      parts.push("```");
-    }
-    const md = parts.join("\n");
-    try {
-      await navigator.clipboard.writeText(md);
-      panelToast(`📝 Apex を Markdown 形式でコピーしました (${md.length.toLocaleString()} 文字、code + result セクション付き)`, { kind: "ok" });
-    } catch (e) { panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" }); }
-  });
   // v3.62.0: Apex Debug ログから「エラーのみ」抽出するトグルボタン
   // パターン: USER_DEBUG ERROR / FATAL_ERROR / EXCEPTION_THROWN / LIMIT_USAGE / SYSTEM.EXCEPTION
   // 状態: aria-pressed=false (全表示) / true (エラーのみ)、フルログは _apexFullLog にバックアップ
@@ -1745,23 +1729,6 @@ function bindEvents() {
       panelToast(`📋 REST のレスポンスをコピーしました (${txt.length.toLocaleString()} 文字)`, { kind: "ok" });
     } catch (e) { panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" }); }
   });
-  // v3.171.0 Phase 261: REST レスポンスを Markdown コードブロック形式でコピー
-  $on("btnRestCopyMd", "click", async () => {
-    const resultEl = document.getElementById("restResult");
-    const txt = (resultEl && resultEl.textContent) || "";
-    if (!txt.trim()) { panelToast("📭 コピーする結果がありません", { kind: "warn" }); return; }
-    // メソッド + パスをコンテキストとして含める
-    const method = (document.getElementById("restMethod") || {}).value || "?";
-    const path = (document.getElementById("restPath") || {}).value || "";
-    // JSON 判定 (先頭が { or [ かどうか)
-    const lang = /^\s*[{\[]/.test(txt) ? "json" : "text";
-    const header = path ? `## REST ${method} ${path}\n\n` : "";
-    const md = `${header}\`\`\`${lang}\n${txt}\n\`\`\``;
-    try {
-      await navigator.clipboard.writeText(md);
-      panelToast(`📝 Markdown 形式でコピーしました (${md.length.toLocaleString()} 文字、\`\`\`${lang}\`\`\` ブロック付き)`, { kind: "ok" });
-    } catch (e) { panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" }); }
-  });
   const apexCodeEl = document.getElementById("apexCode");
   if (apexCodeEl) enableTabToSpaces(apexCodeEl);
   // v3.82.0: Apex textarea の入力中 draft 自動保存 (Phase 171 SOQL と同パターン)
@@ -1780,48 +1747,6 @@ function bindEvents() {
   // LoginHistory
   $on("btnFetchLogin", "click", doFetchLoginHistory);
   $on("btnLoginCsv", "click", exportLoginCsv);
-  // v3.175.0 Phase 265: ログイン履歴 Markdown コピー (Markdown 機能 8 箇所目)
-  $on("btnLoginCopyMd", "click", copyLoginHistoryMd);
-  // v3.177.0 Phase 267: Apex Debug ログ一覧 Markdown コピー (Markdown 機能 10 箇所目 🎊)
-  $on("btnLogsCopyMd", "click", () => copyResultTableAsMd("logsResult", "Apex Debug ログ一覧"));
-  // v3.176.0 Phase 266: メタデータ一覧 Markdown コピー (Markdown 機能 9 箇所目)
-  $on("btnMetadataCopyMd", "click", async () => {
-    const resultEl = document.getElementById("metadataResult");
-    const table = resultEl ? resultEl.querySelector("table") : null;
-    if (!table) {
-      panelToast("📭 メタデータ一覧が未取得です。先に「一覧取得」を押してください", { kind: "warn" });
-      return;
-    }
-    // 既存テーブルから直接 thead/tbody を Markdown 化 (recordsTable() の動的テーブル構造に依存)
-    const ths = Array.from(table.querySelectorAll("thead th"));
-    const headers = ths.map((th) => th.textContent.trim()).filter((h) => h && !["", "選択"].includes(h));
-    // ID 列を除外 (Markdown では冗長)
-    const trs = Array.from(table.querySelectorAll("tbody tr"));
-    const lines = [];
-    const mdType = (document.getElementById("mdType") || {}).value || "metadata";
-    lines.push(`## メタデータ一覧: ${mdType}`);
-    lines.push("");
-    lines.push(`_取得日時: ${new Date().toLocaleString("ja-JP")} / 件数: ${trs.length}_`);
-    lines.push("");
-    lines.push("| " + headers.map((h) => h.replace(/\|/g, "\\|")).join(" | ") + " |");
-    lines.push("|" + headers.map(() => "---").join("|") + "|");
-    for (const tr of trs) {
-      const tds = Array.from(tr.querySelectorAll("td"));
-      // header と同数のセルを取り出し、各セルのテキスト
-      const cells = tds.slice(0, headers.length + 2); // 先頭にチェックボックス列があるかもしれない
-      // ヘッダー数だけ末尾から取り出す (チェックボックス列除外)
-      const adjusted = cells.length > headers.length ? cells.slice(cells.length - headers.length) : cells;
-      const row = adjusted.slice(0, headers.length).map((td) => (td.textContent || "").trim().replace(/\|/g, "\\|").replace(/\r?\n/g, " "));
-      while (row.length < headers.length) row.push("");
-      lines.push("| " + row.join(" | ") + " |");
-    }
-    try {
-      await navigator.clipboard.writeText(lines.join("\n"));
-      panelToast(`📝 メタデータ一覧 Markdown をコピーしました (${trs.length} 件)`, { kind: "ok" });
-    } catch (e) {
-      panelToast("❌ クリップボードへのコピーに失敗しました: " + (e.message || e), { kind: "err" });
-    }
-  });
 
   // v3.137.0 Phase 227 (Team G2): グローバル検索 (SOSL)
   $on("btnSearch", "click", doGlobalSearch);
@@ -2988,6 +2913,8 @@ function renderInspectorChildRelations() {
       panelToast(`🌳 ${obj} の子レコード SOQL を生成 (${fk} = ${inspectState.id})。Ctrl+Enter で実行`, { kind: "ok" });
     });
   });
+  // v3.446.0 Phase 535: 各子リレに「+ 新規作成」ボタンを追加
+  attachChildCreateButtons();
 }
 
 function renderInspectorFields() {
@@ -3122,20 +3049,43 @@ function renderInspectorFields() {
 }
 
 // v2.99.0: Inspector 編集モード突入
+// v3.446.0 Phase 536: describe ベースで picklist/multipicklist の入力補助を強化 (ユーザー要望)
 function enterInspectorEditMode(el) {
   const fieldName = el.dataset.fieldName;
   const fieldType = el.dataset.fieldType;
   const rawVal = el.dataset.raw || el.textContent;
   el.dataset.editing = "true";
   el.dataset.original = el.innerHTML;
+  // describe.fields からピックリスト値を引く (Phase 536)
+  const fieldDef = (inspectState.describe && inspectState.describe.fields || []).find((x) => x.name === fieldName);
   // 入力タイプを決定
   let inputType = "text";
   if (fieldType === "boolean") {
-    el.innerHTML = `<select class="inline-edit"><option value="true">true</option><option value="false">false</option></select>
+    // Phase 536: ☑ チェックボックスでも編集可能に (select は維持)
+    el.innerHTML = `<select class="inline-edit"><option value="true">✓ true (はい)</option><option value="false">✗ false (いいえ)</option></select>
       <button class="inline-save" title="保存 (PATCH)">✓</button><button class="inline-cancel" title="取消 (Esc)">✗</button>`;
     const sel = el.querySelector("select");
     sel.value = /yes|true|✓/.test(el.dataset.original) ? "true" : "false";
     sel.focus();
+  } else if (fieldType === "picklist" && fieldDef) {
+    // Phase 536: picklist は describe.picklistValues から select 生成
+    const opts = (fieldDef.picklistValues || []).filter((p) => p.active !== false);
+    const curRaw = (rawVal || "").replace(/^\(.*\)$/, "").trim();
+    const optsHtml = opts.map((p) => `<option value="${escape(p.value)}"${p.value === curRaw ? " selected" : ""}>${escape(p.label || p.value)}</option>`).join("");
+    el.innerHTML = `<select class="inline-edit"><option value="">(空)</option>${optsHtml}</select>
+      <button class="inline-save" title="保存 (PATCH)">✓</button><button class="inline-cancel" title="取消 (Esc)">✗</button>`;
+    const sel = el.querySelector("select");
+    sel.focus();
+  } else if (fieldType === "multipicklist" && fieldDef) {
+    // Phase 536: multipicklist は checkbox 群で編集
+    const opts = (fieldDef.picklistValues || []).filter((p) => p.active !== false);
+    const curRaw = (rawVal || "").replace(/^\(.*\)$/, "").trim();
+    const sel = new Set(curRaw.split(";").map((s) => s.trim()).filter(Boolean));
+    const checks = opts.map((p) => `<label style="display:block;font-size:11px"><input type="checkbox" class="inline-multi-opt" value="${escape(p.value)}"${sel.has(p.value) ? " checked" : ""} /> ${escape(p.label || p.value)}</label>`).join("");
+    el.innerHTML = `<div class="inline-edit-multi" style="max-height:140px;overflow-y:auto;border:1px solid var(--border);padding:4px 6px;background:var(--bg-2);border-radius:3px;width:60%;display:inline-block;vertical-align:top">${checks}</div>
+      <button class="inline-save" title="保存 (PATCH)">✓</button><button class="inline-cancel" title="取消 (Esc)">✗</button>`;
+    const first = el.querySelector(".inline-multi-opt");
+    if (first) first.focus();
   } else {
     if (fieldType === "double" || fieldType === "int" || fieldType === "currency" || fieldType === "percent") inputType = "number";
     else if (fieldType === "date") inputType = "date";
@@ -3168,14 +3118,23 @@ function cancelInspectorEdit(el) {
 async function saveInspectorEdit(el) {
   const fieldName = el.dataset.fieldName;
   const fieldType = el.dataset.fieldType;
-  const inputEl = el.querySelector(".inline-edit");
-  if (!inputEl) return;
-  let newVal = inputEl.value;
-  // 型変換
-  if (fieldType === "boolean") newVal = newVal === "true";
-  else if (fieldType === "double" || fieldType === "currency" || fieldType === "percent") newVal = newVal === "" ? null : Number(newVal);
-  else if (fieldType === "int") newVal = newVal === "" ? null : parseInt(newVal, 10);
-  else if (newVal === "") newVal = null;
+  // v3.446.0 Phase 536: multipicklist は checkbox 群から値収集 (.inline-edit セレクタなし)
+  let newVal;
+  if (fieldType === "multipicklist") {
+    const opts = el.querySelectorAll(".inline-multi-opt");
+    const vals = [];
+    opts.forEach((o) => { if (o.checked) vals.push(o.value); });
+    newVal = vals.length ? vals.join(";") : null;
+  } else {
+    const inputEl = el.querySelector(".inline-edit");
+    if (!inputEl) return;
+    newVal = inputEl.value;
+    // 型変換
+    if (fieldType === "boolean") newVal = newVal === "true";
+    else if (fieldType === "double" || fieldType === "currency" || fieldType === "percent") newVal = newVal === "" ? null : Number(newVal);
+    else if (fieldType === "int") newVal = newVal === "" ? null : parseInt(newVal, 10);
+    else if (newVal === "") newVal = null;
+  }
 
   // v3.202.0 Phase 292: PROD 環境での Inspector インライン編集前に confirm ダイアログ (5 経路目の防御)
   if (state.isProd) {
@@ -4909,10 +4868,17 @@ async function doRest() {
   const isHttp = mode === "http";
   const isSoap = mode === "soap";
 
-  // SF モードでは sid 必須
+  // SF モードでは sid 必須 (ただし v3.446.0 Phase 534 で「保存済み接続」が選ばれていれば不要)
   if (isSf && !state.sid) {
-    meta.innerHTML = `<span class="pill warn">⚠ Salesforce 未接続</span> 「再接続」ボタンで sid を取得してください`;
-    return;
+    const preActive = (function(){
+      const sel = document.getElementById("restConn");
+      if (!sel || !sel.value) return null;
+      return (connState && connState.list || []).find((c) => c.id === sel.value && c.accessToken);
+    })();
+    if (!preActive) {
+      meta.innerHTML = `<span class="pill warn">⚠ Salesforce 未接続</span> 「再接続」ボタンで sid を取得するか、🔐 接続マネージャから保存済み接続を選択してください`;
+      return;
+    }
   }
   if (!path) {
     // v3.49.0: 早期バリデーション + 入力欄にフォーカス戻し
@@ -4944,11 +4910,17 @@ async function doRest() {
     }
   }
   const myId = ++restRunId;
-  meta.textContent = `📡 送信中… #${myId} [${mode.toUpperCase()}]`;
+  // v3.446.0 Phase 534: SF モード時に「保存済み接続」が選ばれている場合は connFetch を使う
+  const activeConn = isSf ? getActiveRestConnection() : null;
+  const modeLabel = activeConn ? `${mode.toUpperCase()}@${activeConn.name || "conn"}` : mode.toUpperCase();
+  meta.textContent = `📡 送信中… #${myId} [${modeLabel}]`;
   const t0 = performance.now();
   let r;
-  if (isSf) {
-    // 既存: SF host + sid で sfFetch
+  if (isSf && activeConn) {
+    // セッション独立: 保存済み接続の access_token + instance_url で送信
+    r = await connFetch({ connection: activeConn, path, method, body: body || null });
+  } else if (isSf) {
+    // 既存: SF host + sid で sfFetch (ブラウザセッション)
     r = await sfFetch({ host: state.host, sid: state.sid, path, method, body: body || null });
   } else {
     // Phase 533: 汎用 HTTP / SOAP モード — 任意 URL に fetch
@@ -8023,4 +7995,632 @@ function adminExportCsv() {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 500);
   panelToast(`📥 サマリ CSV をダウンロードしました (${sections.length} セクション)`, { kind: "ok" });
+}
+
+// ======================================================================
+// v3.446.0 Phase 534: 接続マネージャ — セッション独立 API 接続
+// ユーザー要望「セッション関係なくAPIをおくれるようにしてほしい」「REST、SOAPなどの違うパターンでも」
+// chrome.storage.local に Connected App / 認証情報を保存し、OAuth Username-Password か SOAP login()
+// で取得した access_token / sessionId を使って、ブラウザのアクティブタブに依存せず API 送信できる。
+// ======================================================================
+
+const connState = {
+  list: [],         // 保存済み接続配列
+  editing: null,    // 編集中の接続オブジェクト (null = 編集中なし)
+};
+
+async function connRefreshList() {
+  try {
+    connState.list = await connLoadAll();
+  } catch (e) {
+    connState.list = [];
+  }
+  connRenderList();
+  connSyncRestDropdown();
+}
+
+function connRenderList() {
+  const wrap = document.getElementById("connList");
+  if (!wrap) return;
+  if (!connState.list.length) {
+    wrap.innerHTML = `<div class="empty-state">📭 まだ保存済み接続はありません。<br/><br/>「＋ 新規接続」を押して認証情報を入力し、「🔓 認証してトークン取得」を実行してください。</div>`;
+    return;
+  }
+  const rows = connState.list.map((c) => {
+    const hasToken = !!c.accessToken;
+    const tokenStatus = hasToken
+      ? `<span class="pill ok">🔓 認証済み</span> <span class="meta" style="font-size:11px">${c.instanceUrl ? escape(c.instanceUrl.replace(/^https?:\/\//, "")) : ""}</span>`
+      : `<span class="pill warn">🔒 未認証</span>`;
+    const authLabel = c.authType === "oauth_password" ? "🔑 OAuth UP" : "🔐 SOAP login";
+    const issued = c.tokenIssuedAt ? new Date(c.tokenIssuedAt).toLocaleString("ja-JP") : "";
+    return `<div class="conn-row" data-id="${escape(c.id)}" style="display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;background:var(--bg-2)">
+      <div>
+        <div style="font-weight:600;font-size:13px">${escape(c.name || "(無名接続)")} <span class="meta" style="font-weight:400;font-size:11px">${authLabel}</span></div>
+        <div class="meta" style="font-size:11px;margin-top:2px">${escape(c.username || "(ユーザー名未設定)")} @ ${escape(c.loginUrl || "")}</div>
+        <div style="margin-top:4px">${tokenStatus}${issued ? ` <span class="meta" style="font-size:11px">発行: ${escape(issued)}</span>` : ""}</div>
+      </div>
+      <div class="toolbar" style="gap:4px;align-items:center">
+        <button class="btn-conn-edit" data-id="${escape(c.id)}" title="この接続の情報を編集">✏️ 編集</button>
+        <button class="btn-conn-reauth" data-id="${escape(c.id)}" title="保存済み認証情報で再認証 (access_token を取り直す)">🔓 再認証</button>
+        <button class="btn-conn-test" data-id="${escape(c.id)}" title="SELECT Id, Name FROM Organization LIMIT 1 を送信して接続を確認">🧪 テスト</button>
+        <button class="btn-conn-copy-token" data-id="${escape(c.id)}" title="access_token をクリップボードへコピー (デバッグ用)">📋 token</button>
+        <button class="btn-conn-delete" data-id="${escape(c.id)}" title="この接続を削除">🗑</button>
+      </div>
+    </div>`;
+  });
+  wrap.innerHTML = rows.join("");
+  wrap.querySelectorAll(".btn-conn-edit").forEach((b) => b.addEventListener("click", () => connOpenEditor(b.dataset.id)));
+  wrap.querySelectorAll(".btn-conn-reauth").forEach((b) => b.addEventListener("click", () => connReauth(b.dataset.id)));
+  wrap.querySelectorAll(".btn-conn-test").forEach((b) => b.addEventListener("click", () => connTestQuery(b.dataset.id)));
+  wrap.querySelectorAll(".btn-conn-copy-token").forEach((b) => b.addEventListener("click", () => connCopyToken(b.dataset.id)));
+  wrap.querySelectorAll(".btn-conn-delete").forEach((b) => b.addEventListener("click", () => connDeleteOne(b.dataset.id)));
+}
+
+function connSyncRestDropdown() {
+  // REST ビューの接続セレクタを同期 (ブラウザセッション + 保存済み認証済み接続のみ表示)
+  const sel = document.getElementById("restConn");
+  if (!sel) return;
+  const current = sel.value;
+  const authed = connState.list.filter((c) => c.accessToken && c.instanceUrl);
+  sel.innerHTML = `<option value="">🪟 ブラウザセッション (アクティブタブ)</option>` +
+    authed.map((c) => `<option value="${escape(c.id)}">🔐 ${escape(c.name || "(無名)")} (${escape((c.instanceUrl || "").replace(/^https?:\/\//, ""))})</option>`).join("");
+  if (current && authed.find((c) => c.id === current)) sel.value = current;
+}
+
+function connOpenEditor(id) {
+  let c;
+  if (id) {
+    c = connState.list.find((x) => x.id === id);
+    if (!c) { panelToast("⚠ 接続が見つかりません", { kind: "warn" }); return; }
+  } else {
+    c = {
+      id: makeConnectionId(),
+      name: "",
+      loginUrl: "https://login.salesforce.com",
+      apiVersion: state.apiVersion || "62.0",
+      authType: "soap_login",
+      username: "", password: "", securityToken: "",
+      consumerKey: "", consumerSecret: "",
+    };
+  }
+  connState.editing = { ...c };
+  const editor = document.getElementById("connEditor");
+  if (editor) editor.classList.remove("hidden");
+  document.getElementById("connName").value = c.name || "";
+  // loginUrl select の制御
+  const loginSel = document.getElementById("connLoginUrl");
+  const customRow = document.querySelectorAll(".conn-custom-url-row");
+  const knownUrls = new Set(["https://login.salesforce.com", "https://test.salesforce.com"]);
+  if (c.loginUrl && knownUrls.has(c.loginUrl)) {
+    loginSel.value = c.loginUrl;
+    customRow.forEach((el) => el.classList.add("hidden"));
+    document.getElementById("connLoginUrlCustom").value = "";
+  } else {
+    loginSel.value = "custom";
+    customRow.forEach((el) => el.classList.remove("hidden"));
+    document.getElementById("connLoginUrlCustom").value = c.loginUrl || "";
+  }
+  document.getElementById("connApiVersion").value = c.apiVersion || "62.0";
+  document.getElementById("connAuthType").value = c.authType || "soap_login";
+  document.getElementById("connUsername").value = c.username || "";
+  document.getElementById("connPassword").value = c.password || "";
+  document.getElementById("connSecurityToken").value = c.securityToken || "";
+  document.getElementById("connConsumerKey").value = c.consumerKey || "";
+  document.getElementById("connConsumerSecret").value = c.consumerSecret || "";
+  connSyncAuthTypeUI();
+  document.getElementById("connAuthResult").innerHTML = "";
+  document.getElementById("connName").focus();
+}
+
+function connCloseEditor() {
+  connState.editing = null;
+  const editor = document.getElementById("connEditor");
+  if (editor) editor.classList.add("hidden");
+}
+
+function connSyncAuthTypeUI() {
+  const t = document.getElementById("connAuthType").value;
+  document.querySelectorAll(".conn-oauth-row").forEach((el) => el.classList.toggle("hidden", t !== "oauth_password"));
+}
+
+function connReadEditorToObject() {
+  if (!connState.editing) return null;
+  const c = { ...connState.editing };
+  c.name = document.getElementById("connName").value.trim();
+  const loginSel = document.getElementById("connLoginUrl").value;
+  c.loginUrl = loginSel === "custom" ? document.getElementById("connLoginUrlCustom").value.trim() : loginSel;
+  c.apiVersion = document.getElementById("connApiVersion").value.trim() || "62.0";
+  c.authType = document.getElementById("connAuthType").value;
+  c.username = document.getElementById("connUsername").value.trim();
+  c.password = document.getElementById("connPassword").value;
+  c.securityToken = document.getElementById("connSecurityToken").value.trim();
+  c.consumerKey = document.getElementById("connConsumerKey").value.trim();
+  c.consumerSecret = document.getElementById("connConsumerSecret").value.trim();
+  return c;
+}
+
+async function connSaveEditorOnly() {
+  const c = connReadEditorToObject();
+  if (!c) return;
+  if (!c.name) { panelToast("⚠ 名前を入力してください", { kind: "warn" }); return; }
+  await connUpsert(c);
+  panelToast(`💾 接続「${c.name}」を保存しました (未認証)`, { kind: "ok" });
+  await connRefreshList();
+  connCloseEditor();
+}
+
+async function connAuthenticate() {
+  const c = connReadEditorToObject();
+  if (!c) return;
+  if (!c.name) { panelToast("⚠ 名前を入力してください", { kind: "warn" }); return; }
+  if (!c.username || !c.password) { panelToast("⚠ ユーザー名・パスワードを入力してください", { kind: "warn" }); return; }
+  if (c.authType === "oauth_password" && (!c.consumerKey || !c.consumerSecret)) {
+    panelToast("⚠ OAuth では Consumer Key/Secret が必要です", { kind: "warn" });
+    return;
+  }
+  const result = document.getElementById("connAuthResult");
+  result.innerHTML = `<span class="pill loading">🔓 認証中…</span>`;
+  const btn = document.getElementById("btnConnAuth");
+  if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; }
+  try {
+    let r;
+    if (c.authType === "oauth_password") {
+      r = await connAuthOAuth({
+        loginUrl: c.loginUrl,
+        consumerKey: c.consumerKey,
+        consumerSecret: c.consumerSecret,
+        username: c.username,
+        password: c.password,
+        securityToken: c.securityToken,
+      });
+    } else {
+      r = await connAuthSoap({
+        loginUrl: c.loginUrl,
+        username: c.username,
+        password: c.password,
+        securityToken: c.securityToken,
+        apiVersion: c.apiVersion,
+      });
+    }
+    if (!r.ok) {
+      result.innerHTML = `<span class="pill err">❌ 認証失敗 (HTTP ${r.status || "?"})</span> <span class="meta">${escape(r.error || "")}</span>`;
+      panelToast(`❌ 認証失敗: ${r.error || "不明なエラー"}`, { kind: "err" });
+      return;
+    }
+    c.accessToken = r.accessToken;
+    c.instanceUrl = r.instanceUrl;
+    c.tokenIssuedAt = r.issuedAt || Date.now();
+    c.tokenType = r.tokenType || "Bearer";
+    await connUpsert(c);
+    result.innerHTML = `<span class="pill ok">✅ 認証成功</span> <span class="meta">instance: ${escape(r.instanceUrl)} / token: ${escape(maskSecret(r.accessToken))}</span>`;
+    panelToast(`✅ 接続「${c.name}」を認証しました`, { kind: "ok" });
+    await connRefreshList();
+    connCloseEditor();
+  } catch (e) {
+    result.innerHTML = `<span class="pill err">❌ 例外</span> <span class="meta">${escape(String(e))}</span>`;
+  } finally {
+    if (btn) { btn.disabled = false; btn.style.opacity = ""; }
+  }
+}
+
+async function connReauth(id) {
+  const c = connState.list.find((x) => x.id === id);
+  if (!c) return;
+  connOpenEditor(id);
+  // 自動的に認証ボタンを押した状態を再現
+  setTimeout(() => connAuthenticate(), 100);
+}
+
+async function connTestQuery(id) {
+  const c = id ? connState.list.find((x) => x.id === id) : connReadEditorToObject();
+  if (!c) return;
+  if (!c.accessToken || !c.instanceUrl) {
+    panelToast("⚠ まだ認証されていません。「🔓 認証」を先に実行してください", { kind: "warn" });
+    return;
+  }
+  const meta = document.getElementById(id ? "connMeta" : "connAuthResult");
+  if (meta) meta.innerHTML = `<span class="pill loading">🧪 テスト送信中…</span>`;
+  const apiVer = c.apiVersion || "62.0";
+  const r = await connFetch({
+    connection: c,
+    path: `/services/data/v${apiVer}/query/?q=` + encodeURIComponent("SELECT Id, Name FROM Organization LIMIT 1"),
+  });
+  if (!r.ok) {
+    if (meta) meta.innerHTML = `<span class="pill err">❌ テスト失敗 (HTTP ${r.status})</span> <span class="meta">${escape(JSON.stringify(r.data).substring(0, 200))}</span>`;
+    panelToast(`❌ テスト送信失敗: HTTP ${r.status}`, { kind: "err" });
+    return;
+  }
+  const org = (r.data && r.data.records && r.data.records[0]) || {};
+  if (meta) meta.innerHTML = `<span class="pill ok">✅ テスト成功</span> <span class="meta">Organization: ${escape(org.Name || "")} (Id: ${escape(org.Id || "")})</span>`;
+  panelToast(`✅ ${c.name || "接続"}: Organization「${org.Name || ""}」`, { kind: "ok" });
+}
+
+async function connCopyToken(id) {
+  const c = connState.list.find((x) => x.id === id);
+  if (!c || !c.accessToken) { panelToast("⚠ access_token が未取得です", { kind: "warn" }); return; }
+  try {
+    await navigator.clipboard.writeText(c.accessToken);
+    panelToast(`📋 access_token をコピー (${maskSecret(c.accessToken)})`, { kind: "ok" });
+  } catch (e) { panelToast("❌ クリップボードコピー失敗", { kind: "err" }); }
+}
+
+async function connDeleteOne(id) {
+  const c = connState.list.find((x) => x.id === id);
+  if (!c) return;
+  if (!window.confirm(`接続「${c.name || "(無名)"}」を削除します。よろしいですか?\n(認証情報・access_token も完全に削除されます)`)) return;
+  await connDelete(id);
+  panelToast(`🗑 接続「${c.name || "(無名)"}」を削除しました`, { kind: "ok" });
+  await connRefreshList();
+}
+
+async function connClearAll() {
+  if (!connState.list.length) { panelToast("📭 削除する接続がありません", { kind: "warn" }); return; }
+  if (!window.confirm(`全 ${connState.list.length} 件の接続を削除します。よろしいですか?\n(認証情報・access_token・Consumer Secret 等が完全に削除されます)`)) return;
+  await connSaveAll([]);
+  panelToast(`🗑 全 ${connState.list.length} 件の接続を削除しました`, { kind: "ok" });
+  await connRefreshList();
+}
+
+function connExportJson() {
+  if (!connState.list.length) { panelToast("📭 エクスポートする接続がありません", { kind: "warn" }); return; }
+  const json = JSON.stringify({ exported_at: new Date().toISOString(), connections: connState.list }, null, 2);
+  const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  const ts = new Date().toISOString().substring(0, 19).replace(/[-T:]/g, "");
+  a.download = `devtoolsnext-connections-${ts}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  panelToast(`📤 ${connState.list.length} 件の接続をエクスポート (⚠ パスワード・トークン平文)`, { kind: "ok" });
+}
+
+async function connImportJson(file) {
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    const incoming = Array.isArray(data) ? data : (data.connections || []);
+    if (!incoming.length) { panelToast("⚠ JSON に接続データがありません", { kind: "warn" }); return; }
+    // id 重複は新規 id で
+    const cur = await connLoadAll();
+    const existing = new Set(cur.map((c) => c.id));
+    for (const c of incoming) {
+      if (existing.has(c.id)) c.id = makeConnectionId();
+      cur.push(c);
+    }
+    await connSaveAll(cur);
+    panelToast(`📥 ${incoming.length} 件の接続をインポートしました`, { kind: "ok" });
+    await connRefreshList();
+  } catch (e) {
+    panelToast(`❌ インポート失敗: ${e.message || e}`, { kind: "err" });
+  }
+}
+
+function bindConnectionEvents() {
+  const $on = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
+  $on("btnConnNew", "click", () => connOpenEditor(null));
+  $on("btnConnRefreshList", "click", connRefreshList);
+  $on("btnConnEditCancel", "click", connCloseEditor);
+  $on("btnConnAuth", "click", connAuthenticate);
+  $on("btnConnSave", "click", connSaveEditorOnly);
+  $on("btnConnTestQuery", "click", () => connTestQuery(null));
+  $on("btnConnExportJson", "click", connExportJson);
+  $on("btnConnImportJson", "click", () => document.getElementById("connImportFile").click());
+  $on("connImportFile", "change", (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (f) { connImportJson(f); e.target.value = ""; }
+  });
+  $on("btnConnClearAll", "click", connClearAll);
+  $on("connAuthType", "change", connSyncAuthTypeUI);
+  $on("connLoginUrl", "change", () => {
+    const sel = document.getElementById("connLoginUrl").value;
+    const rows = document.querySelectorAll(".conn-custom-url-row");
+    rows.forEach((el) => el.classList.toggle("hidden", sel !== "custom"));
+  });
+  // REST ビューの「接続マネージャを開く」リンク
+  const link = document.getElementById("restConnManage");
+  if (link) link.addEventListener("click", (e) => {
+    e.preventDefault();
+    switchToView("connections");
+  });
+}
+
+// 接続セレクタが選ばれた状態かどうかを取得 (REST 送信時に参照)
+function getActiveRestConnection() {
+  const sel = document.getElementById("restConn");
+  if (!sel || !sel.value) return null;
+  return connState.list.find((c) => c.id === sel.value && c.accessToken && c.instanceUrl) || null;
+}
+
+// ======================================================================
+// v3.446.0 Phase 535: レコード詳細から子レコード作成 + 入力補助
+// ユーザー要望「レコード確認から子レコードを簡単に作れる」「編集できる」「選択リスト・boolean の入力補助」
+// ======================================================================
+
+const childCreateState = {
+  childObj: null,          // 作成対象の子オブジェクト API 名
+  childFkField: null,      // 親 ID を入れる FK フィールド名
+  describe: null,          // 子オブジェクトの describe (フィールド一覧)
+  values: {},              // ユーザー入力値
+};
+
+// renderInspectorChildRelations が「+ 新規作成」ボタンを各子リレに追加するよう拡張
+function attachChildCreateButtons() {
+  const body = document.querySelector("#inspectChildRels .inspector-child-rels-body");
+  if (!body) return;
+  // 既存の child-rel-item に「+ 新規」ボタンを横に追加 (renderInspectorChildRelations を後追いで補完)
+  body.querySelectorAll(".child-rel-item").forEach((btn) => {
+    if (btn.dataset.augmented === "true") return;
+    btn.dataset.augmented = "true";
+    const obj = btn.dataset.obj;
+    const fk = btn.dataset.fk;
+    const wrap = document.createElement("span");
+    wrap.style.cssText = "display:inline-flex;gap:2px;margin-left:4px";
+    const newBtn = document.createElement("button");
+    newBtn.className = "child-rel-create";
+    newBtn.title = `${obj} の新規レコードを作成 (${fk} に親 ID を自動セット)`;
+    newBtn.textContent = "➕";
+    newBtn.style.cssText = "padding:0 6px;font-size:12px;background:var(--accent);color:#fff;border:none;border-radius:3px;cursor:pointer";
+    newBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      openChildCreateForm(obj, fk);
+    });
+    wrap.appendChild(newBtn);
+    btn.appendChild(wrap);
+  });
+}
+
+async function openChildCreateForm(childObj, fkField) {
+  if (!state.sid) { panelToast("⚠ Salesforce 未接続", { kind: "warn" }); return; }
+  if (!inspectState.id) { panelToast("⚠ 親レコード ID が不明です", { kind: "warn" }); return; }
+  childCreateState.childObj = childObj;
+  childCreateState.childFkField = fkField;
+  childCreateState.values = { [fkField]: inspectState.id };
+
+  // モーダル風オーバーレイを生成
+  let overlay = document.getElementById("childCreateOverlay");
+  if (overlay) overlay.remove();
+  overlay = document.createElement("div");
+  overlay.id = "childCreateOverlay";
+  overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px";
+  overlay.innerHTML = `
+    <div style="background:var(--bg,#1a1a1a);border:1px solid var(--border,#444);border-radius:8px;max-width:760px;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.6)">
+      <div style="padding:12px 16px;border-bottom:1px solid var(--border,#444);display:flex;align-items:center;gap:8px">
+        <h3 style="margin:0;font-size:14px;color:var(--fg,#eee)">➕ ${escape(childObj)} 新規レコード作成</h3>
+        <span class="meta" style="font-size:11px">親: ${escape(inspectState.obj)}:${escape(inspectState.id)} → <code>${escape(fkField)}</code></span>
+        <span style="flex:1"></span>
+        <button id="ccLoadDesc" title="describe を読み込んで入力フォームを生成">📋 describe 読込</button>
+        <label class="inspector-opt" style="font-size:11px"><input type="checkbox" id="ccShowOptional" /> 任意項目も表示</label>
+        <button id="ccClose" aria-label="閉じる" title="閉じる (Esc)">✕</button>
+      </div>
+      <div style="padding:12px 16px;overflow:auto;flex:1">
+        <div id="ccMeta" class="meta" role="status" aria-live="polite"></div>
+        <div id="ccForm" style="margin-top:8px"><div class="empty-state">📋 「describe 読込」を押すと項目入力フォームが表示されます (必須項目のみ既定で表示)</div></div>
+      </div>
+      <div style="padding:10px 16px;border-top:1px solid var(--border,#444);display:flex;gap:8px;align-items:center">
+        <span id="ccSubmitMeta" class="meta" style="flex:1"></span>
+        <button id="ccSubmit" class="primary" title="POST /services/data/v.../sobjects/<childObj>/ で作成">✅ 作成</button>
+        <button id="ccCancel" title="作成せずに閉じる">取消</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  document.getElementById("ccClose").addEventListener("click", close);
+  document.getElementById("ccCancel").addEventListener("click", close);
+  document.getElementById("ccLoadDesc").addEventListener("click", () => loadChildCreateDescribe());
+  document.getElementById("ccShowOptional").addEventListener("change", () => renderChildCreateForm());
+  document.getElementById("ccSubmit").addEventListener("click", submitChildCreate);
+  document.addEventListener("keydown", function _esc(e) {
+    if (e.key === "Escape") { close(); document.removeEventListener("keydown", _esc); }
+  });
+  // 自動で describe 読込
+  loadChildCreateDescribe();
+}
+
+async function loadChildCreateDescribe() {
+  const meta = document.getElementById("ccMeta");
+  meta.innerHTML = `<span class="pill loading">📋 ${escape(childCreateState.childObj)} の describe を取得中…</span>`;
+  const r = await sfFetch({
+    host: state.host, sid: state.sid,
+    path: `/services/data/v${state.apiVersion}/sobjects/${encodeURIComponent(childCreateState.childObj)}/describe`,
+  });
+  if (!r.ok) {
+    meta.innerHTML = `<span class="pill err">❌ describe 失敗 (HTTP ${r.status})</span>`;
+    return;
+  }
+  childCreateState.describe = r.data;
+  const fields = r.data.fields || [];
+  const requiredCount = fields.filter((f) => isRequiredField(f)).length;
+  meta.innerHTML = `<span class="pill ok">${escape(childCreateState.childObj)}</span> <span class="pill">${fields.length} 項目</span> <span class="pill" title="必須項目数">必須 ${requiredCount}</span>`;
+  renderChildCreateForm();
+}
+
+function isRequiredField(f) {
+  // createable & not nillable & no default → ユーザーが必ず入力するもの
+  if (!f.createable) return false;
+  if (f.nillable) return false;
+  if (f.defaultedOnCreate) return false;
+  if (f.calculated) return false;
+  if (f.autoNumber) return false;
+  return true;
+}
+
+function renderChildCreateForm() {
+  const wrap = document.getElementById("ccForm");
+  if (!wrap) return;
+  const desc = childCreateState.describe;
+  if (!desc) { wrap.innerHTML = `<div class="empty-state">📋 「describe 読込」を押してください</div>`; return; }
+  const showOptional = document.getElementById("ccShowOptional").checked;
+  const fields = (desc.fields || []).filter((f) => {
+    if (!f.createable) return false;
+    if (f.calculated || f.autoNumber) return false;
+    if (showOptional) return true;
+    // 既定: 必須項目 + FK のみ
+    if (f.name === childCreateState.childFkField) return true;
+    return isRequiredField(f);
+  });
+  if (!fields.length) {
+    wrap.innerHTML = `<div class="empty-state">📭 入力可能な項目がありません</div>`;
+    return;
+  }
+  const html = fields.map((f) => {
+    const isFk = f.name === childCreateState.childFkField;
+    const required = isRequiredField(f);
+    const cur = childCreateState.values[f.name];
+    const widget = buildFieldWidget(f, cur, isFk);
+    const reqMark = required ? `<span style="color:#e85;margin-left:2px" title="必須">*</span>` : "";
+    const fkMark = isFk ? `<span class="pill" style="font-size:10px;margin-left:4px" title="親レコードへの外部キー (自動入力)">親FK</span>` : "";
+    const refMark = f.type === "reference" ? `<span class="meta" style="font-size:10px;margin-left:4px" title="参照先: ${escape((f.referenceTo || []).join(", "))}">→ ${escape((f.referenceTo || [])[0] || "")}</span>` : "";
+    return `<div class="cc-row" style="display:grid;grid-template-columns:200px 1fr;gap:6px 10px;align-items:center;padding:4px 0;border-bottom:1px solid var(--border,#333)">
+      <div>
+        <div style="font-size:12px;font-weight:600">${escape(f.label || f.name)}${reqMark}${fkMark}</div>
+        <div class="meta" style="font-size:10px">${escape(f.name)} / ${escape(f.type)}${refMark}</div>
+      </div>
+      <div data-field-name="${escape(f.name)}" data-field-type="${escape(f.type)}">${widget}</div>
+    </div>`;
+  }).join("");
+  wrap.innerHTML = html;
+  // 入力ハンドラ
+  wrap.querySelectorAll("[data-field-name]").forEach((cell) => {
+    const name = cell.dataset.fieldName;
+    const type = cell.dataset.fieldType;
+    const inputs = cell.querySelectorAll("input, select, textarea");
+    inputs.forEach((inp) => {
+      const handler = () => {
+        childCreateState.values[name] = readWidgetValue(cell, type);
+      };
+      inp.addEventListener("change", handler);
+      inp.addEventListener("input", handler);
+    });
+  });
+}
+
+// type 別に最適な入力ウィジェットを生成 (picklist/boolean/date/etc)
+function buildFieldWidget(f, currentValue, isFk) {
+  const valStr = currentValue == null ? "" : String(currentValue);
+  const dis = isFk ? " readonly" : "";  // FK は読み取り専用 (親 ID 固定)
+  const cls = isFk ? "cc-input cc-fk" : "cc-input";
+  const style = `style="width:100%;padding:4px 6px;font-size:12px;${isFk ? "background:#2a3d4d;" : ""}"`;
+  if (f.type === "boolean") {
+    const checked = currentValue === true || currentValue === "true" ? " checked" : "";
+    return `<label style="display:flex;align-items:center;gap:6px"><input type="checkbox"${checked} class="cc-checkbox" /><span style="font-size:11px" class="cc-bool-label">${checked ? "✓ true (はい)" : "✗ false (いいえ)"}</span></label>`;
+  }
+  if (f.type === "picklist") {
+    const opts = (f.picklistValues || []).filter((p) => p.active !== false);
+    const optsHtml = opts.map((p) => `<option value="${escape(p.value)}"${p.value === valStr ? " selected" : ""}>${escape(p.label || p.value)}</option>`).join("");
+    return `<select class="${cls}" ${style}><option value="">(未選択)</option>${optsHtml}</select>`;
+  }
+  if (f.type === "multipicklist") {
+    const opts = (f.picklistValues || []).filter((p) => p.active !== false);
+    const selected = new Set(String(currentValue || "").split(";").filter(Boolean));
+    return `<div class="cc-multi" style="max-height:120px;overflow-y:auto;border:1px solid var(--border,#444);padding:4px 6px;font-size:11px;background:var(--bg-2,#0d1117);border-radius:3px">` +
+      opts.map((p) => `<label style="display:block"><input type="checkbox" value="${escape(p.value)}"${selected.has(p.value) ? " checked" : ""} class="cc-multi-opt" /> ${escape(p.label || p.value)}</label>`).join("") +
+      `</div>`;
+  }
+  if (f.type === "textarea") {
+    return `<textarea class="${cls}" ${style} rows="3"${dis}>${escape(valStr)}</textarea>`;
+  }
+  if (f.type === "date") {
+    return `<input type="date" class="${cls}" ${style} value="${escape(valStr)}"${dis} />`;
+  }
+  if (f.type === "datetime") {
+    const dt = valStr.replace(/\..*$/, "").substring(0, 16);
+    return `<input type="datetime-local" class="${cls}" ${style} value="${escape(dt)}"${dis} />`;
+  }
+  if (f.type === "int" || f.type === "double" || f.type === "currency" || f.type === "percent") {
+    return `<input type="number" class="${cls}" ${style} value="${escape(valStr)}"${dis} step="${f.type === "int" ? "1" : "any"}" />`;
+  }
+  if (f.type === "email") return `<input type="email" class="${cls}" ${style} value="${escape(valStr)}"${dis} />`;
+  if (f.type === "url") return `<input type="url" class="${cls}" ${style} value="${escape(valStr)}"${dis} />`;
+  if (f.type === "phone") return `<input type="tel" class="${cls}" ${style} value="${escape(valStr)}"${dis} />`;
+  if (f.type === "reference") return `<input type="text" class="${cls}" ${style} value="${escape(valStr)}"${dis} placeholder="15/18桁 ID${(f.referenceTo || [])[0] ? " (例: " + (f.referenceTo[0] === "Account" ? "001..." : (f.referenceTo[0] === "Contact" ? "003..." : "")) + ")" : ""}" />`;
+  // string / id / その他
+  const maxLen = f.length ? ` maxlength="${f.length}"` : "";
+  return `<input type="text" class="${cls}" ${style} value="${escape(valStr)}"${dis}${maxLen} />`;
+}
+
+function readWidgetValue(cell, type) {
+  if (type === "boolean") {
+    const cb = cell.querySelector(".cc-checkbox");
+    const label = cell.querySelector(".cc-bool-label");
+    if (label) label.textContent = cb && cb.checked ? "✓ true (はい)" : "✗ false (いいえ)";
+    return cb ? cb.checked : false;
+  }
+  if (type === "multipicklist") {
+    const opts = cell.querySelectorAll(".cc-multi-opt");
+    const vals = [];
+    opts.forEach((o) => { if (o.checked) vals.push(o.value); });
+    return vals.join(";");
+  }
+  const inp = cell.querySelector(".cc-input");
+  if (!inp) return null;
+  const raw = inp.value;
+  if (raw === "") return null;
+  if (type === "int") return parseInt(raw, 10);
+  if (type === "double" || type === "currency" || type === "percent") return Number(raw);
+  return raw;
+}
+
+async function submitChildCreate() {
+  const desc = childCreateState.describe;
+  if (!desc) { panelToast("⚠ describe が未読込です", { kind: "warn" }); return; }
+  // 必須項目チェック
+  const missing = [];
+  for (const f of desc.fields || []) {
+    if (isRequiredField(f)) {
+      const v = childCreateState.values[f.name];
+      if (v == null || v === "") missing.push(f.label || f.name);
+    }
+  }
+  if (missing.length) {
+    panelToast(`⚠ 必須項目が未入力: ${missing.slice(0, 5).join(", ")}${missing.length > 5 ? " など" : ""}`, { kind: "warn" });
+    return;
+  }
+  // PROD ゲート
+  if (state.isProd) {
+    const ok = window.confirm(
+      `🚨🚨 本番組織 (PROD) で子レコード作成 🚨🚨\n` +
+      `対象組織: ${state.host || "?"}\n\n` +
+      `${childCreateState.childObj}: 新規レコード\n` +
+      `親: ${inspectState.obj}:${inspectState.id} (${childCreateState.childFkField})\n\n` +
+      `この操作は実データを即時作成します (POST)。続行しますか?`
+    );
+    if (!ok) { panelToast("⚠ PROD 子レコード作成をキャンセル", { kind: "warn" }); return; }
+  }
+  const meta = document.getElementById("ccSubmitMeta");
+  const btn = document.getElementById("ccSubmit");
+  if (btn) { btn.disabled = true; btn.style.opacity = "0.6"; btn.textContent = "⏳ 作成中…"; }
+  if (meta) meta.innerHTML = `<span class="pill loading">📡 POST 中…</span>`;
+  // null 値は送信ボディから除去
+  const body = {};
+  for (const [k, v] of Object.entries(childCreateState.values)) {
+    if (v == null || v === "") continue;
+    body[k] = v;
+  }
+  const r = await sfFetch({
+    host: state.host, sid: state.sid,
+    path: `/services/data/v${state.apiVersion}/sobjects/${encodeURIComponent(childCreateState.childObj)}/`,
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+  if (btn) { btn.disabled = false; btn.style.opacity = ""; btn.textContent = "✅ 作成"; }
+  if (!r.ok) {
+    if (meta) meta.innerHTML = `<span class="pill err">❌ 作成失敗 (HTTP ${r.status})</span> <span class="meta">${escape(formatError(r.data))}</span>`;
+    panelToast(`❌ 作成失敗: ${formatError(r.data)}`, { kind: "err" });
+    return;
+  }
+  const newId = (r.data && r.data.id) || "";
+  if (meta) meta.innerHTML = `<span class="pill ok">✅ 作成成功</span> <span class="meta">Id: ${escape(newId)}</span>`;
+  panelToast(`✅ ${childCreateState.childObj} を作成: ${newId}`, { kind: "ok" });
+  // 親レコードを再 inspect (子リレ件数 / 子レコード一覧反映のため)
+  setTimeout(() => {
+    const overlay = document.getElementById("childCreateOverlay");
+    if (overlay) overlay.remove();
+    // 親側 SOQL チップ更新のため child rels 再描画
+    renderInspectorChildRelations();
+    attachChildCreateButtons();
+  }, 800);
 }
