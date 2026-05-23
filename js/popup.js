@@ -30,6 +30,8 @@ import {
   getActiveSfTab, getSessionId, parseOrgIdFromSid, toApiHost,
   runSoql, getUserInfo,
 } from "./sf-api.js";
+// v3.447.0 Phase 537: 保存済み接続を popup から閲覧・操作 (接続マネージャと連動)
+import { loadConnections as connLoadAll, maskSecret } from "./sf-connections.js";
 
 const state = {
   tab: null,
@@ -65,6 +67,8 @@ async function init() {
     renderLinks();
     await refreshSession();
     await renderLoginAsHistory();
+    // v3.447.0 Phase 537: 保存済み接続セクションのレンダリング
+    try { await renderPopupConnections(); } catch (e) { console.log("[DevToolsNext] popup conn render skipped:", e); }
   } catch (e) {
     console.error("popup init error:", e);
     const s = document.getElementById("statusMsg");
@@ -841,4 +845,96 @@ async function renderLinks() {
     });
   }
   renderFiltered("");
+}
+
+// ======================================================================
+// v3.447.0 Phase 537: popup から保存済み接続を閲覧・操作
+// 接続マネージャ (panel/tool.html?view=connections) と chrome.storage.local 'sfdtConnections' を共有
+// ======================================================================
+
+function escapePopupHtml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
+async function renderPopupConnections() {
+  const wrap = document.getElementById("popupConnList");
+  const count = document.getElementById("popupConnCount");
+  if (!wrap) return;
+  const list = await connLoadAll();
+  if (count) count.textContent = list.length ? `${list.length} 件` : "0 件";
+  if (!list.length) {
+    wrap.innerHTML = `<div style="color:var(--fg-dim,#888);font-size:11px;padding:4px 0">📭 保存済み接続はありません。<br/>「🛠 接続マネージャ」で追加してください。</div>`;
+  } else {
+    wrap.innerHTML = list.map((c) => {
+      const authed = !!c.accessToken;
+      const badge = authed
+        ? `<span style="background:#1a4d2e;color:#7fe9a5;padding:1px 5px;border-radius:3px;font-size:9px">🔓 認証済</span>`
+        : `<span style="background:#4d3a1a;color:#f5c269;padding:1px 5px;border-radius:3px;font-size:9px">🔒 未認証</span>`;
+      const authType = c.authType === "oauth_password" ? "🔑 OAuth" : "🔐 SOAP";
+      const inst = c.instanceUrl ? c.instanceUrl.replace(/^https?:\/\//, "") : "";
+      return `<div class="popup-conn-row" style="border:1px solid var(--line,#333);border-radius:4px;padding:5px 7px;background:var(--bg-2,#1a1a1a)">
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600">
+          <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapePopupHtml(c.name || "(無名)")}">${escapePopupHtml(c.name || "(無名)")}</span>
+          ${badge}
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--fg-dim,#888);margin-top:2px">
+          <span>${authType}</span>
+          ${inst ? `<span title="${escapePopupHtml(inst)}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${escapePopupHtml(inst)}</span>` : ""}
+        </div>
+        <div style="display:flex;gap:3px;margin-top:4px;flex-wrap:wrap">
+          ${authed ? `<button class="mini btn-popup-conn-rest" data-id="${escapePopupHtml(c.id)}" title="この接続を選んだ状態で REST API ビューを全画面表示">🌐 REST</button>` : ""}
+          ${authed ? `<button class="mini btn-popup-conn-copytoken" data-id="${escapePopupHtml(c.id)}" title="access_token をクリップボードへコピー">📋 token</button>` : ""}
+          <button class="mini btn-popup-conn-edit" data-id="${escapePopupHtml(c.id)}" title="接続マネージャで編集">✏️ 編集</button>
+        </div>
+      </div>`;
+    }).join("");
+  }
+  // ボタンハンドラ
+  wrap.querySelectorAll(".btn-popup-conn-rest").forEach((b) => {
+    b.addEventListener("click", () => {
+      const id = b.dataset.id;
+      chrome.tabs.create({ url: chrome.runtime.getURL(`html/tool.html?view=rest&conn=${encodeURIComponent(id)}`) });
+    });
+  });
+  wrap.querySelectorAll(".btn-popup-conn-copytoken").forEach((b) => {
+    b.addEventListener("click", async () => {
+      const id = b.dataset.id;
+      const c = list.find((x) => x.id === id);
+      if (!c || !c.accessToken) { toast("⚠ access_token が未取得です", { kind: "warn" }); return; }
+      try {
+        await navigator.clipboard.writeText(c.accessToken);
+        toast(`📋 ${c.name || "接続"} のトークンをコピー (${maskSecret(c.accessToken)})`, { kind: "ok" });
+      } catch (e) { toast("❌ クリップボードコピー失敗", { kind: "err" }); }
+    });
+  });
+  wrap.querySelectorAll(".btn-popup-conn-edit").forEach((b) => {
+    b.addEventListener("click", () => {
+      chrome.tabs.create({ url: chrome.runtime.getURL(`html/tool.html?view=connections`) });
+    });
+  });
+
+  // フッターボタン
+  const mgrBtn = document.getElementById("btnPopupConnManager");
+  if (mgrBtn && !mgrBtn.dataset.bound) {
+    mgrBtn.dataset.bound = "true";
+    mgrBtn.addEventListener("click", () => {
+      chrome.tabs.create({ url: chrome.runtime.getURL(`html/tool.html?view=connections`) });
+    });
+  }
+  const refBtn = document.getElementById("btnPopupConnRefresh");
+  if (refBtn && !refBtn.dataset.bound) {
+    refBtn.dataset.bound = "true";
+    refBtn.addEventListener("click", () => renderPopupConnections());
+  }
+  // chrome.storage.onChanged で別画面からの変更を即時反映
+  if (chrome.storage && chrome.storage.onChanged && !window._popupConnStorageListener) {
+    window._popupConnStorageListener = true;
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === "local" && changes.sfdtConnections) {
+        renderPopupConnections();
+      }
+    });
+  }
 }

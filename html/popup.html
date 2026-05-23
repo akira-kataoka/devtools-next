@@ -63,6 +63,16 @@
       </button>
     </div>
 
+    <!-- v3.447.0 Phase 537: 保存済み接続セクション (接続マネージャと連動) -->
+    <section class="card popup-conn-card">
+      <h2 style="display:flex;align-items:center;gap:6px">🔐 保存済み接続 <span id="popupConnCount" class="badge" style="font-size:10px"></span></h2>
+      <div id="popupConnList" class="popup-conn-list" style="display:flex;flex-direction:column;gap:4px;font-size:11px"></div>
+      <div class="toolbar" style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+        <button id="btnPopupConnManager" class="mini" title="接続マネージャを全画面で開く (新規追加・編集・認証)">🛠 接続マネージャ</button>
+        <button id="btnPopupConnRefresh" class="mini" title="保存済み接続を再読み込み">🔄</button>
+      </div>
+    </section>
+
     <!-- v3.39.0: セッション情報を <details> で折りたたみ可能に (popup 高さ節約) -->
     <details class="card session-card">
       <summary><h2 style="display:inline">セッション情報</h2></summary>

@@ -236,6 +236,8 @@ async function init() {
       window._sfdtInitialOpFromQuery = params.get("op") || null;
       window._sfdtInitialApiObjFromQuery = params.get("apiObj") || null;
       window._sfdtInitialApiIdFromQuery = params.get("apiId") || null;
+      // v3.447.0 Phase 537: ?conn=<id> 対応 — REST ビューの接続セレクタを保存済み接続で初期化 (popup から開いたとき用)
+      window._sfdtInitialConnFromQuery = params.get("conn") || null;
     } catch {}
     // v2.93.0: リフレッシュ時の直前 view 復元 (ユーザー要望「リフレッシュしても前のページ状態を残して」)
     try {
@@ -8064,7 +8066,15 @@ function connSyncRestDropdown() {
   const authed = connState.list.filter((c) => c.accessToken && c.instanceUrl);
   sel.innerHTML = `<option value="">🪟 ブラウザセッション (アクティブタブ)</option>` +
     authed.map((c) => `<option value="${escape(c.id)}">🔐 ${escape(c.name || "(無名)")} (${escape((c.instanceUrl || "").replace(/^https?:\/\//, ""))})</option>`).join("");
-  if (current && authed.find((c) => c.id === current)) sel.value = current;
+  // v3.447.0 Phase 537: ?conn=<id> URL クエリで初期選択 (popup → REST ビュー直通リンク用)
+  const initialConn = window._sfdtInitialConnFromQuery;
+  if (initialConn && authed.find((c) => c.id === initialConn)) {
+    sel.value = initialConn;
+    window._sfdtInitialConnFromQuery = null; // 1 回だけ
+    panelToast(`🔐 接続「${authed.find((c) => c.id === initialConn).name}」を REST に適用`, { kind: "ok" });
+  } else if (current && authed.find((c) => c.id === current)) {
+    sel.value = current;
+  }
 }
 
 function connOpenEditor(id) {
