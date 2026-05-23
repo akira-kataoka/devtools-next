@@ -8078,18 +8078,33 @@ function connRenderList() {
 
 function connSyncRestDropdown() {
   // REST ビューの接続セレクタを同期 (ブラウザセッション + 保存済み認証済み接続のみ表示)
+  // v3.452.0 Phase 542: stale 接続には ⏰ + (要再認証 Xh前) サフィックスを option ラベルに追加
+  // 選択前にユーザーが期限切れトークンに気付けるようにする (Phase 539-540 と整合)
   const sel = document.getElementById("restConn");
   if (!sel) return;
   const current = sel.value;
   const authed = connState.list.filter((c) => c.accessToken && c.instanceUrl);
-  sel.innerHTML = `<option value="">🪟 ブラウザセッション (アクティブタブ)</option>` +
-    authed.map((c) => `<option value="${escape(c.id)}">🔐 ${escape(c.name || "(無名)")} (${escape((c.instanceUrl || "").replace(/^https?:\/\//, ""))})</option>`).join("");
+  // stale を末尾にソートすると目立つが、ユーザー記憶順序を崩すので維持。ラベルだけ装飾
+  const optionsHtml = authed.map((c) => {
+    const stale = isAuthStale(c);
+    const prefix = stale ? "⏰" : "🔐";
+    const ageLabel = stale && c.tokenIssuedAt ? ` (要再認証・${formatAuthAge(c.tokenIssuedAt)})` : "";
+    const inst = escape((c.instanceUrl || "").replace(/^https?:\/\//, ""));
+    return `<option value="${escape(c.id)}" title="${stale ? "トークン発行から 6 時間以上が経過しています。接続マネージャで 🔓 再認証を実行してください" : ""}">${prefix} ${escape(c.name || "(無名)")} (${inst})${ageLabel}</option>`;
+  }).join("");
+  sel.innerHTML = `<option value="">🪟 ブラウザセッション (アクティブタブ)</option>` + optionsHtml;
   // v3.447.0 Phase 537: ?conn=<id> URL クエリで初期選択 (popup → REST ビュー直通リンク用)
   const initialConn = window._sfdtInitialConnFromQuery;
   if (initialConn && authed.find((c) => c.id === initialConn)) {
     sel.value = initialConn;
     window._sfdtInitialConnFromQuery = null; // 1 回だけ
-    panelToast(`🔐 接続「${authed.find((c) => c.id === initialConn).name}」を REST に適用`, { kind: "ok" });
+    const picked = authed.find((c) => c.id === initialConn);
+    // stale な接続を選択した場合は警告 toast に切替 (kind=warn)
+    if (isAuthStale(picked)) {
+      panelToast(`⏰ 接続「${picked.name}」は古い (${formatAuthAge(picked.tokenIssuedAt)}) — 401 が出る場合は 🔓 再認証してください`, { kind: "warn" });
+    } else {
+      panelToast(`🔐 接続「${picked.name}」を REST に適用`, { kind: "ok" });
+    }
   } else if (current && authed.find((c) => c.id === current)) {
     sel.value = current;
   }
