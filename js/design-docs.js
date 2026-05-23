@@ -21,6 +21,8 @@
 // 【設計書一覧の出典】generateDesign() の switch (type) 分岐 (line 181-201) — case 数 = 21 種類確定
 
 import { sfFetch, runSoql } from "./sf-api.js";
+// v3.462.0 Phase 552: HTML escape は sf-format-helpers.escHtml に集約 (esc は薄い wrapper として export を維持)
+import { escHtml } from "./sf-format-helpers.js";
 
 /**
  * 各設計書タイプの定義。
@@ -2974,8 +2976,9 @@ function csvCell(v) {
   if (/[",\n\t]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
+// v3.462.0 Phase 552: 実装は sf-format-helpers.escHtml に移譲。 export は維持 (Phase 549 tests + toHtml/inline の内部参照のため)
 export function esc(s) {
-  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  return escHtml(s);
 }
 
 // Markdown を簡易 HTML にレンダリング (プレビュー用)。完全な仕様ではなく headings/table/code/list/blockquote/hr/inline-code/bold/italic だけ対応

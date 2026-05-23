@@ -70,7 +70,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, formatError } from "./sf-format-helpers.js";
+import { tsForFilename, formatError, escHtml } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -5911,9 +5911,10 @@ function stringify(v) {
   }
   return String(v);
 }
-function escape(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-}
+// v3.462.0 Phase 552: HTML escape を sf-format-helpers.escHtml に集約 (panel/popup/picker/design-docs 4 ファイル統合)。
+// 旧 escape は String(s).replace(...) で null → "null" を吐き出すバグ相当の挙動だったが、
+// escHtml は null-safe (null/undefined → "") に統一。194 ヶ所の call site は alias で不変。
+const escape = escHtml;
 // v3.454.0 Phase 544 で formatError は ./sf-format-helpers.js に抽出 (上の import 文を参照)
 
 /**

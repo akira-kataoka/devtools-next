@@ -32,6 +32,8 @@ import {
 } from "./sf-api.js";
 // v3.447.0 Phase 537: 保存済み接続を popup から閲覧・操作 (接続マネージャと連動)
 import { loadConnections as connLoadAll, maskSecret, formatAuthAge, isAuthStale } from "./sf-connections.js";
+// v3.462.0 Phase 552: HTML escape / formatError は sf-format-helpers に集約 (旧 ローカル定義は削除)
+import { escHtml as escape, formatError } from "./sf-format-helpers.js";
 
 const state = {
   tab: null,
@@ -739,14 +741,7 @@ function loginAsUser(u) {
 }
 
 // v3.87.0: Phase 177 — exportCsv / recordsToTableHtml / sortTableByTh / stringify を削除 (popup SOQL タブ撤去後の dead code)
-function escape(s) {
-  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-}
-function formatError(d) {
-  if (Array.isArray(d) && d[0]) return `${d[0].errorCode || ""} ${d[0].message || ""}`.trim();
-  if (d && d.error) return d.error_description || d.error;
-  return JSON.stringify(d);
-}
+// v3.462.0 Phase 552: ローカル escape / formatError は sf-format-helpers から import するよう変更 (上の import 文参照)
 
 // v3.87.0: Phase 177 — doParseId / openIdInOrg / doApiCall を削除 (popup から ID 解析セクション・API タブが撤去された後の dead code)
 

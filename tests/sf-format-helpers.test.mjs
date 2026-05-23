@@ -1,8 +1,9 @@
 // v3.454.0 Phase 544: sf-format-helpers.js の純粋関数ユニットテスト
+// v3.462.0 Phase 552: escHtml を追加 (panel/popup/picker/design-docs の重複実装を集約)
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { tsForFilename, formatError } from "../js/sf-format-helpers.js";
+import { tsForFilename, formatError, escHtml } from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
 
@@ -82,4 +83,43 @@ test("formatError: 任意オブジェクト → JSON.stringify", () => {
 
 test("formatError: 文字列 → JSON.stringify でクォート付き", () => {
   assert.equal(formatError("just a string"), '"just a string"');
+});
+
+// --- escHtml (Phase 552) ------------------------------------------------------
+
+test("escHtml: 5 種の HTML 特殊文字を実体参照に置換", () => {
+  assert.equal(escHtml("<div>"), "&lt;div&gt;");
+  assert.equal(escHtml("a & b"), "a &amp; b");
+  assert.equal(escHtml(`"x"`), "&quot;x&quot;");
+  assert.equal(escHtml("'x'"), "&#39;x&#39;");
+});
+
+test("escHtml: 通常文字はそのまま (英数字・日本語)", () => {
+  assert.equal(escHtml("hello world"), "hello world");
+  assert.equal(escHtml("こんにちは"), "こんにちは");
+});
+
+test("escHtml: null / undefined は空文字 (旧 panel/popup の 'null' バグを修正)", () => {
+  assert.equal(escHtml(null), "");
+  assert.equal(escHtml(undefined), "");
+});
+
+test("escHtml: 空文字はそのまま", () => {
+  assert.equal(escHtml(""), "");
+});
+
+test("escHtml: 数値は String() 経由でそのまま (HTML 特殊なし)", () => {
+  assert.equal(escHtml(123), "123");
+  assert.equal(escHtml(0), "0");
+});
+
+test("escHtml: 連続する特殊文字も全部置換 ('<<&&>>' → '&lt;&lt;&amp;&amp;&gt;&gt;')", () => {
+  assert.equal(escHtml("<<&&>>"), "&lt;&lt;&amp;&amp;&gt;&gt;");
+});
+
+test("escHtml: 混在 (XSS 想定 '<script>alert(\"x\")</script>')", () => {
+  assert.equal(
+    escHtml(`<script>alert("x")</script>`),
+    "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;",
+  );
 });

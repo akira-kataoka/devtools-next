@@ -28,6 +28,8 @@
 //
 // 【依存】sf-api.js から sfFetch + runSoql を import (Phase 444 sf-api.js documentation で 14 export 7 カテゴリ確認)
 import { sfFetch, runSoql } from "./sf-api.js";
+// v3.462.0 Phase 552: HTML escape を sf-format-helpers に集約 (旧 ローカル定義は削除、call site は alias 'escape' で不変)
+import { escHtml as escape } from "./sf-format-helpers.js";
 
 const cache = new Map(); // key=kind|host|extraKey, value=items[]
 const scrollMemory = new Map(); // key=cacheKey, value=scrollTop
@@ -468,6 +470,4 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
   });
 }
 
-function escape(s) {
-  return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-}
+// v3.462.0 Phase 552: ローカル escape は sf-format-helpers.escHtml に統合済 (上の import 'escHtml as escape' 参照、6 call site は不変)
