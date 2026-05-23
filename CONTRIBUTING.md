@@ -45,7 +45,20 @@ cd devtools-next
 
 > **CI による自動チェック**: [.github/workflows/version-check.yml](.github/workflows/version-check.yml) が `manifest.json` と `VERSION.txt` の差異を検出します。整合性を必ず保ってください。
 
-### 4. PR 提出
+### 4. ユニットテスト (v3.451.0 Phase 541 から)
+
+純粋関数 (`js/sf-connections.js` の `formatAuthAge` / `isAuthStale` / `maskSecret` / `makeConnectionId` 等) には Node 組込み test ランナーを使ったユニットテストが整備されています。**外部依存 (jest 等) ゼロ**、Node 18+ で `npm test` だけで実行できます。
+
+```bash
+cd sf-devtool-extension
+npm test          # node --test "tests/*.mjs" のショートカット
+# または
+node --test "tests/*.mjs"
+```
+
+新規ヘルパー関数を追加する際は `tests/*.test.mjs` にケースを追加してください。`chrome.*` API を使う関数 (loadConnections / connFetch 等) は IO 依存のため対象外、純粋関数のみ対象です。
+
+### 5. PR 提出
 
 - GitHub UI で PR 作成 → [PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) が自動展開されます
 - チェックリストすべて `[x]` に

@@ -1,0 +1,9 @@
+{
+  "name": "devtoolsnext",
+  "private": true,
+  "type": "module",
+  "description": "DevToolsNext Chrome 拡張 (MV3) — Salesforce 開発・管理者向け統合ツール。ビルドは不要 (素の JS/HTML/CSS)。このファイルは Node 組込み test ランナー用の最小設定のみ提供する。",
+  "scripts": {
+    "test": "node --test \"tests/*.mjs\""
+  }
+}
