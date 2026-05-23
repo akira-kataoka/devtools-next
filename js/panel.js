@@ -7374,6 +7374,8 @@ async function doAdminUnfreezeUser(userId, userName) {
 }
 
 // MFA 未設定のアクティブユーザー一覧 (TwoFactorMethodsInfo に登録の無い User を抽出)
+// v3.438.0 Phase 528: TwoFactorMethodsInfo 取得失敗時の graceful degradation 強化
+//   従来は SOQL 失敗で即エラー終了 → Phase 528 で「全アクティブ内部ユーザー一覧」を MFA 不明扱いで表示 + 詳細エラー説明
 async function doAdminListMfaMissing() {
   if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
   const el = document.getElementById("adminMfaResult");
@@ -7383,8 +7385,15 @@ async function doAdminListMfaMissing() {
     host: state.host, sid: state.sid, apiVersion: state.apiVersion,
     soql: `SELECT UserId FROM TwoFactorMethodsInfo LIMIT 50000`,
   });
-  if (!mfaR.ok) { adminSetCardError("adminMfaResult", mfaR.status, mfaR.data); return; }
-  const mfaUserIds = new Set(((mfaR.data || {}).records || []).map((r) => r.UserId).filter(Boolean));
+  let mfaUserIds = new Set();
+  let mfaUnavailable = false;
+  if (!mfaR.ok) {
+    // Phase 528: TwoFactorMethodsInfo 取得失敗 → graceful degradation (全アクティブを「MFA 不明」扱いで表示継続)
+    mfaUnavailable = true;
+    console.warn("[admin] TwoFactorMethodsInfo unavailable, showing all active users as MFA unknown");
+  } else {
+    mfaUserIds = new Set(((mfaR.data || {}).records || []).map((r) => r.UserId).filter(Boolean));
+  }
   // 2. アクティブな内部ユーザー一覧 (UserType=Standard)
   const userR = await runSoql({
     host: state.host, sid: state.sid, apiVersion: state.apiVersion,
@@ -7392,7 +7401,8 @@ async function doAdminListMfaMissing() {
   });
   if (!userR.ok) { adminSetCardError("adminMfaResult", userR.status, userR.data); return; }
   const allActive = (userR.data || {}).records || [];
-  const missing = allActive.filter((u) => !mfaUserIds.has(u.Id));
+  // Phase 528: MFA 取得不可時は全アクティブを「MFA 不明」扱いで表示
+  const missing = mfaUnavailable ? allActive : allActive.filter((u) => !mfaUserIds.has(u.Id));
   // v3.139.0 Phase 229: 代理ログイン列を追加
   const rows = missing.slice(0, 500).map((u) => ({
     "氏名": u.Name,
@@ -7403,9 +7413,15 @@ async function doAdminListMfaMissing() {
     "アクション": { __html: `<button class="admin-action-login-as admin-row-action" data-user-id="${escape(u.Id || "")}" data-user-name="${escape(u.Name || "")}" title="このユーザーとして代理ログイン (要 ModifyAllUsers 権限) → MFA セットアップ画面に直接案内可">👤 代理ログイン</button>` },
   }));
   const headers = ["氏名", "ユーザ名", "メール", "プロファイル", "最終ログイン", "アクション"];
-  const summary = `<div class="admin-card-summary admin-card-warn">⚠ MFA 未設定アクティブ内部ユーザー: <strong>${missing.length}</strong> 名 / 全アクティブ内部 ${allActive.length} 名 (${allActive.length ? ((missing.length / allActive.length) * 100).toFixed(1) : 0}%)</div>`;
+  // Phase 528: MFA 取得不可時の degraded 警告
+  const degradedWarn = mfaUnavailable
+    ? `<div class="admin-card-summary admin-card-warn">⚠ TwoFactorMethodsInfo を取得できなかったため、全アクティブ内部ユーザー (UserType=Standard) を表示しています。MFA 設定有無のフィルタリングは行われていません。詳細エラーは「🛡️ MFA 設定状況」カードで確認できます。(Phase 528 graceful degradation)</div>`
+    : "";
+  const summary = mfaUnavailable
+    ? `<div class="admin-card-summary">全アクティブ内部ユーザー: <strong>${allActive.length}</strong> 名 (MFA フィルタなし)</div>`
+    : `<div class="admin-card-summary admin-card-warn">⚠ MFA 未設定アクティブ内部ユーザー: <strong>${missing.length}</strong> 名 / 全アクティブ内部 ${allActive.length} 名 (${allActive.length ? ((missing.length / allActive.length) * 100).toFixed(1) : 0}%)</div>`;
   const note = `<div class="meta" style="padding:6px 8px;font-size:11px;color:var(--fg-dim)">※ Salesforce はすべての内部ユーザーに MFA を必須化しています (2022/02 以降)。未設定者は要督促。<br>※ 表示は最大 500 名まで。全件は「📥 サマリ CSV」で出力できます。</div>`;
-  document.getElementById("adminMfaResult").innerHTML = summary + note + adminTableHtml(headers, rows);
+  document.getElementById("adminMfaResult").innerHTML = degradedWarn + summary + note + adminTableHtml(headers, rows);
   // CSV エクスポート用に保存
   adminState.mfaMissing = rows;
 }
