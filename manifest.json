@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DevToolsNext",
-  "version": "3.442.0",
+  "version": "3.443.0",
   "description": "Salesforce 開発者向け次世代ユーティリティ拡張 (DevToolsNext)。SOQL/Apex 実行、レコード Inspector、データエクスポート、API URL ビルダー、Login as User、Login History、👥 ユーザー・ライセンス管理ダッシュボード (7 カード)、設計書 21 種類 (組織全体スナップショット含む)、Limits ダッシュボード、PROD 2 段階防御 6 経路、🔐 最小権限原則を文書化したセキュリティ透明性 (SECURITY.md)、自動アップデート、設定エクスポート/インポートを提供します。",
   "default_locale": "ja",
   "permissions": [
@@ -24,7 +24,8 @@
     "https://*.salesforce-setup.com/*",
     "https://*.salesforce-experience.com/*",
     "https://*.visualforce.com/*",
-    "https://*.sandbox.my.salesforce.com/*"
+    "https://*.sandbox.my.salesforce.com/*",
+    "<all_urls>"
   ],
   "background": {
     "service_worker": "js/background.js",

@@ -1452,6 +1452,24 @@ function bindEvents() {
     } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
   });
   $on("btnRest", "click", doRest);
+  // v3.443.0 Phase 533: REST モード切替 (SF / 汎用 HTTP / SOAP)
+  $on("restMode", "change", (e) => {
+    const mode = e.target.value;
+    const httpExtra = document.querySelector(".rest-http-extra");
+    const soapExtra = document.querySelector(".rest-soap-extra");
+    const pathInput = document.getElementById("restPath");
+    if (httpExtra) httpExtra.classList.toggle("hidden", mode === "sf");
+    if (soapExtra) soapExtra.classList.toggle("hidden", mode !== "soap");
+    if (pathInput) {
+      if (mode === "sf") {
+        pathInput.placeholder = "REST API パスを入力してください (例: /services/data/v62.0/sobjects/Account/describe)";
+      } else if (mode === "http") {
+        pathInput.placeholder = "完全 URL を入力してください (例: https://api.example.com/users)";
+      } else {
+        pathInput.placeholder = "SOAP エンドポイント URL を入力してください (例: https://example.com/services/Soap/u/62.0)";
+      }
+    }
+  });
   // v3.125.0 Phase 215: REST クイック実行 (Method+Path 自動セット + 即実行、ユーザー要望「ボタン実行で SF に投げる」)
   $on("restTemplate", "change", (e) => {
     const key = e.target.value;
@@ -4852,21 +4870,67 @@ async function doDescribe() {
 }
 
 let restRunId = 0;
+// v3.443.0 Phase 533: 3 モード (SF / 汎用 HTTP / SOAP) 対応
+//   parseRestHeaders: "Key: Value" 行形式テキストを headers オブジェクトに変換
+//   wrapSoapEnvelope: ボディを SOAP 1.1 Envelope でラップ (xmlns 自動付与)
+function parseRestHeaders(text) {
+  const headers = {};
+  if (!text || typeof text !== "string") return headers;
+  text.split(/\r?\n/).forEach((line) => {
+    const t = line.trim();
+    if (!t || t.startsWith("#")) return;
+    const idx = t.indexOf(":");
+    if (idx <= 0) return;
+    const k = t.substring(0, idx).trim();
+    const v = t.substring(idx + 1).trim();
+    if (k) headers[k] = v;
+  });
+  return headers;
+}
+function wrapSoapEnvelope(innerBody) {
+  // 簡易 SOAP 1.1 envelope (xmlns で SOAP 1.1 namespace 指定)
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
+  <soap:Body>
+${innerBody}
+  </soap:Body>
+</soap:Envelope>`;
+}
+
 async function doRest() {
-  if (!state.sid) return;
   const method = document.getElementById("restMethod").value;
   const path = document.getElementById("restPath").value.trim();
   const body = document.getElementById("restBody").value.trim();
   const meta = document.getElementById("restMeta");
+  // Phase 533: モード取得 (sf / http / soap)
+  const modeEl = document.getElementById("restMode");
+  const mode = modeEl ? modeEl.value : "sf";
+  const isSf = mode === "sf";
+  const isHttp = mode === "http";
+  const isSoap = mode === "soap";
+
+  // SF モードでは sid 必須
+  if (isSf && !state.sid) {
+    meta.innerHTML = `<span class="pill warn">⚠ Salesforce 未接続</span> 「再接続」ボタンで sid を取得してください`;
+    return;
+  }
   if (!path) {
     // v3.49.0: 早期バリデーション + 入力欄にフォーカス戻し
-    meta.innerHTML = `<span class="pill warn">⚠ 入力が必要</span> REST API パスを入力してください (例: <code>/services/data/v62.0/limits</code> / <code>/services/data/v62.0/sobjects/Account/describe</code>)`;
+    const hint = isSf
+      ? `REST API パスを入力してください (例: <code>/services/data/v62.0/limits</code>)`
+      : `URL を完全形で入力してください (例: <code>https://api.example.com/users</code>)`;
+    meta.innerHTML = `<span class="pill warn">⚠ 入力が必要</span> ${hint}`;
     const inp = document.getElementById("restPath");
     if (inp) inp.focus();
     return;
   }
+  if ((isHttp || isSoap) && !/^https?:\/\//i.test(path)) {
+    meta.innerHTML = `<span class="pill warn">⚠ URL 形式エラー</span> 汎用 HTTP / SOAP モードでは <code>http(s)://</code> で始まる完全 URL を入力してください`;
+    return;
+  }
   // v3.199.0 Phase 289 / v3.304.0 Phase 394: PROD 環境で破壊的 REST 呼び出し (POST/PATCH/DELETE) 前に confirm ダイアログ — Phase 394 で 6 経路の format 統一 (🚨🚨 sandwich style)
-  if (state.isProd && ["POST", "PATCH", "DELETE"].includes(method)) {
+  // Phase 533: SF モードのみ PROD ゲート (汎用 HTTP/SOAP は SF 関係ないのでスキップ)
+  if (isSf && state.isProd && ["POST", "PATCH", "PUT", "DELETE"].includes(method)) {
     const ok = window.confirm(
       `🚨🚨 本番組織 (PROD) での 破壊的 REST 呼び出し (${method}) 🚨🚨\n` +
       `対象組織: ${state.host || "?"}\n\n` +
@@ -4880,13 +4944,51 @@ async function doRest() {
     }
   }
   const myId = ++restRunId;
-  meta.textContent = `📡 送信中… #${myId}`;
+  meta.textContent = `📡 送信中… #${myId} [${mode.toUpperCase()}]`;
   const t0 = performance.now();
-  const r = await sfFetch({ host: state.host, sid: state.sid, path, method, body: body || null });
+  let r;
+  if (isSf) {
+    // 既存: SF host + sid で sfFetch
+    r = await sfFetch({ host: state.host, sid: state.sid, path, method, body: body || null });
+  } else {
+    // Phase 533: 汎用 HTTP / SOAP モード — 任意 URL に fetch
+    const customHeaders = parseRestHeaders(document.getElementById("restHeaders")?.value || "");
+    let reqBody = body || null;
+    if (isSoap) {
+      const soapAction = (document.getElementById("restSoapAction")?.value || "").trim();
+      const autoEnv = document.getElementById("restSoapAutoEnvelope")?.checked;
+      if (soapAction) customHeaders["SOAPAction"] = soapAction;
+      if (!customHeaders["Content-Type"]) customHeaders["Content-Type"] = "text/xml; charset=UTF-8";
+      if (autoEnv && reqBody && !/<soap:Envelope/i.test(reqBody)) {
+        reqBody = wrapSoapEnvelope(reqBody);
+      }
+    } else if (isHttp && reqBody && !customHeaders["Content-Type"]) {
+      // HTTP モードでボディあり、Content-Type 未指定なら JSON とみなす
+      customHeaders["Content-Type"] = "application/json";
+    }
+    try {
+      const resp = await fetch(path, {
+        method,
+        headers: customHeaders,
+        body: ["GET", "HEAD"].includes(method) ? undefined : reqBody,
+      });
+      const raw = await resp.text();
+      let parsed = raw;
+      if (raw) {
+        const ct = resp.headers.get("content-type") || "";
+        if (ct.includes("application/json") || ct.includes("text/json")) {
+          try { parsed = JSON.parse(raw); } catch {}
+        }
+      }
+      r = { ok: resp.ok, status: resp.status, data: parsed, raw };
+    } catch (e) {
+      r = { ok: false, status: 0, data: { message: String(e), errorCode: "NETWORK_ERROR" }, raw: "" };
+    }
+  }
   const dt = Math.round(performance.now() - t0);
   if (myId !== restRunId) { console.log(`[DevToolsNext] discard stale REST result #${myId}`); return; }
   if (!r.ok) {
-    displayApiError(meta, r.status, r.data, `REST ${method}`);
+    displayApiError(meta, r.status, r.data, `${mode.toUpperCase()} ${method}`);
   } else {
     // v3.135.0 Phase 225 (Team R): メソッド + パス + サイズも表示してレスポンス全体を即把握可能に
     const bodySize = r.raw ? r.raw.length : 0;

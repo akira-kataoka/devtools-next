@@ -462,16 +462,26 @@ System.debug('Now: ' + System.now());</textarea>
       </div>
 
       <div class="view hidden" data-view="rest">
+        <!-- v3.443.0 Phase 533: 3 モード対応 (SF / 汎用 HTTP / SOAP) -->
+        <div class="toolbar" style="gap:8px;align-items:center">
+          <label style="font-weight:600">モード:</label>
+          <select id="restMode" title="送信モード切替 (Phase 533)">
+            <option value="sf">🔵 Salesforce REST (sid 自動付与・パス指定)</option>
+            <option value="http">🌐 汎用 HTTP (任意 URL + ヘッダ)</option>
+            <option value="soap">📜 SOAP (XML エンベロープ + SOAPAction)</option>
+          </select>
+        </div>
         <!-- v2.84.0: REST 探索 使い方ガイド -->
         <div class="api-guide">
-          <div class="api-guide-title">🌐 REST 探索の使い方</div>
+          <div class="api-guide-title">🌐 REST/HTTP/SOAP 送信の使い方</div>
           <ol class="api-guide-steps">
-            <li><b>① メソッドを選ぶ</b>: GET (取得) / POST (作成) / PATCH (更新) / DELETE (削除) から</li>
-            <li><b>② パスを入力</b>: <code>/services/data/v62.0/</code> から始まる REST API パスを入力</li>
-            <li><b>③ POST/PATCH の場合はボディに JSON を入力 → 「送信」</b></li>
+            <li><b>① モードを選ぶ</b>: Salesforce REST (既定) / 汎用 HTTP / SOAP</li>
+            <li><b>② メソッドを選ぶ</b>: GET / POST / PATCH / DELETE / PUT</li>
+            <li><b>③ URL / パスを入力</b>: SF モードは <code>/services/data/v62.0/</code> 〜、HTTP/SOAP モードは完全 URL</li>
+            <li><b>④ POST/PATCH の場合はボディ + (必要なら) ヘッダ・SOAPAction を入力 → 「送信」</b></li>
           </ol>
           <div class="api-guide-examples">
-            <span class="api-guide-label">💡 よく使うパス:</span>
+            <span class="api-guide-label">💡 よく使うパス (SF):</span>
             <button class="api-example-chip" data-rest-method="GET" data-rest-path="/services/data/v62.0/limits" title="組織の Limits 使用状況">limits</button>
             <button class="api-example-chip" data-rest-method="GET" data-rest-path="/services/data/" title="利用可能な API バージョン一覧">versions</button>
             <button class="api-example-chip" data-rest-method="GET" data-rest-path="/services/data/v62.0/sobjects/" title="全オブジェクト一覧">全オブジェクト</button>
@@ -481,10 +491,21 @@ System.debug('Now: ' + System.now());</textarea>
         </div>
         <div class="toolbar">
           <select id="restMethod">
-            <option>GET</option><option>POST</option><option>PATCH</option><option>DELETE</option>
+            <option>GET</option><option>POST</option><option>PATCH</option><option>PUT</option><option>DELETE</option>
           </select>
           <input id="restPath" placeholder="REST API パスを入力してください (例: /services/data/v62.0/sobjects/Account/describe)" title="先頭の / から指定します。バージョンは UI 上部の API バージョンと同期します" />
           <button id="btnRest" class="primary" title="指定したパスとメソッドで REST API を送信します">送信</button>
+        </div>
+        <!-- Phase 533: 汎用 HTTP / SOAP モード時の追加入力 -->
+        <div class="toolbar rest-http-extra hidden" style="margin-top:4px;flex-direction:column;align-items:stretch;gap:4px">
+          <label style="font-size:11px;color:var(--fg-dim)">カスタムヘッダ (1 行 1 つ、形式: <code>Key: Value</code>) — Authorization / Content-Type 等</label>
+          <textarea id="restHeaders" rows="3" placeholder="例:&#10;Authorization: Bearer YOUR_TOKEN&#10;Content-Type: application/json&#10;X-Custom-Header: value" style="font-family:ui-monospace,Consolas,monospace;font-size:12px"></textarea>
+        </div>
+        <div class="toolbar rest-soap-extra hidden" style="margin-top:4px;gap:4px">
+          <label style="font-weight:600;font-size:12px">SOAPAction:</label>
+          <input id="restSoapAction" placeholder="例: &quot;urn:partner.soap.sforce.com#login&quot; (引用符込みで指定可)" style="flex:1" />
+          <label style="font-weight:600;font-size:12px;margin-left:8px">エンベロープ自動:</label>
+          <input type="checkbox" id="restSoapAutoEnvelope" checked title="チェック時、ボディを SOAP Envelope (Body) で自動ラップ" />
         </div>
         <div class="toolbar" style="margin-top:4px;">
           <select id="restTemplate" title="よく使う REST API (Phase 316 で 3 カテゴリ optgroup 化、計 11 種)">
