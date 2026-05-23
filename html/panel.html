@@ -37,8 +37,7 @@
         <div class="nav-group" data-cat="data">
           <button class="nav-btn" data-view="inspector" data-cat="data" title="レコード ID を指定して全項目の値を表示 / 参照辿り / 値コピー / 編集モードでフィールド値更新"><span class="nav-label">🔍 レコード確認</span><kbd class="nav-kbd">I</kbd></button>
           <button class="nav-btn" data-view="search" data-cat="data" title="🌐 グローバル検索 (SOSL) — 検索ワードを入力すると Account/Contact/Lead/Opportunity/Case/User 等 横断で一致するレコードを高速検索 (Phase 227)"><span class="nav-label">🌐 グローバル検索</span></button>
-          <button class="nav-btn" data-view="soql" data-cat="data" title="🔎 レコード抽出 (SOQL モード) — SOQL でレコードを抽出 / CSV/Excel/JSON エクスポート / オートコンプリート / Tooling API / 一括 DML (DELETE/INSERT/UPDATE/UPSERT/Bulk API v2)。SOQL が書けない場合は「📋 レコード抽出 (項目選択)」が便利 (Phase 228 統合)"><span class="nav-label">🔎 レコード抽出 (SOQL)</span><kbd class="nav-kbd">Q</kbd></button>
-          <button class="nav-btn" data-view="dataexport" data-cat="data" title="📋 レコード抽出 (項目選択モード) — SOQL を書かずにオブジェクトと項目を選んで Excel / CSV / JSON で一括ダウンロード。SOQL に慣れていない業務担当者向け (Phase 228 統合)"><span class="nav-label">📋 レコード抽出 (項目選択)</span></button>
+          <button class="nav-btn" data-view="soql" data-cat="data" title="🔎 レコード抽出 — SOQL モード ⇄ 項目選択モードはビュー内タブで切替 (Phase 532 統合)。SOQL でレコードを抽出 / CSV/Excel/JSON エクスポート / オートコンプリート / Tooling API / 一括 DML"><span class="nav-label">🔎 レコード抽出</span><kbd class="nav-kbd">Q</kbd></button>
         </div>
 
         <button class="nav-sep" data-cat="dev" aria-expanded="true" title="クリックでカテゴリを折りたたみ・展開"><span class="cat-arrow">▼</span> 💻 開発</button>
@@ -67,20 +66,15 @@
           <p class="home-subtitle">Salesforce 開発・運用に必要な機能を 1 つにまとめた拡張機能です。下のカードをクリックして始めてください。</p>
         </details>
         <div class="home-grid" role="list" aria-label="主要 6 機能">
-          <button class="home-card" data-go="soql" role="listitem" aria-label="レコード抽出 (SOQL)" title="SOQL を書いてレコードを抽出 / CSV/Excel エクスポート / 一括 DML (Tooling API 対応)。SOQL が書けない場合は「📋 レコード抽出 (項目選択)」が便利">
+          <button class="home-card" data-go="soql" role="listitem" aria-label="レコード抽出" title="🔎 レコード抽出 — SOQL モード ⇄ 項目選択モードはビュー内タブで切替 (Phase 532 統合)。CSV/Excel/JSON エクスポート対応">
             <div class="home-card-icon" aria-hidden="true">🔎</div>
-            <div class="home-card-title">レコード抽出 (SOQL)</div>
-            <div class="home-card-desc">SOQL でレコード抽出・CSV/Excel 出力</div>
+            <div class="home-card-title">レコード抽出</div>
+            <div class="home-card-desc">SOQL / 項目選択 (タブ切替) でレコード抽出・CSV/Excel 出力</div>
           </button>
           <button class="home-card" data-go="inspector" role="listitem" aria-label="レコード詳細" title="レコード ID を指定して全項目の値を表示 / 参照辿り / 値コピー">
             <div class="home-card-icon" aria-hidden="true">🔍</div>
             <div class="home-card-title">レコード詳細</div>
             <div class="home-card-desc">レコード ID から全項目を確認</div>
-          </button>
-          <button class="home-card" data-go="dataexport" role="listitem" aria-label="レコード抽出 (項目選択)" title="SOQL を書かずにオブジェクトと項目を選んで Excel / CSV / JSON で一括ダウンロード — SOQL に慣れていない業務担当者向け">
-            <div class="home-card-icon" aria-hidden="true">📋</div>
-            <div class="home-card-title">レコード抽出 (項目選択)</div>
-            <div class="home-card-desc">SOQL 不要・項目選択で Excel/CSV 出力</div>
           </button>
           <button class="home-card" data-go="apex" role="listitem" aria-label="Apex 実行" title="匿名 Apex (Developer Console と同じ) を実行・Debug ログ取得">
             <div class="home-card-icon" aria-hidden="true">🟧</div>
