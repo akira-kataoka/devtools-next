@@ -58,7 +58,57 @@ node --test "tests/*.mjs"
 
 新規ヘルパー関数を追加する際は `tests/*.test.mjs` にケースを追加してください。`chrome.*` API を使う関数 (loadConnections / connFetch 等) は IO 依存のため対象外、純粋関数のみ対象です。
 
-### 5. PR 提出
+#### 抽出済ヘルパーモジュール (Phase 540-544 で抽出、累計 50 テストケース)
+
+| モジュール | 公開 export | テスト |
+|---|---|---|
+| [js/sf-connections.js](js/sf-connections.js) | 認証 API + 鮮度判定 (`loadConnections`, `formatAuthAge`, `isAuthStale`, `maskSecret`, `makeConnectionId`, `AUTH_STALE_THRESHOLD_MS`) | 19 ケース |
+| [js/sf-rest-helpers.js](js/sf-rest-helpers.js) | REST/SOAP 補助 (`parseRestHeaders`, `wrapSoapEnvelope`) | 15 ケース |
+| [js/sf-format-helpers.js](js/sf-format-helpers.js) | 表示・整形 (`tsForFilename`, `formatError`) | 16 ケース |
+
+### 5. 実画面 UX 検証 (Chrome DevTools MCP、Phase 545-546 で実証)
+
+純粋関数の unit test とは別に、 **拡張機能の UI が実際に意図通り描画されるか** を実 Chrome で検証するフローが整備されています。 npm test では検出できない「state 連動の不具合 (例: storage onChanged listener 漏れ)」「ボタン名と実動作の乖離」などはこちらで発見します (実例: Phase 545 / Phase 546)。
+
+セットアップは [chrome-devtools-mcp (Anthropic 公式)](https://github.com/anthropics/chrome-devtools-mcp) を参照。 Windows では Chrome を専用 user-data-dir + `--remote-debugging-port=9222` で起動する必要あり (メインプロファイルでは singleton 制限で port が無視される)。
+
+検証の基本フロー:
+
+```javascript
+// 1. 拡張をリロード (latest コードを反映)
+//    chrome://extensions/ で shadow DOM trick で reload button を click
+
+// 2. 検証対象画面へ navigate
+//    chrome-extension://<EXTENSION_ID>/html/tool.html?view=connections
+//    chrome-extension://<EXTENSION_ID>/html/popup.html
+
+// 3. chrome.storage.local を直接操作して UX を強制発火
+const r = await chrome.storage.local.get('sfdtConnections');
+const list = r.sfdtConnections || [];
+const original = list[0].tokenIssuedAt;
+list[0].tokenIssuedAt = Date.now() - 7 * 60 * 60 * 1000; // 7h 前 → stale 化
+await chrome.storage.local.set({ sfdtConnections: list });
+
+// 4. DOM 状態を確認 (assert 相当)
+await new Promise(r => setTimeout(r, 700)); // listener 発火待ち
+const row = document.querySelector('#connList .conn-row');
+console.assert(row.querySelector('.pill.warn')?.textContent?.includes('⏰ 古い'));
+
+// 5. screenshot エビデンス (オプション)
+//    take_screenshot で .mcp-screenshots/<phase>-<feature>-<state>.png に保存
+
+// 6. ★必須★ 元の値に復元
+list[0].tokenIssuedAt = original;
+await chrome.storage.local.set({ sfdtConnections: list });
+```
+
+**重要なポイント**:
+- Salesforce ログイン**不要** — UI レンダリングは `chrome.storage.local` の値だけで決まる。API 実行 (再認証 / SOQL / Apex) が必要な場合のみ SF 接続が要る
+- `.mcp-screenshots/` はローカル専用 (gitignore 対象外だが repo にコミットしない運用)
+- 検証後は必ず chrome.storage を元の状態に戻す (他テストへの汚染防止)
+- panel.js は `chrome.storage.onChanged` で sfdtConnections を購読しているため (Phase 545)、 set 直後に自動再描画される
+
+### 6. PR 提出
 
 - GitHub UI で PR 作成 → [PULL_REQUEST_TEMPLATE.md](.github/PULL_REQUEST_TEMPLATE.md) が自動展開されます
 - チェックリストすべて `[x]` に
