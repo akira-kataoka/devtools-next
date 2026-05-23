@@ -1,6 +1,7 @@
 // v3.459.0 Phase 549: design-docs.js の純粋整形関数ユニットテスト
+// Phase 551 追加: inline / markdownToHtml (Markdown 描画系)
 // 対象: fmtNum / fmtBytes / fmtTrunc / fmtPercent / fieldTypeJa / FIELD_TYPE_JA /
-//       xmlText / xmlAttr / md / esc / splitMd (11 シンボル、累計 +30 ケース → 110)
+//       xmlText / xmlAttr / md / esc / splitMd / inline / markdownToHtml (13 シンボル)
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -16,6 +17,8 @@ import {
   md,
   esc,
   splitMd,
+  inline,
+  markdownToHtml,
 } from "../js/design-docs.js";
 
 // --- fmtNum -------------------------------------------------------------------
@@ -213,4 +216,104 @@ test("splitMd: 区切り行 ('|---|---|') は空文字配列に変換", () => {
 
 test("splitMd: 前後空白はトリム、先頭/末尾 | は除去", () => {
   assert.deepEqual(splitMd("|  foo  |  bar  |"), ["foo", "bar"]);
+});
+
+// --- inline (Phase 551) -------------------------------------------------------
+
+test("inline: 通常テキストはそのまま", () => {
+  assert.equal(inline("hello"), "hello");
+});
+
+test("inline: HTML 特殊文字は先にエンティティ化", () => {
+  assert.equal(inline("<a>"), "&lt;a&gt;");
+  assert.equal(inline("a & b"), "a &amp; b");
+});
+
+test("inline: バッククォート → <code>", () => {
+  assert.equal(inline("`x`"), "<code>x</code>");
+  assert.equal(inline("see `foo()` here"), "see <code>foo()</code> here");
+});
+
+test("inline: ** → <strong>", () => {
+  assert.equal(inline("**bold**"), "<strong>bold</strong>");
+});
+
+test("inline: * → <em>", () => {
+  assert.equal(inline("*ital*"), "<em>ital</em>");
+});
+
+test("inline: code 内の HTML は実体参照のまま <code> 内に入る (XSS 防御)", () => {
+  assert.equal(inline("`<script>`"), "<code>&lt;script&gt;</code>");
+});
+
+test("inline: ***x*** は <em><strong>x</strong></em> (ネスト)", () => {
+  assert.equal(inline("***x***"), "<em><strong>x</strong></em>");
+});
+
+test("inline: null / undefined は空文字 (esc 経由)", () => {
+  assert.equal(inline(null), "");
+  assert.equal(inline(undefined), "");
+});
+
+// --- markdownToHtml (Phase 551) -----------------------------------------------
+
+test("markdownToHtml: falsy は空文字", () => {
+  assert.equal(markdownToHtml(""), "");
+  assert.equal(markdownToHtml(null), "");
+  assert.equal(markdownToHtml(undefined), "");
+});
+
+test("markdownToHtml: # / ## / ### 見出し", () => {
+  assert.equal(markdownToHtml("# Title"), "<h1>Title</h1>");
+  assert.equal(markdownToHtml("## Sub"), "<h2>Sub</h2>");
+  assert.equal(markdownToHtml("### Section"), "<h3>Section</h3>");
+});
+
+test("markdownToHtml: プレーン段落は <p> でラップ", () => {
+  assert.equal(markdownToHtml("hello"), "<p>hello</p>");
+});
+
+test("markdownToHtml: 段落内の inline 整形 (** / `) が反映", () => {
+  assert.equal(markdownToHtml("**bold** text"), "<p><strong>bold</strong> text</p>");
+});
+
+test("markdownToHtml: 引用 (>) は <blockquote>", () => {
+  assert.equal(markdownToHtml("> note"), "<blockquote>note</blockquote>");
+});
+
+test("markdownToHtml: --- は <hr/>", () => {
+  assert.equal(markdownToHtml("---"), "<hr/>");
+});
+
+test("markdownToHtml: 空行はそのまま空文字を 1 行出力", () => {
+  // "a\n\nb" → ["<p>a</p>", "", "<p>b</p>"]
+  assert.equal(markdownToHtml("a\n\nb"), "<p>a</p>\n\n<p>b</p>");
+});
+
+test("markdownToHtml: '-' / '*' リストは <ul><li>...</li></ul> (flatten)", () => {
+  assert.equal(markdownToHtml("- a\n- b"), "<ul><li>a</li><li>b</li></ul>");
+  assert.equal(markdownToHtml("* x\n* y"), "<ul><li>x</li><li>y</li></ul>");
+});
+
+test("markdownToHtml: 言語指定なしコードブロック (XSS 用に内容は esc)", () => {
+  const out = markdownToHtml("```\n<script>\n```");
+  assert.equal(out, `<pre><code class="lang-">\n&lt;script&gt;\n</code></pre>`);
+});
+
+test("markdownToHtml: 言語指定ありコードブロック (class=lang-js)", () => {
+  const out = markdownToHtml("```js\nconst x=1\n```");
+  assert.equal(out, `<pre><code class="lang-js">\nconst x=1\n</code></pre>`);
+});
+
+test("markdownToHtml: テーブル (ヘッダ + セパレータ + 行) を <table> 化", () => {
+  const out = markdownToHtml("| a | b |\n|---|---|\n| 1 | 2 |");
+  assert.equal(
+    out,
+    `<table><thead><tr><th title="a">a</th><th title="b">b</th></tr></thead><tbody>\n<tr><td>1</td><td>2</td></tr>\n</tbody></table>`,
+  );
+});
+
+test("markdownToHtml: 見出し + リスト + 段落の混在 (順序保持)", () => {
+  const out = markdownToHtml("# T\n- a\n- b\nend");
+  assert.equal(out, "<h1>T</h1>\n<ul><li>a</li><li>b</li></ul>\n<p>end</p>");
 });
