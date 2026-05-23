@@ -58,7 +58,7 @@ node --test "tests/*.mjs"
 
 新規ヘルパー関数を追加する際は `tests/*.test.mjs` にケースを追加してください。`chrome.*` API を使う関数 (loadConnections / connFetch 等) は IO 依存のため対象外、純粋関数のみ対象です。
 
-#### テスト対象モジュール (Phase 540-548 で整備、累計 80 テストケース)
+#### テスト対象モジュール (Phase 540-549 で整備、累計 114 テストケース)
 
 | モジュール | 公開 export (テスト対象) | テスト |
 |---|---|---|
@@ -66,6 +66,7 @@ node --test "tests/*.mjs"
 | [js/sf-rest-helpers.js](js/sf-rest-helpers.js) | REST/SOAP 補助 (`parseRestHeaders`, `wrapSoapEnvelope`) | 15 ケース |
 | [js/sf-format-helpers.js](js/sf-format-helpers.js) | 表示・整形 (`tsForFilename`, `formatError`) | 16 ケース |
 | [js/sf-api.js](js/sf-api.js) | ホスト判定・ID 変換 (`isSalesforceHost`, `toApiHost`, `parseOrgIdFromSid`, `to18CharId`, `lookupPrefix`, `SF_DOMAINS`, `KEY_PREFIX_MAP`) | 30 ケース |
+| [js/design-docs.js](js/design-docs.js) | 設計書整形 (`fmtNum`, `fmtBytes`, `fmtTrunc`, `fmtPercent`, `fieldTypeJa`, `FIELD_TYPE_JA`, `xmlText`, `xmlAttr`, `md`, `esc`, `splitMd`) | 34 ケース |
 
 ### 5. 実画面 UX 検証 (Chrome DevTools MCP、Phase 545-546 で実証)
 

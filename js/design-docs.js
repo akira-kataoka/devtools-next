@@ -55,7 +55,7 @@ function requireInput(value, hint) {
 }
 
 // 数値を 3 桁区切りで整形 ("12345" → "12,345")。null/undefined は空文字に
-function fmtNum(n) {
+export function fmtNum(n) {
   if (n == null || n === "") return "";
   const num = typeof n === "number" ? n : Number(n);
   if (!Number.isFinite(num)) return String(n);
@@ -63,7 +63,7 @@ function fmtNum(n) {
 }
 
 // バイト数を人間可読サイズに整形 (1023 → "1,023 B" / 12345 → "12.1 KB" / 1234567 → "1.18 MB")
-function fmtBytes(n) {
+export function fmtBytes(n) {
   if (n == null || n === "") return "";
   const v = typeof n === "number" ? n : Number(n);
   if (!Number.isFinite(v)) return String(n);
@@ -75,7 +75,7 @@ function fmtBytes(n) {
 
 // 長文文字列を指定文字数で切り詰める ("ABC...XYZ" → "ABC... [+N 文字省略]")
 // 設計書の「説明」など長文セルで一目可読性を上げるため
-function fmtTrunc(s, max = 200) {
+export function fmtTrunc(s, max = 200) {
   if (s == null) return "";
   const str = String(s);
   if (str.length <= max) return str;
@@ -83,7 +83,7 @@ function fmtTrunc(s, max = 200) {
 }
 
 // パーセント表示 (0.123 → "12.3%" / 0.456 → "45.6%")。null/undefined は空文字
-function fmtPercent(ratio, decimals = 1) {
+export function fmtPercent(ratio, decimals = 1) {
   if (ratio == null || ratio === "") return "";
   const v = typeof ratio === "number" ? ratio : Number(ratio);
   if (!Number.isFinite(v)) return String(ratio);
@@ -92,7 +92,7 @@ function fmtPercent(ratio, decimals = 1) {
 
 // v2.98.0: Salesforce フィールドタイプを日本語に変換 (ProfileReader 風表示)
 // reference は参照先オブジェクト名 (referenceTo[0]) を引数で渡す
-const FIELD_TYPE_JA = {
+export const FIELD_TYPE_JA = {
   "string": "文字列",
   "textarea": "テキストエリア",
   "boolean": "チェックボックス",
@@ -121,7 +121,7 @@ const FIELD_TYPE_JA = {
   "calculated": "数式",
   "junctionidlist": "ジャンクション ID リスト",
 };
-function fieldTypeJa(type, referenceTo) {
+export function fieldTypeJa(type, referenceTo) {
   if (!type) return "";
   if (type === "reference" && referenceTo) {
     return `参照関係(${referenceTo})`;
@@ -2853,7 +2853,7 @@ function formatExcelValue(v) {
   }
   return s;
 }
-function xmlText(s) {
+export function xmlText(s) {
   if (s == null) return "";
   return String(s)
     .replace(/&/g, "&amp;")
@@ -2864,7 +2864,7 @@ function xmlText(s) {
     .replace(/\r?\n/g, "&#10;")
     .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
 }
-function xmlAttr(s) { return xmlText(s); }
+export function xmlAttr(s) { return xmlText(s); }
 
 function toMarkdown(result) {
   const lines = [`# ${result.title}`, ""];
@@ -2885,7 +2885,7 @@ function toMarkdown(result) {
   return lines.join("\n");
 }
 
-function md(v) {
+export function md(v) {
   if (v == null) return "";
   return String(v).replace(/\r?\n/g, " ").replace(/\|/g, "\\|");
 }
@@ -2974,7 +2974,7 @@ function csvCell(v) {
   if (/[",\n\t]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
 }
-function esc(s) {
+export function esc(s) {
   return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 }
 
@@ -3046,13 +3046,13 @@ export function markdownToHtml(md) {
 // Markdown テーブル行 ("| a | b | c |") を セル配列 ["a", "b", "c"] に分解。
 // 注意: セル値内に `|` リテラルがある場合 (例: "ApexClass|ApexTrigger") は分割される。
 // 設計書ジェネレータの列値には `|` を含めない実装ポリシー (csvCell で `,` 区切りに置換済) のため現状は問題なし。
-function splitMd(line) {
+export function splitMd(line) {
   return line.trim().replace(/^\||\|$/g, "").split("|").map((s) => s.trim().replace(/^---+$/, ""));
 }
 
 // XSS 対策: esc() で HTML エンティティを先にエスケープしてから、安全な範囲のみ Markdown 記法を許可
 // (code/bold/italic のみ。link [text](url) や img ![](url) は意図的に未サポート — 設計書本文に URL 埋め込みする経路がないため)
-function inline(s) {
+export function inline(s) {
   return esc(s)
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
