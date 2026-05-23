@@ -63,6 +63,8 @@ import {
   connFetch,
   makeConnectionId,
   maskSecret,
+  formatAuthAge,
+  isAuthStale,
 } from "./sf-connections.js";
 
 const state = {
@@ -8039,20 +8041,27 @@ function connRenderList() {
   }
   const rows = connState.list.map((c) => {
     const hasToken = !!c.accessToken;
+    const stale = isAuthStale(c); // v3.450.0 Phase 540: 認証鮮度判定
+    const ageLabel = hasToken ? formatAuthAge(c.tokenIssuedAt) : "";
     const tokenStatus = hasToken
-      ? `<span class="pill ok">🔓 認証済み</span> <span class="meta" style="font-size:11px">${c.instanceUrl ? escape(c.instanceUrl.replace(/^https?:\/\//, "")) : ""}</span>`
+      ? (stale
+        ? `<span class="pill warn" title="トークン発行から 6 時間以上が経過しています。Salesforce セッションは標準で 2-12h で失効するため、🔓 再認証を推奨します">⏰ 古い (要再認証)</span> <span class="meta" style="font-size:11px">${c.instanceUrl ? escape(c.instanceUrl.replace(/^https?:\/\//, "")) : ""}</span>`
+        : `<span class="pill ok">🔓 認証済み</span> <span class="meta" style="font-size:11px">${c.instanceUrl ? escape(c.instanceUrl.replace(/^https?:\/\//, "")) : ""}</span>`)
       : `<span class="pill warn">🔒 未認証</span>`;
     const authLabel = c.authType === "oauth_password" ? "🔑 OAuth UP" : "🔐 SOAP login";
     const issued = c.tokenIssuedAt ? new Date(c.tokenIssuedAt).toLocaleString("ja-JP") : "";
-    return `<div class="conn-row" data-id="${escape(c.id)}" style="display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 12px;border:1px solid var(--border);border-radius:6px;margin-bottom:6px;background:var(--bg-2)">
+    const rowStyle = stale
+      ? "border:1px solid #6b5318;border-radius:6px;margin-bottom:6px;background:var(--bg-2)"
+      : "border:1px solid var(--border);border-radius:6px;margin-bottom:6px;background:var(--bg-2)";
+    return `<div class="conn-row" data-id="${escape(c.id)}" style="display:grid;grid-template-columns:1fr auto;gap:8px;padding:10px 12px;${rowStyle}">
       <div>
         <div style="font-weight:600;font-size:13px">${escape(c.name || "(無名接続)")} <span class="meta" style="font-weight:400;font-size:11px">${authLabel}</span></div>
         <div class="meta" style="font-size:11px;margin-top:2px">${escape(c.username || "(ユーザー名未設定)")} @ ${escape(c.loginUrl || "")}</div>
-        <div style="margin-top:4px">${tokenStatus}${issued ? ` <span class="meta" style="font-size:11px">発行: ${escape(issued)}</span>` : ""}</div>
+        <div style="margin-top:4px">${tokenStatus}${issued ? ` <span class="meta" style="font-size:11px" title="認証日時">⏱ ${escape(ageLabel)} (${escape(issued)})</span>` : ""}</div>
       </div>
       <div class="toolbar" style="gap:4px;align-items:center">
         <button class="btn-conn-edit" data-id="${escape(c.id)}" title="この接続の情報を編集">✏️ 編集</button>
-        <button class="btn-conn-reauth" data-id="${escape(c.id)}" title="保存済み認証情報で再認証 (access_token を取り直す)">🔓 再認証</button>
+        <button class="btn-conn-reauth" data-id="${escape(c.id)}" title="保存済み認証情報で再認証 (access_token を取り直す)" ${stale ? `style="background:#6b5318;color:#fff7e0;border-color:#8a6a1e"` : ""}>🔓 再認証</button>
         <button class="btn-conn-test" data-id="${escape(c.id)}" title="SELECT Id, Name FROM Organization LIMIT 1 を送信して接続を確認">🧪 テスト</button>
         <button class="btn-conn-copy-token" data-id="${escape(c.id)}" title="access_token をクリップボードへコピー (デバッグ用)">📋 token</button>
         <button class="btn-conn-delete" data-id="${escape(c.id)}" title="この接続を削除">🗑</button>

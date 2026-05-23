@@ -260,3 +260,28 @@ export function maskSecret(s) {
   if (s.length <= 6) return "***";
   return s.slice(0, 3) + "***" + s.slice(-2);
 }
+
+// v3.450.0 Phase 540: 認証鮮度判定ヘルパーを popup.js / panel.js で共通化
+// Salesforce セッションは標準で 2-12h で失効するため 6h を警告閾値に設定
+export const AUTH_STALE_THRESHOLD_MS = 6 * 60 * 60 * 1000;
+
+/** tokenIssuedAt からの経過を人間可読に整形 (例: "5分前", "3時間前", "2日前") */
+export function formatAuthAge(ts) {
+  if (!ts) return "";
+  const diffMs = Date.now() - ts;
+  if (diffMs < 0) return "now";
+  const min = Math.floor(diffMs / 60000);
+  if (min < 1) return "<1分前";
+  if (min < 60) return `${min}分前`;
+  const h = Math.floor(min / 60);
+  if (h < 24) return `${h}時間前`;
+  const d = Math.floor(h / 24);
+  return `${d}日前`;
+}
+
+/** 認証済みだがトークン発行から 6h 超 or 発行時刻不明 → stale */
+export function isAuthStale(c) {
+  if (!c || !c.accessToken) return false;
+  if (!c.tokenIssuedAt) return true;
+  return (Date.now() - c.tokenIssuedAt) > AUTH_STALE_THRESHOLD_MS;
+}

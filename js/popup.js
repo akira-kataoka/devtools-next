@@ -31,7 +31,7 @@ import {
   runSoql, getUserInfo,
 } from "./sf-api.js";
 // v3.447.0 Phase 537: 保存済み接続を popup から閲覧・操作 (接続マネージャと連動)
-import { loadConnections as connLoadAll, maskSecret } from "./sf-connections.js";
+import { loadConnections as connLoadAll, maskSecret, formatAuthAge, isAuthStale } from "./sf-connections.js";
 
 const state = {
   tab: null,
@@ -858,28 +858,7 @@ function escapePopupHtml(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
 }
 
-// v3.449.0 Phase 539: tokenIssuedAt からの経過時間を人間可読に整形 (popup の接続カード鮮度表示用)
-function formatAuthAge(ts) {
-  if (!ts) return "";
-  const diffMs = Date.now() - ts;
-  if (diffMs < 0) return "now";
-  const min = Math.floor(diffMs / 60000);
-  if (min < 1) return "<1分前";
-  if (min < 60) return `${min}分前`;
-  const h = Math.floor(min / 60);
-  if (h < 24) return `${h}時間前`;
-  const d = Math.floor(h / 24);
-  return `${d}日前`;
-}
-
-// v3.449.0 Phase 539: トークンが古い (> 6 時間) または未発行か判定
-// Salesforce のセッションは標準で 2-12h で失効するため、6h を「警告閾値」として黄色化
-const AUTH_STALE_THRESHOLD_MS = 6 * 60 * 60 * 1000;
-function isAuthStale(c) {
-  if (!c.accessToken) return false; // 未認証は別ステータスなので stale 扱いしない
-  if (!c.tokenIssuedAt) return true; // 認証済みなのに発行時刻不明なら古い扱い
-  return (Date.now() - c.tokenIssuedAt) > AUTH_STALE_THRESHOLD_MS;
-}
+// v3.449.0 Phase 539 → v3.450.0 Phase 540: formatAuthAge / isAuthStale は sf-connections.js に集約 (panel.js と共通化)
 
 async function renderPopupConnections() {
   const wrap = document.getElementById("popupConnList");
