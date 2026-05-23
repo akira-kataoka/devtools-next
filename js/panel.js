@@ -158,6 +158,12 @@ async function init() {
     loadApexHistory();
     loadRestHistory();
     // v3.446.0 Phase 534: 接続マネージャを初期化 (chrome.storage.local から接続リストを取得)
+    // v3.448.0 Phase 538: ?conn=<id> をここで先行読込 (connRefreshList → connSyncRestDropdown が
+    //   _sfdtInitialConnFromQuery を参照するため、URL クエリ全読込 (後段) より前にセットする必要がある)
+    try {
+      const _earlyParams = new URLSearchParams(window.location.search);
+      window._sfdtInitialConnFromQuery = _earlyParams.get("conn") || null;
+    } catch {}
     try {
       bindConnectionEvents();
       await connRefreshList();
@@ -236,8 +242,11 @@ async function init() {
       window._sfdtInitialOpFromQuery = params.get("op") || null;
       window._sfdtInitialApiObjFromQuery = params.get("apiObj") || null;
       window._sfdtInitialApiIdFromQuery = params.get("apiId") || null;
-      // v3.447.0 Phase 537: ?conn=<id> 対応 — REST ビューの接続セレクタを保存済み接続で初期化 (popup から開いたとき用)
-      window._sfdtInitialConnFromQuery = params.get("conn") || null;
+      // v3.447.0 Phase 537 / v3.448.0 Phase 538: ?conn=<id> は connRefreshList より前に先行読込済み
+      // (上の早期パースを参照)。ここでは未読込時のフォールバックのみ実施
+      if (window._sfdtInitialConnFromQuery == null) {
+        window._sfdtInitialConnFromQuery = params.get("conn") || null;
+      }
     } catch {}
     // v2.93.0: リフレッシュ時の直前 view 復元 (ユーザー要望「リフレッシュしても前のページ状態を残して」)
     try {

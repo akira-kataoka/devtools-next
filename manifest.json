@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "DevToolsNext",
-  "version": "3.447.0",
+  "version": "3.448.0",
   "description": "Salesforce 開発者・管理者向けユーティリティ拡張。SOQL/Apex 実行、レコード詳細、データエクスポート、API ビルダー、設計書自動生成、ユーザー・ライセンス管理ダッシュボードを 1 画面で提供。本番組織での破壊操作には確認ダイアログを挟みます。",
   "default_locale": "ja",
   "permissions": [
