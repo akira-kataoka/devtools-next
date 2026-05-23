@@ -66,6 +66,8 @@ import {
   formatAuthAge,
   isAuthStale,
 } from "./sf-connections.js";
+// v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
+import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 
 const state = {
   host: null,
@@ -4842,32 +4844,8 @@ async function doDescribe() {
 }
 
 let restRunId = 0;
-// v3.443.0 Phase 533: 3 モード (SF / 汎用 HTTP / SOAP) 対応
-//   parseRestHeaders: "Key: Value" 行形式テキストを headers オブジェクトに変換
-//   wrapSoapEnvelope: ボディを SOAP 1.1 Envelope でラップ (xmlns 自動付与)
-function parseRestHeaders(text) {
-  const headers = {};
-  if (!text || typeof text !== "string") return headers;
-  text.split(/\r?\n/).forEach((line) => {
-    const t = line.trim();
-    if (!t || t.startsWith("#")) return;
-    const idx = t.indexOf(":");
-    if (idx <= 0) return;
-    const k = t.substring(0, idx).trim();
-    const v = t.substring(idx + 1).trim();
-    if (k) headers[k] = v;
-  });
-  return headers;
-}
-function wrapSoapEnvelope(innerBody) {
-  // 簡易 SOAP 1.1 envelope (xmlns で SOAP 1.1 namespace 指定)
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-  <soap:Body>
-${innerBody}
-  </soap:Body>
-</soap:Envelope>`;
-}
+// v3.443.0 Phase 533 で追加された parseRestHeaders / wrapSoapEnvelope は v3.453.0 Phase 543 で
+// ./sf-rest-helpers.js に抽出 (上の import 文を参照、テスト対象化が目的)。
 
 async function doRest() {
   const method = document.getElementById("restMethod").value;
