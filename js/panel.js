@@ -174,6 +174,17 @@ async function init() {
     try {
       bindConnectionEvents();
       await connRefreshList();
+      // v3.456.0 Phase 546: ?reauth=<id> URL クエリで popup「🔓 再認証」ボタンからの直接発火に対応
+      try {
+        const _reauthParams = new URLSearchParams(window.location.search);
+        const reauthId = _reauthParams.get("reauth");
+        if (reauthId && connState.list.find((c) => c.id === reauthId)) {
+          // panel が描画されてから少し待って実行 (toast 重複回避 + UX 同期)
+          setTimeout(() => {
+            connReauth(reauthId).catch((e) => console.log("[DevToolsNext] auto reauth skipped:", e));
+          }, 300);
+        }
+      } catch {}
     } catch (e) { console.log("[DevToolsNext] connection init skipped:", e); }
     loadMdType();
     loadSoqlTooling();

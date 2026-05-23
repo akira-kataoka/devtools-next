@@ -895,7 +895,7 @@ async function renderPopupConnections() {
         <div style="display:flex;gap:3px;margin-top:4px;flex-wrap:wrap">
           ${authed ? `<button class="mini btn-popup-conn-rest" data-id="${escapePopupHtml(c.id)}" title="この接続を選んだ状態で REST API ビューを全画面表示">🌐 REST</button>` : ""}
           ${authed ? `<button class="mini btn-popup-conn-copytoken" data-id="${escapePopupHtml(c.id)}" title="access_token をクリップボードへコピー">📋 token</button>` : ""}
-          ${stale ? `<button class="mini btn-popup-conn-edit" data-id="${escapePopupHtml(c.id)}" title="接続マネージャで再認証 (🔓 再認証ボタン)" style="border-color:#6b5318;color:#f5c269">🔓 再認証</button>` : `<button class="mini btn-popup-conn-edit" data-id="${escapePopupHtml(c.id)}" title="接続マネージャで編集">✏️ 編集</button>`}
+          ${stale ? `<button class="mini btn-popup-conn-reauth" data-id="${escapePopupHtml(c.id)}" title="接続マネージャを開いて自動で 🔓 再認証を発火 (Phase 546: ボタン名通りの動作)" style="border-color:#6b5318;color:#f5c269">🔓 再認証</button>` : `<button class="mini btn-popup-conn-edit" data-id="${escapePopupHtml(c.id)}" title="接続マネージャで編集">✏️ 編集</button>`}
         </div>
       </div>`;
     }).join("");
@@ -921,6 +921,14 @@ async function renderPopupConnections() {
   wrap.querySelectorAll(".btn-popup-conn-edit").forEach((b) => {
     b.addEventListener("click", () => {
       chrome.tabs.create({ url: chrome.runtime.getURL(`html/tool.html?view=connections`) });
+    });
+  });
+  // v3.456.0 Phase 546: stale 接続用「🔓 再認証」ボタンは ?reauth=<id> 付きで開く
+  // panel.js が URL クエリを受け取って connReauth(id) を自動発火する (ボタン名通りの動作)
+  wrap.querySelectorAll(".btn-popup-conn-reauth").forEach((b) => {
+    b.addEventListener("click", () => {
+      const id = b.dataset.id;
+      chrome.tabs.create({ url: chrome.runtime.getURL(`html/tool.html?view=connections&reauth=${encodeURIComponent(id)}`) });
     });
   });
 
