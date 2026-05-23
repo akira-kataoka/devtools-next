@@ -4,7 +4,7 @@
     "description": "Extension name"
   },
   "extensionDescription": {
-    "message": "Next-gen developer utilities for Salesforce (DevToolsNext): SOQL/Apex runner, record Inspector, data export, API URL builder, Login as User, Login History, User/License admin dashboard (7 cards), 21 design document generators (incl. org snapshot), Limits dashboard, PROD 2-layer defense across 6 paths, documented least-privilege security transparency (SECURITY.md), auto-update, settings export/import.",
+    "message": "Salesforce utilities for developers and admins. Run SOQL/Apex, inspect records, export data, build API requests, generate design docs, and view user/license dashboards in one screen. Destructive operations on production orgs are guarded by a confirmation dialog.",
     "description": "Extension description"
   }
 }
