@@ -54,6 +54,7 @@ import { generateDesign, markdownToHtml } from "./design-docs.js";
 import { showPicker, invalidatePickerCache } from "./picker.js";
 // v3.446.0 Phase 534: セッション独立 API 接続マネージャ (ユーザー要望対応)
 import {
+  STORAGE_KEY as CONN_STORAGE_KEY,
   loadConnections as connLoadAll,
   saveConnections as connSaveAll,
   upsertConnection as connUpsert,
@@ -194,6 +195,11 @@ async function init() {
         }
         if (area === "local" && changes[REST_HISTORY_KEY]) {
           renderRestHistory(changes[REST_HISTORY_KEY].newValue || []);
+        }
+        // v3.455.0 Phase 545: popup / 別タブで接続が変更されたとき panel の接続マネージャと REST dropdown を自動再描画
+        // popup は Phase 537 で既にこの listener を持っていたが panel 側が抜けていた (MCP 実画面検証で発覚)
+        if (area === "local" && changes[CONN_STORAGE_KEY]) {
+          connRefreshList().catch((e) => console.log("[DevToolsNext] connRefreshList skipped:", e));
         }
       });
     }
