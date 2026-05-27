@@ -1,9 +1,13 @@
 // v3.454.0 Phase 544: sf-format-helpers.js の純粋関数ユニットテスト
 // v3.462.0 Phase 552: escHtml を追加 (panel/popup/picker/design-docs の重複実装を集約)
+// v3.463.0 Phase 553: 現在ユーザーリアルタイム表示の純粋関数 (userInitials / relativeTimeJa / formatCurrentUser) を追加
 
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { tsForFilename, formatError, escHtml } from "../js/sf-format-helpers.js";
+import {
+  tsForFilename, formatError, escHtml,
+  userInitials, relativeTimeJa, formatCurrentUser,
+} from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
 
@@ -122,4 +126,156 @@ test("escHtml: 混在 (XSS 想定 '<script>alert(\"x\")</script>')", () => {
     escHtml(`<script>alert("x")</script>`),
     "&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt;",
   );
+});
+
+// --- userInitials (Phase 553) -------------------------------------------------
+
+test("userInitials: 英語フルネーム → 各単語先頭の大文字 2 文字", () => {
+  assert.equal(userInitials("Jane Doe"), "JD");
+  assert.equal(userInitials("john smith"), "JS"); // 小文字も大文字化
+});
+
+test("userInitials: 3 単語以上は先頭 2 単語のみ", () => {
+  assert.equal(userInitials("Mary Jane Watson"), "MJ");
+});
+
+test("userInitials: 日本語スペース区切り (姓 名) → 各先頭 1 文字", () => {
+  assert.equal(userInitials("山田 太郎"), "山太");
+});
+
+test("userInitials: 1 トークンは先頭 2 文字", () => {
+  assert.equal(userInitials("Madonna"), "MA");
+  assert.equal(userInitials("admin"), "AD");
+});
+
+test("userInitials: 日本語 1 トークン (スペースなし) は先頭 2 文字", () => {
+  assert.equal(userInitials("山田太郎"), "山田");
+});
+
+test("userInitials: サロゲートペア (絵文字) を 1 文字として扱う", () => {
+  // Array.from で分割するため 🙂 は 1 文字
+  assert.equal(userInitials("🙂😀"), "🙂😀");
+});
+
+test("userInitials: 空 / null / 空白のみ → '?'", () => {
+  assert.equal(userInitials(""), "?");
+  assert.equal(userInitials(null), "?");
+  assert.equal(userInitials(undefined), "?");
+  assert.equal(userInitials("   "), "?");
+});
+
+test("userInitials: 前後の空白・連続空白を無視", () => {
+  assert.equal(userInitials("  Jane   Doe  "), "JD");
+});
+
+// --- relativeTimeJa (Phase 553) -----------------------------------------------
+
+const NOW = new Date("2026-05-27T12:00:00Z");
+
+test("relativeTimeJa: 60 秒未満は 'たった今'", () => {
+  assert.equal(relativeTimeJa(new Date(NOW.getTime() - 30 * 1000), NOW), "たった今");
+});
+
+test("relativeTimeJa: 分単位", () => {
+  assert.equal(relativeTimeJa(new Date(NOW.getTime() - 5 * 60 * 1000), NOW), "5分前");
+  assert.equal(relativeTimeJa(new Date(NOW.getTime() - 59 * 60 * 1000), NOW), "59分前");
+});
+
+test("relativeTimeJa: 時間単位", () => {
+  assert.equal(relativeTimeJa(new Date(NOW.getTime() - 3 * 3600 * 1000), NOW), "3時間前");
+  assert.equal(relativeTimeJa(new Date(NOW.getTime() - 23 * 3600 * 1000), NOW), "23時間前");
+});
+
+test("relativeTimeJa: 日単位", () => {
+  assert.equal(relativeTimeJa(new Date(NOW.getTime() - 2 * 86400 * 1000), NOW), "2日前");
+  assert.equal(relativeTimeJa(new Date(NOW.getTime() - 29 * 86400 * 1000), NOW), "29日前");
+});
+
+test("relativeTimeJa: 30 日以上は YYYY-MM-DD 絶対表記", () => {
+  const old = new Date(2026, 0, 1, 9, 30); // ローカル時刻ベース (getFullYear 等)
+  assert.equal(relativeTimeJa(old, NOW), "2026-01-01");
+});
+
+test("relativeTimeJa: 未来時刻 → '未来'", () => {
+  assert.equal(relativeTimeJa(new Date(NOW.getTime() + 60 * 1000), NOW), "未来");
+});
+
+test("relativeTimeJa: null / 空 / パース不能 → '-'", () => {
+  assert.equal(relativeTimeJa(null, NOW), "-");
+  assert.equal(relativeTimeJa("", NOW), "-");
+  assert.equal(relativeTimeJa("not-a-date", NOW), "-");
+});
+
+test("relativeTimeJa: ISO 文字列も受け付ける", () => {
+  assert.equal(relativeTimeJa("2026-05-27T11:00:00Z", NOW), "1時間前");
+});
+
+// --- formatCurrentUser (Phase 553) --------------------------------------------
+
+test("formatCurrentUser: User レコード優先でマージ", () => {
+  const out = formatCurrentUser({
+    userInfo: { user_id: "005xxx", name: "UI Name", preferred_username: "ui@x.com", email: "ui@x.com", via: "chatter" },
+    userRecord: {
+      Id: "005AAA", Name: "山田 太郎", Username: "taro@example.com", Email: "taro@example.com",
+      Alias: "tyamada", IsActive: true, LastLoginDate: "2026-05-27T11:00:00.000+0000",
+      TimeZoneSidKey: "Asia/Tokyo", LanguageLocaleKey: "ja", UserType: "Standard",
+      Profile: { Name: "システム管理者" }, UserRole: { Name: "営業部長" },
+    },
+  });
+  assert.equal(out.id, "005AAA");
+  assert.equal(out.name, "山田 太郎");
+  assert.equal(out.username, "taro@example.com");
+  assert.equal(out.profile, "システム管理者");
+  assert.equal(out.role, "営業部長");
+  assert.equal(out.userType, "Standard");
+  assert.equal(out.isActive, true);
+  assert.equal(out.timeZone, "Asia/Tokyo");
+  assert.equal(out.language, "ja");
+  assert.equal(out.alias, "tyamada");
+  assert.equal(out.via, "chatter");
+  assert.equal(out.initials, "山太");
+});
+
+test("formatCurrentUser: userRecord なし (SOQL 失敗) は userInfo で埋める", () => {
+  const out = formatCurrentUser({
+    userInfo: { user_id: "005zzz", name: "Jane Doe", preferred_username: "jane@x.com", email: "jane@x.com", via: "oauth2" },
+    userRecord: null,
+  });
+  assert.equal(out.id, "005zzz");
+  assert.equal(out.name, "Jane Doe");
+  assert.equal(out.username, "jane@x.com");
+  assert.equal(out.email, "jane@x.com");
+  assert.equal(out.profile, "");
+  assert.equal(out.role, "");
+  assert.equal(out.isActive, null); // User レコードがないと不明 = null
+  assert.equal(out.initials, "JD");
+});
+
+test("formatCurrentUser: Profile / UserRole が null でも落ちない", () => {
+  const out = formatCurrentUser({
+    userInfo: null,
+    userRecord: { Id: "005bbb", Name: "Solo", Profile: null, UserRole: null, IsActive: false },
+  });
+  assert.equal(out.profile, "");
+  assert.equal(out.role, "");
+  assert.equal(out.isActive, false);
+  assert.equal(out.name, "Solo");
+});
+
+test("formatCurrentUser: 引数なし / 全 null でもデフォルト構造を返す", () => {
+  const out = formatCurrentUser();
+  assert.equal(out.name, "(不明)");
+  assert.equal(out.id, "");
+  assert.equal(out.isActive, null);
+  // initials は name "(不明)" の先頭 2 文字から導出 (この経路は chip 非表示なので実害なし)
+  assert.equal(out.initials, userInitials("(不明)"));
+});
+
+test("formatCurrentUser: name は userRecord.Name → userInfo.name → username → email の順で決定", () => {
+  // Name なし、userInfo.name なし → preferred_username
+  const out = formatCurrentUser({
+    userInfo: { preferred_username: "only-username@x.com" },
+    userRecord: {},
+  });
+  assert.equal(out.name, "only-username@x.com");
 });

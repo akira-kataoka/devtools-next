@@ -25,7 +25,7 @@
 //   ⑮ rest (line 430): REST API ビュー (Team R 完了、POST/PATCH/DELETE は PROD 確認 + auto-fire 禁止)
 //
 // 【依存マップ】14 export from 3 files (Phase 444 / 443 / 446 documentation と cross reference)
-//   ・sf-api.js (10 export): isSalesforceHost, toApiHost, getSessionId, parseOrgIdFromSid, runSoql, sfFetch, getLimits, recordsToCsv, to18CharId, getUserInfo
+//   ・sf-api.js (11 export): isSalesforceHost, toApiHost, getSessionId, parseOrgIdFromSid, runSoql, sfFetch, getLimits, recordsToCsv, to18CharId, getUserInfo, getCurrentUserDetails
 //   ・design-docs.js (2 export): generateDesign, markdownToHtml
 //   ・picker.js (2 export): showPicker, invalidatePickerCache
 //
@@ -49,6 +49,7 @@
 import {
   isSalesforceHost, toApiHost, getSessionId, parseOrgIdFromSid,
   runSoql, sfFetch, getLimits, recordsToCsv, to18CharId, getUserInfo,
+  getCurrentUserDetails,
 } from "./sf-api.js";
 import { generateDesign, markdownToHtml } from "./design-docs.js";
 import { showPicker, invalidatePickerCache } from "./picker.js";
@@ -70,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, formatError, escHtml } from "./sf-format-helpers.js";
+import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -88,7 +89,16 @@ const state = {
   apiVersion: "62.0",
   lastRecords: null,
   lastLoginRecords: null,
+  // v3.463.0 Phase 553: 現在ログイン中ユーザーのリアルタイム表示
+  currentUser: null,      // formatCurrentUser() の結果
+  lastUserFetch: 0,       // 最終取得時刻 (epoch ms)
 };
+
+// v3.463.0 Phase 553: ヘッダー user-chip のリアルタイム監視設定
+const CURRENT_USER_POLL_MS = 30000; // 30 秒ごとに再取得
+let _currentUserTimer = null;
+let _currentUserAutoRefresh = true;
+let _currentUserFetching = false;
 
 // op ごとに必要な input の表示制御 (apiObj / apiId)
 // 注意: init() が bindEvents 経由で updateApiInputVisibility() を呼ぶため、
@@ -1239,6 +1249,23 @@ function bindEvents() {
   });
   const btnRecon = document.getElementById("btnReconnect");
   if (btnRecon) btnRecon.addEventListener("click", reconnect);
+
+  // v3.463.0 Phase 553: 現在ユーザー chip クリックで詳細ポップオーバー開閉
+  const userChip = document.getElementById("currentUserChip");
+  if (userChip) userChip.addEventListener("click", (e) => { e.stopPropagation(); toggleCurrentUserPopover(); });
+  // ポップオーバー外クリック / Esc で閉じる
+  document.addEventListener("click", (e) => {
+    const pop = document.getElementById("currentUserPopover");
+    if (pop && !pop.hidden && !pop.contains(e.target) && e.target !== userChip && !(userChip && userChip.contains(e.target))) {
+      closeCurrentUserPopover();
+    }
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeCurrentUserPopover(); });
+  // DevTools パネル再表示時に即時更新 (非表示中はポーリング停止しているため鮮度回復)
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && _currentUserAutoRefresh && state.sid && state.host) refreshCurrentUserId();
+  });
+
   const apiVerEl = document.getElementById("apiVer");
   if (apiVerEl) apiVerEl.addEventListener("change", (e) => {
     state.apiVersion = e.target.value;
@@ -3945,6 +3972,8 @@ async function reconnect() {
   const host = await getInspectedHost();
   if (!host || !isSalesforceHost(host)) {
     document.getElementById("orgInfo").innerHTML = `<span class="pill warn">Salesforce のタブではありません</span>`;
+    stopCurrentUserPolling();
+    renderCurrentUserChip(null);
     unlock();
     return;
   }
@@ -3953,6 +3982,8 @@ async function reconnect() {
   const session = await getSessionId(host);
   if (!session) {
     document.getElementById("orgInfo").innerHTML = `<span class="pill err">sid Cookie の取得に失敗しました</span>`;
+    stopCurrentUserPolling();
+    renderCurrentUserChip(null);
     unlock();
     return;
   }
@@ -3988,19 +4019,176 @@ async function reconnect() {
   // v2.6.0: 接続成功後に sObject 一覧を datalist に流し込み (オブジェクト入力欄の補完用)
   refreshSObjectDatalist();
   // v3.71.0: 現在ユーザー ID を取得して state.userId にキャッシュ (SOQL テンプレートで使用)
-  // 失敗時は state.userId = null のまま (テンプレートは REPLACE_USER_ID プレースホルダで継続動作)
+  // v3.463.0 Phase 553: 詳細取得 + ヘッダー chip 描画 + リアルタイム監視を開始
   refreshCurrentUserId();
+  startCurrentUserPolling();
 }
 
+// =====================================================================
+// v3.463.0 Phase 553: 現在ログイン中ユーザーのリアルタイム表示 (ユーザー要望 2026-05-27)
+//   - reconnect 成功でヘッダー chip を表示し、CURRENT_USER_POLL_MS ごとに再取得
+//   - パネルが非表示 (DevTools 閉) の間はポーリングを止め、再表示で即時更新
+//   - chip クリックでプロファイル / ロール / 最終ログイン等の詳細ポップオーバー
+//   失敗してもツール本体は動くよう全経路で握りつぶし、state.userId は従来通り保つ。
+// =====================================================================
+
+/** 現在ユーザーの詳細を取得し state にキャッシュ + chip を再描画。 */
 async function refreshCurrentUserId() {
-  if (!state.sid || !state.host) return;
+  if (!state.sid || !state.host) { renderCurrentUserChip(null); return; }
+  if (_currentUserFetching) return;
+  _currentUserFetching = true;
   try {
-    const ui = await getUserInfo({ host: state.host, sid: state.sid, apiVersion: state.apiVersion });
-    if (ui && ui.ok && ui.data && ui.data.user_id) {
-      state.userId = ui.data.user_id;
-      console.log("[DevToolsNext] state.userId cached:", state.userId);
+    const res = await getCurrentUserDetails({ host: state.host, sid: state.sid, apiVersion: state.apiVersion });
+    if (res && res.ok) {
+      const cu = formatCurrentUser({ userInfo: res.userInfo, userRecord: res.userRecord });
+      state.currentUser = cu;
+      state.lastUserFetch = Date.now();
+      if (cu.id) state.userId = cu.id; // SOQL テンプレートで使う userId キャッシュ (従来互換)
+      console.log("[DevToolsNext] current user:", cu.name, cu.username);
+      renderCurrentUserChip(cu);
+    } else {
+      renderCurrentUserChip(null);
     }
-  } catch (e) { console.warn("[DevToolsNext] userId fetch failed (ignored):", e); }
+  } catch (e) {
+    console.warn("[DevToolsNext] current user fetch failed (ignored):", e);
+    renderCurrentUserChip(null);
+  } finally {
+    _currentUserFetching = false;
+  }
+}
+
+/** ヘッダー chip の表示更新。cu=null で「未接続」状態にする。 */
+function renderCurrentUserChip(cu) {
+  const chip = document.getElementById("currentUserChip");
+  if (!chip) return;
+  const avatar = document.getElementById("userChipAvatar");
+  const nameEl = document.getElementById("userChipName");
+  const subEl = document.getElementById("userChipSub");
+  if (!cu) {
+    chip.hidden = true;
+    chip.classList.add("offline");
+    return;
+  }
+  chip.hidden = false;
+  chip.classList.remove("offline");
+  // 鮮度: 最終取得から 2 倍超を「古い」とみなし live ドットを警告色に
+  const stale = state.lastUserFetch && (Date.now() - state.lastUserFetch > CURRENT_USER_POLL_MS * 2.2);
+  chip.classList.toggle("stale", !!stale);
+  if (avatar) avatar.textContent = cu.initials || "?";
+  if (nameEl) nameEl.textContent = cu.name || "(不明)";
+  if (subEl) subEl.textContent = cu.username || cu.profile || "";
+  const activeTxt = cu.isActive === false ? " / ⚠ 無効ユーザー" : "";
+  chip.title =
+    `現在ログイン中: ${cu.name}\n` +
+    (cu.username ? `ユーザー名: ${cu.username}\n` : "") +
+    (cu.profile ? `プロファイル: ${cu.profile}\n` : "") +
+    (cu.role ? `ロール: ${cu.role}\n` : "") +
+    (cu.lastLogin ? `最終ログイン: ${relativeTimeJa(cu.lastLogin)}\n` : "") +
+    `自動更新: ${_currentUserAutoRefresh ? `ON (${CURRENT_USER_POLL_MS / 1000}秒ごと)` : "OFF"}${activeTxt}\n` +
+    `クリックで詳細を表示`;
+  // ポップオーバーが開いていれば中身も同期
+  const pop = document.getElementById("currentUserPopover");
+  if (pop && !pop.hidden) renderCurrentUserPopover(cu);
+}
+
+/** chip クリックで開く詳細ポップオーバーの中身を構築。 */
+function renderCurrentUserPopover(cu) {
+  const pop = document.getElementById("currentUserPopover");
+  if (!pop || !cu) return;
+  const row = (label, value, copyable) => {
+    if (!value) return "";
+    const safe = escape(value);
+    const copyBtn = copyable ? ` <span class="up-copy" data-copy="${safe}" title="コピー">⧉</span>` : "";
+    return `<dt>${escape(label)}</dt><dd>${safe}${copyBtn}</dd>`;
+  };
+  const activeBadge = cu.isActive === null ? "" :
+    cu.isActive
+      ? `<span class="up-badge active">有効</span>`
+      : `<span class="up-badge inactive">無効</span>`;
+  const lastLogin = cu.lastLogin
+    ? `${escape(relativeTimeJa(cu.lastLogin))} <span style="opacity:.6">(${escape(String(cu.lastLogin).replace("T", " ").substring(0, 16))})</span>`
+    : "";
+  const updated = state.lastUserFetch ? new Date(state.lastUserFetch).toLocaleTimeString("ja-JP") : "-";
+  pop.innerHTML =
+    `<h4><span class="up-avatar">${escape(cu.initials || "?")}</span> ${escape(cu.name || "(不明)")} ${activeBadge}</h4>` +
+    `<dl>` +
+    row("ユーザー名", cu.username, true) +
+    row("メール", cu.email, true) +
+    row("ユーザー ID", cu.id, true) +
+    row("別名", cu.alias) +
+    row("プロファイル", cu.profile) +
+    row("ロール", cu.role) +
+    row("ユーザー種別", cu.userType) +
+    (lastLogin ? `<dt>最終ログイン</dt><dd>${lastLogin}</dd>` : "") +
+    row("タイムゾーン", cu.timeZone) +
+    row("言語", cu.language) +
+    `</dl>` +
+    `<div class="up-footer">` +
+      `<label title="ON で ${CURRENT_USER_POLL_MS / 1000} 秒ごとに自動再取得します">` +
+        `<input type="checkbox" id="userAutoRefreshChk" ${_currentUserAutoRefresh ? "checked" : ""}/> 自動更新` +
+      `</label>` +
+      `<span>最終更新 ${escape(updated)}</span>` +
+      `<button class="up-refresh" id="userPopRefresh" title="今すぐ再取得">⟳ 更新</button>` +
+    `</div>`;
+  // フッターのイベント (毎回張り直し / innerHTML 再生成のため)
+  const chk = pop.querySelector("#userAutoRefreshChk");
+  if (chk) chk.addEventListener("change", () => {
+    _currentUserAutoRefresh = chk.checked;
+    if (_currentUserAutoRefresh) startCurrentUserPolling(); else stopCurrentUserPolling();
+    renderCurrentUserChip(state.currentUser);
+  });
+  const rbtn = pop.querySelector("#userPopRefresh");
+  if (rbtn) rbtn.addEventListener("click", () => refreshCurrentUserId());
+  pop.querySelectorAll(".up-copy").forEach((el) => {
+    el.addEventListener("click", async (ev) => {
+      ev.stopPropagation();
+      try { await navigator.clipboard.writeText(el.dataset.copy || ""); el.textContent = "✓"; setTimeout(() => (el.textContent = "⧉"), 900); } catch (_) {}
+    });
+  });
+}
+
+/** chip ⇄ ポップオーバーの開閉トグル。 */
+function toggleCurrentUserPopover() {
+  const chip = document.getElementById("currentUserChip");
+  const pop = document.getElementById("currentUserPopover");
+  if (!chip || !pop) return;
+  if (pop.hidden) {
+    if (!state.currentUser) return;
+    renderCurrentUserPopover(state.currentUser);
+    pop.hidden = false;
+    chip.setAttribute("aria-expanded", "true");
+    // chip の真下・右寄せで配置
+    const r = chip.getBoundingClientRect();
+    pop.style.top = `${Math.round(r.bottom + 6)}px`;
+    const left = Math.min(r.left, window.innerWidth - pop.offsetWidth - 12);
+    pop.style.left = `${Math.round(Math.max(8, left))}px`;
+    // 開いた直後は最新化のため軽く再取得
+    refreshCurrentUserId();
+  } else {
+    closeCurrentUserPopover();
+  }
+}
+
+function closeCurrentUserPopover() {
+  const chip = document.getElementById("currentUserChip");
+  const pop = document.getElementById("currentUserPopover");
+  if (pop) pop.hidden = true;
+  if (chip) chip.setAttribute("aria-expanded", "false");
+}
+
+/** リアルタイム監視 (ポーリング) 開始。重複起動はしない。 */
+function startCurrentUserPolling() {
+  stopCurrentUserPolling();
+  if (!_currentUserAutoRefresh) return;
+  _currentUserTimer = setInterval(() => {
+    if (document.hidden) return;           // 非表示中は API を叩かない
+    if (!state.sid || !state.host) return;
+    refreshCurrentUserId();
+  }, CURRENT_USER_POLL_MS);
+}
+
+function stopCurrentUserPolling() {
+  if (_currentUserTimer) { clearInterval(_currentUserTimer); _currentUserTimer = null; }
 }
 
 // =====================================================================

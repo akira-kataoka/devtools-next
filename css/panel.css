@@ -105,6 +105,74 @@ html, body {
   .env-badge.env-prod { animation: none; }
 }
 
+/* =====================================================================
+   v3.463.0 Phase 553: 現在ログイン中ユーザーのリアルタイム表示 chip + popover
+   (ユーザー要望 2026-05-27 — 「今ログインしているのは誰か」を常時ヘッダーに)
+   ===================================================================== */
+.user-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 2px 8px 2px 2px; margin: 0;
+  background: var(--bg3); border: 1px solid var(--line); border-radius: var(--r-xl);
+  color: var(--fg); cursor: pointer; max-width: 220px;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.user-chip:hover { background: #1a2a4d; border-color: var(--accent); }
+.user-chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.user-chip[hidden] { display: none; }
+.user-chip-avatar {
+  flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--accent) 0%, #0a66c2 100%);
+  color: #fff; font-size: 10px; font-weight: 700; line-height: 1;
+}
+.user-chip-meta { display: flex; flex-direction: column; align-items: flex-start; overflow: hidden; line-height: 1.15; }
+.user-chip-name { font-size: 11px; font-weight: 600; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-chip-sub { font-size: 9px; color: var(--fg-dim); max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-chip-live {
+  flex: 0 0 auto; width: 7px; height: 7px; border-radius: 50%; background: var(--ok);
+  box-shadow: 0 0 0 0 rgba(46,204,113,0.6); animation: userLivePulse 2.2s ease-in-out infinite;
+}
+.user-chip.stale .user-chip-live { background: var(--warn); animation: none; }
+.user-chip.offline .user-chip-avatar { background: var(--bg2, #1a2233); color: var(--fg-dim); }
+.user-chip.offline .user-chip-live { background: var(--err); animation: none; }
+@keyframes userLivePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(46,204,113,0.0); }
+  50%      { box-shadow: 0 0 0 4px rgba(46,204,113,0.18); }
+}
+@media (prefers-reduced-motion: reduce) { .user-chip-live { animation: none; } }
+@media (max-width: 760px) { .user-chip-meta { display: none; } }
+
+.user-popover {
+  position: fixed; z-index: 9999; min-width: 280px; max-width: 340px;
+  background: var(--bg2, #0f1830); border: 1px solid var(--line); border-radius: var(--r-md, 8px);
+  box-shadow: 0 8px 28px rgba(0,0,0,0.45); padding: 12px 14px; color: var(--fg);
+  font-size: 12px;
+}
+.user-popover[hidden] { display: none; }
+.user-popover h4 { margin: 0 0 8px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+.user-popover .up-avatar {
+  width: 30px; height: 30px; border-radius: 50%; flex: 0 0 auto;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--accent) 0%, #0a66c2 100%); color: #fff; font-weight: 700; font-size: 13px;
+}
+.user-popover dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin: 8px 0 0; }
+.user-popover dt { color: var(--fg-dim); font-size: 11px; white-space: nowrap; }
+.user-popover dd { margin: 0; font-size: 11px; word-break: break-all; }
+.user-popover dd .up-copy { cursor: pointer; opacity: 0.55; margin-left: 4px; }
+.user-popover dd .up-copy:hover { opacity: 1; }
+.user-popover .up-badge {
+  display: inline-block; padding: 1px 6px; border-radius: var(--r-sm); font-size: 10px; font-weight: 700;
+}
+.user-popover .up-badge.active { background: rgba(46,204,113,0.2); color: var(--ok); border: 1px solid var(--ok); }
+.user-popover .up-badge.inactive { background: rgba(255,107,107,0.2); color: var(--err); border: 1px solid var(--err); }
+.user-popover .up-footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line);
+  font-size: 10px; color: var(--fg-dim);
+}
+.user-popover .up-footer label { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+.user-popover .up-refresh { font-size: 10px; padding: 2px 8px; }
+
 /* Inspector reference 値の参照先オブジェクト名ラベル (コントラスト改善) */
 .ref-target-label {
   color: #8aa3c8; font-size: 10px; margin-left: 6px;

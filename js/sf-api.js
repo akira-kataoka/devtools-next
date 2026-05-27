@@ -8,8 +8,8 @@
 //   タブ判定 2: getActiveSfTab (3 段階フォールバック、line 22) / isSalesforceHost (endsWith 厳格判定、line 43)
 //   ホスト正規化 1: toApiHost (Lightning → my.salesforce.com、line 52)
 //   認証 2: getSessionId (chrome.cookies で sid 取得、line 68) / parseOrgIdFromSid (sid 先頭 15 文字、line 134)
-//   API 呼出 4: sfFetch (汎用 REST/Tooling、Bearer 認証、line 142) / runSoql (SOQL 実行、line 171) /
-//               getUserInfo (UserInfo API、line 179) / getLimits (Limits API、line 214)
+//   API 呼出 5: sfFetch (汎用 REST/Tooling、Bearer 認証、line 142) / runSoql (SOQL 実行、line 171) /
+//               getUserInfo (UserInfo API、line 179) / getCurrentUserDetails (UserInfo+User SOQL 合成、Phase 553) / getLimits (Limits API)
 //   ID 変換 1: to18CharId (15→18 文字 ID 変換、line 222) / lookupPrefix (3 文字 prefix→object、line 252)
 //   CSV 出力 1: recordsToCsv (SOQL 結果 → CSV、line 262)
 //
@@ -231,6 +231,36 @@ export async function getUserInfo({ host, sid, apiVersion = "62.0" }) {
     data: r1.data,
     error: `ユーザ情報を取得できませんでした (chatter HTTP ${r1.status} / oauth2 HTTP ${r2.status})`,
   };
+}
+
+/**
+ * v3.463.0 Phase 553: 現在ログイン中ユーザーの「詳細」を取得する。
+ * getUserInfo (Chatter /users/me) で user_id を確定 → User SObject を SOQL で引いて
+ * プロファイル / ロール / 最終ログイン / タイムゾーン等のリッチな属性を付与する。
+ *
+ * ヘッダーのリアルタイム表示用。SOQL が失敗 (権限不足等) しても userInfo だけで
+ * 表示できるよう、userRecord は null 許容で返す (degrade gracefully)。
+ *
+ * @returns {{ ok: boolean, status: number, userInfo: object|null, userRecord: object|null, error?: string }}
+ */
+export async function getCurrentUserDetails({ host, sid, apiVersion = "62.0" }) {
+  const ui = await getUserInfo({ host, sid, apiVersion });
+  if (!ui.ok || !ui.data || !ui.data.user_id) {
+    return { ok: false, status: ui.status, userInfo: ui.data || null, userRecord: null, error: ui.error };
+  }
+  const uid = String(ui.data.user_id).replace(/'/g, ""); // SOQL インジェクション防御 (Id は本来英数字のみ)
+  const soql =
+    "SELECT Id, Name, Username, Email, Alias, IsActive, LastLoginDate, " +
+    "TimeZoneSidKey, LanguageLocaleKey, UserType, Profile.Name, UserRole.Name " +
+    `FROM User WHERE Id = '${uid}'`;
+  let userRecord = null;
+  try {
+    const r = await runSoql({ host, sid, soql, apiVersion });
+    if (r.ok && r.data && Array.isArray(r.data.records) && r.data.records.length) {
+      userRecord = r.data.records[0];
+    }
+  } catch (_) { /* SOQL 失敗は userInfo のみで継続 */ }
+  return { ok: true, status: 200, userInfo: ui.data, userRecord };
 }
 
 /** /limits */

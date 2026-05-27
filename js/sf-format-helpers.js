@@ -53,3 +53,93 @@ export function escHtml(s) {
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   }[c]));
 }
+
+// =====================================================================
+// v3.463.0 Phase 553: 現在ログイン中ユーザーのリアルタイム表示 (ユーザー要望 2026-05-27)
+//   ヘッダーに「今ログインしているのは誰か」を常時表示するため、表示用の
+//   純粋関数 3 つを追加。ネットワーク I/O は sf-api.getCurrentUserDetails 側、
+//   ここは「取得済みデータ → 表示用に正規化 / 整形」だけを担いテスト可能に保つ。
+// =====================================================================
+
+/**
+ * 表示名 / ユーザー名からアバター用イニシャル (1〜2 文字) を導出する。
+ *
+ * - スペース区切りで 2 トークン以上 → 先頭 2 トークンの各先頭 1 文字 (例 "山田 太郎" → "山太" / "Jane Doe" → "JD")
+ * - 1 トークンのみ → 先頭 2 文字 (CJK サロゲートペア安全に Array.from で分割)
+ * - 空 / null → "?"
+ *
+ * 英字は大文字化、CJK 等はそのまま。
+ *
+ * @param {string} nameOrUsername
+ * @returns {string} 1〜2 文字のイニシャル
+ */
+export function userInitials(nameOrUsername) {
+  const s = String(nameOrUsername == null ? "" : nameOrUsername).trim();
+  if (!s) return "?";
+  const tokens = s.split(/\s+/).filter(Boolean);
+  const firstOf = (t) => Array.from(t)[0] || "";
+  if (tokens.length >= 2) {
+    return (firstOf(tokens[0]) + firstOf(tokens[1])).toUpperCase();
+  }
+  const chars = Array.from(tokens[0]);
+  return chars.slice(0, 2).join("").toUpperCase();
+}
+
+/**
+ * 日時を「たった今 / N 分前 / N 時間前 / N 日前 / YYYY-MM-DD」の相対表現に整形する。
+ * LastLoginDate の鮮度を一目で把握できるようにするための表示専用関数。
+ *
+ * @param {string|number|Date} dateLike - ISO 文字列 / epoch ミリ秒 / Date
+ * @param {Date} [now=new Date()] - 基準時刻 (テスト注入用)
+ * @returns {string} 相対表現。パース不能 / 空なら "-"
+ */
+export function relativeTimeJa(dateLike, now = new Date()) {
+  if (dateLike == null || dateLike === "") return "-";
+  const d = dateLike instanceof Date ? dateLike : new Date(dateLike);
+  const t = d.getTime();
+  if (Number.isNaN(t)) return "-";
+  const diffSec = Math.floor((now.getTime() - t) / 1000);
+  if (diffSec < 0) return "未来";       // 時計ずれ等で未来の場合
+  if (diffSec < 60) return "たった今";
+  const min = Math.floor(diffSec / 60);
+  if (min < 60) return `${min}分前`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}時間前`;
+  const day = Math.floor(hr / 24);
+  if (day < 30) return `${day}日前`;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/**
+ * getUserInfo の結果と User レコード (SOQL) をマージし、表示用に正規化したオブジェクトを返す。
+ * どちらか一方しか取れなくても可能な範囲で埋める (User レコード優先、欠損は userInfo で補完)。
+ *
+ * @param {object} args
+ * @param {object|null} args.userInfo  - sf-api.getUserInfo の data ({ user_id, name, preferred_username, email, via })
+ * @param {object|null} args.userRecord - User SObject ({ Id, Name, Username, Email, Alias, IsActive, LastLoginDate, TimeZoneSidKey, LanguageLocaleKey, UserType, Profile, UserRole })
+ * @returns {object} 正規化済み表示データ
+ */
+export function formatCurrentUser({ userInfo = null, userRecord = null } = {}) {
+  const ui = userInfo || {};
+  const ur = userRecord || {};
+  const name = ur.Name || ui.name || ui.preferred_username || ui.email || "(不明)";
+  const username = ur.Username || ui.preferred_username || "";
+  const out = {
+    id: ur.Id || ui.user_id || "",
+    name,
+    username,
+    email: ur.Email || ui.email || "",
+    alias: ur.Alias || "",
+    profile: (ur.Profile && ur.Profile.Name) || "",
+    role: (ur.UserRole && ur.UserRole.Name) || "",
+    userType: ur.UserType || "",
+    isActive: ur.IsActive === undefined ? null : !!ur.IsActive,
+    lastLogin: ur.LastLoginDate || "",
+    timeZone: ur.TimeZoneSidKey || "",
+    language: ur.LanguageLocaleKey || "",
+    via: ui.via || "",
+  };
+  out.initials = userInitials(out.name);
+  return out;
+}
