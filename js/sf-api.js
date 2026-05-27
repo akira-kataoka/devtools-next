@@ -24,6 +24,9 @@
 //
 // 【統一エラー format】sfFetch / runSoql は status / body を例外 message に含める (panel.js displayApiError 正規表現 `/HTTP \d{3}/` 互換)
 
+// v3.464.0 Phase 554: SOQL 文字列リテラルエスケープを sf-format-helpers に集約 (escHtml 集約 Phase 552 と同じ DRY 方針)
+import { escapeSoqlLiteral } from "./sf-format-helpers.js";
+
 // v3.336.0 Phase 426: SF_DOMAINS は isSalesforceHost 判定用 6 ドメイン (endsWith マッチ)。
 //                     manifest.json host_permissions 9 ドメイン (Phase 424 で documentation) との差は意図的:
 //                     ・SF_DOMAINS は「SF 組織として認識する」厳格判定 — sid 取得・API 呼出の対象
@@ -248,7 +251,7 @@ export async function getCurrentUserDetails({ host, sid, apiVersion = "62.0" }) 
   if (!ui.ok || !ui.data || !ui.data.user_id) {
     return { ok: false, status: ui.status, userInfo: ui.data || null, userRecord: null, error: ui.error };
   }
-  const uid = String(ui.data.user_id).replace(/'/g, ""); // SOQL インジェクション防御 (Id は本来英数字のみ)
+  const uid = escapeSoqlLiteral(ui.data.user_id); // SOQL インジェクション防御 (Id は本来英数字のみだが正準エスケープで統一)
   const soql =
     "SELECT Id, Name, Username, Email, Alias, IsActive, LastLoginDate, " +
     "TimeZoneSidKey, LanguageLocaleKey, UserType, Profile.Name, UserRole.Name " +

@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa } from "./sf-format-helpers.js";
+import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -7608,7 +7608,7 @@ async function doAdminUnfreezeUser(userId, userName) {
   // 1. UserLogin の Id を引く (UserLogin の主キーは Id、UserId は外部キー)
   const findR = await runSoql({
     host: state.host, sid: state.sid, apiVersion: state.apiVersion,
-    soql: `SELECT Id, IsFrozen FROM UserLogin WHERE UserId = '${userId.replace(/'/g, "")}' LIMIT 1`,
+    soql: `SELECT Id, IsFrozen FROM UserLogin WHERE UserId = '${escapeSoqlLiteral(userId)}' LIMIT 1`,
   });
   if (!findR.ok) { panelToast(`❌ UserLogin 取得に失敗: HTTP ${findR.status}`, { kind: "err" }); return; }
   const userLogin = ((findR.data || {}).records || [])[0];
@@ -7826,7 +7826,7 @@ async function doAdminShowLicenseUsers(apiName) {
   adminShowModal(`📊 ${apiName} ライセンス使用ユーザー`, `<div style="padding:24px;text-align:center"><span class="pill loading">ユーザーを抽出中…</span></div>`);
   const r = await runSoql({
     host: state.host, sid: state.sid, apiVersion: state.apiVersion,
-    soql: `SELECT Id, Name, Username, IsActive, Profile.Name, LastLoginDate, Email FROM User WHERE Profile.UserLicense.Name = '${apiName.replace(/'/g, "")}' AND IsActive = true ORDER BY LastLoginDate DESC NULLS LAST LIMIT 1000`,
+    soql: `SELECT Id, Name, Username, IsActive, Profile.Name, LastLoginDate, Email FROM User WHERE Profile.UserLicense.Name = '${escapeSoqlLiteral(apiName)}' AND IsActive = true ORDER BY LastLoginDate DESC NULLS LAST LIMIT 1000`,
   });
   if (!r.ok) {
     adminUpdateModalBody(`<div class="meta admin-card-err" style="padding:12px"><strong>HTTP ${r.status}</strong> 抽出に失敗しました</div>`);

@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import {
   tsForFilename, formatError, escHtml,
   userInitials, relativeTimeJa, formatCurrentUser,
+  escapeSoqlLiteral,
 } from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
@@ -278,4 +279,47 @@ test("formatCurrentUser: name は userRecord.Name → userInfo.name → username
     userRecord: {},
   });
   assert.equal(out.name, "only-username@x.com");
+});
+
+// --- escapeSoqlLiteral (Phase 554) --------------------------------------------
+
+test("escapeSoqlLiteral: 通常の Salesforce Id はそのまま (英数字は無変換)", () => {
+  assert.equal(escapeSoqlLiteral("005xx000001Sv6mAAC"), "005xx000001Sv6mAAC");
+});
+
+test("escapeSoqlLiteral: 単一引用符を \\' にエスケープ", () => {
+  assert.equal(escapeSoqlLiteral("O'Brien"), "O\\'Brien");
+  // SOQL に埋めると ...WHERE Name = 'O\'Brien' となり構文破壊しない
+});
+
+test("escapeSoqlLiteral: バックスラッシュを先にエスケープ (\\ → \\\\)", () => {
+  assert.equal(escapeSoqlLiteral("a\\b"), "a\\\\b");
+});
+
+test("escapeSoqlLiteral: バックスラッシュ + 引用符の順序 (二重エスケープにならない)", () => {
+  // 入力 \'  → 期待 \\\'  (\ が \\、' が \' に独立変換)
+  assert.equal(escapeSoqlLiteral("\\'"), "\\\\\\'");
+});
+
+test("escapeSoqlLiteral: 複数の引用符を全て置換", () => {
+  assert.equal(escapeSoqlLiteral("'a'b'"), "\\'a\\'b\\'");
+});
+
+test("escapeSoqlLiteral: インジェクション試行 (' OR Id != '') を無害化", () => {
+  // よくある SOQL インジェクションペイロード。全 quote がエスケープされ閉じない
+  assert.equal(escapeSoqlLiteral("' OR Id != '"), "\\' OR Id != \\'");
+});
+
+test("escapeSoqlLiteral: null / undefined は空文字", () => {
+  assert.equal(escapeSoqlLiteral(null), "");
+  assert.equal(escapeSoqlLiteral(undefined), "");
+});
+
+test("escapeSoqlLiteral: 数値は String 化 (HTML escHtml と同じ null-safe 方針)", () => {
+  assert.equal(escapeSoqlLiteral(123), "123");
+});
+
+test("escapeSoqlLiteral: 引用符もバックスラッシュも無い文字列は無変換 (日本語含む)", () => {
+  assert.equal(escapeSoqlLiteral("山田太郎"), "山田太郎");
+  assert.equal(escapeSoqlLiteral("Standard"), "Standard");
 });

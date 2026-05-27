@@ -54,6 +54,24 @@ export function escHtml(s) {
   }[c]));
 }
 
+/**
+ * SOQL 文字列リテラル ('...' で囲む値) を安全にエスケープする。
+ *
+ * Salesforce SOQL の仕様に従い、まずバックスラッシュ `\` を `\\` に、続いて
+ * 単一引用符 `'` を `\'` にエスケープする (順序が逆だと二重エスケープになる)。
+ *
+ * v3.464.0 Phase 554 で集約: コードベースに 3 パターン混在していたのを統一。
+ *   - `.replace(/'/g, "")`  … quote を「除去」する lossy 実装 (値が変わるバグ。sf-api.js / panel.js の User 系 SOQL)
+ *   - `.replace(/'/g, "\\'")` … quote のみエスケープ (`\` 未対応。design-docs.js 多数 — 別サイクルで移行予定)
+ *   - `.replace(/\\/g,"\\\\").replace(/'/g,"\\'")` … 完全 (panel.js 検索キーワード) ← これを正準とする
+ *
+ * @param {*} s - 任意の値 (string でなくても toString される。null/undefined は空文字)
+ * @returns {string} '...' の中にそのまま埋め込める安全な文字列
+ */
+export function escapeSoqlLiteral(s) {
+  return String(s == null ? "" : s).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
 // =====================================================================
 // v3.463.0 Phase 553: 現在ログイン中ユーザーのリアルタイム表示 (ユーザー要望 2026-05-27)
 //   ヘッダーに「今ログインしているのは誰か」を常時表示するため、表示用の
