@@ -22,7 +22,8 @@
 
 import { sfFetch, runSoql } from "./sf-api.js";
 // v3.462.0 Phase 552: HTML escape は sf-format-helpers.escHtml に集約 (esc は薄い wrapper として export を維持)
-import { escHtml } from "./sf-format-helpers.js";
+// v3.465.0 Phase 555: SOQL リテラルエスケープも escapeSoqlLiteral に集約 (旧 `.replace(/'/g,"\\'")` は `\` 未対応だった)
+import { escHtml, escapeSoqlLiteral } from "./sf-format-helpers.js";
 
 /**
  * 各設計書タイプの定義。
@@ -759,7 +760,7 @@ async function buildFlowList({ host, sid, apiVersion }) {
 
 // ============ 入力規則一覧 ============
 async function buildValidationRuleList({ host, sid, apiVersion, obj }) {
-  const where = obj ? `WHERE EntityDefinition.QualifiedApiName='${obj.replace(/'/g, "\\'")}'` : "";
+  const where = obj ? `WHERE EntityDefinition.QualifiedApiName='${escapeSoqlLiteral(obj)}'` : "";
   const r = await runSoql({
     host, sid, apiVersion, tooling: true,
     soql: `SELECT Id, ValidationName, Active, Description, ErrorDisplayField, ErrorMessage, EntityDefinition.QualifiedApiName, LastModifiedDate FROM ValidationRule ${where} ORDER BY EntityDefinition.QualifiedApiName, ValidationName LIMIT 500`,
@@ -803,7 +804,7 @@ async function buildValidationRuleList({ host, sid, apiVersion, obj }) {
 
 // ============ レコードタイプ一覧 ============
 async function buildRecordTypeList({ host, sid, apiVersion, obj }) {
-  const where = obj ? `WHERE SobjectType='${obj.replace(/'/g, "\\'")}'` : "";
+  const where = obj ? `WHERE SobjectType='${escapeSoqlLiteral(obj)}'` : "";
   const r = await runSoql({
     host, sid, apiVersion,
     soql: `SELECT Id, Name, DeveloperName, SobjectType, IsActive, Description, BusinessProcessId FROM RecordType ${where} ORDER BY SobjectType, DeveloperName LIMIT 500`,
@@ -863,7 +864,7 @@ async function buildFieldSetList({ host, sid, apiVersion, obj }) {
   // 2. Tooling API から FieldSet メタ (Label / Description / ネームスペース) を取得
   const tr = await runSoql({
     host, sid, apiVersion, tooling: true,
-    soql: `SELECT Id, DeveloperName, MasterLabel, Description, NamespacePrefix, EntityDefinition.QualifiedApiName FROM FieldSet WHERE EntityDefinition.QualifiedApiName='${obj.replace(/'/g, "\\'")}' ORDER BY DeveloperName LIMIT 200`,
+    soql: `SELECT Id, DeveloperName, MasterLabel, Description, NamespacePrefix, EntityDefinition.QualifiedApiName FROM FieldSet WHERE EntityDefinition.QualifiedApiName='${escapeSoqlLiteral(obj)}' ORDER BY DeveloperName LIMIT 200`,
   });
   if (!tr.ok) throw apiError("フィールドセットの取得に失敗しました", tr);
   const records = tr.data.records || [];
@@ -1197,9 +1198,9 @@ async function buildProfileDetail({ host, sid, apiVersion, obj, progress = () =>
   // 1. 対象 PermissionSet を特定 (Profile は IsOwnedByProfile=true の PermissionSet として存在)
   let psSoql;
   if (isPermSet) {
-    psSoql = `SELECT Id, Name, Label, IsOwnedByProfile, License.Name, Description FROM PermissionSet WHERE Name='${lookupName.replace(/'/g, "\\'")}' AND IsOwnedByProfile=false LIMIT 1`;
+    psSoql = `SELECT Id, Name, Label, IsOwnedByProfile, License.Name, Description FROM PermissionSet WHERE Name='${escapeSoqlLiteral(lookupName)}' AND IsOwnedByProfile=false LIMIT 1`;
   } else {
-    psSoql = `SELECT Id, Name, Label, IsOwnedByProfile, Profile.Name, Profile.UserLicense.Name, Profile.UserType, Profile.Description FROM PermissionSet WHERE IsOwnedByProfile=true AND Profile.Name='${lookupName.replace(/'/g, "\\'")}' LIMIT 1`;
+    psSoql = `SELECT Id, Name, Label, IsOwnedByProfile, Profile.Name, Profile.UserLicense.Name, Profile.UserType, Profile.Description FROM PermissionSet WHERE IsOwnedByProfile=true AND Profile.Name='${escapeSoqlLiteral(lookupName)}' LIMIT 1`;
   }
   const psR = await runSoql({ host, sid, apiVersion, soql: psSoql });
   if (!psR.ok) throw apiError("権限セットの取得に失敗しました", psR);
@@ -1385,7 +1386,7 @@ async function buildFlsReport({ host, sid, apiVersion, obj, progress = () => {} 
     }));
 
   const fpR = await fetchAllPaged({ host, sid, apiVersion,
-    soql: `SELECT Field, PermissionsRead, PermissionsEdit, Parent.Name, Parent.IsOwnedByProfile, Parent.Profile.Name, Parent.Label FROM FieldPermissions WHERE SobjectType='${obj.replace(/'/g, "\\'")}'`,
+    soql: `SELECT Field, PermissionsRead, PermissionsEdit, Parent.Name, Parent.IsOwnedByProfile, Parent.Profile.Name, Parent.Label FROM FieldPermissions WHERE SobjectType='${escapeSoqlLiteral(obj)}'`,
   });
 
   // v2.89.0: profileReader 互換のマトリクス形式 (項目 × プロファイル/権限セット)
@@ -1787,7 +1788,7 @@ async function buildFlowDetail({ host, sid, apiVersion, obj }) {
   // Active version を引く
   const r = await runSoql({
     host, sid, apiVersion, tooling: true,
-    soql: `SELECT Id, MasterLabel, ProcessType, Status, VersionNumber, Description, Metadata FROM Flow WHERE Definition.DeveloperName='${obj.replace(/'/g, "\\'")}' AND Status='Active' ORDER BY VersionNumber DESC LIMIT 1`,
+    soql: `SELECT Id, MasterLabel, ProcessType, Status, VersionNumber, Description, Metadata FROM Flow WHERE Definition.DeveloperName='${escapeSoqlLiteral(obj)}' AND Status='Active' ORDER BY VersionNumber DESC LIMIT 1`,
   });
   if (!r.ok) throw apiError("フロー (アクティブ) の取得に失敗しました", r);
   let flow = (r.data.records || [])[0];
@@ -1795,7 +1796,7 @@ async function buildFlowDetail({ host, sid, apiVersion, obj }) {
     // Active が無ければ最新を引く
     const r2 = await runSoql({
       host, sid, apiVersion, tooling: true,
-      soql: `SELECT Id, MasterLabel, ProcessType, Status, VersionNumber, Description, Metadata FROM Flow WHERE Definition.DeveloperName='${obj.replace(/'/g, "\\'")}' ORDER BY VersionNumber DESC LIMIT 1`,
+      soql: `SELECT Id, MasterLabel, ProcessType, Status, VersionNumber, Description, Metadata FROM Flow WHERE Definition.DeveloperName='${escapeSoqlLiteral(obj)}' ORDER BY VersionNumber DESC LIMIT 1`,
     });
     if (!r2.ok) throw apiError("フロー (最新版) の取得に失敗しました", r2);
     if (!(r2.data.records || []).length) throw new Error(`HTTP 404 Flow '${obj}' が見つかりません`);
@@ -1939,7 +1940,7 @@ async function buildApexDetail({ host, sid, apiVersion, obj }) {
   requireInput(obj, "Apex クラス名 (例: AccountController)");
   const r = await runSoql({
     host, sid, apiVersion, tooling: true,
-    soql: `SELECT Id, Name, ApiVersion, Status, NamespacePrefix, LengthWithoutComments, IsValid, Body, SymbolTable FROM ApexClass WHERE Name='${obj.replace(/'/g, "\\'")}' LIMIT 1`,
+    soql: `SELECT Id, Name, ApiVersion, Status, NamespacePrefix, LengthWithoutComments, IsValid, Body, SymbolTable FROM ApexClass WHERE Name='${escapeSoqlLiteral(obj)}' LIMIT 1`,
   });
   if (!r.ok) throw apiError(`Apex クラス (${obj}) の取得に失敗しました`, r);
   if (!r.data.records || !r.data.records[0]) throw new Error(`HTTP 404 Apex クラス '${obj}' が見つかりません`);
@@ -2071,7 +2072,7 @@ async function buildApexDetail({ host, sid, apiVersion, obj }) {
   // ApexTrigger 参照 (このクラスを呼び出すトリガ)
   const trR = await runSoql({
     host, sid, apiVersion, tooling: true,
-    soql: `SELECT Name, TableEnumOrId FROM ApexTrigger WHERE Body LIKE '%${obj.replace(/'/g, "\\'")}%' ORDER BY Name LIMIT 50`,
+    soql: `SELECT Name, TableEnumOrId FROM ApexTrigger WHERE Body LIKE '%${escapeSoqlLiteral(obj)}%' ORDER BY Name LIMIT 50`,
   });
   if (trR.ok && trR.data.records && trR.data.records.length) {
     sections.push({
@@ -2096,7 +2097,7 @@ async function buildLwcDetail({ host, sid, apiVersion, obj }) {
 
   const bR = await runSoql({
     host, sid, apiVersion, tooling: true,
-    soql: `SELECT Id, DeveloperName, MasterLabel, ApiVersion, Description, NamespacePrefix, IsExposed, TargetConfigs FROM LightningComponentBundle WHERE DeveloperName='${obj.replace(/'/g, "\\'")}' LIMIT 1`,
+    soql: `SELECT Id, DeveloperName, MasterLabel, ApiVersion, Description, NamespacePrefix, IsExposed, TargetConfigs FROM LightningComponentBundle WHERE DeveloperName='${escapeSoqlLiteral(obj)}' LIMIT 1`,
   });
   if (!bR.ok) throw apiError(`LWC コンポーネント (${obj}) の取得に失敗しました`, bR);
   if (!bR.data.records || !bR.data.records[0]) throw new Error(`HTTP 404 LWC コンポーネント '${obj}' が見つかりません`);
@@ -2213,7 +2214,7 @@ async function buildFieldPermMatrix({ host, sid, apiVersion, obj, progress = () 
   let allRecs = [];
   let nextPath = `/services/data/v${apiVersion}/query/?q=` + encodeURIComponent(
     `SELECT Field, PermissionsRead, PermissionsEdit, Parent.Name, Parent.IsOwnedByProfile, Parent.Profile.Name, Parent.Label ` +
-    `FROM FieldPermissions WHERE SobjectType='${obj.replace(/'/g, "\\'")}' LIMIT 10000`
+    `FROM FieldPermissions WHERE SobjectType='${escapeSoqlLiteral(obj)}' LIMIT 10000`
   );
   const startedAt = performance.now();
   while (nextPath) {
