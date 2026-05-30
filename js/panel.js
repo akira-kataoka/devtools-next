@@ -949,6 +949,18 @@ function enableTabToSpaces(el) {
   });
 }
 
+// v3.483.0 Phase 573: ダウンロード処理 (Blob → <a download> → revoke) の DRY 集約。
+//   旧 panel.js 9 箇所で同一 6 行パターンを inline していたのを 1 行に。
+//   DOM 副作用を持つため sf-format-helpers (純粋関数) ではなく panel.js 局所ヘルパー。
+function triggerDownload(filename, blob, revokeMs = 2000) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), revokeMs);
+}
+
 // ====== 共通 Picker ヘルパー: 既存テキスト入力の隣に Picker ボタンを差し込む ======
 function attachPicker(inputId, kind, opts = {}) {
   const input = document.getElementById(inputId);
@@ -2426,13 +2438,8 @@ async function exDownloadAll(fmt) {
     mime = "text/csv;charset=utf-8"; ext = "csv";
   }
   if (fmt === "csv" || fmt === "excel") body = "﻿" + body;
-  const blob = new Blob([body], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${exState.obj}_${tsForFilename()}.${ext}`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  // v3.483.0 Phase 573: triggerDownload に集約
+  triggerDownload(`${exState.obj}_${tsForFilename()}.${ext}`, new Blob([body], { type: mime }));
   progress.innerHTML = `<span class="pill ok">${all.length} 件 ${fmt.toUpperCase()} ダウンロード完了</span>`;
 }
 
@@ -3255,13 +3262,8 @@ function exportInspect(fmt) {
     body = recordsToCsv([ordered], { excelBom: true });
     mime = "text/csv;charset=utf-8"; ext = "csv";
   }
-  const blob = new Blob([body], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${inspectState.obj}_${inspectState.id}.${ext}`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  // v3.483.0 Phase 573: triggerDownload に集約
+  triggerDownload(`${inspectState.obj}_${inspectState.id}.${ext}`, new Blob([body], { type: mime }));
   const sz = body.length;
   const label = sz < 1024 ? `${sz} B` : `${(sz / 1024).toFixed(1)} KB`;
   panelToast(`📥 ${inspectState.obj}:${inspectState.id} を ${ext.toUpperCase()} ダウンロード (${label})`, { kind: "ok" });
@@ -3657,11 +3659,8 @@ function exportLimitsCsv() {
     lines.push([k, used, rem, max, pct].map(esc).join(","));
   });
   const csv = "﻿" + lines.join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = `limits-${tsForFilename()}.csv`; a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  // v3.483.0 Phase 573: triggerDownload に集約
+  triggerDownload(`limits-${tsForFilename()}.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }));
   const sz = csv.length;
   const label = sz < 1024 ? `${sz} B` : `${(sz / 1024).toFixed(1)} KB`;
   panelToast(`📥 Limits CSV ダウンロード (${lines.length - 1} 項目 / ${label})`, { kind: "ok" });
@@ -3908,13 +3907,8 @@ function downloadDesignSource() {
   if (fmt === "csv" || fmt === "tsv" || fmt === "html") {
     body = "﻿" + body;
   }
-  const blob = new Blob([body], { type: mime });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${safeName}_${ts}.${ext}`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  // v3.483.0 Phase 573: triggerDownload に集約
+  triggerDownload(`${safeName}_${ts}.${ext}`, new Blob([body], { type: mime }));
   // ダウンロード完了 toast (サイズ + 形式)
   const sz = body.length;
   let label;
@@ -4562,13 +4556,8 @@ function makeEvidence({ title, sourceLabel, sourceContent, recordsLabel, records
 }
 
 function downloadEvidence(md, baseName) {
-  const blob = new Blob(["﻿" + md], { type: "text/markdown;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `${baseName || "evidence"}-${tsForFilename()}.md`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  // v3.483.0 Phase 573: triggerDownload に集約
+  triggerDownload(`${baseName || "evidence"}-${tsForFilename()}.md`, new Blob(["﻿" + md], { type: "text/markdown;charset=utf-8" }));
   // v3.128.0 Phase 218: Markdown と同時に Salesforce タブの PNG スクリーンショットも保存 (ユーザー要望「エビデンス取得は画像の取得としたい」)
   captureScreenshotPng(baseName).catch((e) => console.warn("[evidence] screenshot failed (ignored):", e));
 }
@@ -4584,12 +4573,8 @@ async function captureScreenshotPng(baseName) {
     // dataUrl (data:image/png;base64,...) → Blob → download
     const r = await fetch(res.dataUrl);
     const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${baseName || "evidence"}-${tsForFilename()}.png`;
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    // v3.483.0 Phase 573: triggerDownload に集約
+    triggerDownload(`${baseName || "evidence"}-${tsForFilename()}.png`, blob);
     panelToast(`📸 画像エビデンスも保存しました (Salesforce タブの可視範囲 PNG)`, { kind: "ok" });
   } catch (e) {
     panelToast(`⚠ 画像エビデンス失敗: ${String(e && e.message || e)}`, { kind: "warn" });
@@ -4965,13 +4950,8 @@ function exportCsv() {
   const ordered = getOrderedRecordsForExport();
   // v3.474.0 Phase 564: Excel で日本語文字化け回避のため BOM 付与
   const csv = recordsToCsv(ordered, { excelBom: true });
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `soql-${tsForFilename()}.csv`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  // v3.483.0 Phase 573: triggerDownload に集約
+  triggerDownload(`soql-${tsForFilename()}.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }), 1000);
   const sortedTh = document.querySelector("#soqlResult th.sortable[data-sort-dir]");
   if (sortedTh) panelToast(`📥 CSV ${ordered.length} 行 (${sortedTh.dataset.col} ${sortedTh.dataset.sortDir} ソート反映)`, { kind: "ok" });
 }
@@ -6576,13 +6556,8 @@ function exportLoginCsv() {
   });
   // v3.474.0 Phase 564: ログイン履歴 CSV も Excel で日本語文字化けしないよう BOM 付与
   const csv = recordsToCsv(formatted, { excelBom: true });
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `login-history-${tsForFilename()}.csv`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  // v3.483.0 Phase 573: triggerDownload に集約
+  triggerDownload(`login-history-${tsForFilename()}.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }), 1000);
   const sz = csv.length;
   const label = sz < 1024 ? `${sz} B` : `${(sz / 1024).toFixed(1)} KB`;
   panelToast(`📥 ログイン履歴 CSV をダウンロードしました (${state.lastLoginRecords.length} 件 / ${label})`, { kind: "ok" });
@@ -7081,14 +7056,10 @@ function exportSearchCsv(records, keyword) {
   }
   // BOM 付き UTF-8 (Excel 文字化け防止)
   const csv = "﻿" + lines.join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const a = document.createElement("a");
   const ts = new Date().toISOString().substring(0, 19).replace(/[-T:]/g, "");
   const kwSafe = String(keyword || "search").replace(/[^a-zA-Z0-9_\-]/g, "_").substring(0, 30);
-  a.href = URL.createObjectURL(blob);
-  a.download = `devtoolsnext-search-${kwSafe}-${ts}.csv`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  // v3.483.0 Phase 573: triggerDownload に集約 (pre-declared `a` パターンも統一)
+  triggerDownload(`devtoolsnext-search-${kwSafe}-${ts}.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }), 500);
   panelToast(`📥 検索結果 CSV をダウンロードしました (${records.length} 件)`, { kind: "ok" });
 }
 
@@ -8159,13 +8130,9 @@ function adminExportCardCsv(cardKey) {
   const lines = [def.headers.map(escCsv).join(",")];
   for (const r of def.data) lines.push(def.headers.map((h) => escCsv(r[h])).join(","));
   const csv = "﻿" + lines.join("\n");
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const a = document.createElement("a");
   const ts = new Date().toISOString().substring(0, 19).replace(/[-T:]/g, "");
-  a.href = URL.createObjectURL(blob);
-  a.download = `devtoolsnext-admin-${cardKey}-${ts}.csv`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  // v3.483.0 Phase 573: triggerDownload に集約
+  triggerDownload(`devtoolsnext-admin-${cardKey}-${ts}.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }), 500);
   panelToast(`📥 ${def.label} CSV をダウンロードしました (${def.data.length} 件)`, { kind: "ok" });
 }
 
@@ -8199,13 +8166,9 @@ function adminExportCsv() {
     for (const r of s.rows) lines.push(s.headers.map((h) => escCsv(r[h])).join(","));
   }
   const csv = "﻿" + lines.join("\n"); // BOM (Excel 文字化け防止)
-  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-  const a = document.createElement("a");
   const ts = new Date().toISOString().substring(0, 19).replace(/[-T:]/g, "");
-  a.href = URL.createObjectURL(blob);
-  a.download = `devtoolsnext-admin-summary-${ts}.csv`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  // v3.483.0 Phase 573: triggerDownload に集約
+  triggerDownload(`devtoolsnext-admin-summary-${ts}.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }), 500);
   panelToast(`📥 サマリ CSV をダウンロードしました (${sections.length} セクション)`, { kind: "ok" });
 }
 
@@ -8506,13 +8469,9 @@ async function connClearAll() {
 function connExportJson() {
   if (!connState.list.length) { panelToast("📭 エクスポートする接続がありません", { kind: "warn" }); return; }
   const json = JSON.stringify({ exported_at: new Date().toISOString(), connections: connState.list }, null, 2);
-  const blob = new Blob([json], { type: "application/json;charset=utf-8" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
   const ts = new Date().toISOString().substring(0, 19).replace(/[-T:]/g, "");
-  a.download = `devtoolsnext-connections-${ts}.json`;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 500);
+  // v3.483.0 Phase 573: triggerDownload に集約 (revoke も内部で実施)
+  triggerDownload(`devtoolsnext-connections-${ts}.json`, new Blob([json], { type: "application/json;charset=utf-8" }));
   panelToast(`📤 ${connState.list.length} 件の接続をエクスポート (⚠ パスワード・トークン平文)`, { kind: "ok" });
 }
 
