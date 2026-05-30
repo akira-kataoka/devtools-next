@@ -20,6 +20,7 @@ import {
   summarizeBulkResults,
   bulkOpEmoji, bulkOpLabel,
   filterByNameLabel,
+  safeJsonParse,
 } from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
@@ -1197,4 +1198,55 @@ test("filterByNameLabel: query の前後 trim", () => {
   const r = filterByNameLabel(sampleItems, "  ac  ");
   assert.equal(r.length, 1);
   assert.equal(r[0].name, "Account");
+});
+
+// --- safeJsonParse (Phase 603) ------------------------------------------------
+
+test("safeJsonParse: 正常な JSON 文字列 → パース結果", () => {
+  assert.deepEqual(safeJsonParse('{"a":1,"b":"x"}'), { a: 1, b: "x" });
+  assert.deepEqual(safeJsonParse("[1,2,3]"), [1, 2, 3]);
+  assert.equal(safeJsonParse("true"), true);
+  assert.equal(safeJsonParse("42"), 42);
+});
+
+test("safeJsonParse: null / undefined / 空文字 → fallback (default null)", () => {
+  assert.equal(safeJsonParse(null), null);
+  assert.equal(safeJsonParse(undefined), null);
+  assert.equal(safeJsonParse(""), null);
+});
+
+test("safeJsonParse: 非文字列 (数値/オブジェクト) → fallback", () => {
+  assert.equal(safeJsonParse(42), null);
+  assert.equal(safeJsonParse({}), null);
+  assert.equal(safeJsonParse([1, 2]), null);
+});
+
+test("safeJsonParse: parse 失敗 → fallback", () => {
+  assert.equal(safeJsonParse("not json"), null);
+  assert.equal(safeJsonParse("{bad: 1"), null);
+  assert.equal(safeJsonParse("<html>error</html>"), null);
+});
+
+test("safeJsonParse: カスタム fallback (sf-api semantics) — 失敗時は raw text 保持", () => {
+  assert.equal(safeJsonParse("not json", "not json"), "not json");
+  // sfFetch のケース: HTML エラーページが返ってきた時に caller に元 text を渡す
+  assert.equal(safeJsonParse("<html>500</html>", "<html>500</html>"), "<html>500</html>");
+});
+
+test("safeJsonParse: カスタム fallback (sf-connections semantics) — 失敗・空 ともに null", () => {
+  assert.equal(safeJsonParse(null, null), null);
+  assert.equal(safeJsonParse("garbage", null), null);
+});
+
+test("safeJsonParse: 空文字 + 非null fallback → fallback", () => {
+  // empty string も fallback を返す (非 string check より前に early return)
+  assert.equal(safeJsonParse("", "default"), "default");
+});
+
+test("safeJsonParse: 入れ子オブジェクト / 配列も正しく parse", () => {
+  const json = '{"users":[{"id":1,"name":"a"},{"id":2,"name":"b"}],"meta":{"count":2}}';
+  const parsed = safeJsonParse(json);
+  assert.equal(parsed.users.length, 2);
+  assert.equal(parsed.users[1].name, "b");
+  assert.equal(parsed.meta.count, 2);
 });

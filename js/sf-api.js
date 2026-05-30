@@ -26,7 +26,8 @@
 
 // v3.464.0 Phase 554: SOQL 文字列リテラルエスケープを sf-format-helpers に集約 (escHtml 集約 Phase 552 と同じ DRY 方針)
 // v3.475.0 Phase 565: ISO datetime → "YYYY-MM-DD HH:mm" 整形も集約 (formatSfDateTime)
-import { escapeSoqlLiteral, formatSfDateTime } from "./sf-format-helpers.js";
+// v3.513.0 Phase 603: safe JSON.parse も集約
+import { escapeSoqlLiteral, formatSfDateTime, safeJsonParse } from "./sf-format-helpers.js";
 
 // v3.336.0 Phase 426: SF_DOMAINS は isSalesforceHost 判定用 6 ドメイン (endsWith マッチ)。
 //                     manifest.json host_permissions 9 ドメイン (Phase 424 で documentation) との差は意図的:
@@ -180,8 +181,8 @@ export async function sfFetch({ host, sid, path, method = "GET", body = null, he
     body: body ? (typeof body === "string" ? body : JSON.stringify(body)) : undefined,
   });
   const text = await res.text();
-  let data = null;
-  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  // v3.513.0 Phase 603: safeJsonParse に集約。空文字は null、parse 失敗は raw text を保持 (HTML エラー page 等を caller に見せるため)
+  const data = text ? safeJsonParse(text, text) : null;
   // 401 INVALID_SESSION_ID は親切メッセージにラップ
   if (res.status === 401) {
     return {

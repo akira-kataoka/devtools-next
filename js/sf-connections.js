@@ -19,7 +19,8 @@
 //   connSoapCall: 保存済み接続を使って SOAP call (sessionId Header 自動付与)
 
 // v3.477.0 Phase 567: SOAP envelope の XML エスケープを sf-format-helpers に集約
-import { escXml } from "./sf-format-helpers.js";
+// v3.513.0 Phase 603: safe JSON.parse も集約
+import { escXml, safeJsonParse } from "./sf-format-helpers.js";
 
 export const STORAGE_KEY = "sfdtConnections";
 export const DEFAULT_API_VERSION = "62.0";
@@ -93,8 +94,8 @@ export async function authenticateOAuthPassword({ loginUrl, consumerKey, consume
     return { ok: false, status: 0, error: "ネットワークエラー: " + (e.message || e) };
   }
   const raw = await resp.text();
-  let data = null;
-  try { data = raw ? JSON.parse(raw) : null; } catch { data = null; }
+  // v3.513.0 Phase 603: safeJsonParse に集約 (empty / parse fail いずれも null)
+  const data = safeJsonParse(raw, null);
   if (!resp.ok || !data || !data.access_token) {
     const err = (data && (data.error_description || data.error)) || raw || ("HTTP " + resp.status);
     return { ok: false, status: resp.status, raw, error: err };

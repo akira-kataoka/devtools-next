@@ -281,6 +281,22 @@ export function escMdTableCell(s) {
  * @param {string} [query]
  * @returns {Array} 元配列の同 reference を返す (フィルタなし時) または新規 filtered 配列
  */
+/**
+ * v3.513.0 Phase 603: 安全な JSON.parse — try/catch で例外を握りつぶし、fallback を返す。
+ *
+ * sf-api.js / sf-connections.js などで `try { JSON.parse(...) } catch { ... }` を
+ * 個別に書いていたパターンを集約。null/undefined/空文字も fallback を返す
+ * (parse 試行すらしない)。
+ *
+ * @param {*} text - JSON 文字列を想定 (非文字列は fallback)
+ * @param {*} [fallback=null] - parse 失敗 / 入力なし時の戻り値
+ * @returns {*} parse 成功なら結果、それ以外は fallback
+ */
+export function safeJsonParse(text, fallback = null) {
+  if (text == null || text === "" || typeof text !== "string") return fallback;
+  try { return JSON.parse(text); } catch { return fallback; }
+}
+
 export function filterByNameLabel(items, query) {
   const arr = Array.isArray(items) ? items : [];
   const q = String(query == null ? "" : query).toLowerCase().trim();
