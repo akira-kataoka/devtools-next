@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword } from "./sf-format-helpers.js";
+import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -1946,7 +1946,8 @@ function bindEvents() {
     lines.push("| 項目 | 表示名 | 値 |");
     lines.push("|---|---|---|");
     // 値が null/空白でない項目のみ (Markdown 簡潔化)
-    const mdEsc = (v) => String(v == null ? "" : v).replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+    // v3.481.0 Phase 571: pipe/改行エスケープを escMdTableCell (pure) に集約
+    const mdEsc = escMdTableCell;
     const showAll = false; // null 値は除外 (簡潔化)
     let displayed = 0;
     for (const f of fields) {
@@ -6636,7 +6637,8 @@ async function copyDescribeAsMd() {
   const formulaCount = fields.filter((f) => f.calculated).length;
   const picklistCount = fields.filter((f) => f.type === "picklist" || f.type === "multipicklist").length;
   const lookupCount = fields.filter((f) => f.type === "reference").length;
-  const esc = (s) => String(s == null ? "" : s).replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+  // v3.481.0 Phase 571: pipe/改行エスケープを escMdTableCell (pure) に集約
+  const esc = escMdTableCell;
   const lines = [
     `# 📋 ${d.label || obj} (${d.name || obj}) — オブジェクト定義書`,
     "",
@@ -6736,7 +6738,8 @@ async function copyLoginHistoryMd() {
     "| " + headerLabels.join(" | ") + " |",
     "|" + headers.map(() => "---").join("|") + "|",
   ];
-  const mdEsc = (v) => String(v == null ? "" : v).replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+  // v3.481.0 Phase 571: pipe/改行エスケープを escMdTableCell (pure) に集約
+  const mdEsc = escMdTableCell;
   // Status 別マーカー (✓ Success / ✗ Failed)
   const statusIcon = (s) => s === "Success" ? "✓ Success" : s === "Failed" ? "✗ Failed" : (s || "");
   for (const r of recs) {

@@ -14,6 +14,7 @@ import {
   formatSfDateTimeLoose,
   escXml,
   escSoslKeyword,
+  escMdTableCell,
 } from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
@@ -706,4 +707,44 @@ test("escSoslKeyword: 実装は escapeSoqlLiteral と同等だが semantic conte
   // 同じ入力で同じ output を期待 (現時点では一致)
   assert.equal(escSoslKeyword("O'Brien\\path"), escapeSoqlLiteral("O'Brien\\path"));
   // この同等性は実装の偶然であり契約ではない、という意図を test で明示
+});
+
+// --- escMdTableCell (Phase 571) -----------------------------------------------
+
+test("escMdTableCell: 通常テキストはそのまま", () => {
+  assert.equal(escMdTableCell("hello"), "hello");
+  assert.equal(escMdTableCell("山田太郎"), "山田太郎");
+});
+
+test("escMdTableCell: pipe `|` を `\\|` にエスケープ (Markdown テーブル区切りとの衝突回避)", () => {
+  assert.equal(escMdTableCell("a|b"), "a\\|b");
+  assert.equal(escMdTableCell("|||"), "\\|\\|\\|");
+});
+
+test("escMdTableCell: LF / CRLF 改行を単一スペースに正規化", () => {
+  assert.equal(escMdTableCell("a\nb"), "a b");
+  assert.equal(escMdTableCell("a\r\nb"), "a b");
+  assert.equal(escMdTableCell("a\nb\nc"), "a b c");
+});
+
+test("escMdTableCell: pipe と改行が両方混在しても正しく処理", () => {
+  assert.equal(escMdTableCell("a|b\nc|d"), "a\\|b c\\|d");
+});
+
+test("escMdTableCell: null / undefined / 空 → 空文字", () => {
+  assert.equal(escMdTableCell(null), "");
+  assert.equal(escMdTableCell(undefined), "");
+  assert.equal(escMdTableCell(""), "");
+});
+
+test("escMdTableCell: 数値も String 化", () => {
+  assert.equal(escMdTableCell(123), "123");
+  assert.equal(escMdTableCell(0), "0");
+});
+
+test("escMdTableCell: 他の Markdown 特殊文字 (*, _, `, [, ]) は escape しない (セル内ではレンダラがそのまま扱う)", () => {
+  assert.equal(escMdTableCell("**bold**"), "**bold**");
+  assert.equal(escMdTableCell("_italic_"), "_italic_");
+  assert.equal(escMdTableCell("`code`"), "`code`");
+  assert.equal(escMdTableCell("[link](url)"), "[link](url)");
 });

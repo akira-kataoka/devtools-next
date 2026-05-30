@@ -171,6 +171,28 @@ export function escSoslKeyword(s) {
   return String(s == null ? "" : s).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
+/**
+ * v3.481.0 Phase 571: Markdown テーブルセル用エスケープ。
+ *
+ * panel.js (3 箇所: 1949 / 6639 / 6739) で完全同一の inline 関数
+ * (mdEsc / esc) を重複していたのを集約。
+ *
+ * 仕様:
+ *   - pipe `|` は `\|` にエスケープ (Markdown テーブル区切り文字との衝突回避)
+ *   - 改行 (\n / \r\n) は単一スペースに正規化 (テーブル行が崩れるため)
+ *   - null/undefined は空文字
+ *   - 非文字列は String() 経由
+ *
+ * 注: 他の Markdown 特殊文字 (`*`, `_`, `` ` ``, `[`, `]`, etc.) は
+ *     テーブルセル内では通常レンダラがそのまま扱うので escape しない。
+ *
+ * @param {*} s
+ * @returns {string}
+ */
+export function escMdTableCell(s) {
+  return String(s == null ? "" : s).replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
+}
+
 // =====================================================================
 // v3.463.0 Phase 553: 現在ログイン中ユーザーのリアルタイム表示 (ユーザー要望 2026-05-27)
 //   ヘッダーに「今ログインしているのは誰か」を常時表示するため、表示用の
