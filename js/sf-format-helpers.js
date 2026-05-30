@@ -84,6 +84,31 @@ export function escapeSoqlLiteral(s) {
   return String(s == null ? "" : s).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 }
 
+/**
+ * v3.475.0 Phase 565: Salesforce ISO 8601 datetime 文字列を「YYYY-MM-DD HH:MM」
+ * 形式に整形する純粋関数。CSV/Excel での日時可読性向上のため。
+ *
+ * sf-api.js recordsToCsv / panel.js (2 箇所) / design-docs.js (2 箇所) で
+ * 同一 anchored regex を 5 箇所重複していたのを集約。
+ *
+ * 仕様:
+ *   - 入力例: "2026-05-30T15:38:00.000+0900" → "2026-05-30 15:38"
+ *   - 入力例: "2026-05-30T15:38Z"            → "2026-05-30 15:38"
+ *   - 入力例: "2026-05-30"   (date-only)    → そのまま (旧実装と同じく非マッチで元返却)
+ *   - 入力例: "not a date"                   → そのまま (非マッチ)
+ *   - null/undefined/空 → 空文字
+ *   - 非文字列は String() 経由
+ *
+ * @param {*} s
+ * @returns {string}
+ */
+export function formatSfDateTime(s) {
+  if (s == null || s === "") return "";
+  const str = String(s);
+  const m = str.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/);
+  return m ? `${m[1]} ${m[2]}` : str;
+}
+
 // =====================================================================
 // v3.463.0 Phase 553: 現在ログイン中ユーザーのリアルタイム表示 (ユーザー要望 2026-05-27)
 //   ヘッダーに「今ログインしているのは誰か」を常時表示するため、表示用の

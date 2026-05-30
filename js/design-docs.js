@@ -23,7 +23,8 @@
 import { sfFetch, runSoql } from "./sf-api.js";
 // v3.462.0 Phase 552: HTML escape は sf-format-helpers.escHtml に集約 (esc は薄い wrapper として export を維持)
 // v3.465.0 Phase 555: SOQL リテラルエスケープも escapeSoqlLiteral に集約 (旧 `.replace(/'/g,"\\'")` は `\` 未対応だった)
-import { escHtml, escapeSoqlLiteral } from "./sf-format-helpers.js";
+// v3.475.0 Phase 565: ISO datetime 整形も formatSfDateTime に集約 (2 箇所重複)
+import { escHtml, escapeSoqlLiteral, formatSfDateTime } from "./sf-format-helpers.js";
 
 /**
  * 各設計書タイプの定義。
@@ -2846,9 +2847,8 @@ function formatExcelValue(v) {
       s = JSON.stringify(v);
     }
   } else {
-    s = String(v);
-    const m = s.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/);
-    if (m) s = `${m[1]} ${m[2]}`;
+    // v3.475.0 Phase 565: ISO datetime 整形を formatSfDateTime (pure) に集約
+    s = formatSfDateTime(String(v));
   }
   // Excel セル上限 32,767 文字。超えるとファイル破損の原因になるため末尾切詰
   if (s.length > EXCEL_CELL_LIMIT) {
@@ -2968,10 +2968,8 @@ function csvCell(v) {
       s = JSON.stringify(v);
     }
   } else {
-    s = String(v);
-    // ISO datetime → 整形 (date のみは維持)
-    const m = s.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/);
-    if (m) s = `${m[1]} ${m[2]}`;
+    // v3.475.0 Phase 565: ISO datetime 整形を formatSfDateTime (pure) に集約 (date-only は match せず元文字列が返る)
+    s = formatSfDateTime(String(v));
   }
   // CSV クォート (区切り文字や改行を含む場合)
   if (/[",\n\t]/.test(s)) return `"${s.replace(/"/g, '""')}"`;

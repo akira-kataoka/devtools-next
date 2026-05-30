@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition } from "./sf-format-helpers.js";
+import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -7063,9 +7063,8 @@ function exportSearchCsv(records, keyword) {
         s = JSON.stringify(v);
       }
     } else {
-      s = String(v);
-      const m = s.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/);
-      if (m) s = `${m[1]} ${m[2]}`;
+      // v3.475.0 Phase 565: ISO datetime 整形を formatSfDateTime (pure) に集約
+      s = formatSfDateTime(String(v));
     }
     return /[",\n\t]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
@@ -7116,9 +7115,8 @@ async function exportSearchMd(groups, keyword) {
       }
       return JSON.stringify(v);
     }
-    const s = String(v);
-    const m = s.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/);
-    return m ? `${m[1]} ${m[2]}` : s;
+    // v3.475.0 Phase 565: ISO datetime 整形を formatSfDateTime (pure) に集約
+    return formatSfDateTime(String(v));
   };
   const esc = (s) => String(s).replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
   const totalCount = Array.from(groups.values()).reduce((acc, recs) => acc + recs.length, 0);

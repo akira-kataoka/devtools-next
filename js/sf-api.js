@@ -25,7 +25,8 @@
 // 【統一エラー format】sfFetch / runSoql は status / body を例外 message に含める (panel.js displayApiError 正規表現 `/HTTP \d{3}/` 互換)
 
 // v3.464.0 Phase 554: SOQL 文字列リテラルエスケープを sf-format-helpers に集約 (escHtml 集約 Phase 552 と同じ DRY 方針)
-import { escapeSoqlLiteral } from "./sf-format-helpers.js";
+// v3.475.0 Phase 565: ISO datetime → "YYYY-MM-DD HH:mm" 整形も集約 (formatSfDateTime)
+import { escapeSoqlLiteral, formatSfDateTime } from "./sf-format-helpers.js";
 
 // v3.336.0 Phase 426: SF_DOMAINS は isSalesforceHost 判定用 6 ドメイン (endsWith マッチ)。
 //                     manifest.json host_permissions 9 ドメイン (Phase 424 で documentation) との差は意図的:
@@ -348,18 +349,9 @@ export function recordsToCsv(records, opts = {}) {
     }
     return JSON.stringify(v);
   };
-  // datetime ISO → YYYY-MM-DD HH:mm 整形 (文字列のみ対象、type は判定できないので regex)
-  const isoRe = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:?\d{2})?$/;
-  const dateOnlyRe = /^\d{4}-\d{2}-\d{2}$/;
-  const formatValue = (v) => {
-    const s = flatten(v);
-    if (typeof v === "string") {
-      const m = v.match(isoRe);
-      if (m) return `${m[1]} ${m[2]}`;
-      if (dateOnlyRe.test(v)) return v; // date 型はそのまま
-    }
-    return s;
-  };
+  // v3.475.0 Phase 565: ISO datetime 整形を formatSfDateTime (pure) に集約 (5 箇所重複→1 箇所)
+  //   旧 isoRe (正則 + dateOnly): date-only は match しないため formatSfDateTime が元文字列を返す挙動と等価
+  const formatValue = (v) => typeof v === "string" ? formatSfDateTime(v) : flatten(v);
   // 全列クォート: null/数値/オブジェクト も全部 "..." で囲む
   const escAll = (v) => {
     const s = formatValue(v);
