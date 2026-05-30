@@ -24,7 +24,7 @@ import { sfFetch, runSoql } from "./sf-api.js";
 // v3.462.0 Phase 552: HTML escape は sf-format-helpers.escHtml に集約 (esc は薄い wrapper として export を維持)
 // v3.465.0 Phase 555: SOQL リテラルエスケープも escapeSoqlLiteral に集約 (旧 `.replace(/'/g,"\\'")` は `\` 未対応だった)
 // v3.475.0 Phase 565: ISO datetime 整形も formatSfDateTime に集約 (2 箇所重複)
-import { escHtml, escapeSoqlLiteral, formatSfDateTime } from "./sf-format-helpers.js";
+import { escHtml, escapeSoqlLiteral, formatSfDateTime, csvEscapeCell } from "./sf-format-helpers.js";
 
 /**
  * 各設計書タイプの定義。
@@ -2971,9 +2971,8 @@ function csvCell(v) {
     // v3.475.0 Phase 565: ISO datetime 整形を formatSfDateTime (pure) に集約 (date-only は match せず元文字列が返る)
     s = formatSfDateTime(String(v));
   }
-  // CSV クォート (区切り文字や改行を含む場合)
-  if (/[",\n\t]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
+  // v3.514.0 Phase 604: CSV クォート判定を csvEscapeCell に集約 (panel.js/sf-api.js と共通化、\r も quote 対象に厳密化)
+  return csvEscapeCell(s);
 }
 // v3.462.0 Phase 552: 実装は sf-format-helpers.escHtml に移譲。 export は維持 (Phase 549 tests + toHtml/inline の内部参照のため)
 export function esc(s) {

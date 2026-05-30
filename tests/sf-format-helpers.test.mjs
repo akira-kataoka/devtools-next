@@ -21,6 +21,7 @@ import {
   bulkOpEmoji, bulkOpLabel,
   filterByNameLabel,
   safeJsonParse,
+  csvEscapeCell,
 } from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
@@ -1249,4 +1250,64 @@ test("safeJsonParse: 入れ子オブジェクト / 配列も正しく parse", ()
   assert.equal(parsed.users.length, 2);
   assert.equal(parsed.users[1].name, "b");
   assert.equal(parsed.meta.count, 2);
+});
+
+// --- csvEscapeCell (Phase 604) ------------------------------------------------
+
+test("csvEscapeCell: 通常文字列はそのまま返す (no special char)", () => {
+  assert.equal(csvEscapeCell("hello"), "hello");
+  assert.equal(csvEscapeCell("Account Name"), "Account Name");
+  assert.equal(csvEscapeCell("12345"), "12345");
+});
+
+test("csvEscapeCell: カンマ・改行・タブ・ダブルクォートを含む値は \"..\" でクォート", () => {
+  assert.equal(csvEscapeCell("a,b"), `"a,b"`);
+  assert.equal(csvEscapeCell("a\nb"), `"a\nb"`);
+  assert.equal(csvEscapeCell("a\tb"), `"a\tb"`);
+  assert.equal(csvEscapeCell("a\rb"), `"a\rb"`); // Phase 604 厳密化: \r も quote 対象
+  assert.equal(csvEscapeCell('say "hi"'), `"say ""hi"""`);
+});
+
+test("csvEscapeCell: null / undefined は空文字を返す (デフォルト)", () => {
+  assert.equal(csvEscapeCell(null), "");
+  assert.equal(csvEscapeCell(undefined), "");
+});
+
+test("csvEscapeCell: null / undefined with alwaysQuote → \"\"", () => {
+  assert.equal(csvEscapeCell(null, { alwaysQuote: true }), `""`);
+  assert.equal(csvEscapeCell(undefined, { alwaysQuote: true }), `""`);
+});
+
+test("csvEscapeCell: 数値・boolean は文字列化", () => {
+  assert.equal(csvEscapeCell(42), "42");
+  assert.equal(csvEscapeCell(0), "0");
+  assert.equal(csvEscapeCell(true), "true");
+  assert.equal(csvEscapeCell(false), "false");
+});
+
+test("csvEscapeCell: object/array は JSON.stringify した上で判定", () => {
+  // JSON 出力に必ず { や [ や " が含まれるため、結果としてクォートされる
+  assert.equal(csvEscapeCell({ a: 1 }), `"{""a"":1}"`);
+  assert.equal(csvEscapeCell([1, 2]), `"[1,2]"`);
+});
+
+test("csvEscapeCell: alwaysQuote=true は特殊文字を含まない値も必ずクォート (sf-api/Limits CSV semantics)", () => {
+  assert.equal(csvEscapeCell("hello", { alwaysQuote: true }), `"hello"`);
+  assert.equal(csvEscapeCell("12345", { alwaysQuote: true }), `"12345"`);
+  assert.equal(csvEscapeCell(42, { alwaysQuote: true }), `"42"`);
+});
+
+test("csvEscapeCell: alwaysQuote=true でも値内の \" は \"\" にエスケープ", () => {
+  assert.equal(csvEscapeCell('say "hi"', { alwaysQuote: true }), `"say ""hi"""`);
+});
+
+test("csvEscapeCell: opts 未指定は alwaysQuote=false 扱い", () => {
+  assert.equal(csvEscapeCell("hello"), "hello");
+  assert.equal(csvEscapeCell("hello", {}), "hello");
+  assert.equal(csvEscapeCell("hello", undefined), "hello");
+});
+
+test("csvEscapeCell: 空文字 → 空文字 (alwaysQuote なし)", () => {
+  assert.equal(csvEscapeCell(""), "");
+  assert.equal(csvEscapeCell("", { alwaysQuote: true }), `""`);
 });

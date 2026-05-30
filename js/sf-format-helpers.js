@@ -297,6 +297,38 @@ export function safeJsonParse(text, fallback = null) {
   try { return JSON.parse(text); } catch { return fallback; }
 }
 
+/**
+ * v3.514.0 Phase 604: CSV セル 1 値の RFC 4180 準拠エスケープ。
+ *
+ * panel.js / sf-api.js / design-docs.js / content.js などで重複していた
+ * `/[",\n\t]/.test(s) ? \`"${s.replace(/"/g, '""')}"\` : s` パターンを集約。
+ *
+ * 動作:
+ *   - null/undefined → "" を返す (alwaysQuote 時は `""`)
+ *   - object/array → JSON.stringify した上でエスケープ判定
+ *   - 値内に `"` `,` `\r` `\n` `\t` のいずれかを含むか alwaysQuote=true なら `"..."` で囲み、内部の `"` は `""` にエスケープ
+ *   - それ以外は素のまま返す (デフォルト挙動 = 最短 CSV)
+ *
+ * 注意: 旧 panel.js 7165 / 8534 / 8562 / design-docs.js 2975 は `[",\n\t]` だけで `\r` を見ていなかったが、
+ * 本実装は `\r` も quote 対象に含む (RFC 4180 厳密化、Excel/Numbers 読込互換性向上)。値内に \r が現れる
+ * ケースが新規発生しても安全側に倒れるだけで既存値の解釈は変わらない。
+ *
+ * @param {*} value - セル値
+ * @param {Object} [opts]
+ * @param {boolean} [opts.alwaysQuote=false] - true なら値内容に関わらず必ず `"..."` で囲む (Limits/SOQL Records 全列クォート向け)
+ * @returns {string}
+ */
+export function csvEscapeCell(value, opts = {}) {
+  const alwaysQuote = !!(opts && opts.alwaysQuote);
+  let s;
+  if (value == null) s = "";
+  else if (typeof value === "object") s = JSON.stringify(value);
+  else s = String(value);
+  const escaped = s.replace(/"/g, '""');
+  if (alwaysQuote || /[",\r\n\t]/.test(s)) return `"${escaped}"`;
+  return s;
+}
+
 export function filterByNameLabel(items, query) {
   const arr = Array.isArray(items) ? items : [];
   const q = String(query == null ? "" : query).toLowerCase().trim();

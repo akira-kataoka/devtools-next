@@ -27,7 +27,7 @@
 // v3.464.0 Phase 554: SOQL 文字列リテラルエスケープを sf-format-helpers に集約 (escHtml 集約 Phase 552 と同じ DRY 方針)
 // v3.475.0 Phase 565: ISO datetime → "YYYY-MM-DD HH:mm" 整形も集約 (formatSfDateTime)
 // v3.513.0 Phase 603: safe JSON.parse も集約
-import { escapeSoqlLiteral, formatSfDateTime, safeJsonParse } from "./sf-format-helpers.js";
+import { escapeSoqlLiteral, formatSfDateTime, safeJsonParse, csvEscapeCell } from "./sf-format-helpers.js";
 
 // v3.336.0 Phase 426: SF_DOMAINS は isSalesforceHost 判定用 6 ドメイン (endsWith マッチ)。
 //                     manifest.json host_permissions 9 ドメイン (Phase 424 で documentation) との差は意図的:
@@ -353,12 +353,9 @@ export function recordsToCsv(records, opts = {}) {
   // v3.475.0 Phase 565: ISO datetime 整形を formatSfDateTime (pure) に集約 (5 箇所重複→1 箇所)
   //   旧 isoRe (正則 + dateOnly): date-only は match しないため formatSfDateTime が元文字列を返す挙動と等価
   const formatValue = (v) => typeof v === "string" ? formatSfDateTime(v) : flatten(v);
-  // 全列クォート: null/数値/オブジェクト も全部 "..." で囲む
-  const escAll = (v) => {
-    const s = formatValue(v);
-    return `"${s.replace(/"/g, '""')}"`;
-  };
-  const lines = [headers.map((h) => `"${h.replace(/"/g, '""')}"`).join(",")];
+  // v3.514.0 Phase 604: 全列クォートを csvEscapeCell({alwaysQuote:true}) に集約 (panel.js/design-docs.js と共通化)
+  const escAll = (v) => csvEscapeCell(formatValue(v), { alwaysQuote: true });
+  const lines = [headers.map((h) => csvEscapeCell(h, { alwaysQuote: true })).join(",")];
   for (const r of records) {
     lines.push(headers.map((h) => escAll(r[h])).join(","));
   }

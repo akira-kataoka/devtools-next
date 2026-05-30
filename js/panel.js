@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords, validateBulkOpRequiredColumns, summarizeBulkResults, bulkOpEmoji, bulkOpLabel, filterByNameLabel } from "./sf-format-helpers.js";
+import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords, validateBulkOpRequiredColumns, summarizeBulkResults, bulkOpEmoji, bulkOpLabel, filterByNameLabel, csvEscapeCell } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -2507,12 +2507,8 @@ async function exDownloadAll(fmt) {
 }
 
 function exToCsv(fields, records) {
-  // 全列を必ずダブルクォートで囲む (Limits CSV と統一、ロケール差/区切り混在対応)
-  const escAll = (v) => {
-    if (v == null) return `""`;
-    const s = typeof v === "object" ? JSON.stringify(v) : String(v);
-    return `"${s.replace(/"/g, '""')}"`;
-  };
+  // v3.514.0 Phase 604: 全列クォートを csvEscapeCell({alwaysQuote:true}) に集約 (sf-api.js と共通化)
+  const escAll = (v) => csvEscapeCell(v, { alwaysQuote: true });
   const lines = [fields.map(escAll).join(",")];
   for (const r of records) {
     lines.push(fields.map((h) => escAll(r[h])).join(","));
@@ -3728,8 +3724,8 @@ function exportLimitsCsv() {
     const rem = (v && v.Remaining != null) ? v.Remaining : 0;
     const used = max - rem;
     const pct = max > 0 ? Math.round((used / max) * 100) : 0;
-    const esc = (s) => `"${String(s).replace(/"/g, '""')}"`;
-    lines.push([k, used, rem, max, pct].map(esc).join(","));
+    // v3.514.0 Phase 604: csvEscapeCell({alwaysQuote:true}) に集約
+    lines.push([k, used, rem, max, pct].map((v) => csvEscapeCell(v, { alwaysQuote: true })).join(","));
   });
   const csv = "﻿" + lines.join("\n");
   // v3.483.0 Phase 573: triggerDownload に集約
@@ -7162,7 +7158,8 @@ function exportSearchCsv(records, keyword) {
       // v3.475.0 Phase 565: ISO datetime 整形を formatSfDateTime (pure) に集約
       s = formatSfDateTime(String(v));
     }
-    return /[",\n\t]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    // v3.514.0 Phase 604: 条件付きクォートを csvEscapeCell に集約 (\r も quote 対象に厳密化)
+    return csvEscapeCell(s);
   };
   const lines = [];
   lines.push(headers.map(escCsv).join(","));
@@ -8525,13 +8522,13 @@ function adminExportCardCsv(cardKey) {
     return;
   }
   // CSV セル整形 (__html セル除外、Excel BOM 付与)
+  // v3.514.0 Phase 604: クォート部分を csvEscapeCell に集約 (\r も quote 対象に厳密化)
   const escCsv = (v) => {
     if (v && typeof v === "object" && v.__html) {
       const m = v.__html.match(/admin-bar-label">([^<]+)</);
       v = m ? m[1] : String(v.__html).replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
     }
-    const s = v == null ? "" : String(v);
-    return /[",\n\t]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    return csvEscapeCell(v);
   };
   const lines = [def.headers.map(escCsv).join(",")];
   for (const r of def.data) lines.push(def.headers.map((h) => escCsv(r[h])).join(","));
@@ -8552,14 +8549,14 @@ function adminExportCsv() {
   if (adminState.mfa) sections.push({ title: "🛡️ MFA 方式別", headers: ["方式", "件数", "説明"], rows: Object.entries(adminState.mfa.byMethod).map(([m, c]) => ({ "方式": m, "件数": c, "説明": "" })) });
   if (adminState.packages) sections.push({ title: "🔌 インストールパッケージ", headers: ["パッケージ名", "名前空間", "バージョン名", "バージョン番号", "形態", "Beta"], rows: adminState.packages });
   if (!sections.length) { panelToast("📭 取得済みデータがありません。先に「▶ すべて取得」を実行してください", { kind: "warn" }); return; }
+  // v3.514.0 Phase 604: クォート部分を csvEscapeCell に集約 (\r も quote 対象に厳密化)
   const escCsv = (v) => {
     if (v && typeof v === "object" && v.__html) {
       // 使用率セル: HTML 内の文字列ラベルだけ抽出
       const m = v.__html.match(/admin-bar-label">([^<]+)</);
       v = m ? m[1] : "";
     }
-    const s = v == null ? "" : String(v);
-    return /[",\n\t]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    return csvEscapeCell(v);
   };
   const lines = [];
   lines.push(`# DevToolsNext ユーザー・ライセンス管理 サマリ`);
