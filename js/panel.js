@@ -1850,6 +1850,8 @@ function bindEvents() {
   $on("btnAdminUserStats", "click", doAdminUserStats);
   $on("btnAdminFrozen", "click", doAdminFrozen);
   $on("btnAdminMfa", "click", doAdminMfa);
+  // v3.486.0 Phase 576: アクティブセッション一覧 (AuthSession ベース)
+  $on("btnAdminActiveSessions", "click", doAdminListActiveSessions);
   $on("btnAdminPackages", "click", doAdminPackages);
   $on("btnAdminLoadAll", "click", doAdminLoadAll);
   $on("btnAdminExportCsv", "click", adminExportCsv);
@@ -7849,6 +7851,67 @@ async function doAdminShowLicenseUsers(apiName) {
   const headers = ["氏名", "ユーザ名", "メール", "プロファイル", "最終ログイン", "状態", "アクション"];
   const summary = `<div class="admin-card-summary">合計 <strong>${recs.length}</strong> 名 (アクティブのみ・最大 1000 件)</div>`;
   adminUpdateModalBody(summary + adminTableHtml(headers, rows, { compact: true }));
+}
+
+// v3.486.0 Phase 576: アクティブセッション一覧 (AuthSession ベース、ユーザー要望対応)
+// 「現在ログイン中のユーザー一覧」= LoginHistory (過去) ではなく AuthSession の生存中セッション。
+// 用途: インシデント対応 / 同時利用上限調査 / 社内利用状況の即時把握。
+async function doAdminListActiveSessions() {
+  if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
+  adminShowModal(`🟢 現在アクティブセッション`, `<div style="padding:24px;text-align:center"><span class="pill loading">AuthSession を取得中…</span></div>`);
+  // AuthSession の UsersId は relationship 名が "Users" (Salesforce 仕様の plural)
+  const soql =
+    "SELECT Id, UsersId, Users.Name, Users.Username, Users.Profile.Name, Users.UserType, " +
+    "SessionType, LoginType, SourceIp, CreatedDate, LastModifiedDate, NumSecondsValid " +
+    "FROM AuthSession WHERE NumSecondsValid > 0 ORDER BY CreatedDate DESC LIMIT 200";
+  const r = await runSoql({ host: state.host, sid: state.sid, apiVersion: state.apiVersion, soql });
+  if (!r.ok) {
+    adminUpdateModalBody(
+      `<div class="meta admin-card-err" style="padding:12px"><strong>HTTP ${r.status}</strong> AuthSession 取得失敗<br>` +
+      `<small>${escape(JSON.stringify(r.data || {}).slice(0, 400))}</small><br><br>` +
+      `<strong>原因の可能性:</strong> AuthSession は「設定の参照と構成」(View Setup and Configuration) 権限が必要です。` +
+      `また組織によっては Salesforce サポートに有効化を依頼する必要があります。</div>`,
+    );
+    return;
+  }
+  const recs = (r.data || {}).records || [];
+  // ユーザー別にセッション数集計 (同じ人が複数セッション持つ場合あり)
+  const byUser = new Map();
+  for (const s of recs) {
+    const uid = s.UsersId || "(unknown)";
+    byUser.set(uid, (byUser.get(uid) || 0) + 1);
+  }
+  const uniqueUsers = byUser.size;
+  const rows = recs.map((s) => {
+    const u = s.Users || {};
+    const profile = u.Profile ? u.Profile.Name : "(未設定)";
+    const created = formatSfDateTimeLoose(s.CreatedDate);
+    const validHr = s.NumSecondsValid ? Math.floor(s.NumSecondsValid / 3600) : 0;
+    const validMin = s.NumSecondsValid ? Math.floor((s.NumSecondsValid % 3600) / 60) : 0;
+    const validLabel = validHr > 0 ? `${validHr}h${validMin}m` : `${validMin}m`;
+    const multiSession = byUser.get(s.UsersId) > 1 ? ` <span class="pill warn" style="font-size:9px">×${byUser.get(s.UsersId)}</span>` : "";
+    return {
+      "氏名": { __html: escape(u.Name || "(不明)") + multiSession },
+      "ユーザ名": u.Username || "",
+      "プロファイル": profile,
+      "種別": u.UserType || "",
+      "Session種別": s.SessionType || "",
+      "Login種別": s.LoginType || "",
+      "SourceIP": s.SourceIp || "",
+      "開始時刻": created,
+      "残り有効": validLabel,
+    };
+  });
+  const headers = ["氏名", "ユーザ名", "プロファイル", "種別", "Session種別", "Login種別", "SourceIP", "開始時刻", "残り有効"];
+  const summary =
+    `<div class="admin-card-summary">🟢 アクティブセッション <strong>${recs.length}</strong> 件 ` +
+    `(<strong>${uniqueUsers}</strong> 名、最大 200 件表示)</div>`;
+  const note = `<div class="meta" style="padding:6px 8px;font-size:11px;color:var(--fg-dim);line-height:1.6">
+    ※ <strong>×N バッジ</strong>はそのユーザーが N 個の並行セッションを保持していることを示します (UI + API 等)。<br>
+    ※ <strong>Session種別</strong>: UI/SubstituteUser/OauthApprovedAccessToken/RefreshToken など。<strong>Login種別</strong>: Application/RemoteAccess2/SAML 等。<br>
+    ※ AuthSession は <strong>NumSecondsValid &gt; 0</strong> でフィルタしており、まだ有効期限内のセッションのみを表示します (LoginHistory との違い)。
+  </div>`;
+  adminUpdateModalBody(summary + note + adminTableHtml(headers, rows, { compact: true }));
 }
 
 // ====== 共通モーダル (Phase 220 — Admin 詳細表示用) ======
