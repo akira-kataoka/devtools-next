@@ -18,6 +18,7 @@ import {
   parseClipboardRecords,
   validateBulkOpRequiredColumns,
   summarizeBulkResults,
+  bulkOpEmoji, bulkOpLabel,
 } from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
@@ -1060,4 +1061,37 @@ test("summarizeBulkResults: sample message は最初の error から取る", () 
     { success: false, errors: [{ statusCode: "DUP", message: "duplicate value" }] },
   ]);
   assert.equal(r.topErrors[0].sample, "duplicate value");
+});
+
+// --- bulkOpEmoji / bulkOpLabel (Phase 594) ------------------------------------
+
+test("bulkOpEmoji: 4 op それぞれ正しい絵文字", () => {
+  assert.equal(bulkOpEmoji("insert"), "📝");
+  assert.equal(bulkOpEmoji("update"), "🔄");
+  assert.equal(bulkOpEmoji("upsert"), "↕️");
+  assert.equal(bulkOpEmoji("delete"), "🗑️");
+});
+
+test("bulkOpEmoji: 未知の op / null / undefined → '?'", () => {
+  assert.equal(bulkOpEmoji("foo"), "?");
+  assert.equal(bulkOpEmoji(""), "?");
+  assert.equal(bulkOpEmoji(null), "?");
+  assert.equal(bulkOpEmoji(undefined), "?");
+});
+
+test("bulkOpLabel: 4 op で '絵文字 英名' 形式", () => {
+  assert.equal(bulkOpLabel("insert"), "📝 Insert");
+  assert.equal(bulkOpLabel("update"), "🔄 Update");
+  assert.equal(bulkOpLabel("upsert"), "↕️ Upsert");
+  assert.equal(bulkOpLabel("delete"), "🗑️ Delete");
+});
+
+test("bulkOpLabel: 未知の op は そのまま op を表示 ('? <op>')", () => {
+  assert.equal(bulkOpLabel("custom"), "? custom");
+});
+
+test("bulkOpLabel: null / undefined / 空 → '? ?'", () => {
+  assert.equal(bulkOpLabel(null), "? ?");
+  assert.equal(bulkOpLabel(undefined), "? ?");
+  assert.equal(bulkOpLabel(""), "? ?");
 });

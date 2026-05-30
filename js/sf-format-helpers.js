@@ -256,6 +256,33 @@ export function escMdTableCell(s) {
  *   canExecute: 実行可能か (警告ありなら false)
  */
 /**
+ * v3.504.0 Phase 594: bulk op (insert/update/upsert/delete) の絵文字を返す。
+ *
+ * panel.js doBulkExecute / PROD confirm dialog / toast の 3 箇所で
+ * 同じ三項演算子 chain を inline していたのを集約。未知の op は "?" を返す。
+ *
+ * @param {string} op
+ * @returns {string} 絵文字 1 つ (`📝` / `🔄` / `↕️` / `🗑️` / `?`)
+ */
+export function bulkOpEmoji(op) {
+  return ({ insert: "📝", update: "🔄", upsert: "↕️", delete: "🗑️" })[op] || "?";
+}
+
+/**
+ * v3.504.0 Phase 594: bulk op の表示ラベル (絵文字 + 英名)。
+ *
+ * 例: bulkOpLabel("insert") → "📝 Insert"。PROD confirm dialog などで使用。
+ *
+ * @param {string} op
+ * @returns {string}
+ */
+export function bulkOpLabel(op) {
+  const map = { insert: "Insert", update: "Update", upsert: "Upsert", delete: "Delete" };
+  const name = map[op] || op || "?";
+  return `${bulkOpEmoji(op)} ${name}`;
+}
+
+/**
  * v3.502.0 Phase 592: bulk execute 結果配列を集計する純粋関数。
  *
  * panel.js doBulkExecute 内で inline 集計していた成功/失敗カウントと

@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords, validateBulkOpRequiredColumns, summarizeBulkResults } from "./sf-format-helpers.js";
+import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords, validateBulkOpRequiredColumns, summarizeBulkResults, bulkOpEmoji, bulkOpLabel } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -8091,9 +8091,9 @@ async function doBulkExecute() {
   const exec = document.getElementById("btnBulkExecute");
   // PROD ゲート
   if (state.isProd) {
-    const opLabel = { insert: "📝 Insert", update: "🔄 Update", upsert: "↕️ Upsert", delete: "🗑️ Delete" }[op] || op;
+    // v3.504.0 Phase 594: bulkOpLabel に集約
     const ok = window.confirm(
-      `🚨🚨 本番組織 (PROD) で一括 ${opLabel} 🚨🚨\n` +
+      `🚨🚨 本番組織 (PROD) で一括 ${bulkOpLabel(op)} 🚨🚨\n` +
       `対象組織: ${state.host || "?"}\nObject: ${obj}\nOp: ${op}${extId ? ` (key=${extId})` : ""}\n件数: ${records.length}\n\n` +
       `実データが ${op === "delete" ? "削除" : "変更"} されます。\n本当に実行してよろしいですか？\n\n(Sandbox での事前テストを強く推奨)`
     );
@@ -8155,7 +8155,7 @@ async function doBulkExecute() {
     `</div>`
   ) : "";
   const summary = `<div style="padding:8px;background:var(--bg2,#0f1830);border:1px solid var(--line);border-radius:4px;margin-bottom:8px">` +
-    `<strong>${op === "delete" ? "🗑️" : op === "upsert" ? "↕️" : op === "update" ? "🔄" : "📝"} ${op}</strong> ${obj}: ` +
+    `<strong>${bulkOpEmoji(op)} ${op}</strong> ${obj}: ` +
     `<span class="pill ok">✓ 成功 ${stats.ok}</span> ` +
     (stats.fail ? `<span class="pill err">✗ 失敗 ${stats.fail}</span> ` : "") +
     `<span class="meta">(${stats.total} 件、${batchIdx} バッチ)</span></div>` +
