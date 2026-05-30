@@ -1862,6 +1862,14 @@ function bindEvents() {
     const extIdRow = document.getElementById("bulkExtIdRow");
     if (extIdRow) extIdRow.style.display = op === "upsert" ? "" : "none";
   });
+  // v3.495.0 Phase 585: Ctrl+Enter で Parse 発火 (Apex/SOQL ビューと UX 統一)
+  $on("bulkInput", "keydown", (e) => {
+    if (e.isComposing || e.keyCode === 229) return; // IME 変換中はスキップ
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      doBulkParse();
+    }
+  });
   $on("btnAdminPackages", "click", doAdminPackages);
   $on("btnAdminLoadAll", "click", doAdminLoadAll);
   $on("btnAdminExportCsv", "click", adminExportCsv);

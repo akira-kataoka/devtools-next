@@ -475,7 +475,11 @@ Initech LLC,Finance,03-5555-0001</pre>
                 </details>
               </div>
               <textarea id="bulkInput" rows="10" placeholder="ExcelやCSVから貼り付け (1 行目はヘッダー、2 行目以降がデータ)" class="bulk-textarea"></textarea>
-              <button id="btnBulkParse" class="bulk-parse-btn">🔍 Parse してプレビュー</button>
+              <div style="display:flex;align-items:center;gap:10px">
+                <button id="btnBulkParse" class="bulk-parse-btn">🔍 Parse してプレビュー</button>
+                <!-- v3.495.0 Phase 585: Ctrl+Enter ショートカット案内 (Apex/SOQL と UX 統一) -->
+                <span class="meta" style="font-size:10px;color:var(--fg-dim)">または <kbd style="background:var(--bg3);border:1px solid var(--line);border-radius:3px;padding:1px 5px;font-family:ui-monospace,Consolas,monospace;font-size:9px">Ctrl+Enter</kbd> で即実行</span>
+              </div>
             </div>
           </section>
 
