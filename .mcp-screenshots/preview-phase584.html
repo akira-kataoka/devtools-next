@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>Phase 584 preview — Disabled execute reason inline</title>
+<link rel="stylesheet" href="../css/panel.css" />
+<style>
+  body { margin: 0; background: #0b1220; color: #fff; font-family: system-ui, -apple-system, sans-serif; }
+  .preview-wrap { padding: 20px; max-width: 900px; }
+  .case-block { margin-bottom: 20px; }
+  .case-label { font: 11px ui-monospace, Consolas, monospace; color: #ffffffaa; margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div class="preview-wrap">
+  <h2 style="font:600 13px system-ui;margin:0 0 20px">Phase 584 — Step 4 実行ボタンの disabled 理由をインライン表示 🆕 (モバイル tooltip 不可視対策)</h2>
+
+  <div class="case-block">
+    <div class="case-label">[初期] Parse まだ実行されていない</div>
+    <section class="bulk-step bulk-step-exec">
+      <header class="bulk-step-hdr"><span class="bulk-step-no">4</span><h3 class="bulk-step-title">実行 & 結果</h3></header>
+      <div class="bulk-step-body">
+        <button class="bulk-exec-btn" disabled>⚡ 実行 (Composite API)</button>
+        <div style="margin-top:8px;font-size:11px;color:var(--fg-dim);font-style:italic">⚠ まだ Step 2 で「🔍 Parse してプレビュー」が実行されていません</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="case-block">
+    <div class="case-label">[ケース A] Parse 済・警告あり (例: update なのに Id 列なし)</div>
+    <section class="bulk-step bulk-step-exec">
+      <header class="bulk-step-hdr"><span class="bulk-step-no">4</span><h3 class="bulk-step-title">実行 & 結果</h3></header>
+      <div class="bulk-step-body">
+        <button class="bulk-exec-btn" disabled>⚡ 実行 (Composite API)</button>
+        <div style="margin-top:8px;font-size:11px;color:var(--err)">❌ 警告あり (Step 1/2 を見直してください): ⚠ update には Id カラムが必要 (ヘッダーに "Id" がありません)</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="case-block">
+    <div class="case-label">[ケース B] Parse 済・0 件</div>
+    <section class="bulk-step bulk-step-exec">
+      <header class="bulk-step-hdr"><span class="bulk-step-no">4</span><h3 class="bulk-step-title">実行 & 結果</h3></header>
+      <div class="bulk-step-body">
+        <button class="bulk-exec-btn" disabled>⚡ 実行 (Composite API)</button>
+        <div style="margin-top:8px;font-size:11px;color:var(--warn)">⚠ レコードが 0 件のため実行できません (Step 2 のデータを確認してください)</div>
+      </div>
+    </section>
+  </div>
+
+  <div class="case-block">
+    <div class="case-label">[ケース C] Parse 済・警告なし・1 件以上 → 実行可能</div>
+    <section class="bulk-step bulk-step-exec">
+      <header class="bulk-step-hdr"><span class="bulk-step-no">4</span><h3 class="bulk-step-title">実行 & 結果</h3></header>
+      <div class="bulk-step-body">
+        <button class="bulk-exec-btn">⚡ 実行 (Composite API)</button>
+        <div style="margin-top:8px;font-size:11px;color:var(--ok)">✓ 150 件を upsert で実行できます (Composite API、200件ずつバッチ)</div>
+      </div>
+    </section>
+  </div>
+
+  <p style="color:#ffffff88;font:11px system-ui;margin-top:24px;line-height:1.6;max-width:760px">
+    Phase 584 で変更: <code style="color:#1b96ff">btnBulkExecute</code> が disabled の時、なぜ実行できないかを <strong>tooltip ではなくインライン text</strong> で表示。Phase 582 のレイアウト改善でも tooltip 依存だった部分を、モバイルでも見えるように改善。
+    実行可能時 (緑) は件数 + op + バッチ情報を表示、警告あり (赤) / 0 件 (橙) でそれぞれ色分けして直感化。<strong>Phase 569 で発覚した「モバイル UI で tooltip が見えない」問題への横展開対応</strong>。
+  </p>
+</div>
+</body>
+</html>

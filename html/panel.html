@@ -503,6 +503,8 @@ Initech LLC,Finance,03-5555-0001</pre>
             </header>
             <div class="bulk-step-body">
               <button id="btnBulkExecute" class="primary bulk-exec-btn" disabled title="先に Step 3 のプレビューで警告なし・1 件以上を確認してから有効化されます">⚡ 実行 (Composite API)</button>
+              <!-- v3.494.0 Phase 584: disabled 理由をインライン表示 (モバイルで title tooltip が見えないため) -->
+              <div id="bulkExecReason" class="bulk-exec-reason" style="margin-top:8px;font-size:11px;color:var(--fg-dim);font-style:italic">⚠ まだ Step 2 で「🔍 Parse してプレビュー」が実行されていません</div>
               <div id="bulkResult" class="bulk-result-area">
                 <div class="empty-state" style="padding:16px;text-align:center;color:var(--fg-dim);font-size:11px">
                   実行結果（成功/失敗カウント・失敗行の詳細）がここに表示されます

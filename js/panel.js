@@ -7971,6 +7971,23 @@ function doBulkParse() {
       ? `❌ 警告あり: ${warnings.join(" / ")}`
       : (canExec ? `⚡ ${r.records.length} 件を ${op} で実行 (Composite API、200件ずつバッチ送信)` : `⚠ レコードがありません`);
   }
+  // v3.494.0 Phase 584: disabled 理由を inline reason に表示 (モバイル tooltip 不可視対策)
+  const reasonEl = document.getElementById("bulkExecReason");
+  if (reasonEl) {
+    if (warnings.length) {
+      reasonEl.textContent = `❌ 警告あり (Step 1/2 を見直してください): ${warnings.join(" / ")}`;
+      reasonEl.style.color = "var(--err)";
+      reasonEl.style.fontStyle = "normal";
+    } else if (r.records.length === 0) {
+      reasonEl.textContent = `⚠ レコードが 0 件のため実行できません (Step 2 のデータを確認してください)`;
+      reasonEl.style.color = "var(--warn)";
+      reasonEl.style.fontStyle = "normal";
+    } else {
+      reasonEl.textContent = `✓ ${r.records.length} 件を ${op} で実行できます (Composite API、200件ずつバッチ)`;
+      reasonEl.style.color = "var(--ok)";
+      reasonEl.style.fontStyle = "normal";
+    }
+  }
 }
 
 // v3.491.0 Phase 581: Composite API で一括実行 (B 段階構築 3/3)
