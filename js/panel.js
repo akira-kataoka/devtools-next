@@ -4120,7 +4120,13 @@ function renderCurrentUserPopover(cu) {
   const lastLogin = cu.lastLogin
     ? `${escape(relativeTimeJa(cu.lastLogin))} <span style="opacity:.6">(${escape(String(cu.lastLogin).replace("T", " ").substring(0, 16))})</span>`
     : "";
-  const updated = state.lastUserFetch ? new Date(state.lastUserFetch).toLocaleTimeString("ja-JP") : "-";
+  // v3.471.0 Phase 561: 鮮度を直感化 — 絶対時刻のみでなく相対時刻 (たった今/5分前/...) も併記
+  let updated = "-";
+  if (state.lastUserFetch) {
+    const abs = new Date(state.lastUserFetch).toLocaleTimeString("ja-JP");
+    const rel = relativeTimeJa(state.lastUserFetch);
+    updated = `${rel} (${abs})`;
+  }
   pop.innerHTML =
     `<h4><span class="${avatarClass}">${escape(cu.initials || "?")}</span> ${escape(cu.name || "(不明)")} ${activeBadge}</h4>` +
     `<dl>` +
