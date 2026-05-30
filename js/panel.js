@@ -1863,11 +1863,21 @@ function bindEvents() {
     if (extIdRow) extIdRow.style.display = op === "upsert" ? "" : "none";
   });
   // v3.495.0 Phase 585: Ctrl+Enter で Parse 発火 (Apex/SOQL ビューと UX 統一)
+  // v3.496.0 Phase 586: Tab で \t (タブ文字) 挿入 — TAB 区切りデータの手動編集をスムーズに
+  //   (フォーカス移動は Shift+Tab で温存 → a11y キーボードナビ維持)
   $on("bulkInput", "keydown", (e) => {
     if (e.isComposing || e.keyCode === 229) return; // IME 変換中はスキップ
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
       doBulkParse();
+      return;
+    }
+    if (e.key === "Tab" && !e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+      e.preventDefault();
+      const el = e.target;
+      const start = el.selectionStart, end = el.selectionEnd;
+      el.value = el.value.substring(0, start) + "\t" + el.value.substring(end);
+      el.selectionStart = el.selectionEnd = start + 1;
     }
   });
   $on("btnAdminPackages", "click", doAdminPackages);
