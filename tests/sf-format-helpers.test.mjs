@@ -92,6 +92,49 @@ test("formatError: 文字列 → JSON.stringify でクォート付き", () => {
   assert.equal(formatError("just a string"), '"just a string"');
 });
 
+// --- formatError multi-error (Phase 563) --------------------------------------
+
+test("formatError: 配列 2 件 → '[2件のエラー] code1 msg1 / code2 msg2'", () => {
+  const d = [
+    { errorCode: "INVALID_FIELD", message: "No such column 'Foo'" },
+    { errorCode: "MALFORMED_QUERY", message: "Unexpected token" },
+  ];
+  assert.equal(
+    formatError(d),
+    "[2件のエラー] INVALID_FIELD No such column 'Foo' / MALFORMED_QUERY Unexpected token",
+  );
+});
+
+test("formatError: 配列 3 件 → 全部表示 (MAX=3 で省略なし)", () => {
+  const d = [
+    { errorCode: "E1", message: "m1" },
+    { errorCode: "E2", message: "m2" },
+    { errorCode: "E3", message: "m3" },
+  ];
+  assert.equal(formatError(d), "[3件のエラー] E1 m1 / E2 m2 / E3 m3");
+});
+
+test("formatError: 配列 4 件以上 → 先頭 3 件 + '[...他N件]' 表記", () => {
+  const d = [
+    { errorCode: "E1", message: "m1" },
+    { errorCode: "E2", message: "m2" },
+    { errorCode: "E3", message: "m3" },
+    { errorCode: "E4", message: "m4" },
+    { errorCode: "E5", message: "m5" },
+  ];
+  assert.equal(formatError(d), "[5件のエラー] E1 m1 / E2 m2 / E3 m3 [...他2件]");
+});
+
+test("formatError: 配列複数件で一部要素が null や空でも skip して継続", () => {
+  const d = [
+    { errorCode: "OK", message: "first" },
+    null,
+    { errorCode: "OK2", message: "third" },
+  ];
+  // null は fmt() で "" を返し filter(Boolean) で除外、件数は元の 3 のまま
+  assert.equal(formatError(d), "[3件のエラー] OK first / OK2 third");
+});
+
 // --- escHtml (Phase 552) ------------------------------------------------------
 
 test("escHtml: 5 種の HTML 特殊文字を実体参照に置換", () => {

@@ -29,7 +29,10 @@ export function tsForFilename(date = new Date()) {
  * Salesforce REST/SOAP / OAuth エラーレスポンスを 1 行の人間可読文字列に整形する。
  *
  * 想定する入力形:
- *   - REST 標準エラー配列: `[{ errorCode, message, fields? }, ...]` → "errorCode message"
+ *   - REST 標準エラー配列 (1 件): `[{ errorCode, message, fields? }]` → "errorCode message"
+ *   - REST 標準エラー配列 (複数件): `[{...}, {...}, ...]` →
+ *       "[N件のエラー] errorCode1 message1 / errorCode2 message2 [...]"
+ *       (Phase 563 改善: 旧実装は先頭 1 件のみ表示で残りを silently drop していた)
  *   - OAuth エラー: `{ error: "invalid_grant", error_description: "..." }` → error_description (なければ error)
  *   - その他: JSON.stringify(d)
  *
@@ -37,7 +40,16 @@ export function tsForFilename(date = new Date()) {
  * @returns {string}
  */
 export function formatError(d) {
-  if (Array.isArray(d) && d[0]) return `${d[0].errorCode || ""} ${d[0].message || ""}`.trim();
+  if (Array.isArray(d) && d[0]) {
+    const fmt = (e) => `${(e && e.errorCode) || ""} ${(e && e.message) || ""}`.trim();
+    if (d.length === 1) return fmt(d[0]);
+    // 複数件: 先頭 3 件まで表示。それ以上は省略数を末尾に
+    const MAX = 3;
+    const head = d.slice(0, MAX).map(fmt).filter(Boolean).join(" / ");
+    const rest = d.length - MAX;
+    const tail = rest > 0 ? ` [...他${rest}件]` : "";
+    return `[${d.length}件のエラー] ${head}${tail}`;
+  }
   if (d && d.error) return d.error_description || d.error;
   return JSON.stringify(d);
 }
