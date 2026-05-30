@@ -52,7 +52,9 @@ const RECENT_KEY = "sfdtPickerRecent"; // chrome.storage.local — { [orgId|kind
 //                     panel.js RECENT_OBJ_KEY は datalist 入力補助専用 (Phase 223)。
 //                     共通点: 最大 10 件保持 (Phase 407 で「履歴 5 件と異なる最近候補は 10 件」と documentation 化)。
 // Org 別管理: showPicker 呼出時に orgKey を渡し、orgKey|kind で分離保存
-function _recentMapKey(orgKey, kind) { return `${orgKey || "default"}|${kind}`; }
+// v3.512.0 Phase 602: export して unit test 対象に (テスト 0 件だった picker.js の test 化開始)
+export function recentMapKey(orgKey, kind) { return `${orgKey || "default"}|${kind}`; }
+const _recentMapKey = recentMapKey; // 後方互換 (内部 callers は旧名)
 async function getRecent(kind, orgKey) {
   try {
     const { [RECENT_KEY]: data = {} } = await chrome.storage.local.get(RECENT_KEY);
