@@ -961,6 +961,18 @@ function triggerDownload(filename, blob, revokeMs = 2000) {
   setTimeout(() => URL.revokeObjectURL(url), revokeMs);
 }
 
+// v3.485.0 Phase 575: 🔗 リンクコピー処理 (clipboard.writeText + try/catch + toast) を集約。
+//   panel.js 6 callers (Describe / SOQL / Inspector / API URL / Login / Apex) の同じ try/catch
+//   + err toast パターンを 1 行 await に。エラーメッセージ統一の副次効果も。
+async function copyLinkWithToast(url, successMsg) {
+  try {
+    await navigator.clipboard.writeText(url);
+    panelToast(successMsg, { kind: "ok" });
+  } catch (e) {
+    panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" });
+  }
+}
+
 // ====== 共通 Picker ヘルパー: 既存テキスト入力の隣に Picker ボタンを差し込む ======
 function attachPicker(inputId, kind, opts = {}) {
   const input = document.getElementById(inputId);
@@ -1426,30 +1438,30 @@ function bindEvents() {
   $on("btnDescribeCopyLink", "click", async () => {
     const obj = (document.getElementById("descObj").value || "").trim();
     if (!obj) { panelToast("⚠ オブジェクト API 名を入力してください", { kind: "warn" }); return; }
-    try {
-      const url = chrome.runtime.getURL(`html/tool.html?view=describe&obj=${encodeURIComponent(obj)}`);
-      await navigator.clipboard.writeText(url);
-      panelToast(`🔗 ${obj} 構造リンクをコピーしました`, { kind: "ok" });
-    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+    // v3.485.0 Phase 575: copyLinkWithToast 集約
+    await copyLinkWithToast(
+      chrome.runtime.getURL(`html/tool.html?view=describe&obj=${encodeURIComponent(obj)}`),
+      `🔗 ${obj} 構造リンクをコピーしました`,
+    );
   });
   $on("btnSoqlCopyLink", "click", async () => {
     const q = (document.getElementById("soqlText").value || "").trim();
     if (!q) { panelToast("⚠ SOQL を入力してください", { kind: "warn" }); return; }
-    try {
-      const url = chrome.runtime.getURL(`html/tool.html?view=soql&q=${encodeURIComponent(q)}`);
-      await navigator.clipboard.writeText(url);
-      panelToast(`🔗 SOQL 実行リンクをコピーしました (${q.length} 文字)`, { kind: "ok" });
-    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+    // v3.485.0 Phase 575: copyLinkWithToast 集約
+    await copyLinkWithToast(
+      chrome.runtime.getURL(`html/tool.html?view=soql&q=${encodeURIComponent(q)}`),
+      `🔗 SOQL 実行リンクをコピーしました (${q.length} 文字)`,
+    );
   });
   $on("btnInspectCopyLink", "click", async () => {
     if (!inspectState.id) { panelToast("⚠ Inspector でレコードを開いてから実行してください", { kind: "warn" }); return; }
-    try {
-      const qp = new URLSearchParams({ view: "inspector", id: inspectState.id });
-      if (inspectState.obj) qp.set("obj", inspectState.obj);
-      const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
-      await navigator.clipboard.writeText(url);
-      panelToast(`🔗 ${inspectState.obj || "?"}:${inspectState.id} の Inspector リンクをコピー`, { kind: "ok" });
-    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+    const qp = new URLSearchParams({ view: "inspector", id: inspectState.id });
+    if (inspectState.obj) qp.set("obj", inspectState.obj);
+    // v3.485.0 Phase 575: copyLinkWithToast 集約
+    await copyLinkWithToast(
+      chrome.runtime.getURL(`html/tool.html?${qp.toString()}`),
+      `🔗 ${inspectState.obj || "?"}:${inspectState.id} の Inspector リンクをコピー`,
+    );
   });
   // v3.208.0 Phase 298: API URL ビルダー 🔗 リンク (?view=apiurl&op=&apiObj=&apiId=)
   $on("btnApiUrlCopyLink", "click", async () => {
@@ -1457,14 +1469,14 @@ function bindEvents() {
     const apiObj = (document.getElementById("apiObj").value || "").trim();
     const apiId = (document.getElementById("apiId").value || "").trim();
     if (!op) { panelToast("⚠ 操作種別を選択してください", { kind: "warn" }); return; }
-    try {
-      const qp = new URLSearchParams({ view: "apiurl", op });
-      if (apiObj) qp.set("apiObj", apiObj);
-      if (apiId) qp.set("apiId", apiId);
-      const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
-      await navigator.clipboard.writeText(url);
-      panelToast(`🔗 API URL ビルダーリンクをコピー (${op}${apiObj ? ` / ${apiObj}` : ""})`, { kind: "ok" });
-    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+    const qp = new URLSearchParams({ view: "apiurl", op });
+    if (apiObj) qp.set("apiObj", apiObj);
+    if (apiId) qp.set("apiId", apiId);
+    // v3.485.0 Phase 575: copyLinkWithToast 集約
+    await copyLinkWithToast(
+      chrome.runtime.getURL(`html/tool.html?${qp.toString()}`),
+      `🔗 API URL ビルダーリンクをコピー (${op}${apiObj ? ` / ${apiObj}` : ""})`,
+    );
   });
   // v3.207.0 Phase 297: ログイン履歴 🔗 リンク (?view=login&limit=&status=&period=)
   $on("btnLoginCopyLink", "click", async () => {
@@ -1472,24 +1484,24 @@ function bindEvents() {
     const status = (document.getElementById("loginStatus").value || "");
     const periodEl = document.getElementById("loginPeriod");
     const period = periodEl ? (periodEl.value || "") : "";
-    try {
-      const qp = new URLSearchParams({ view: "login", limit });
-      if (status) qp.set("status", status);
-      if (period) qp.set("period", period);
-      const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
-      await navigator.clipboard.writeText(url);
-      panelToast(`🔗 ログイン履歴リンクをコピー (limit=${limit}${status ? ` / ${status}` : ""}${period ? ` / 直近 ${period} 日` : ""})`, { kind: "ok" });
-    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+    const qp = new URLSearchParams({ view: "login", limit });
+    if (status) qp.set("status", status);
+    if (period) qp.set("period", period);
+    // v3.485.0 Phase 575: copyLinkWithToast 集約
+    await copyLinkWithToast(
+      chrome.runtime.getURL(`html/tool.html?${qp.toString()}`),
+      `🔗 ログイン履歴リンクをコピー (limit=${limit}${status ? ` / ${status}` : ""}${period ? ` / 直近 ${period} 日` : ""})`,
+    );
   });
   // v3.205.0 Phase 295: Apex 🔗 リンク (?view=apex&code=) — auto-fire 無効、投入のみで停止
   $on("btnApexCopyLink", "click", async () => {
     const code = (document.getElementById("apexCode").value || "").trim();
     if (!code) { panelToast("⚠ Apex コードを入力してください", { kind: "warn" }); return; }
-    try {
-      const url = chrome.runtime.getURL(`html/tool.html?view=apex&code=${encodeURIComponent(code)}`);
-      await navigator.clipboard.writeText(url);
-      panelToast(`🔗 Apex リンクをコピー (${code.length} 文字、リンク先で手動実行)`, { kind: "ok" });
-    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+    // v3.485.0 Phase 575: copyLinkWithToast 集約
+    await copyLinkWithToast(
+      chrome.runtime.getURL(`html/tool.html?view=apex&code=${encodeURIComponent(code)}`),
+      `🔗 Apex リンクをコピー (${code.length} 文字、リンク先で手動実行)`,
+    );
   });
   // v3.195.0 Phase 285: REST API 🔗 リンク (?view=rest&method=&path=&body=)
   $on("btnRestCopyLink", "click", async () => {
@@ -1497,13 +1509,13 @@ function bindEvents() {
     const path = (document.getElementById("restPath").value || "").trim();
     const body = (document.getElementById("restBody").value || "").trim();
     if (!path) { panelToast("⚠ REST API パスを入力してください", { kind: "warn" }); return; }
-    try {
-      const qp = new URLSearchParams({ view: "rest", method, path });
-      if (body) qp.set("body", body);
-      const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
-      await navigator.clipboard.writeText(url);
-      panelToast(`🔗 REST リンクをコピー (${method} ${path.length > 40 ? path.substring(0, 40) + "…" : path})`, { kind: "ok" });
-    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+    const qp = new URLSearchParams({ view: "rest", method, path });
+    if (body) qp.set("body", body);
+    // v3.485.0 Phase 575: copyLinkWithToast 集約
+    await copyLinkWithToast(
+      chrome.runtime.getURL(`html/tool.html?${qp.toString()}`),
+      `🔗 REST リンクをコピー (${method} ${path.length > 40 ? path.substring(0, 40) + "…" : path})`,
+    );
   });
   // v3.194.0 Phase 284: 設計書 🔗 リンク (?view=design&type=&target=&format=)
   $on("btnDesignCopyLink", "click", async () => {
@@ -1514,25 +1526,25 @@ function bindEvents() {
     const target = objInp ? (objInp.value || "").trim() : "";
     const format = fmtSel ? fmtSel.value : "";
     if (!type) { panelToast("⚠ 設計書の種類を選択してください", { kind: "warn" }); return; }
-    try {
-      const qp = new URLSearchParams({ view: "design", type });
-      if (target) qp.set("target", target);
-      if (format) qp.set("format", format);
-      const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
-      await navigator.clipboard.writeText(url);
-      panelToast(`🔗 設計書リンクをコピー (${type}${target ? ` / ${target}` : ""})`, { kind: "ok" });
-    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+    const qp = new URLSearchParams({ view: "design", type });
+    if (target) qp.set("target", target);
+    if (format) qp.set("format", format);
+    // v3.485.0 Phase 575: copyLinkWithToast 集約
+    await copyLinkWithToast(
+      chrome.runtime.getURL(`html/tool.html?${qp.toString()}`),
+      `🔗 設計書リンクをコピー (${type}${target ? ` / ${target}` : ""})`,
+    );
   });
   // v3.193.0 Phase 283: メタデータ一覧 🔗 リンク (?view=metadata&type=)
   $on("btnMetadataCopyLink", "click", async () => {
     const sel = document.getElementById("mdType");
     const type = sel ? sel.value : "";
     if (!type) { panelToast("⚠ メタデータ型を選択してください", { kind: "warn" }); return; }
-    try {
-      const url = chrome.runtime.getURL(`html/tool.html?view=metadata&type=${encodeURIComponent(type)}`);
-      await navigator.clipboard.writeText(url);
-      panelToast(`🔗 ${type} メタデータリンクをコピーしました`, { kind: "ok" });
-    } catch (e) { panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" }); }
+    // v3.485.0 Phase 575: copyLinkWithToast 集約
+    await copyLinkWithToast(
+      chrome.runtime.getURL(`html/tool.html?view=metadata&type=${encodeURIComponent(type)}`),
+      `🔗 ${type} メタデータリンクをコピーしました`,
+    );
   });
   $on("btnRest", "click", doRest);
   // v3.443.0 Phase 533: REST モード切替 (SF / 汎用 HTTP / SOAP)
@@ -6939,14 +6951,12 @@ async function doGlobalSearch() {
   // v3.191.0 Phase 281: 検索リンクコピー (?view=search&kw=&scope= URL を生成)
   const linkBtn = document.getElementById("btnSearchCopyLink");
   if (linkBtn) linkBtn.addEventListener("click", async () => {
-    try {
-      const qp = new URLSearchParams({ view: "search", kw, scope });
-      const url = chrome.runtime.getURL(`html/tool.html?${qp.toString()}`);
-      await navigator.clipboard.writeText(url);
-      panelToast(`🔗 検索リンクをコピーしました (${kw})`, { kind: "ok" });
-    } catch (e) {
-      panelToast("❌ リンクコピー失敗: " + (e.message || e), { kind: "err" });
-    }
+    const qp = new URLSearchParams({ view: "search", kw, scope });
+    // v3.485.0 Phase 575: copyLinkWithToast 集約
+    await copyLinkWithToast(
+      chrome.runtime.getURL(`html/tool.html?${qp.toString()}`),
+      `🔗 検索リンクをコピーしました (${kw})`,
+    );
   });
 
   if (!records.length) {
