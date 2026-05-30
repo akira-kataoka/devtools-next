@@ -153,6 +153,24 @@ export function escXml(s) {
     .replace(/"/g, "&quot;").replace(/'/g, "&apos;");
 }
 
+/**
+ * v3.480.0 Phase 570: SOSL `FIND {keyword}` 内のキーワード用最小エスケープ。
+ *
+ * SOSL 予約文字は完全には `\ + ? * { } ( ) [ ] " & | ! -` だが、本実装は
+ * 「最小限 (\ と ')」のみ。`*` `?` はワイルドカードとして意図的に許容している
+ * (前方/部分一致用)。
+ *
+ * 実装は escapeSoqlLiteral と同一だが、semantic context が異なる別関数として
+ * 用意 — 将来 SOSL 仕様変更で他文字を escape する必要が出た時に SOQL 側を
+ * 巻き添えにしない。
+ *
+ * @param {*} s
+ * @returns {string}
+ */
+export function escSoslKeyword(s) {
+  return String(s == null ? "" : s).replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+}
+
 // =====================================================================
 // v3.463.0 Phase 553: 現在ログイン中ユーザーのリアルタイム表示 (ユーザー要望 2026-05-27)
 //   ヘッダーに「今ログインしているのは誰か」を常時表示するため、表示用の

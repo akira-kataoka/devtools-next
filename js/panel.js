@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml } from "./sf-format-helpers.js";
+import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -6885,9 +6885,10 @@ function buildSoslQuery(keyword, scope) {
   // ワイルドカード: ユーザー入力に * を含まない場合は前後に * を付けて部分一致化
   let kw = String(keyword || "").trim();
   if (!kw) return null;
-  // SOSL の予約文字エスケープ ( \ + ? * { } ( ) [ ] " & | ! - )
-  // ここでは最小限: 単一引用符と バックスラッシュのみエスケープ
-  kw = kw.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
+  // v3.480.0 Phase 570: SOSL 最小エスケープを escSoslKeyword (pure) に集約
+  // 注: SOSL 完全予約文字は `\ + ? * { } ( ) [ ] " & | ! -` だが、* と ? は
+  //     後段でワイルドカード扱いするため意図的に escape しない (最小限のみ)
+  kw = escSoslKeyword(kw);
   // ユーザーが * を入れていなければ自動 wildcard 化 (3 文字以上の場合)
   if (kw.length >= 3 && !kw.includes("*") && !kw.includes("?")) {
     kw = kw + "*"; // 前方一致 + 部分一致
