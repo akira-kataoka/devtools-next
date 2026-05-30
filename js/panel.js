@@ -4009,6 +4009,9 @@ async function reconnect() {
   const prevOrgId = state.orgId;
   state.sid = session.sid;
   state.orgId = parseOrgIdFromSid(state.sid);
+  // v3.488.0 Phase 578: session メタ (cookieDomain / via) を保持 — 401 エラー表示で「Lightning sid 使用中」と診断するため
+  state.sessionCookieDomain = session.cookieDomain || "";
+  state.sessionVia = session.via || "";
   // Org が変わった場合は Picker キャッシュを無効化 + Inspector 履歴クリア
   if (prevOrgId && prevOrgId !== state.orgId) {
     invalidatePickerCache(`Org change ${prevOrgId} → ${state.orgId}`);
@@ -6144,9 +6147,17 @@ function displayApiError(elem, status, data, ctx = "") {
   // hint: { text, links: [{label, path}] } 形式で「対処方法 + Setup へのショートカット」
   let hint = null;
   if (status === 401) {
+    // v3.488.0 Phase 578: cookieDomain を診断に含め、Lightning sid 疑い時は明示
+    const cd = state.sessionCookieDomain || "";
+    const isLightningSid = cd.includes(".lightning.force.com") || cd.includes(".visualforce.com");
+    const diagnosis = isLightningSid
+      ? `⚠ 現在 Lightning ドメイン (${cd}) の sid を使用中。これは REST API で 401 になります。my.salesforce.com タブを一度開いてから ⟳ 再接続してください。`
+      : (cd ? `sid 取得元: ${cd}。` : "") + "セッション有効期限切れの可能性があります。my.salesforce.com を開き直してから ⟳ 再接続してください。";
     hint = {
-      text: "セッションの有効期限が切れています。Salesforce へログインし直し、ポップアップの ⟳ ボタンで再接続してください (Lightning ドメインの sid は REST から使えない場合があります)。",
+      text: diagnosis,
       links: [
+        { label: "🌐 my.salesforce.com を新タブで開く", action: "openMySalesforce" },
+        { label: "⟳ 再接続を実行", action: "reconnect" },
         { label: "🔧 セッション設定を開く", path: "/lightning/setup/SecuritySession/home" },
         { label: "📜 ログイン履歴を確認する", action: "navView", view: "login" },
       ],
@@ -6215,6 +6226,16 @@ function displayApiError(elem, status, data, ctx = "") {
         if (link.action === "navView" && link.view) {
           // 内部ビュー切替
           if (typeof switchToView === "function") switchToView(link.view);
+        } else if (link.action === "openMySalesforce") {
+          // v3.488.0 Phase 578: my.salesforce.com を新タブで開いて API sid を取得させる
+          if (state.host) {
+            const myHost = state.apiHost || toApiHost(state.host);
+            chrome.tabs.create({ url: `https://${myHost}/` });
+          }
+        } else if (link.action === "reconnect") {
+          // v3.488.0 Phase 578: ⟳ 再接続ボタンを click トリガー
+          const btn = document.getElementById("btnReconnect");
+          if (btn) btn.click();
         } else if (link.url) {
           chrome.tabs.create({ url: link.url });
         } else if (link.path && state.host) {

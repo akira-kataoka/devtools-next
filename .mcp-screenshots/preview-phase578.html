@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>Phase 578 preview — 401 error guidance</title>
+<link rel="stylesheet" href="../css/panel.css" />
+<style>
+  body { margin: 0; background: #0b1220; color: #fff; }
+  .preview-wrap { padding: 24px; max-width: 760px; }
+  .demo-block { background: #0f1830; border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 24px; }
+  .demo-block h3 { margin: 0 0 12px; font-size: 12px; color: #ffffffbb; }
+  .hint-link { color: #6cbfff; text-decoration: none; margin-right: 12px; }
+  .hint-link:hover { text-decoration: underline; }
+  .hint-actions { font-size: 11px; }
+  .meta { color: var(--fg-dim); font-size: 11px; }
+  .pill { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+  .pill.err { background: rgba(255,107,107,0.2); color: var(--err); border: 1px solid var(--err); }
+</style>
+</head>
+<body>
+<div class="preview-wrap">
+  <h2 style="font:600 13px system-ui;margin:0 0 16px">Phase 578 — REST API 401 エラー時の診断ガイド強化 🆕</h2>
+
+  <div class="demo-block">
+    <h3>[A] BEFORE — generic な案内</h3>
+    <div>
+      <span class="pill err">⚠ HTTP 401 (SF GET)</span> <span class="meta">INVALID_SESSION_ID Session expired or invalid</span>
+      <br/><span class="meta" style="color:var(--accent)">💡 セッションの有効期限が切れています。Salesforce へログインし直し、ポップアップの ⟳ ボタンで再接続してください (Lightning ドメインの sid は REST から使えない場合があります)。</span>
+      <br/><span class="hint-actions">
+        <a class="hint-link" href="#">🔧 セッション設定を開く →</a>
+        <a class="hint-link" href="#">📜 ログイン履歴を確認する →</a>
+      </span>
+    </div>
+    <p style="color:#ffffff66;font:10px system-ui;margin:8px 0 0">⚠ 「Lightning sid 疑いです」が文中に埋もれてて見落とす。再接続ボタンは別画面に行かないと押せない</p>
+  </div>
+
+  <div class="demo-block">
+    <h3>[B] AFTER 🆕 — Lightning sid 検出時の親切な診断</h3>
+    <div>
+      <span class="pill err">⚠ HTTP 401 (SF GET)</span> <span class="meta">INVALID_SESSION_ID Session expired or invalid</span>
+      <br/><span class="meta" style="color:var(--accent)">💡 ⚠ 現在 Lightning ドメイン (.lightning.force.com) の sid を使用中。これは REST API で 401 になります。my.salesforce.com タブを一度開いてから ⟳ 再接続してください。</span>
+      <br/><span class="hint-actions">
+        <a class="hint-link" href="#">🌐 my.salesforce.com を新タブで開く →</a>
+        <a class="hint-link" href="#">⟳ 再接続を実行 →</a>
+        <a class="hint-link" href="#">🔧 セッション設定を開く →</a>
+        <a class="hint-link" href="#">📜 ログイン履歴を確認する →</a>
+      </span>
+    </div>
+    <p style="color:#9dff9d;font:10px system-ui;margin:8px 0 0">✓ 原因 (Lightning sid) を診断 + 1-クリックで my.salesforce.com 開く + 1-クリックで再接続</p>
+  </div>
+
+  <div class="demo-block">
+    <h3>[C] AFTER 🆕 — 通常の sid 期限切れ (Lightning ではない)</h3>
+    <div>
+      <span class="pill err">⚠ HTTP 401 (SF GET)</span> <span class="meta">INVALID_SESSION_ID Session expired or invalid</span>
+      <br/><span class="meta" style="color:var(--accent)">💡 sid 取得元: .my.salesforce.com。セッション有効期限切れの可能性があります。my.salesforce.com を開き直してから ⟳ 再接続してください。</span>
+      <br/><span class="hint-actions">
+        <a class="hint-link" href="#">🌐 my.salesforce.com を新タブで開く →</a>
+        <a class="hint-link" href="#">⟳ 再接続を実行 →</a>
+        <a class="hint-link" href="#">🔧 セッション設定を開く →</a>
+        <a class="hint-link" href="#">📜 ログイン履歴を確認する →</a>
+      </span>
+    </div>
+    <p style="color:#9dff9d;font:10px system-ui;margin:8px 0 0">✓ Lightning ではない場合でも cookieDomain を表示 + 1-クリック修復</p>
+  </div>
+
+  <p style="color:#ffffff88;font:11px system-ui;line-height:1.55">
+    Phase 578 で変更: 401 エラー時に <code style="color:#1b96ff">state.sessionCookieDomain</code> を診断材料として使い、Lightning ドメインの sid を掴んでいる時は明示的に警告。新アクション 2 種 <code>openMySalesforce</code> (新タブで my.salesforce.com を開いて API 用 cookie をセット) と <code>reconnect</code> (⟳ 再接続を 1 click 発火) を追加。<strong>ユーザー報告「REST API がエラーだけ返る (401)」への直接対処</strong>。
+  </p>
+</div>
+</body>
+</html>
