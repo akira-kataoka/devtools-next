@@ -267,6 +267,30 @@ export function escMdTableCell(s) {
  * @param {string} op
  * @returns {string} 絵文字 1 つ (`📝` / `🔄` / `↕️` / `🗑️` / `?`)
  */
+/**
+ * v3.509.0 Phase 599: `name` prefix OR `label` substring の検索フィルタ純粋関数。
+ *
+ * panel.js SOQL オートコンプリート 2 箇所 (オブジェクト候補 / 項目候補) で同じ
+ * `items.filter((it) => !q || it.name.toLowerCase().startsWith(q) || (it.label || "").toLowerCase().includes(q))`
+ * パターンを inline していたのを集約。case-insensitive、name 前方一致 OR
+ * label 部分一致。query が空文字 / null / undefined ならフィルタなしで全件返す。
+ *
+ * 同パターンは content.js 782/789 にもあるが classic script で import 不可のため対象外。
+ *
+ * @param {Array<{name?: string, label?: string}>} items
+ * @param {string} [query]
+ * @returns {Array} 元配列の同 reference を返す (フィルタなし時) または新規 filtered 配列
+ */
+export function filterByNameLabel(items, query) {
+  const arr = Array.isArray(items) ? items : [];
+  const q = String(query == null ? "" : query).toLowerCase().trim();
+  if (!q) return arr;
+  return arr.filter((it) =>
+    String((it && it.name) || "").toLowerCase().startsWith(q) ||
+    String((it && it.label) || "").toLowerCase().includes(q)
+  );
+}
+
 export function bulkOpEmoji(op) {
   return ({ insert: "📝", update: "🔄", upsert: "↕️", delete: "🗑️" })[op] || "?";
 }

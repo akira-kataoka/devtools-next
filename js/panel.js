@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords, validateBulkOpRequiredColumns, summarizeBulkResults, bulkOpEmoji, bulkOpLabel } from "./sf-format-helpers.js";
+import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords, validateBulkOpRequiredColumns, summarizeBulkResults, bulkOpEmoji, bulkOpLabel, filterByNameLabel } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -4390,8 +4390,8 @@ async function updateSoqlAutocomplete(textarea) {
   if (lastKw === "FROM") {
     // オブジェクト候補
     if (_datalistObjsCached) {
-      candidates = _datalistObjsCached
-        .filter((s) => !q || s.name.toLowerCase().startsWith(q) || (s.label || "").toLowerCase().includes(q))
+      // v3.509.0 Phase 599: name prefix OR label substring を filterByNameLabel (pure) に集約
+      candidates = filterByNameLabel(_datalistObjsCached, q)
         .slice(0, 20)
         .map((s) => ({ value: s.name, label: s.label || "", type: "object" }));
     }
@@ -4400,8 +4400,8 @@ async function updateSoqlAutocomplete(textarea) {
     const objName = getFromObjectFromSoql(text);
     if (objName) {
       const fields = await getObjectFields(objName);
-      candidates = fields
-        .filter((f) => !q || f.name.toLowerCase().startsWith(q) || (f.label || "").toLowerCase().includes(q))
+      // v3.509.0 Phase 599: name prefix OR label substring を filterByNameLabel (pure) に集約
+      candidates = filterByNameLabel(fields, q)
         .slice(0, 20)
         .map((f) => {
           // v3.30.0: 参照型は参照先も表示 (例: 「取引先 (reference → Account)」)

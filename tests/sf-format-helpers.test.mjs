@@ -19,6 +19,7 @@ import {
   validateBulkOpRequiredColumns,
   summarizeBulkResults,
   bulkOpEmoji, bulkOpLabel,
+  filterByNameLabel,
 } from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
@@ -1119,4 +1120,72 @@ test("bulkOpLabel: null / undefined / 空 → '? ?'", () => {
   assert.equal(bulkOpLabel(null), "? ?");
   assert.equal(bulkOpLabel(undefined), "? ?");
   assert.equal(bulkOpLabel(""), "? ?");
+});
+
+// --- filterByNameLabel (Phase 599) --------------------------------------------
+
+const sampleItems = [
+  { name: "Account", label: "取引先" },
+  { name: "Contact", label: "取引先責任者" },
+  { name: "Opportunity", label: "商談" },
+  { name: "Custom_Obj__c", label: "カスタム" },
+];
+
+test("filterByNameLabel: query 空 → 元配列をそのまま (フィルタなし)", () => {
+  assert.equal(filterByNameLabel(sampleItems, ""), sampleItems);
+  assert.equal(filterByNameLabel(sampleItems, null), sampleItems);
+  assert.equal(filterByNameLabel(sampleItems, undefined), sampleItems);
+});
+
+test("filterByNameLabel: name 前方一致 (case-insensitive)", () => {
+  const r = filterByNameLabel(sampleItems, "ac");
+  assert.equal(r.length, 1);
+  assert.equal(r[0].name, "Account");
+});
+
+test("filterByNameLabel: name 大文字 query も小文字化されてマッチ", () => {
+  const r = filterByNameLabel(sampleItems, "CONT");
+  assert.equal(r.length, 1);
+  assert.equal(r[0].name, "Contact");
+});
+
+test("filterByNameLabel: label 部分一致 (日本語含む)", () => {
+  const r = filterByNameLabel(sampleItems, "商談");
+  assert.equal(r.length, 1);
+  assert.equal(r[0].name, "Opportunity");
+});
+
+test("filterByNameLabel: name prefix と label 部分一致は OR (どちらかマッチで採用)", () => {
+  // "取引" は Account/Contact 両方の label に含まれる
+  const r = filterByNameLabel(sampleItems, "取引");
+  assert.equal(r.length, 2);
+});
+
+test("filterByNameLabel: label が name に substring としても含まれる場合", () => {
+  // "custom" は Custom_Obj__c の name 前方一致 (小文字化後)
+  const r = filterByNameLabel(sampleItems, "custom");
+  assert.equal(r.length, 1);
+  assert.equal(r[0].name, "Custom_Obj__c");
+});
+
+test("filterByNameLabel: マッチなし → 空配列", () => {
+  const r = filterByNameLabel(sampleItems, "Zzz");
+  assert.deepEqual(r, []);
+});
+
+test("filterByNameLabel: items が null / 非配列でも throw しない", () => {
+  assert.deepEqual(filterByNameLabel(null, "x"), []);
+  assert.deepEqual(filterByNameLabel(undefined, "x"), []);
+  assert.deepEqual(filterByNameLabel("not array", "x"), []);
+});
+
+test("filterByNameLabel: name / label が無い item でも throw しない", () => {
+  const r = filterByNameLabel([{}, { name: "X" }, { label: "Y" }], "x");
+  assert.equal(r.length, 1); // {name:"X"} のみ
+});
+
+test("filterByNameLabel: query の前後 trim", () => {
+  const r = filterByNameLabel(sampleItems, "  ac  ");
+  assert.equal(r.length, 1);
+  assert.equal(r[0].name, "Account");
 });
