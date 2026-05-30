@@ -117,8 +117,11 @@ export function relativeTimeJa(dateLike, now = new Date()) {
   const t = d.getTime();
   if (Number.isNaN(t)) return "-";
   const diffSec = Math.floor((now.getTime() - t) / 1000);
-  if (diffSec < 0) return "未来";       // 時計ずれ等で未来の場合
-  if (diffSec < 60) return "たった今";
+  // v3.472.0 Phase 562: ローカル時計が数秒進んでいると LastLoginDate (サーバ時刻) が
+  //   毎回「未来」表示になるバグ修正。|diff| < 60s は時計ずれの可能性が高いので
+  //   符号にかかわらず「たった今」扱い。60s 以上の真の未来のみ「未来」と表示。
+  if (Math.abs(diffSec) < 60) return "たった今";
+  if (diffSec < 0) return "未来";
   const min = Math.floor(diffSec / 60);
   if (min < 60) return `${min}分前`;
   const hr = Math.floor(min / 60);

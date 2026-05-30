@@ -199,8 +199,17 @@ test("relativeTimeJa: 30 日以上は YYYY-MM-DD 絶対表記", () => {
   assert.equal(relativeTimeJa(old, NOW), "2026-01-01");
 });
 
-test("relativeTimeJa: 未来時刻 → '未来'", () => {
+test("relativeTimeJa: 60秒以上未来 → '未来' (時計ずれの範囲を超える)", () => {
+  // Phase 562 で境界変更: 60s 未来は |diff|=60 で >=60 なので「未来」のまま
   assert.equal(relativeTimeJa(new Date(NOW.getTime() + 60 * 1000), NOW), "未来");
+  assert.equal(relativeTimeJa(new Date(NOW.getTime() + 5 * 60 * 1000), NOW), "未来");
+});
+
+test("relativeTimeJa: Phase 562 — 60秒未満の未来 (時計ずれ) は '未来' でなく 'たった今'", () => {
+  // 旧実装: -1秒 → "未来"。新実装: |diff|<60 で「たった今」
+  assert.equal(relativeTimeJa(new Date(NOW.getTime() + 1 * 1000), NOW), "たった今");
+  assert.equal(relativeTimeJa(new Date(NOW.getTime() + 30 * 1000), NOW), "たった今");
+  assert.equal(relativeTimeJa(new Date(NOW.getTime() + 59 * 1000), NOW), "たった今");
 });
 
 test("relativeTimeJa: null / 空 / パース不能 → '-'", () => {
