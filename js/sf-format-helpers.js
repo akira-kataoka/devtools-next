@@ -215,6 +215,83 @@ export function escMdTableCell(s) {
   return String(s == null ? "" : s).replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
 }
 
+/**
+ * v3.487.0 Phase 577: Excel / CSV 貼り付けテキストを records 配列に変換する純粋パーサー。
+ *
+ * 一括インポート機能 (Inspector 風 paste→execute) のための入力パーサー。
+ *
+ * 仕様:
+ *   - 区切り文字: 1 行目の \t / , の出現数で自動判定 (\t 多数 → Excel paste、, 多数 → CSV)
+ *     明示指定する場合は opts.delimiter
+ *   - クォート: `"..."` で囲まれた値はクォート除去、内部の `""` は `"` にデコード
+ *     クォート内の改行・区切り文字は値の一部として扱う
+ *   - 1 行目はヘッダー (API field 名)、2 行目以降がレコード
+ *   - 空行はスキップ (CSV/Excel どちらの paste でも末尾改行が混入しやすいため)
+ *   - レコードの値は文字列 (型変換はサーバ側 / 呼出側責任)
+ *
+ * @param {string} text - Excel/CSV から貼り付けたテキスト
+ * @param {object} [opts]
+ * @param {string} [opts.delimiter] - 強制区切り文字 ("\t" or ","); 省略時は自動判定
+ * @returns {{ delimiter: string, headers: string[], records: object[], skipped: number }}
+ *   skipped: 列数不一致や空行で skip した行数
+ */
+export function parseClipboardRecords(text, opts = {}) {
+  const src = String(text == null ? "" : text);
+  if (!src.trim()) return { delimiter: "\t", headers: [], records: [], skipped: 0 };
+  // 区切り文字判定: 1 行目だけで判定 (内容にクォート内含む場合の誤判定は許容)
+  let delim = opts.delimiter;
+  if (!delim) {
+    const firstLine = src.split(/\r?\n/, 1)[0];
+    const tabCount = (firstLine.match(/\t/g) || []).length;
+    const commaCount = (firstLine.match(/,/g) || []).length;
+    delim = tabCount >= commaCount ? "\t" : ",";
+  }
+  // クォート対応の row 分割 (RFC 4180 風、簡易版)
+  const rows = [];
+  let cur = [];
+  let field = "";
+  let inQuote = false;
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (inQuote) {
+      if (c === '"') {
+        if (src[i + 1] === '"') { field += '"'; i++; } // エスケープ
+        else { inQuote = false; }
+      } else {
+        field += c;
+      }
+    } else {
+      if (c === '"' && field === "") {
+        inQuote = true;
+      } else if (c === delim) {
+        cur.push(field); field = "";
+      } else if (c === "\n" || c === "\r") {
+        // \r\n の \n はスキップ
+        if (c === "\r" && src[i + 1] === "\n") i++;
+        cur.push(field); rows.push(cur); cur = []; field = "";
+      } else {
+        field += c;
+      }
+    }
+  }
+  // 末尾フィールド
+  if (field !== "" || cur.length) { cur.push(field); rows.push(cur); }
+  // 空行除去
+  const nonEmpty = rows.filter((r) => r.length > 1 || (r.length === 1 && r[0] !== ""));
+  if (nonEmpty.length === 0) return { delimiter: delim, headers: [], records: [], skipped: 0 };
+  const headers = nonEmpty[0].map((h) => String(h).trim());
+  const records = [];
+  let skipped = 0;
+  for (let i = 1; i < nonEmpty.length; i++) {
+    const row = nonEmpty[i];
+    if (row.length !== headers.length) { skipped++; continue; }
+    const rec = {};
+    for (let j = 0; j < headers.length; j++) rec[headers[j]] = row[j];
+    records.push(rec);
+  }
+  return { delimiter: delim, headers, records, skipped };
+}
+
 // =====================================================================
 // v3.463.0 Phase 553: 現在ログイン中ユーザーのリアルタイム表示 (ユーザー要望 2026-05-27)
 //   ヘッダーに「今ログインしているのは誰か」を常時表示するため、表示用の
