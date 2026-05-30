@@ -51,7 +51,10 @@ export function formatError(d) {
     return `[${d.length}件のエラー] ${head}${tail}`;
   }
   if (d && d.error) return d.error_description || d.error;
-  return JSON.stringify(d);
+  // v3.482.0 Phase 572: JSON.stringify は循環参照で TypeError を投げるため try/catch で防御。
+  //   formatError 自体がエラー表示中に再エラーを起こすと panel.js displayApiError 経路全体が破綻するため、
+  //   最終フォールバックとして String(d) を返す (循環でも安全)。
+  try { return JSON.stringify(d); } catch (_) { return String(d); }
 }
 
 // HTML 特殊 5 文字 (& < > " ') を実体参照に置換。

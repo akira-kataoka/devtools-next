@@ -97,6 +97,25 @@ test("formatError: 文字列 → JSON.stringify でクォート付き", () => {
   assert.equal(formatError("just a string"), '"just a string"');
 });
 
+// --- formatError 循環参照防御 (Phase 572) -------------------------------------
+
+test("formatError: 循環参照オブジェクトでも TypeError を投げず String(d) フォールバック", () => {
+  const circ = { name: "outer" };
+  circ.self = circ;
+  // 旧実装は JSON.stringify(circ) で TypeError を投げて panel.js displayApiError 全体が
+  // 破綻していた。新実装は try/catch で String(circ) = "[object Object]" を返す。
+  assert.doesNotThrow(() => formatError(circ));
+  assert.equal(formatError(circ), "[object Object]");
+});
+
+test("formatError: 深いネスト循環参照も安全", () => {
+  const a = { name: "a" };
+  const b = { name: "b" };
+  a.next = b;
+  b.next = a;
+  assert.doesNotThrow(() => formatError(a));
+});
+
 // --- formatError multi-error (Phase 563) --------------------------------------
 
 test("formatError: 配列 2 件 → '[2件のエラー] code1 msg1 / code2 msg2'", () => {

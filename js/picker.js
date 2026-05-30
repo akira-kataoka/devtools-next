@@ -371,8 +371,9 @@ export function showPicker({ kind, host, sid, apiVersion, parentObject, onPick, 
         row.id = `${pickerInstanceId}-opt-${idx}`;
         const badge = isRecent ? '<span class="picker-badge recent" title="最近選択">⏱</span>' :
                       isFav ? '<span class="picker-badge fav" title="お気に入り">★</span>' : "";
+        // v3.482.0 Phase 572: escape (= escHtml) は null-safe なので String(... == null ? "" : ...) は冗長。削除して簡潔化
         row.innerHTML = it.row.map((c, i) =>
-          `<div>${i === 0 ? badge : ""}${escape(String(c == null ? "" : c))}</div>`
+          `<div>${i === 0 ? badge : ""}${escape(c)}</div>`
         ).join("");
         row.addEventListener("click", async () => {
           await pushRecent(kind, it.value, orgKey);
