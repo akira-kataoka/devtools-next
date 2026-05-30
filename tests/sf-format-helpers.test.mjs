@@ -17,6 +17,7 @@ import {
   escMdTableCell,
   parseClipboardRecords,
   validateBulkOpRequiredColumns,
+  summarizeBulkResults,
 } from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
@@ -983,4 +984,80 @@ test("validateBulkOpRequiredColumns: upsert で extId 指定 + headers に存在
 test("validateBulkOpRequiredColumns: headers が undefined / 非配列でも throw しない", () => {
   assert.equal(validateBulkOpRequiredColumns({ op: "insert" }).canExecute, true);
   assert.equal(validateBulkOpRequiredColumns({ op: "update", headers: null }).canExecute, false);
+});
+
+// --- summarizeBulkResults (Phase 592) -----------------------------------------
+
+test("summarizeBulkResults: 全件成功 → ok=total, fail=0, topErrors 空", () => {
+  const r = summarizeBulkResults([
+    { success: true, id: "001A" },
+    { success: true, id: "001B" },
+    { success: true, id: "001C" },
+  ]);
+  assert.deepEqual(r, { total: 3, ok: 3, fail: 0, topErrors: [] });
+});
+
+test("summarizeBulkResults: 全件失敗 → ok=0, fail=total, errors 集約", () => {
+  const r = summarizeBulkResults([
+    { success: false, errors: [{ statusCode: "INVALID_FIELD", message: "bad" }] },
+    { success: false, errors: [{ statusCode: "INVALID_FIELD", message: "bad" }] },
+    { success: false, errors: [{ statusCode: "REQUIRED_FIELD_MISSING", message: "missing" }] },
+  ]);
+  assert.equal(r.ok, 0);
+  assert.equal(r.fail, 3);
+  assert.equal(r.topErrors.length, 2);
+  assert.equal(r.topErrors[0].statusCode, "INVALID_FIELD");
+  assert.equal(r.topErrors[0].count, 2);
+});
+
+test("summarizeBulkResults: topErrors は count 降順、上位 3 件まで", () => {
+  const r = summarizeBulkResults([
+    { success: false, errors: [{ statusCode: "E1" }] },
+    { success: false, errors: [{ statusCode: "E1" }] },
+    { success: false, errors: [{ statusCode: "E2" }] },
+    { success: false, errors: [{ statusCode: "E3" }] },
+    { success: false, errors: [{ statusCode: "E4" }] },
+  ]);
+  assert.equal(r.topErrors.length, 3);
+  assert.equal(r.topErrors[0].statusCode, "E1");
+  assert.equal(r.topErrors[0].count, 2);
+});
+
+test("summarizeBulkResults: 部分成功 → 数を正確に集計", () => {
+  const r = summarizeBulkResults([
+    { success: true, id: "001" },
+    { success: false, errors: [{ statusCode: "X" }] },
+    { success: true, id: "002" },
+  ]);
+  assert.deepEqual({ total: r.total, ok: r.ok, fail: r.fail }, { total: 3, ok: 2, fail: 1 });
+});
+
+test("summarizeBulkResults: statusCode 欠落の error は '(コードなし)' で grouping", () => {
+  const r = summarizeBulkResults([
+    { success: false, errors: [{ message: "詳細なし" }] },
+  ]);
+  assert.equal(r.topErrors[0].statusCode, "(コードなし)");
+});
+
+test("summarizeBulkResults: errors 配列が空 / 欠落でも safe", () => {
+  const r = summarizeBulkResults([
+    { success: false, errors: [] },
+    { success: false }, // errors なし
+  ]);
+  assert.equal(r.fail, 2);
+  assert.equal(r.topErrors[0].statusCode, "(コードなし)");
+  assert.equal(r.topErrors[0].count, 2);
+});
+
+test("summarizeBulkResults: null / undefined / 非配列 → 全 0", () => {
+  assert.deepEqual(summarizeBulkResults(null), { total: 0, ok: 0, fail: 0, topErrors: [] });
+  assert.deepEqual(summarizeBulkResults(undefined), { total: 0, ok: 0, fail: 0, topErrors: [] });
+  assert.deepEqual(summarizeBulkResults("not array"), { total: 0, ok: 0, fail: 0, topErrors: [] });
+});
+
+test("summarizeBulkResults: sample message は最初の error から取る", () => {
+  const r = summarizeBulkResults([
+    { success: false, errors: [{ statusCode: "DUP", message: "duplicate value" }] },
+  ]);
+  assert.equal(r.topErrors[0].sample, "duplicate value");
 });

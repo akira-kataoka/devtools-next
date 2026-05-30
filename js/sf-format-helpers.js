@@ -255,6 +255,44 @@ export function escMdTableCell(s) {
  *   warnings: ユーザー表示用警告メッセージ (空配列なら問題なし)
  *   canExecute: 実行可能か (警告ありなら false)
  */
+/**
+ * v3.502.0 Phase 592: bulk execute 結果配列を集計する純粋関数。
+ *
+ * panel.js doBulkExecute 内で inline 集計していた成功/失敗カウントと
+ * トップエラー集計をテスト可能に分離。
+ *
+ * @param {Array<{success: boolean, errors?: Array<{statusCode?: string, message?: string}>}>} results
+ * @returns {{
+ *   total: number,
+ *   ok: number,
+ *   fail: number,
+ *   topErrors: Array<{ statusCode: string, count: number, sample: string }>
+ * }}
+ *   topErrors: 件数の多い順上位 3 件まで (statusCode で grouping、無ければ "(コードなし)")
+ */
+export function summarizeBulkResults(results) {
+  const list = Array.isArray(results) ? results : [];
+  const total = list.length;
+  let ok = 0;
+  const errMap = new Map(); // statusCode → { count, sample }
+  for (const r of list) {
+    if (r && r.success) { ok++; continue; }
+    const errs = (r && r.errors) || [];
+    const first = errs[0] || {};
+    const key = first.statusCode || "(コードなし)";
+    if (!errMap.has(key)) {
+      errMap.set(key, { count: 0, sample: first.message || "" });
+    }
+    errMap.get(key).count++;
+  }
+  const fail = total - ok;
+  const topErrors = Array.from(errMap.entries())
+    .map(([statusCode, v]) => ({ statusCode, count: v.count, sample: v.sample }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 3);
+  return { total, ok, fail, topErrors };
+}
+
 export function validateBulkOpRequiredColumns({ op, extId, headers } = {}) {
   const warnings = [];
   const hs = Array.isArray(headers) ? headers : [];

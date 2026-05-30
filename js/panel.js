@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords, validateBulkOpRequiredColumns } from "./sf-format-helpers.js";
+import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords, validateBulkOpRequiredColumns, summarizeBulkResults } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -8143,15 +8143,15 @@ async function doBulkExecute() {
     if (exec) { exec.disabled = false; exec.textContent = "⚡ 実行"; }
     return;
   }
-  // 結果集計表示
-  const ok = allResults.filter((x) => x.success);
-  const fail = allResults.filter((x) => !x.success);
+  // v3.502.0 Phase 592: 結果集計を summarizeBulkResults (pure) に集約。topErrors は将来 UI に活用予定
+  const stats = summarizeBulkResults(allResults);
+  const fail = allResults.filter((x) => !x.success); // 失敗詳細テーブル用に列挙 (helper は集計のみ)
   const summary = `<div style="padding:8px;background:var(--bg2,#0f1830);border:1px solid var(--line);border-radius:4px;margin-bottom:8px">` +
     `<strong>${op === "delete" ? "🗑️" : op === "upsert" ? "↕️" : op === "update" ? "🔄" : "📝"} ${op}</strong> ${obj}: ` +
-    `<span class="pill ok">✓ 成功 ${ok.length}</span> ` +
-    (fail.length ? `<span class="pill err">✗ 失敗 ${fail.length}</span> ` : "") +
-    `<span class="meta">(${records.length} 件、${batchIdx} バッチ)</span></div>`;
-  const failTable = fail.length ? (
+    `<span class="pill ok">✓ 成功 ${stats.ok}</span> ` +
+    (stats.fail ? `<span class="pill err">✗ 失敗 ${stats.fail}</span> ` : "") +
+    `<span class="meta">(${stats.total} 件、${batchIdx} バッチ)</span></div>`;
+  const failTable = stats.fail ? (
     `<div style="overflow:auto;max-height:300px;border:1px solid var(--err);border-radius:4px">` +
     `<table style="width:100%;border-collapse:collapse;font-size:11px">` +
     `<thead><tr><th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--err);background:rgba(255,107,107,0.1)">行</th><th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--err);background:rgba(255,107,107,0.1)">エラー</th></tr></thead><tbody>` +
@@ -8160,14 +8160,14 @@ async function doBulkExecute() {
       return `<tr><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">${x.index + 2}</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a;color:#ff9090">${escape(errText)}</td></tr>`;
     }).join("") +
     `</tbody></table></div>` +
-    (fail.length > 50 ? `<div class="meta" style="padding:4px 8px">…他 ${fail.length - 50} 件 (合計 ${fail.length} エラー)</div>` : "")
+    (stats.fail > 50 ? `<div class="meta" style="padding:4px 8px">…他 ${stats.fail - 50} 件 (合計 ${stats.fail} エラー)</div>` : "")
   ) : "";
   if (resultEl) resultEl.innerHTML = summary + failTable;
-  if (meta) meta.innerHTML = fail.length
-    ? `<span class="pill err">⚠ ${fail.length} 件失敗</span>`
-    : `<span class="pill ok">✓ ${ok.length} 件成功</span>`;
+  if (meta) meta.innerHTML = stats.fail
+    ? `<span class="pill err">⚠ ${stats.fail} 件失敗</span>`
+    : `<span class="pill ok">✓ ${stats.ok} 件成功</span>`;
   if (exec) { exec.disabled = false; exec.textContent = "⚡ 実行"; }
-  panelToast(fail.length ? `⚠ ${ok.length} 成功 / ${fail.length} 失敗` : `✓ ${ok.length} 件 ${op} 完了`, { kind: fail.length ? "warn" : "ok" });
+  panelToast(stats.fail ? `⚠ ${stats.ok} 成功 / ${stats.fail} 失敗` : `✓ ${stats.ok} 件 ${op} 完了`, { kind: stats.fail ? "warn" : "ok" });
 }
 
 // v3.486.0 Phase 576: アクティブセッション一覧 (AuthSession ベース、ユーザー要望対応)
