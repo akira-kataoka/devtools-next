@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords } from "./sf-format-helpers.js";
+import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords, validateBulkOpRequiredColumns } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -7932,19 +7932,15 @@ function doBulkParse() {
     if (exec) exec.disabled = true;
     return;
   }
-  // op に応じた必須フィールド検証
-  const needsId = (op === "update" || op === "delete");
-  const needsExtField = (op === "upsert");
-  const warnings = [];
-  if (needsId && !r.headers.includes("Id")) warnings.push(`⚠ ${op} には Id カラムが必要 (ヘッダーに "Id" がありません)`);
-  if (needsExtField && !r.headers.includes(extId)) warnings.push(`⚠ upsert キー "${extId}" がヘッダーに見つかりません`);
+  // v3.493.0 Phase 583: 必須カラム検証を validateBulkOpRequiredColumns (pure) に集約
+  const { warnings } = validateBulkOpRequiredColumns({ op, extId, headers: r.headers });
   // プレビューテーブル (先頭 10 行 + 残件数)
   const PREVIEW_ROWS = 10;
   const shown = r.records.slice(0, PREVIEW_ROWS);
   const rest = r.records.length - shown.length;
   const headerHtml = r.headers.map((h) => {
     const isId = h === "Id";
-    const isExt = h === extId && needsExtField;
+    const isExt = h === extId && op === "upsert";
     const badge = isId ? ' <span class="pill" style="font-size:9px;background:#1b96ff;color:#fff">ID</span>' : isExt ? ' <span class="pill" style="font-size:9px;background:#46d39a;color:#000">KEY</span>' : "";
     return `<th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)">${escape(h)}${badge}</th>`;
   }).join("");

@@ -235,6 +235,38 @@ export function escMdTableCell(s) {
  * @returns {{ delimiter: string, headers: string[], records: object[], skipped: number }}
  *   skipped: 列数不一致や空行で skip した行数
  */
+/**
+ * v3.493.0 Phase 583: 一括インポート op に応じた必須カラム pre-validation。
+ *
+ * 既存の panel.js doBulkParse 内 inline 検証 (update/delete は Id 必須、
+ * upsert は extId キーがヘッダーに必要) を純粋関数化してテスト可能に。
+ *
+ * @param {object} args
+ * @param {string} args.op - "insert" | "update" | "upsert" | "delete"
+ * @param {string} [args.extId] - upsert 時の External ID Field 名
+ * @param {string[]} args.headers - parse 済ヘッダー配列
+ * @returns {{ warnings: string[], canExecute: boolean }}
+ *   warnings: ユーザー表示用警告メッセージ (空配列なら問題なし)
+ *   canExecute: 実行可能か (警告ありなら false)
+ */
+export function validateBulkOpRequiredColumns({ op, extId, headers } = {}) {
+  const warnings = [];
+  const hs = Array.isArray(headers) ? headers : [];
+  const needsId = (op === "update" || op === "delete");
+  const needsExtField = (op === "upsert");
+  if (needsId && !hs.includes("Id")) {
+    warnings.push(`⚠ ${op} には Id カラムが必要 (ヘッダーに "Id" がありません)`);
+  }
+  if (needsExtField) {
+    if (!extId || !String(extId).trim()) {
+      warnings.push(`⚠ upsert には External ID Field 名の指定が必要です`);
+    } else if (!hs.includes(extId)) {
+      warnings.push(`⚠ upsert キー "${extId}" がヘッダーに見つかりません`);
+    }
+  }
+  return { warnings, canExecute: warnings.length === 0 };
+}
+
 export function parseClipboardRecords(text, opts = {}) {
   const src = String(text == null ? "" : text);
   if (!src.trim()) return { delimiter: "\t", headers: [], records: [], skipped: 0 };

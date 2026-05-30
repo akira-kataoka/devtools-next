@@ -16,6 +16,7 @@ import {
   escSoslKeyword,
   escMdTableCell,
   parseClipboardRecords,
+  validateBulkOpRequiredColumns,
 } from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
@@ -896,4 +897,56 @@ test("parseClipboardRecords: 自動判定は TAB と comma の出現数比較 (T
   // comma 3 個 vs tab 0 個 → CSV
   const r2 = parseClipboardRecords("a,b,c,d\n1,2,3,4");
   assert.equal(r2.delimiter, ",");
+});
+
+// --- validateBulkOpRequiredColumns (Phase 583) --------------------------------
+
+test("validateBulkOpRequiredColumns: insert は Id 不要 (canExecute=true)", () => {
+  const r = validateBulkOpRequiredColumns({ op: "insert", headers: ["Name", "Email"] });
+  assert.equal(r.canExecute, true);
+  assert.deepEqual(r.warnings, []);
+});
+
+test("validateBulkOpRequiredColumns: update はヘッダーに Id があれば OK", () => {
+  const r = validateBulkOpRequiredColumns({ op: "update", headers: ["Id", "Name"] });
+  assert.equal(r.canExecute, true);
+});
+
+test("validateBulkOpRequiredColumns: update で Id 列なし → 警告", () => {
+  const r = validateBulkOpRequiredColumns({ op: "update", headers: ["Name"] });
+  assert.equal(r.canExecute, false);
+  assert.equal(r.warnings.length, 1);
+  assert.match(r.warnings[0], /update には Id カラムが必要/);
+});
+
+test("validateBulkOpRequiredColumns: delete で Id 列なし → 警告", () => {
+  const r = validateBulkOpRequiredColumns({ op: "delete", headers: ["Name"] });
+  assert.equal(r.canExecute, false);
+  assert.match(r.warnings[0], /delete には Id カラムが必要/);
+});
+
+test("validateBulkOpRequiredColumns: upsert で extId 未指定 → 警告", () => {
+  const r = validateBulkOpRequiredColumns({ op: "upsert", extId: "", headers: ["Name", "Email"] });
+  assert.equal(r.canExecute, false);
+  assert.match(r.warnings[0], /upsert には External ID Field 名の指定が必要/);
+});
+
+test("validateBulkOpRequiredColumns: upsert で extId 指定ありだが headers に無い → 警告", () => {
+  const r = validateBulkOpRequiredColumns({ op: "upsert", extId: "External_Id__c", headers: ["Name"] });
+  assert.equal(r.canExecute, false);
+  assert.match(r.warnings[0], /"External_Id__c" がヘッダーに見つかりません/);
+});
+
+test("validateBulkOpRequiredColumns: upsert で extId 指定 + headers に存在 → OK", () => {
+  const r = validateBulkOpRequiredColumns({
+    op: "upsert", extId: "External_Id__c",
+    headers: ["External_Id__c", "Name"],
+  });
+  assert.equal(r.canExecute, true);
+  assert.deepEqual(r.warnings, []);
+});
+
+test("validateBulkOpRequiredColumns: headers が undefined / 非配列でも throw しない", () => {
+  assert.equal(validateBulkOpRequiredColumns({ op: "insert" }).canExecute, true);
+  assert.equal(validateBulkOpRequiredColumns({ op: "update", headers: null }).canExecute, false);
 });
