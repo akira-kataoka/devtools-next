@@ -348,6 +348,28 @@ export function formatJpDateTime(date = new Date()) {
   return d.toLocaleString("ja-JP");
 }
 
+/**
+ * v3.516.0 Phase 606: 数値を日本ロケール (3 桁区切り) で整形する。
+ *
+ * panel.js で 21 箇所重複していた `.toLocaleString("ja-JP")` パターンを集約。
+ * design-docs.js の同等 helper `fmtNum` と semantics 一致。
+ *
+ * 動作:
+ *   - null / undefined / 空文字 → "" を返す
+ *   - 数値以外は Number() で coerce
+ *   - NaN / Infinity / -Infinity (非 finite) → 入力をそのまま String 化
+ *   - 通常の有限数 → "12,345" のように 3 桁区切り
+ *
+ * @param {*} value
+ * @returns {string}
+ */
+export function formatJpNumber(value) {
+  if (value == null || value === "") return "";
+  const num = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(num)) return String(value);
+  return num.toLocaleString("ja-JP");
+}
+
 export function filterByNameLabel(items, query) {
   const arr = Array.isArray(items) ? items : [];
   const q = String(query == null ? "" : query).toLowerCase().trim();

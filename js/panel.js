@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords, validateBulkOpRequiredColumns, summarizeBulkResults, bulkOpEmoji, bulkOpLabel, filterByNameLabel, csvEscapeCell, formatJpDateTime } from "./sf-format-helpers.js";
+import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords, validateBulkOpRequiredColumns, summarizeBulkResults, bulkOpEmoji, bulkOpLabel, filterByNameLabel, csvEscapeCell, formatJpDateTime, formatJpNumber } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -3079,7 +3079,7 @@ function renderInspectorFields() {
     } else if (typeof v === "boolean") {
       valHtml = `<div class="fval bool-${v ? "true" : "false"}${editCls}"${editAttr}>${v ? "✓ はい (true)" : "✗ いいえ (false)"}</div>`;
     } else if ((f.type === "int" || f.type === "double" || f.type === "currency" || f.type === "percent") && typeof v === "number") {
-      const formatted = v.toLocaleString("ja-JP");
+      const formatted = formatJpNumber(v);
       const unit = f.type === "currency" ? " ¥" : (f.type === "percent" ? " %" : "");
       valHtml = `<div class="fval${editCls}"${editAttr} data-raw="${escape(String(v))}">${escape(formatted)}${escape(unit)}</div>`;
     } else if ((f.type === "date" || f.type === "datetime") && typeof v === "string") {
@@ -3540,7 +3540,7 @@ function renderLimitsList() {
   const root = document.getElementById("limitsResult");
   // v2.93.0: ピン留めトグル、列クリックソート、日本語名+原文 tooltip、ピン留めのみ表示トグル
   // v2.96.0 バグ修正: fmtNum は design-docs.js 内のローカル関数で panel.js からは参照不可 → ReferenceError で renderLimitsList が落ちて「使用状況が取得できない」状態になっていた
-  const limitFmt = (n) => Number(n || 0).toLocaleString("ja-JP");
+  const limitFmt = (n) => formatJpNumber(Number(n || 0));
   // v3.487.0 Phase 577: 使用数不明 (Max=0) で除外した件数も表示
   const hiddenNote = hiddenCount > 0
     ? ` <span style="color:var(--fg-dim);font-size:10px" title="Salesforce 側で quota 未定義のため使用率が判定できない項目を除外しています">(使用数不明 ${limitFmt(hiddenCount)} 件を非表示)</span>`
@@ -7453,12 +7453,12 @@ async function doAdminOrgInfo() {
       <div class="admin-stat-grid">
         <div class="admin-stat ${dsTotal > 0 && dsUsed / dsTotal >= 0.9 ? "admin-stat-warn" : ""}">
           <div class="admin-stat-label">データストレージ</div>
-          <div class="admin-stat-value" style="font-size:13px">${dsUsed.toLocaleString("ja-JP")} / ${dsTotal.toLocaleString("ja-JP")} MB</div>
+          <div class="admin-stat-value" style="font-size:13px">${formatJpNumber(dsUsed)} / ${formatJpNumber(dsTotal)} MB</div>
           ${adminPctBarHtml(dsUsed, dsTotal)}
         </div>
         <div class="admin-stat ${fsTotal > 0 && fsUsed / fsTotal >= 0.9 ? "admin-stat-warn" : ""}">
           <div class="admin-stat-label">ファイルストレージ</div>
-          <div class="admin-stat-value" style="font-size:13px">${fsUsed.toLocaleString("ja-JP")} / ${fsTotal.toLocaleString("ja-JP")} MB</div>
+          <div class="admin-stat-value" style="font-size:13px">${formatJpNumber(fsUsed)} / ${formatJpNumber(fsTotal)} MB</div>
           ${adminPctBarHtml(fsUsed, fsTotal)}
         </div>
       </div>`;
@@ -7486,7 +7486,7 @@ async function doAdminOrgInfo() {
   if (org.MonthlyPageViewsEntitlement) {
     const pvUsed = Number(org.MonthlyPageViewsUsed) || 0;
     const pvTotal = Number(org.MonthlyPageViewsEntitlement) || 0;
-    kv.push(["月間 PV 使用量 (Communities)", `${pvUsed.toLocaleString("ja-JP")} / ${pvTotal.toLocaleString("ja-JP")} (${pvTotal > 0 ? ((pvUsed / pvTotal) * 100).toFixed(1) : 0}%)`]);
+    kv.push(["月間 PV 使用量 (Communities)", `${formatJpNumber(pvUsed)} / ${formatJpNumber(pvTotal)} (${pvTotal > 0 ? ((pvUsed / pvTotal) * 100).toFixed(1) : 0}%)`]);
   }
   const kvHtml = `<table class="admin-table compact"><tbody>${kv.map(([k, v]) => `<tr><td style="font-weight:600;width:30%">${escape(k)}</td><td>${v}</td></tr>`).join("")}</tbody></table>`;
   document.getElementById("adminOrgInfoResult").innerHTML = kvHtml + storageHtml;
@@ -7508,7 +7508,7 @@ async function doAdminLicenses() {
     const ratio = total > 0 ? used / total : 0;
     const apiName = rec.Name || "";
     // v3.139.0 Phase 229: 残席数が 5 席未満で総数 > 0 のものは「即追加調達」アラート
-    const remainingLabel = remaining.toLocaleString("ja-JP");
+    const remainingLabel = formatJpNumber(remaining);
     const remainingHtml = (total > 0 && remaining < 5 && remaining >= 0)
       ? `<span style="color:var(--err);font-weight:700" title="残席 ${remainingLabel} 席 — 即追加調達検討">${remainingLabel} 席 ⚠</span>`
       : (total > 0 && remaining < 10)
@@ -7517,8 +7517,8 @@ async function doAdminLicenses() {
     return {
       "ライセンス": rec.MasterLabel || rec.Name,
       "API 名": apiName,
-      "総数": total.toLocaleString("ja-JP"),
-      "使用中": used.toLocaleString("ja-JP"),
+      "総数": formatJpNumber(total),
+      "使用中": formatJpNumber(used),
       "残り": { __html: remainingHtml },
       "使用率": { __html: adminPctBarHtml(used, total) },
       "状態": rec.Status === "Active" ? "○ 有効" : rec.Status,
@@ -7549,7 +7549,7 @@ async function doAdminLicenses() {
   const headers = ["ライセンス", "API 名", "総数", "使用中", "残り", "使用率", "状態", "アクション"];
   document.getElementById("adminLicensesResult").innerHTML =
     alertHtml +
-    `<div class="admin-card-summary">合計 ${recs.length} 種類 / 総席数 <strong>${totalSum.toLocaleString("ja-JP")}</strong> 席 / 使用中 <strong>${usedSum.toLocaleString("ja-JP")}</strong> 席 (全体 ${adminFmtPct(usedSum, totalSum).txt})</div>` +
+    `<div class="admin-card-summary">合計 ${recs.length} 種類 / 総席数 <strong>${formatJpNumber(totalSum)}</strong> 席 / 使用中 <strong>${formatJpNumber(usedSum)}</strong> 席 (全体 ${adminFmtPct(usedSum, totalSum).txt})</div>` +
     adminTableHtml(headers, rows);
 }
 
@@ -7568,9 +7568,9 @@ async function doAdminPermSetLicenses() {
     return {
       "ライセンス": rec.MasterLabel,
       "API 名": rec.DeveloperName,
-      "総数": total.toLocaleString("ja-JP"),
-      "使用中": used.toLocaleString("ja-JP"),
-      "残り": (total - used).toLocaleString("ja-JP"),
+      "総数": formatJpNumber(total),
+      "使用中": formatJpNumber(used),
+      "残り": formatJpNumber(total - used),
       "使用率": { __html: adminPctBarHtml(used, total) },
       "有効期限": rec.ExpirationDate ? String(rec.ExpirationDate).substring(0, 10) : "無期限",
       "状態": rec.Status === "Active" ? "○ 有効" : rec.Status,
@@ -7610,17 +7610,17 @@ async function doAdminUserStats() {
   });
   const profRows = profAgg.ok ? ((profAgg.data.records || []).map((r) => ({
     "プロファイル": r.profile || "(未設定)",
-    "アクティブ人数": Number(r.cnt).toLocaleString("ja-JP"),
+    "アクティブ人数": formatJpNumber(Number(r.cnt)),
     "割合": ((Number(r.cnt) / Math.max(activeCount, 1)) * 100).toFixed(1) + "%",
   }))) : [];
   adminState.userStats = { activeCount, inactiveCount, frozenCount, profRows };
   const total = activeCount + inactiveCount;
   const summary = `
     <div class="admin-stat-grid">
-      <div class="admin-stat"><div class="admin-stat-label">総ユーザー数</div><div class="admin-stat-value">${total.toLocaleString("ja-JP")}</div></div>
-      <div class="admin-stat admin-stat-ok"><div class="admin-stat-label">アクティブ</div><div class="admin-stat-value">${activeCount.toLocaleString("ja-JP")}</div></div>
-      <div class="admin-stat admin-stat-dim"><div class="admin-stat-label">非アクティブ</div><div class="admin-stat-value">${inactiveCount.toLocaleString("ja-JP")}</div></div>
-      <div class="admin-stat admin-stat-warn"><div class="admin-stat-label">凍結</div><div class="admin-stat-value">${frozenCount.toLocaleString("ja-JP")}</div></div>
+      <div class="admin-stat"><div class="admin-stat-label">総ユーザー数</div><div class="admin-stat-value">${formatJpNumber(total)}</div></div>
+      <div class="admin-stat admin-stat-ok"><div class="admin-stat-label">アクティブ</div><div class="admin-stat-value">${formatJpNumber(activeCount)}</div></div>
+      <div class="admin-stat admin-stat-dim"><div class="admin-stat-label">非アクティブ</div><div class="admin-stat-value">${formatJpNumber(inactiveCount)}</div></div>
+      <div class="admin-stat admin-stat-warn"><div class="admin-stat-label">凍結</div><div class="admin-stat-value">${formatJpNumber(frozenCount)}</div></div>
     </div>`;
   const profTable = profRows.length
     ? `<div class="admin-card-subtitle">プロファイル別 アクティブユーザー (Top 20)</div>` + adminTableHtml(["プロファイル", "アクティブ人数", "割合"], profRows, { compact: true })
@@ -7828,7 +7828,7 @@ async function doAdminStorageDetail() {
   // バイト数を人間可読化
   const fmtSize = (n) => {
     const v = Number(n) || 0;
-    if (v < 1024) return `${v.toLocaleString("ja-JP")} B`;
+    if (v < 1024) return `${formatJpNumber(v)} B`;
     if (v < 1024 * 1024) return `${(v / 1024).toFixed(1)} KB`;
     if (v < 1024 * 1024 * 1024) return `${(v / 1024 / 1024).toFixed(2)} MB`;
     return `${(v / 1024 / 1024 / 1024).toFixed(2)} GB`;
@@ -7851,7 +7851,7 @@ async function doAdminStorageDetail() {
       "順位": i + 1,
       "拡張子": ext,
       "種別": extMap[ext] || "(その他)",
-      "ファイル数": Number(r.cnt).toLocaleString("ja-JP"),
+      "ファイル数": formatJpNumber(Number(r.cnt)),
       "合計サイズ": fmtSize(total),
       "全体に占める割合": totalBytes > 0 ? `${(total / totalBytes * 100).toFixed(1)}%` : "—",
     };
@@ -7871,7 +7871,7 @@ async function doAdminStorageDetail() {
   const extHeaders = ["順位", "拡張子", "種別", "ファイル数", "合計サイズ", "全体に占める割合"];
   const topHeaders = ["順位", "タイトル", "拡張子", "サイズ", "作成者", "作成日", "親レコード Id"];
 
-  const summary = `<div class="admin-card-summary">📊 ContentVersion 合計: <strong>${totalFiles.toLocaleString("ja-JP")}</strong> ファイル / <strong>${fmtSize(totalBytes)}</strong></div>`;
+  const summary = `<div class="admin-card-summary">📊 ContentVersion 合計: <strong>${formatJpNumber(totalFiles)}</strong> ファイル / <strong>${fmtSize(totalBytes)}</strong></div>`;
   const note = `<div class="meta" style="padding:6px 8px;font-size:11px;color:var(--fg-dim);line-height:1.6">
     ※ 「合計サイズ」が大きい拡張子から削減検討。<br>
     ※ <strong>削減方法</strong>: ContentVersion を「最終アクセス日」「親レコード」で絞込み、不要ファイルは Apex タブの DML テンプレで一括削除可能。<br>
@@ -8412,7 +8412,7 @@ async function doAdminMfa() {
   }
   const methodRows = Object.entries(byMethod).map(([m, cnt]) => ({
     "方式": m,
-    "件数": Number(cnt).toLocaleString("ja-JP"),
+    "件数": formatJpNumber(Number(cnt)),
     "説明": m === "TOTP" ? "Time-based OTP (Google Authenticator 等)"
           : m === "SalesforceAuthenticator" ? "Salesforce Authenticator アプリ"
           : m === "U2F" || m === "WebAuthn" ? "セキュリティキー (FIDO)"

@@ -23,6 +23,7 @@ import {
   safeJsonParse,
   csvEscapeCell,
   formatJpDateTime,
+  formatJpNumber,
 } from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
@@ -1342,4 +1343,55 @@ test("formatJpDateTime: 各種日時で結果が異なる (smoke)", () => {
   const a = formatJpDateTime(new Date(2026, 0, 1, 0, 0));
   const b = formatJpDateTime(new Date(2026, 11, 31, 23, 59));
   assert.notEqual(a, b);
+});
+
+// --- formatJpNumber (Phase 606) -----------------------------------------------
+
+test("formatJpNumber: 整数を 3 桁区切りで整形", () => {
+  assert.equal(formatJpNumber(0), "0");
+  assert.equal(formatJpNumber(1), "1");
+  assert.equal(formatJpNumber(1000), "1,000");
+  assert.equal(formatJpNumber(12345), "12,345");
+  assert.equal(formatJpNumber(1234567), "1,234,567");
+});
+
+test("formatJpNumber: 負数も 3 桁区切り", () => {
+  assert.equal(formatJpNumber(-1234), "-1,234");
+  assert.equal(formatJpNumber(-1000000), "-1,000,000");
+});
+
+test("formatJpNumber: 小数も保持", () => {
+  assert.equal(formatJpNumber(1234.5), "1,234.5");
+  assert.equal(formatJpNumber(0.5), "0.5");
+});
+
+test("formatJpNumber: null / undefined / 空文字 → 空文字", () => {
+  assert.equal(formatJpNumber(null), "");
+  assert.equal(formatJpNumber(undefined), "");
+  assert.equal(formatJpNumber(""), "");
+});
+
+test("formatJpNumber: 数値型でない文字列も coerce して整形", () => {
+  assert.equal(formatJpNumber("1234"), "1,234");
+  assert.equal(formatJpNumber("0"), "0");
+});
+
+test("formatJpNumber: NaN / Infinity (非 finite) は入力を String 化", () => {
+  assert.equal(formatJpNumber(NaN), "NaN");
+  assert.equal(formatJpNumber(Infinity), "Infinity");
+  assert.equal(formatJpNumber(-Infinity), "-Infinity");
+});
+
+test("formatJpNumber: 数値に変換できない文字列も String 化 (NaN 経由)", () => {
+  assert.equal(formatJpNumber("abc"), "abc");
+});
+
+test("formatJpNumber: panel.js limitFmt 互換 — Number(n || 0) 経由で null/undef → '0'", () => {
+  // panel.js 3543: const limitFmt = (n) => formatJpNumber(Number(n || 0));
+  const limitFmt = (n) => formatJpNumber(Number(n || 0));
+  assert.equal(limitFmt(null), "0");
+  assert.equal(limitFmt(undefined), "0");
+  assert.equal(limitFmt(""), "0");
+  assert.equal(limitFmt(0), "0");
+  assert.equal(limitFmt(1234), "1,234");
 });
