@@ -33,7 +33,7 @@ import {
 // v3.447.0 Phase 537: 保存済み接続を popup から閲覧・操作 (接続マネージャと連動)
 import { loadConnections as connLoadAll, maskSecret, formatAuthAge, isAuthStale } from "./sf-connections.js";
 // v3.462.0 Phase 552: HTML escape / formatError は sf-format-helpers に集約 (旧 ローカル定義は削除)
-import { escHtml as escape, formatError } from "./sf-format-helpers.js";
+import { escHtml as escape, formatError, escapeSoqlLiteral } from "./sf-format-helpers.js";
 
 const state = {
   tab: null,
@@ -663,9 +663,8 @@ async function searchUsersForLogin() {
   if (searchBtn) { searchBtn.disabled = true; searchBtn.style.opacity = "0.6"; searchBtn.textContent = "⏳ 検索中…"; }
   result.innerHTML = `<div class="meta">⏳ ユーザを検索しています…</div>`;
 
-  // SOQL escape
-  const esc = (s) => s.replace(/'/g, "\\'");
-  const t = esc(term);
+  // v3.466.0 Phase 556: SOQL リテラルエスケープを escapeSoqlLiteral に集約 (旧 esc は quote のみで `\` 未対応だった)
+  const t = escapeSoqlLiteral(term);
   let where = "IsActive = true";
   if (term) {
     where = `IsActive = true AND (` +
