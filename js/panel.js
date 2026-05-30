@@ -3443,6 +3443,11 @@ function renderLimitsList() {
     const pct = max > 0 ? Math.round((used / max) * 100) : 0;
     return { name: k, ja: limitJa(k), desc: limitDesc(k), max, remaining, used, pct, pinned: _limitsPinned.includes(k) };
   });
+  // v3.487.0 Phase 577: 使用数が判定できない項目 (Max=0/null、Salesforce 側で quota 未定義) はノイズなので除外
+  // (ユーザー要望「使用数がわからないものは出さなくていい」)
+  const totalCount = rows.length;
+  rows = rows.filter((r) => r.max > 0);
+  const hiddenCount = totalCount - rows.length;
   if (isOnlyUsed) rows = rows.filter((r) => r.used > 0);
   if (_limitsShowPinnedOnly) rows = rows.filter((r) => r.pinned);
   if (filterQ) {
@@ -3480,7 +3485,8 @@ function renderLimitsList() {
     sumEl.classList.remove("limits-summary-ok");
   } else {
     // Phase 222: 1 行ミニメッセージに圧縮 (旧 limit-card より大幅に縦余白削減)
-    sumEl.innerHTML = `<span class="limits-summary-ok-line">✓ 問題なし — 使用率 70% を超える項目はありません (全 ${Object.keys(lastLimitsData).length} 項目を確認)</span>`;
+    // v3.487.0 Phase 577: 表示対象 (使用数判定可能な totalCount) を母数に
+    sumEl.innerHTML = `<span class="limits-summary-ok-line">✓ 問題なし — 使用率 70% を超える項目はありません (全 ${totalCount} 項目を確認)</span>`;
     sumEl.classList.add("limits-summary-ok");
   }
 
@@ -3490,9 +3496,13 @@ function renderLimitsList() {
   // v2.93.0: ピン留めトグル、列クリックソート、日本語名+原文 tooltip、ピン留めのみ表示トグル
   // v2.96.0 バグ修正: fmtNum は design-docs.js 内のローカル関数で panel.js からは参照不可 → ReferenceError で renderLimitsList が落ちて「使用状況が取得できない」状態になっていた
   const limitFmt = (n) => Number(n || 0).toLocaleString("ja-JP");
+  // v3.487.0 Phase 577: 使用数不明 (Max=0) で除外した件数も表示
+  const hiddenNote = hiddenCount > 0
+    ? ` <span style="color:var(--fg-dim);font-size:10px" title="Salesforce 側で quota 未定義のため使用率が判定できない項目を除外しています">(使用数不明 ${limitFmt(hiddenCount)} 件を非表示)</span>`
+    : "";
   const html = [`<div class="limit-toolbar" style="margin-bottom:6px;font-size:11px">
     <label style="cursor:pointer"><input type="checkbox" id="chkPinnedOnly" ${_limitsShowPinnedOnly ? "checked" : ""}/> ★ ピン留めのみ表示 (${limitFmt(_limitsPinned.length)} 件)</label>
-    <span style="margin-left:12px;color:var(--fg-dim)">表示: ${rows.length} / 全 ${Object.keys(lastLimitsData).length} 件</span>
+    <span style="margin-left:12px;color:var(--fg-dim)">表示: ${rows.length} / ${limitFmt(totalCount)} 件${hiddenNote}</span>
   </div>`];
   html.push(`<div class="limit-row header">
     <div class="lim-col-pin" data-col="pinned" title="ピン留め">★</div>

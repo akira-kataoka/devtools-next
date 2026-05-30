@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>Phase 577 preview — Limits hide-unknown</title>
+<link rel="stylesheet" href="../css/panel.css" />
+<style>
+  body { margin: 0; background: #0b1220; color: #fff; }
+  .preview-wrap { padding: 24px; max-width: 760px; }
+  .preview-label { color: #ffffffaa; font: 11px ui-monospace, Consolas, monospace; margin-bottom: 8px; }
+  .mock-row { display: flex; gap: 8px; padding: 4px 8px; border-bottom: 1px dashed #2a3a5a; font-size: 11px; }
+  .mock-row .nm { flex: 2; }
+  .mock-row .max { flex: 1; text-align: right; color: var(--fg-dim); }
+  .mock-row .pct { flex: 0 0 60px; text-align: right; font-weight: 600; }
+  .mock-row.skipped { opacity: 0.4; text-decoration: line-through; }
+  .demo-block { background: #0f1830; border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 24px; }
+  .demo-block h3 { margin: 0 0 12px; font-size: 12px; color: #ffffffbb; }
+</style>
+</head>
+<body>
+<div class="preview-wrap">
+  <h2 style="font:600 13px system-ui;margin:0 0 16px">Phase 577 — 使用状況ビューの「使用数不明項目」非表示 🆕</h2>
+
+  <div class="demo-block">
+    <h3>[A] BEFORE — 全項目表示 (Max=0 のノイズ含む)</h3>
+    <div class="limit-toolbar" style="margin-bottom:6px;font-size:11px">
+      <label style="cursor:pointer"><input type="checkbox" /> ★ ピン留めのみ表示 (3 件)</label>
+      <span style="margin-left:12px;color:var(--fg-dim)">表示: 47 / 全 47 件</span>
+    </div>
+    <div class="mock-row"><span class="nm">DailyApiRequests</span><span class="max">使用 38,254 / 上限 100,000</span><span class="pct">38%</span></div>
+    <div class="mock-row"><span class="nm">DataStorageMB</span><span class="max">使用 1,234 / 上限 5,120</span><span class="pct">24%</span></div>
+    <div class="mock-row"><span class="nm">DailyAsyncApexExecutions</span><span class="max">使用 0 / 上限 250,000</span><span class="pct">0%</span></div>
+    <div class="mock-row skipped"><span class="nm">PermissionSets</span><span class="max">使用 0 / 上限 0 ⚠ 不明</span><span class="pct">0%</span></div>
+    <div class="mock-row skipped"><span class="nm">SingleEmail</span><span class="max">使用 0 / 上限 0 ⚠ 不明</span><span class="pct">0%</span></div>
+    <div class="mock-row skipped"><span class="nm">HourlyTimeBasedWorkflow</span><span class="max">使用 0 / 上限 0 ⚠ 不明</span><span class="pct">0%</span></div>
+    <p style="color:#ffffff66;font:10px system-ui;margin:8px 0 0">⚠ Max=0 の項目が混ざってノイズに</p>
+  </div>
+
+  <div class="demo-block">
+    <h3>[B] AFTER 🆕 — Max&gt;0 のみ表示、除外件数を明示</h3>
+    <div class="limit-toolbar" style="margin-bottom:6px;font-size:11px">
+      <label style="cursor:pointer"><input type="checkbox" /> ★ ピン留めのみ表示 (3 件)</label>
+      <span style="margin-left:12px;color:var(--fg-dim)">表示: 31 / 47 件 <span style="color:var(--fg-dim);font-size:10px" title="Salesforce 側で quota 未定義のため使用率が判定できない項目を除外しています">(使用数不明 16 件を非表示)</span></span>
+    </div>
+    <div class="mock-row"><span class="nm">DailyApiRequests</span><span class="max">使用 38,254 / 上限 100,000</span><span class="pct">38%</span></div>
+    <div class="mock-row"><span class="nm">DataStorageMB</span><span class="max">使用 1,234 / 上限 5,120</span><span class="pct">24%</span></div>
+    <div class="mock-row"><span class="nm">DailyAsyncApexExecutions</span><span class="max">使用 0 / 上限 250,000</span><span class="pct">0%</span></div>
+    <p style="color:#9dff9d;font:10px system-ui;margin:8px 0 0">✓ ノイズ除去で本当に意味のある項目だけが残る</p>
+  </div>
+
+  <p style="color:#ffffff88;font:11px system-ui;line-height:1.55">
+    Phase 577 で変更: <code style="color:#1b96ff">renderLimitsList</code> で <code>r.max &gt; 0</code> フィルタを追加。Salesforce の <code>/limits</code> API は組織に quota が定義されていない項目 (PermissionSets / SingleEmail / HourlyTimeBasedWorkflow 等) を <code>Max:0 / Remaining:0</code> で返すため、これらが一覧の最後に並んでノイズになっていた。<strong>使用数判定できない項目は表示せず、除外件数だけ tooltip 付きで明示</strong>。
+  </p>
+</div>
+</body>
+</html>
