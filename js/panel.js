@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime } from "./sf-format-helpers.js";
+import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -1962,8 +1962,8 @@ function bindEvents() {
           display = JSON.stringify(v);
         }
       } else if (typeof v === "string") {
-        const m = v.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
-        display = m ? `${m[1]} ${m[2]}` : v;
+        // v3.476.0 Phase 566: prefix-match ISO 整形を formatSfDateTimeLoose (pure) に集約
+        display = formatSfDateTimeLoose(v);
       } else {
         display = String(v);
       }
@@ -6552,10 +6552,8 @@ function loginHistoryTable(rows, filteredCount, totalCount) {
     const statusOk = (r.Status || "").startsWith("Success");
     const statusLabel = statusOk ? `✓ ${escape(r.Status)}` : `✗ ${escape(r.Status)}`;
     const statusCell = `<span class="pill ${statusOk ? "ok" : "err"}">${statusLabel}</span>`;
-    // ログイン日時を YYYY-MM-DD HH:mm に整形
-    let timeDisplay = stringify(r.LoginTime);
-    const m = String(r.LoginTime || "").match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
-    if (m) timeDisplay = `${m[1]} ${m[2]}`;
+    // v3.476.0 Phase 566: ログイン日時整形を formatSfDateTimeLoose に集約
+    const timeDisplay = formatSfDateTimeLoose(r.LoginTime) || stringify(r.LoginTime);
     return `<tr>${headers.map((h) => {
       if (h === "Status") return `<td>${statusCell}</td>`;
       if (h === "LoginTime") return `<td>${escape(timeDisplay)}</td>`;
@@ -6571,8 +6569,8 @@ function exportLoginCsv() {
   const formatted = state.lastLoginRecords.map((r) => {
     const out = { ...r };
     if (out.LoginTime && typeof out.LoginTime === "string") {
-      const m = out.LoginTime.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
-      if (m) out.LoginTime = `${m[1]} ${m[2]}`;
+      // v3.476.0 Phase 566: ISO 整形を formatSfDateTimeLoose に集約
+      out.LoginTime = formatSfDateTimeLoose(out.LoginTime);
     }
     return out;
   });
@@ -6745,8 +6743,8 @@ async function copyLoginHistoryMd() {
   for (const r of recs) {
     const row = headers.map((h) => {
       if (h === "LoginTime" && r.LoginTime) {
-        const m = String(r.LoginTime).match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
-        return mdEsc(m ? `${m[1]} ${m[2]}` : r.LoginTime);
+        // v3.476.0 Phase 566: ISO 整形を formatSfDateTimeLoose に集約
+        return mdEsc(formatSfDateTimeLoose(r.LoginTime));
       }
       if (h === "Status") return mdEsc(statusIcon(r.Status));
       if (h === "Username") {

@@ -109,6 +109,29 @@ export function formatSfDateTime(s) {
   return m ? `${m[1]} ${m[2]}` : str;
 }
 
+/**
+ * v3.476.0 Phase 566: formatSfDateTime の prefix 一致版。
+ *
+ * panel.js (4 箇所: 1965, 6557, 6574, 6748) で simple-prefix の ISO
+ * 整形 regex を重複していたのを集約。formatSfDateTime と違い、後続に
+ * garbage があってもマッチする (`^YYYY-MM-DDTHH:MM` の prefix 一致のみ)。
+ *
+ * 仕様:
+ *   - 入力: ISO datetime の prefix を含む任意の文字列
+ *   - prefix 部 (date + T + HH:MM) があれば「YYYY-MM-DD HH:MM」を返す
+ *   - prefix が無い場合は元文字列をそのまま返す
+ *   - null/undefined/空 → 空文字
+ *
+ * @param {*} s
+ * @returns {string}
+ */
+export function formatSfDateTimeLoose(s) {
+  if (s == null || s === "") return "";
+  const str = String(s);
+  const m = str.match(/^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})/);
+  return m ? `${m[1]} ${m[2]}` : str;
+}
+
 // =====================================================================
 // v3.463.0 Phase 553: 現在ログイン中ユーザーのリアルタイム表示 (ユーザー要望 2026-05-27)
 //   ヘッダーに「今ログインしているのは誰か」を常時表示するため、表示用の

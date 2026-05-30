@@ -11,6 +11,7 @@ import {
   userChipStateClasses,
   popoverPosition,
   formatSfDateTime,
+  formatSfDateTimeLoose,
 } from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
@@ -589,4 +590,37 @@ test("formatSfDateTime: 不完全な日付 '2026-5-30T15:38Z' (1桁月) は matc
 test("formatSfDateTime: prefix だけ ISO で末尾に garbage は match しない ($ 終端で anchor)", () => {
   // 旧 5 callsite と同じ anchored 挙動を verify
   assert.equal(formatSfDateTime("2026-05-30T15:38Z extra"), "2026-05-30T15:38Z extra");
+});
+
+// --- formatSfDateTimeLoose (Phase 566) ----------------------------------------
+
+test("formatSfDateTimeLoose: ISO datetime prefix → 'YYYY-MM-DD HH:MM'", () => {
+  assert.equal(formatSfDateTimeLoose("2026-05-30T15:38"), "2026-05-30 15:38");
+  assert.equal(formatSfDateTimeLoose("2026-05-30T15:38:00.000+0900"), "2026-05-30 15:38");
+});
+
+test("formatSfDateTimeLoose: prefix 一致なので末尾 garbage も OK (anchored 版との違い)", () => {
+  assert.equal(formatSfDateTimeLoose("2026-05-30T15:38Z extra junk"), "2026-05-30 15:38");
+});
+
+test("formatSfDateTimeLoose: date-only は T が必要なので非マッチ → 元文字列", () => {
+  assert.equal(formatSfDateTimeLoose("2026-05-30"), "2026-05-30");
+});
+
+test("formatSfDateTimeLoose: 非 ISO 文字列はそのまま", () => {
+  assert.equal(formatSfDateTimeLoose("not iso"), "not iso");
+});
+
+test("formatSfDateTimeLoose: null/undefined/空 → 空文字 (formatSfDateTime と同じ防御)", () => {
+  assert.equal(formatSfDateTimeLoose(null), "");
+  assert.equal(formatSfDateTimeLoose(undefined), "");
+  assert.equal(formatSfDateTimeLoose(""), "");
+});
+
+test("formatSfDateTimeLoose: 数値は String() 化 (非 ISO のため文字列化のみ)", () => {
+  assert.equal(formatSfDateTimeLoose(123), "123");
+});
+
+test("formatSfDateTimeLoose: '2026-5-30T15:38' (1桁月) は \\d{2} 厳格で非マッチ", () => {
+  assert.equal(formatSfDateTimeLoose("2026-5-30T15:38"), "2026-5-30T15:38");
 });
