@@ -18,6 +18,7 @@ import {
   esc,
   splitMd,
   inline,
+  formatOutput,
   markdownToHtml,
 } from "../js/design-docs.js";
 
@@ -316,4 +317,57 @@ test("markdownToHtml: テーブル (ヘッダ + セパレータ + 行) を <tabl
 test("markdownToHtml: 見出し + リスト + 段落の混在 (順序保持)", () => {
   const out = markdownToHtml("# T\n- a\n- b\nend");
   assert.equal(out, "<h1>T</h1>\n<ul><li>a</li><li>b</li></ul>\n<p>end</p>");
+});
+
+// --- formatOutput (Phase 598) -------------------------------------------------
+// erDiagram の特殊経路 + format dispatch の代表ケースを verify。
+// toMarkdown/toHtml/toCsv/toExcelXml/toJson の中身は他のテストと build* 副作用関数で
+// カバーされているので、ここでは formatOutput が正しい branch を選ぶことだけ確認。
+
+const erDiagramResult = {
+  type: "erDiagram",
+  title: "ER 図",
+  note: "サンプル",
+  sections: [{ mermaid: "erDiagram\n  A ||--o{ B : has" }],
+};
+
+test("formatOutput: erDiagram + markdown → '# title\\n\\n```mermaid\\n...\\n```\\n\\nnote\\n'", () => {
+  const out = formatOutput(erDiagramResult, "markdown");
+  assert.match(out, /^# ER 図/);
+  assert.ok(out.includes("```mermaid"));
+  assert.ok(out.includes("erDiagram"));
+  assert.ok(out.includes("サンプル"));
+});
+
+test("formatOutput: erDiagram + html → <h1>title</h1> + <pre><code> でラップ", () => {
+  const out = formatOutput(erDiagramResult, "html");
+  assert.match(out, /^<h1>ER 図<\/h1>/);
+  assert.ok(out.includes("<pre><code>"));
+  assert.ok(out.includes("erDiagram"));
+});
+
+test("formatOutput: erDiagram + json → JSON.stringify (title/type/note/mermaid)", () => {
+  const out = formatOutput(erDiagramResult, "json");
+  const obj = JSON.parse(out);
+  assert.equal(obj.type, "erDiagram");
+  assert.equal(obj.title, "ER 図");
+  assert.ok(obj.mermaid.includes("erDiagram"));
+});
+
+test("formatOutput: erDiagram + csv/tsv/未知 → mermaid 生テキストをそのまま", () => {
+  const csv = formatOutput(erDiagramResult, "csv");
+  const tsv = formatOutput(erDiagramResult, "tsv");
+  // どちらも mermaid 生テキスト (CSV 整形しないため)
+  assert.equal(csv, erDiagramResult.sections[0].mermaid);
+  assert.equal(tsv, erDiagramResult.sections[0].mermaid);
+});
+
+test("formatOutput: format 未指定 (undefined) → markdown 扱い (default)", () => {
+  const out = formatOutput(erDiagramResult);
+  assert.match(out, /^# ER 図/);
+});
+
+test("formatOutput: format 大文字でも lowercase 化される", () => {
+  const out = formatOutput(erDiagramResult, "MARKDOWN");
+  assert.match(out, /^# ER 図/);
 });
