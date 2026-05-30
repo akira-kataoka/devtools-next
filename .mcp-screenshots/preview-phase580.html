@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>Phase 580 preview — Bulk import view</title>
+<link rel="stylesheet" href="../css/panel.css" />
+<style>
+  body { margin: 0; background: #0b1220; color: #fff; }
+  .preview-wrap { padding: 24px; max-width: 900px; }
+  .toolbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 8px; background: #0f1830; border-bottom: 1px solid var(--line); }
+  .toolbar input, .toolbar select, .toolbar button { padding: 4px 8px; font-size: 12px; background: var(--bg3); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; }
+  .toolbar button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .toolbar button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .meta { color: var(--fg-dim); font-size: 11px; }
+  textarea { padding: 8px; background: var(--bg2,#0f1830); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; }
+  .pill { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+  .pill.ok { background: rgba(46,204,113,0.2); color: var(--ok); border: 1px solid var(--ok); }
+  .pill.warn { background: rgba(243,156,18,0.2); color: var(--warn); border: 1px solid var(--warn); }
+  .empty-state { color: var(--fg-dim); font-style: italic; padding: 24px 12px; text-align: center; display: block; }
+</style>
+</head>
+<body>
+<div class="preview-wrap">
+  <h2 style="font:600 13px system-ui;margin:0 0 16px">Phase 580 — 📤 一括インポート ビュー追加 🆕 (B 段階構築 2/3)</h2>
+
+  <div class="toolbar">
+    <input value="Account" placeholder="sObject API 名 (例: Account)" style="flex:0 0 200px" />
+    <select title="操作種別を選択">
+      <option value="insert" selected>📝 Insert (新規作成)</option>
+      <option value="update">🔄 Update (Id 必須)</option>
+      <option value="upsert">↕️ Upsert (External ID Field キー)</option>
+      <option value="delete">🗑️ Delete (Id 必須)</option>
+    </select>
+    <button>🔍 Parse プレビュー</button>
+    <button class="primary" disabled title="⚡ 実行は Phase 581 で実装予定。現在は parse プレビューのみ可能">⚡ 実行 (Phase 581)</button>
+    <span style="flex:1"></span>
+    <span class="meta"><span class="pill ok">✓ 3 件 parse 済</span></span>
+  </div>
+  <div class="meta" style="padding:6px 8px;font-size:11px;line-height:1.55">
+    1 行目に <strong>API field 名</strong> をヘッダーとして入れた Excel / CSV データを下にペーストしてください。
+    Excel から直接コピー (TAB 区切り) でも、CSV (comma 区切り) でも自動判定します。
+    値内のカンマ・改行は <code>"..."</code> で囲んでください (RFC4180 風)。
+  </div>
+  <textarea rows="6" style="font-family:ui-monospace,Consolas,monospace;font-size:12px;width:100%">Name,Industry,Phone
+Acme Corp,Technology,03-1234-5678
+Globex Inc,Manufacturing,06-9876-5432
+Initech LLC,Finance,03-5555-0001</textarea>
+
+  <div style="margin-top:8px" class="meta">
+    <div class="meta" style="padding:6px 0;font-size:11px">📊 検出: 区切り <code>comma</code> / ヘッダー 3 列 / レコード 3 件</div>
+    <div style="overflow:auto;max-height:300px;border:1px solid var(--line);border-radius:4px">
+      <table style="width:100%;border-collapse:collapse;font-size:11px">
+        <thead><tr>
+          <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)">Name</th>
+          <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)">Industry</th>
+          <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)">Phone</th>
+        </tr></thead>
+        <tbody>
+          <tr><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">Acme Corp</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">Technology</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">03-1234-5678</td></tr>
+          <tr><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">Globex Inc</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">Manufacturing</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">06-9876-5432</td></tr>
+          <tr><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">Initech LLC</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">Finance</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">03-5555-0001</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <p style="color:#ffffff88;font:11px system-ui;margin-top:24px;line-height:1.55">
+    Phase 580 で追加: 📦 開発 > 📤 一括インポート ナビ + 専用ビュー。<strong>Phase 579 で実装した <code>parseClipboardRecords</code> 純粋関数を呼び出して preview 表示まで</strong>。op に応じた必須カラム警告 (update/delete は <code>Id</code>、upsert は External ID Field) を表示し、警告ありなら execute ボタン無効。<strong>execute ロジック (Composite API での insert/update/upsert/delete) は Phase 581 で追加予定</strong>。
+  </p>
+
+  <h3 style="font:600 12px system-ui;margin:16px 0 8px">Upsert 選択時 (External ID Field 入力欄が出現)</h3>
+  <div class="toolbar">
+    <input value="Account" placeholder="sObject API 名 (例: Account)" style="flex:0 0 200px" />
+    <select>
+      <option>📝 Insert (新規作成)</option>
+      <option>🔄 Update (Id 必須)</option>
+      <option selected>↕️ Upsert (External ID Field キー)</option>
+      <option>🗑️ Delete (Id 必須)</option>
+    </select>
+    <input value="External_Id__c" placeholder="External ID Field 名 (upsert 時)" style="flex:0 0 220px" />
+    <button>🔍 Parse プレビュー</button>
+    <button class="primary" disabled>⚡ 実行 (Phase 581)</button>
+  </div>
+
+  <h3 style="font:600 12px system-ui;margin:16px 0 8px">Delete 選択時 (Id カラム不足の警告)</h3>
+  <div class="toolbar">
+    <input value="Contact" style="flex:0 0 200px" />
+    <select><option selected>🗑️ Delete (Id 必須)</option></select>
+    <button>🔍 Parse プレビュー</button>
+    <button class="primary" disabled>⚡ 実行 (Phase 581)</button>
+  </div>
+  <div class="meta" style="margin-top:8px">
+    <div class="pill warn" style="margin:2px 0">⚠ delete には Id カラムが必要 (ヘッダーに "Id" がありません)</div>
+    <div class="meta" style="padding:6px 0;font-size:11px">📊 検出: 区切り <code>comma</code> / ヘッダー 2 列 / レコード 1 件</div>
+  </div>
+</div>
+</body>
+</html>

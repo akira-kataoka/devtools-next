@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell } from "./sf-format-helpers.js";
+import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -1852,6 +1852,14 @@ function bindEvents() {
   $on("btnAdminMfa", "click", doAdminMfa);
   // v3.486.0 Phase 576: アクティブセッション一覧 (AuthSession ベース)
   $on("btnAdminActiveSessions", "click", doAdminListActiveSessions);
+
+  // v3.490.0 Phase 580: 一括インポートビュー (B 段階構築 2/3) — UI ハンドラ
+  $on("btnBulkParse", "click", doBulkParse);
+  $on("bulkOp", "change", () => {
+    const op = (document.getElementById("bulkOp") || {}).value;
+    const extId = document.getElementById("bulkExtId");
+    if (extId) extId.style.display = op === "upsert" ? "" : "none";
+  });
   $on("btnAdminPackages", "click", doAdminPackages);
   $on("btnAdminLoadAll", "click", doAdminLoadAll);
   $on("btnAdminExportCsv", "click", adminExportCsv);
@@ -7882,6 +7890,77 @@ async function doAdminShowLicenseUsers(apiName) {
   const headers = ["氏名", "ユーザ名", "メール", "プロファイル", "最終ログイン", "状態", "アクション"];
   const summary = `<div class="admin-card-summary">合計 <strong>${recs.length}</strong> 名 (アクティブのみ・最大 1000 件)</div>`;
   adminUpdateModalBody(summary + adminTableHtml(headers, rows, { compact: true }));
+}
+
+// v3.490.0 Phase 580: 一括インポート Parse プレビュー (B 段階構築 2/3、execute は Phase 581 で追加)
+function doBulkParse() {
+  const obj = (document.getElementById("bulkObject") || {}).value || "";
+  const op = (document.getElementById("bulkOp") || {}).value || "insert";
+  const extId = (document.getElementById("bulkExtId") || {}).value || "";
+  const text = (document.getElementById("bulkInput") || {}).value || "";
+  const meta = document.getElementById("bulkMeta");
+  const preview = document.getElementById("bulkPreview");
+  const exec = document.getElementById("btnBulkExecute");
+  if (!preview) return;
+  if (!obj.trim()) {
+    preview.innerHTML = `<span class="pill warn">⚠ sObject API 名を入力してください (例: Account)</span>`;
+    if (meta) meta.textContent = "";
+    if (exec) exec.disabled = true;
+    return;
+  }
+  if (op === "upsert" && !extId.trim()) {
+    preview.innerHTML = `<span class="pill warn">⚠ upsert には External ID Field 名が必要です</span>`;
+    if (meta) meta.textContent = "";
+    if (exec) exec.disabled = true;
+    return;
+  }
+  if (!text.trim()) {
+    preview.innerHTML = `<span class="empty-state">👆 Excel/CSV データを上のテキストエリアに貼り付けて「🔍 Parse プレビュー」を押してください</span>`;
+    if (meta) meta.textContent = "";
+    if (exec) exec.disabled = true;
+    return;
+  }
+  const r = parseClipboardRecords(text);
+  if (!r.headers.length) {
+    preview.innerHTML = `<span class="pill err">❌ パース失敗: ヘッダー行を読み取れませんでした</span>`;
+    if (meta) meta.textContent = "";
+    if (exec) exec.disabled = true;
+    return;
+  }
+  // op に応じた必須フィールド検証
+  const needsId = (op === "update" || op === "delete");
+  const needsExtField = (op === "upsert");
+  const warnings = [];
+  if (needsId && !r.headers.includes("Id")) warnings.push(`⚠ ${op} には Id カラムが必要 (ヘッダーに "Id" がありません)`);
+  if (needsExtField && !r.headers.includes(extId)) warnings.push(`⚠ upsert キー "${extId}" がヘッダーに見つかりません`);
+  // プレビューテーブル (先頭 10 行 + 残件数)
+  const PREVIEW_ROWS = 10;
+  const shown = r.records.slice(0, PREVIEW_ROWS);
+  const rest = r.records.length - shown.length;
+  const headerHtml = r.headers.map((h) => {
+    const isId = h === "Id";
+    const isExt = h === extId && needsExtField;
+    const badge = isId ? ' <span class="pill" style="font-size:9px;background:#1b96ff;color:#fff">ID</span>' : isExt ? ' <span class="pill" style="font-size:9px;background:#46d39a;color:#000">KEY</span>' : "";
+    return `<th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)">${escape(h)}${badge}</th>`;
+  }).join("");
+  const rowsHtml = shown.map((rec) => {
+    const tds = r.headers.map((h) => `<td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">${escape(rec[h] || "")}</td>`).join("");
+    return `<tr>${tds}</tr>`;
+  }).join("");
+  const warnHtml = warnings.length ? warnings.map((w) => `<div class="pill warn" style="margin:2px 0">${escape(w)}</div>`).join("") : "";
+  const skipHtml = r.skipped > 0 ? `<span class="pill warn" style="margin-left:6px">⚠ 列数不一致で ${r.skipped} 行スキップ</span>` : "";
+  const restHtml = rest > 0 ? `<div class="meta" style="padding:4px 8px;color:var(--fg-dim)">…他 ${rest} 行 (合計 ${r.records.length} 行)</div>` : "";
+  preview.innerHTML =
+    warnHtml +
+    `<div class="meta" style="padding:6px 0;font-size:11px">📊 検出: 区切り <code>${r.delimiter === "\t" ? "TAB" : "comma"}</code> / ヘッダー ${r.headers.length} 列 / レコード ${r.records.length} 件${skipHtml}</div>` +
+    `<div style="overflow:auto;max-height:300px;border:1px solid var(--line);border-radius:4px"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr>${headerHtml}</tr></thead><tbody>${rowsHtml}</tbody></table></div>` +
+    restHtml;
+  if (meta) meta.innerHTML = `<span class="pill ok">✓ ${r.records.length} 件 parse 済</span>`;
+  // execute ボタンは Phase 581 で有効化予定。今は警告ありかどうかで disable 維持。
+  if (exec) {
+    exec.disabled = true;
+    exec.title = warnings.length ? `❌ 警告あり: ${warnings.join(" / ")}` : `⚡ 実行は Phase 581 で実装予定。現在は parse プレビューのみ可能`;
+  }
 }
 
 // v3.486.0 Phase 576: アクティブセッション一覧 (AuthSession ベース、ユーザー要望対応)
