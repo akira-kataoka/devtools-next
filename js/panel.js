@@ -1867,8 +1867,27 @@ function bindEvents() {
     if (extIdRow) extIdRow.style.display = op === "upsert" ? "" : "none";
   });
   // v3.499.0 Phase 589: bulk input draft 自動保存 (Apex/SOQL/REST と統一、誤閉じ救済)
+  // v3.500.0 Phase 590: 編集時に古い _bulkState を invalidate して execute 誤発火を防ぐ
   const bulkInputEl = document.getElementById("bulkInput");
-  if (bulkInputEl) bulkInputEl.addEventListener("input", () => scheduleSaveBulkInputDraft(bulkInputEl.value));
+  if (bulkInputEl) bulkInputEl.addEventListener("input", () => {
+    scheduleSaveBulkInputDraft(bulkInputEl.value);
+    // 編集された瞬間に既存 parse 結果は stale → execute をブロック
+    if (_bulkState.records.length > 0) {
+      _bulkState.records = [];
+      _bulkState.headers = [];
+      _bulkState.warnings = [];
+      const exec = document.getElementById("btnBulkExecute");
+      if (exec) { exec.disabled = true; exec.title = "テキストが編集されました。再度「🔍 Parse してプレビュー」を実行してください"; }
+      const reasonEl = document.getElementById("bulkExecReason");
+      if (reasonEl) {
+        reasonEl.textContent = "✏️ テキストが編集されました。再度 Parse を実行してください";
+        reasonEl.style.color = "var(--warn)";
+        reasonEl.style.fontStyle = "italic";
+      }
+      const meta = document.getElementById("bulkMeta");
+      if (meta) meta.textContent = "";
+    }
+  });
   // v3.495.0 Phase 585: Ctrl+Enter で Parse 発火 (Apex/SOQL ビューと UX 統一)
   // v3.496.0 Phase 586: Tab で \t (タブ文字) 挿入 — TAB 区切りデータの手動編集をスムーズに
   //   (フォーカス移動は Shift+Tab で温存 → a11y キーボードナビ維持)
