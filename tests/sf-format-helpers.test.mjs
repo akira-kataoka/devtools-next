@@ -8,6 +8,7 @@ import {
   tsForFilename, formatError, escHtml,
   userInitials, relativeTimeJa, formatCurrentUser,
   escapeSoqlLiteral,
+  userChipStateClasses,
 } from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
@@ -322,4 +323,86 @@ test("escapeSoqlLiteral: 数値は String 化 (HTML escHtml と同じ null-safe 
 test("escapeSoqlLiteral: 引用符もバックスラッシュも無い文字列は無変換 (日本語含む)", () => {
   assert.equal(escapeSoqlLiteral("山田太郎"), "山田太郎");
   assert.equal(escapeSoqlLiteral("Standard"), "Standard");
+});
+
+// --- userChipStateClasses (Phase 559) -----------------------------------------
+
+const POLL = 30000;
+const NOW_C = new Date("2026-05-30T14:30:00Z").getTime();
+const userActive = { name: "Alice", isActive: true };
+const userInactive = { name: "Bob", isActive: false };
+const userUnknown = { name: "Carol" }; // isActive 未定義
+
+test("userChipStateClasses: user=null → offline のみ true", () => {
+  const r = userChipStateClasses({ user: null, lastFetchAt: NOW_C, pollMs: POLL, now: NOW_C });
+  assert.equal(r.offline, true);
+  assert.equal(r.stale, false);
+  assert.equal(r.inactive, false);
+  assert.deepEqual(r.classes, ["offline"]);
+});
+
+test("userChipStateClasses: user=undefined / 引数なし も offline 扱い", () => {
+  assert.equal(userChipStateClasses().offline, true);
+  assert.equal(userChipStateClasses({}).offline, true);
+});
+
+test("userChipStateClasses: active user・取得直後 → 全 false, classes 空", () => {
+  const r = userChipStateClasses({ user: userActive, lastFetchAt: NOW_C, pollMs: POLL, now: NOW_C });
+  assert.equal(r.offline, false);
+  assert.equal(r.stale, false);
+  assert.equal(r.inactive, false);
+  assert.deepEqual(r.classes, []);
+});
+
+test("userChipStateClasses: stale 境界 — pollMs*2.2 ぴったりは stale ではない (> 厳格比較)", () => {
+  const ms = POLL * 2.2; // 66000
+  const r = userChipStateClasses({ user: userActive, lastFetchAt: NOW_C - ms, pollMs: POLL, now: NOW_C });
+  assert.equal(r.stale, false);
+});
+
+test("userChipStateClasses: stale 境界 — pollMs*2.2 + 1ms は stale", () => {
+  const ms = POLL * 2.2 + 1;
+  const r = userChipStateClasses({ user: userActive, lastFetchAt: NOW_C - ms, pollMs: POLL, now: NOW_C });
+  assert.equal(r.stale, true);
+  assert.deepEqual(r.classes, ["stale"]);
+});
+
+test("userChipStateClasses: lastFetchAt=0 (未取得) は stale 扱いしない", () => {
+  const r = userChipStateClasses({ user: userActive, lastFetchAt: 0, pollMs: POLL, now: NOW_C });
+  assert.equal(r.stale, false);
+});
+
+test("userChipStateClasses: lastFetchAt=null/undefined も stale 扱いしない", () => {
+  assert.equal(userChipStateClasses({ user: userActive, lastFetchAt: null, pollMs: POLL, now: NOW_C }).stale, false);
+  assert.equal(userChipStateClasses({ user: userActive, lastFetchAt: undefined, pollMs: POLL, now: NOW_C }).stale, false);
+});
+
+test("userChipStateClasses: inactive user → inactive=true, classes に 'inactive'", () => {
+  const r = userChipStateClasses({ user: userInactive, lastFetchAt: NOW_C, pollMs: POLL, now: NOW_C });
+  assert.equal(r.inactive, true);
+  assert.equal(r.offline, false);
+  assert.deepEqual(r.classes, ["inactive"]);
+});
+
+test("userChipStateClasses: isActive=null/undefined は inactive 扱いしない (不明扱い)", () => {
+  assert.equal(userChipStateClasses({ user: userUnknown, lastFetchAt: NOW_C, pollMs: POLL, now: NOW_C }).inactive, false);
+  const userNullActive = { name: "Z", isActive: null };
+  assert.equal(userChipStateClasses({ user: userNullActive, lastFetchAt: NOW_C, pollMs: POLL, now: NOW_C }).inactive, false);
+});
+
+test("userChipStateClasses: stale + inactive 同時 → 両方 true, classes = ['stale','inactive']", () => {
+  const r = userChipStateClasses({
+    user: userInactive,
+    lastFetchAt: NOW_C - POLL * 3,
+    pollMs: POLL,
+    now: NOW_C,
+  });
+  assert.equal(r.stale, true);
+  assert.equal(r.inactive, true);
+  assert.deepEqual(r.classes, ["stale", "inactive"]);
+});
+
+test("userChipStateClasses: 未来時刻の lastFetchAt (時計ずれ) は stale 扱いしない", () => {
+  const r = userChipStateClasses({ user: userActive, lastFetchAt: NOW_C + 5000, pollMs: POLL, now: NOW_C });
+  assert.equal(r.stale, false); // 差が負なので pollMs*2.2 超にならない
 });

@@ -161,3 +161,34 @@ export function formatCurrentUser({ userInfo = null, userRecord = null } = {}) {
   out.initials = userInitials(out.name);
   return out;
 }
+
+/**
+ * v3.469.0 Phase 559: user-chip の状態 (CSS クラス) 判定を純粋関数化。
+ *
+ * renderCurrentUserChip (panel.js) に inline 散在していた 3 状態判定
+ * (offline / stale / inactive) を集約してテスト可能にする。
+ *
+ * 状態は直交で重なり得る (例: stale + inactive は両方付く)。
+ *
+ * @param {object} args
+ * @param {object|null} args.user - formatCurrentUser() 結果オブジェクト or null
+ * @param {number} args.lastFetchAt - 最終取得 epoch ms (0/null = 未取得)
+ * @param {number} args.pollMs - ポーリング間隔 ms
+ * @param {number} [args.now=Date.now()] - 基準時刻 (テスト注入用)
+ * @returns {{ offline: boolean, stale: boolean, inactive: boolean, classes: string[] }}
+ */
+export function userChipStateClasses({ user, lastFetchAt, pollMs, now = Date.now() } = {}) {
+  // user null は未接続 = offline。それ以外の状態判定は user が必要
+  if (!user) {
+    return { offline: true, stale: false, inactive: false, classes: ["offline"] };
+  }
+  // stale 判定: lastFetchAt が 0/null なら未取得とみなし stale 扱いしない
+  //            (取得直後はまだ poll 未経過なので) ; pollMs*2.2 倍超で stale
+  const stale = !!(lastFetchAt && (now - lastFetchAt > pollMs * 2.2));
+  // inactive 判定: isActive===false の時のみ (null/undefined は不明扱いで非 inactive)
+  const inactive = user.isActive === false;
+  const classes = [];
+  if (stale) classes.push("stale");
+  if (inactive) classes.push("inactive");
+  return { offline: false, stale, inactive, classes };
+}

@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral } from "./sf-format-helpers.js";
+import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -4064,19 +4064,18 @@ function renderCurrentUserChip(cu) {
   const avatar = document.getElementById("userChipAvatar");
   const nameEl = document.getElementById("userChipName");
   const subEl = document.getElementById("userChipSub");
-  if (!cu) {
+  // v3.469.0 Phase 559: 状態判定を userChipStateClasses (pure) に集約 (Phase 557 inactive + Phase 553 stale/offline)
+  const stateCls = userChipStateClasses({ user: cu, lastFetchAt: state.lastUserFetch, pollMs: CURRENT_USER_POLL_MS });
+  if (stateCls.offline) {
     chip.hidden = true;
     chip.classList.add("offline");
     return;
   }
   chip.hidden = false;
   chip.classList.remove("offline");
-  // 鮮度: 最終取得から 2 倍超を「古い」とみなし live ドットを警告色に
-  const stale = state.lastUserFetch && (Date.now() - state.lastUserFetch > CURRENT_USER_POLL_MS * 2.2);
-  chip.classList.toggle("stale", !!stale);
-  // v3.467.0 Phase 557: 無効ユーザー (IsActive=false) は権限エラーになりやすいので chip 全体を赤枠＋⚠ で常時警告
-  const inactive = cu.isActive === false;
-  chip.classList.toggle("inactive", inactive);
+  chip.classList.toggle("stale", stateCls.stale);
+  chip.classList.toggle("inactive", stateCls.inactive);
+  const inactive = stateCls.inactive;
   if (avatar) avatar.textContent = cu.initials || "?";
   if (nameEl) nameEl.textContent = cu.name || "(不明)";
   if (subEl) {
