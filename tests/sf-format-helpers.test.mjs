@@ -195,6 +195,31 @@ test("formatError: 配列形式は新分岐に先取られず既存通り処理 
   assert.equal(formatError(d), "E1 m1");
 });
 
+// --- formatError statusCode フォールバック (Phase 597) -------------------------
+
+test("formatError: Composite API の {statusCode, message} 形式 → 'statusCode message'", () => {
+  assert.equal(
+    formatError({ statusCode: "DUPLICATE_VALUE", message: "duplicate value found" }),
+    "DUPLICATE_VALUE duplicate value found",
+  );
+});
+
+test("formatError: errorCode と statusCode 両方ある場合は errorCode 優先", () => {
+  assert.equal(
+    formatError({ errorCode: "INVALID_FIELD", statusCode: "FIELD_ERROR", message: "x" }),
+    "INVALID_FIELD x",
+  );
+});
+
+test("formatError: statusCode のみ (message なし) → trim でスペースなし", () => {
+  assert.equal(formatError({ statusCode: "REQUIRED_FIELD_MISSING" }), "REQUIRED_FIELD_MISSING");
+});
+
+test("formatError: statusCode 空 / errorCode 空でも message があれば表示", () => {
+  // 既存の Phase 587 test と整合: message のみは「message」のみ表示
+  assert.equal(formatError({ statusCode: "", message: "fallback" }), "fallback");
+});
+
 // --- formatError multi-error (Phase 563) --------------------------------------
 
 test("formatError: 配列 2 件 → '[2件のエラー] code1 msg1 / code2 msg2'", () => {
