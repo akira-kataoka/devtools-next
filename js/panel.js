@@ -3251,7 +3251,8 @@ function exportInspect(fmt) {
     const fields = (inspectState.describe.fields || []).map((f) => f.name);
     const ordered = {};
     for (const n of fields) ordered[n] = inspectState.record[n];
-    body = "﻿" + recordsToCsv([ordered]);
+    // v3.474.0 Phase 564: 手書き BOM 結合を recordsToCsv の opts.excelBom に統一
+    body = recordsToCsv([ordered], { excelBom: true });
     mime = "text/csv;charset=utf-8"; ext = "csv";
   }
   const blob = new Blob([body], { type: mime });
@@ -4962,7 +4963,8 @@ function getOrderedRecordsForExport() {
 function exportCsv() {
   if (!state.lastRecords || !state.lastRecords.length) { panelToast("📭 エクスポート対象がありません", { kind: "warn" }); return; }
   const ordered = getOrderedRecordsForExport();
-  const csv = recordsToCsv(ordered);
+  // v3.474.0 Phase 564: Excel で日本語文字化け回避のため BOM 付与
+  const csv = recordsToCsv(ordered, { excelBom: true });
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -4978,7 +4980,8 @@ async function copyCsvToClipboard() {
   if (!state.lastRecords || !state.lastRecords.length) { panelToast("📭 コピー対象がありません", { kind: "warn" }); return; }
   try {
     const ordered = getOrderedRecordsForExport();
-    const csv = recordsToCsv(ordered);
+    // v3.474.0 Phase 564: クリップボード経由でも Excel 貼付で日本語文字化けしないよう BOM 付与
+    const csv = recordsToCsv(ordered, { excelBom: true });
     await navigator.clipboard.writeText(csv);
     const sortedTh = document.querySelector("#soqlResult th.sortable[data-sort-dir]");
     const hint = sortedTh ? ` (${sortedTh.dataset.col} ${sortedTh.dataset.sortDir} ソート反映)` : "";
@@ -6573,7 +6576,8 @@ function exportLoginCsv() {
     }
     return out;
   });
-  const csv = recordsToCsv(formatted);
+  // v3.474.0 Phase 564: ログイン履歴 CSV も Excel で日本語文字化けしないよう BOM 付与
+  const csv = recordsToCsv(formatted, { excelBom: true });
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

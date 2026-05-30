@@ -314,9 +314,18 @@ export function lookupPrefix(idStr) {
 /** CSV エクスポート（SOQL 結果 records 配列を想定）
  *  全列をダブルクォートで囲む統一フォーマット (Limits/Export/Design 各 CSV と整合)
  *  v1.93.0+: ネストリレーション (attributes 持ち) を平坦化 (Name [Id] 形式)、
- *           datetime ISO 文字列を YYYY-MM-DD HH:mm に整形 (Excel で日時認識可能) */
-export function recordsToCsv(records) {
+ *           datetime ISO 文字列を YYYY-MM-DD HH:mm に整形 (Excel で日時認識可能)
+ *  v3.474.0 Phase 564: opts.excelBom=true で UTF-8 BOM (﻿) を先頭付与。
+ *                      Excel が UTF-8 を Shift_JIS として誤認して日本語が文字化け
+ *                      する問題対策。default false で後方互換 (既存テスト不変)。
+ *                      panel.js では 4 箇所中 1 箇所だけ手書きで BOM 結合していたが、
+ *                      他 3 箇所は文字化けしていた → このオプションで統一する。
+ *  @param {Array} records - SOQL 結果の records 配列
+ *  @param {object} [opts]
+ *  @param {boolean} [opts.excelBom=false] - true で UTF-8 BOM を先頭に付与 */
+export function recordsToCsv(records, opts = {}) {
   if (!records || !records.length) return "";
+  const bom = opts.excelBom ? "﻿" : "";
   const cols = new Set();
   records.forEach((r) => Object.keys(r).forEach((k) => k !== "attributes" && cols.add(k)));
   const headers = Array.from(cols);
@@ -360,5 +369,5 @@ export function recordsToCsv(records) {
   for (const r of records) {
     lines.push(headers.map((h) => escAll(r[h])).join(","));
   }
-  return lines.join("\n");
+  return bom + lines.join("\n");
 }

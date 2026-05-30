@@ -167,3 +167,35 @@ test("recordsToCsv: ヘッダ名のダブルクォートも倍化される", () 
   const out = recordsToCsv([{ 'A"B': 1 }]);
   assert.equal(out, `"A""B"\n"1"`);
 });
+
+// --- opts.excelBom (Phase 564) ------------------------------------------------
+
+test("recordsToCsv: opts なし / excelBom 未指定 → BOM なし (後方互換)", () => {
+  const out = recordsToCsv([{ Id: "001" }]);
+  assert.equal(out.charCodeAt(0), 0x22); // '"' (ダブルクォート)
+  assert.equal(out, `"Id"\n"001"`);
+});
+
+test("recordsToCsv: opts.excelBom=false 明示でも BOM なし", () => {
+  const out = recordsToCsv([{ Id: "001" }], { excelBom: false });
+  assert.equal(out.charCodeAt(0), 0x22);
+});
+
+test("recordsToCsv: opts.excelBom=true → 先頭に U+FEFF BOM を付与", () => {
+  const out = recordsToCsv([{ Id: "001" }], { excelBom: true });
+  assert.equal(out.charCodeAt(0), 0xFEFF);
+  // BOM の後は通常の CSV と同じ内容
+  assert.equal(out.substring(1), `"Id"\n"001"`);
+});
+
+test("recordsToCsv: BOM 付き出力でも日本語ヘッダ/値はそのまま埋め込まれる (UTF-8 として正しい)", () => {
+  const out = recordsToCsv([{ "氏名": "山田 太郎", "部署": "営業" }], { excelBom: true });
+  assert.equal(out.charCodeAt(0), 0xFEFF);
+  assert.equal(out.substring(1), `"氏名","部署"\n"山田 太郎","営業"`);
+});
+
+test("recordsToCsv: 空配列に excelBom=true 指定 → BOM 含まない空文字 (early return が優先)", () => {
+  // null/undefined/空 は冒頭で空文字 return しているため BOM すら付かない
+  assert.equal(recordsToCsv([], { excelBom: true }), "");
+  assert.equal(recordsToCsv(null, { excelBom: true }), "");
+});
