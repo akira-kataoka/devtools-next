@@ -5,7 +5,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  tsForFilename, formatError, escHtml,
+  tsForFilename, tsForFilenameCompact, formatError, escHtml,
   userInitials, relativeTimeJa, formatCurrentUser,
   escapeSoqlLiteral,
   userChipStateClasses,
@@ -45,6 +45,47 @@ test("tsForFilename: 秒・ミリ秒は出力に含まれない", () => {
   const d1 = new Date(2026, 4, 23, 15, 9, 0);
   const d2 = new Date(2026, 4, 23, 15, 9, 59);
   assert.equal(tsForFilename(d1), tsForFilename(d2));
+});
+
+// --- tsForFilenameCompact (Phase 574) -----------------------------------------
+
+test("tsForFilenameCompact: 引数なしは現在時刻ベース、14 文字、'YYYYMMDDHHmmss' 形式", () => {
+  const out = tsForFilenameCompact();
+  assert.equal(out.length, 14, `expected 14 chars: ${out}`);
+  assert.match(out, /^\d{14}$/);
+});
+
+test("tsForFilenameCompact: UTC ベース (toISOString)、tsForFilename とは異なるロジック", () => {
+  // toISOString() は常に UTC を返すため、local timezone の影響を受けない
+  const d = new Date(Date.UTC(2026, 4, 23, 15, 9, 30));
+  assert.equal(tsForFilenameCompact(d), "20260523150930");
+});
+
+test("tsForFilenameCompact: 秒精度 (tsForFilename と違い秒を含む)", () => {
+  const d1 = new Date(Date.UTC(2026, 4, 23, 15, 9, 0));
+  const d2 = new Date(Date.UTC(2026, 4, 23, 15, 9, 59));
+  assert.notEqual(tsForFilenameCompact(d1), tsForFilenameCompact(d2));
+  assert.equal(tsForFilenameCompact(d1), "20260523150900");
+  assert.equal(tsForFilenameCompact(d2), "20260523150959");
+});
+
+test("tsForFilenameCompact: 1 桁月日時分秒はゼロ埋め", () => {
+  const d = new Date(Date.UTC(2026, 0, 1, 1, 5, 7));
+  assert.equal(tsForFilenameCompact(d), "20260101010507");
+});
+
+test("tsForFilenameCompact: 区切り文字 (- T :) は全て除去される", () => {
+  const out = tsForFilenameCompact();
+  assert.ok(!out.includes("-"));
+  assert.ok(!out.includes("T"));
+  assert.ok(!out.includes(":"));
+});
+
+test("tsForFilenameCompact: tsForFilename とは戻り値の長さ / 形式が違うことを verify", () => {
+  const d = new Date();
+  assert.equal(tsForFilename(d).length, 13);   // YYYYMMDD-HHmm
+  assert.equal(tsForFilenameCompact(d).length, 14); // YYYYMMDDHHmmss
+  assert.notEqual(tsForFilename(d), tsForFilenameCompact(d));
 });
 
 // --- formatError --------------------------------------------------------------

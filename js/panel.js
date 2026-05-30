@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell } from "./sf-format-helpers.js";
+import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -7056,7 +7056,7 @@ function exportSearchCsv(records, keyword) {
   }
   // BOM 付き UTF-8 (Excel 文字化け防止)
   const csv = "﻿" + lines.join("\n");
-  const ts = new Date().toISOString().substring(0, 19).replace(/[-T:]/g, "");
+  const ts = tsForFilenameCompact();
   const kwSafe = String(keyword || "search").replace(/[^a-zA-Z0-9_\-]/g, "_").substring(0, 30);
   // v3.483.0 Phase 573: triggerDownload に集約 (pre-declared `a` パターンも統一)
   triggerDownload(`devtoolsnext-search-${kwSafe}-${ts}.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }), 500);
@@ -8130,7 +8130,7 @@ function adminExportCardCsv(cardKey) {
   const lines = [def.headers.map(escCsv).join(",")];
   for (const r of def.data) lines.push(def.headers.map((h) => escCsv(r[h])).join(","));
   const csv = "﻿" + lines.join("\n");
-  const ts = new Date().toISOString().substring(0, 19).replace(/[-T:]/g, "");
+  const ts = tsForFilenameCompact();
   // v3.483.0 Phase 573: triggerDownload に集約
   triggerDownload(`devtoolsnext-admin-${cardKey}-${ts}.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }), 500);
   panelToast(`📥 ${def.label} CSV をダウンロードしました (${def.data.length} 件)`, { kind: "ok" });
@@ -8166,7 +8166,7 @@ function adminExportCsv() {
     for (const r of s.rows) lines.push(s.headers.map((h) => escCsv(r[h])).join(","));
   }
   const csv = "﻿" + lines.join("\n"); // BOM (Excel 文字化け防止)
-  const ts = new Date().toISOString().substring(0, 19).replace(/[-T:]/g, "");
+  const ts = tsForFilenameCompact();
   // v3.483.0 Phase 573: triggerDownload に集約
   triggerDownload(`devtoolsnext-admin-summary-${ts}.csv`, new Blob([csv], { type: "text/csv;charset=utf-8" }), 500);
   panelToast(`📥 サマリ CSV をダウンロードしました (${sections.length} セクション)`, { kind: "ok" });
@@ -8469,7 +8469,7 @@ async function connClearAll() {
 function connExportJson() {
   if (!connState.list.length) { panelToast("📭 エクスポートする接続がありません", { kind: "warn" }); return; }
   const json = JSON.stringify({ exported_at: new Date().toISOString(), connections: connState.list }, null, 2);
-  const ts = new Date().toISOString().substring(0, 19).replace(/[-T:]/g, "");
+  const ts = tsForFilenameCompact();
   // v3.483.0 Phase 573: triggerDownload に集約 (revoke も内部で実施)
   triggerDownload(`devtoolsnext-connections-${ts}.json`, new Blob([json], { type: "application/json;charset=utf-8" }));
   panelToast(`📤 ${connState.list.length} 件の接続をエクスポート (⚠ パスワード・トークン平文)`, { kind: "ok" });

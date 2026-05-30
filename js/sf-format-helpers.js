@@ -26,6 +26,25 @@ export function tsForFilename(date = new Date()) {
 }
 
 /**
+ * v3.484.0 Phase 574: 「YYYYMMDDHHmmss」形式 (UTC、14 文字、区切りなし、秒精度) の
+ * タイムスタンプを返す。検索 CSV / 管理ダッシュボード CSV / 接続マネージャ JSON
+ * など 4 callers で重複していた `new Date().toISOString().substring(0, 19).replace(/[-T:]/g, "")`
+ * パターンを集約。
+ *
+ * tsForFilename との違い:
+ *   - tsForFilename: local time / YYYYMMDD-HHmm (13 文字、dash 区切り、分精度)
+ *   - tsForFilenameCompact: UTC / YYYYMMDDHHmmss (14 文字、区切りなし、秒精度)
+ *
+ * 用途が違うので別関数として保持 (前者は人が見て直感的、後者は秒で uniqueness が必要なログ用)。
+ *
+ * @param {Date} [date=new Date()] - 起点 Date インスタンス
+ * @returns {string} 例: "20260530174800"
+ */
+export function tsForFilenameCompact(date = new Date()) {
+  return date.toISOString().substring(0, 19).replace(/[-T:]/g, "");
+}
+
+/**
  * Salesforce REST/SOAP / OAuth エラーレスポンスを 1 行の人間可読文字列に整形する。
  *
  * 想定する入力形:
