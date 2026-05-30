@@ -58,15 +58,23 @@ node --test "tests/*.mjs"
 
 新規ヘルパー関数を追加する際は `tests/*.test.mjs` にケースを追加してください。`chrome.*` API を使う関数 (loadConnections / connFetch 等) は IO 依存のため対象外、純粋関数のみ対象です。
 
-#### テスト対象モジュール (Phase 540-552 で整備、累計 161 テストケース)
+#### テスト対象モジュール (Phase 540-599 で整備、累計 335 テストケース、🎉 Phase 600 milestone)
 
 | モジュール | 公開 export (テスト対象) | テスト |
 |---|---|---|
 | [js/sf-connections.js](js/sf-connections.js) | 認証 API + 鮮度判定 (`loadConnections`, `formatAuthAge`, `isAuthStale`, `maskSecret`, `makeConnectionId`, `AUTH_STALE_THRESHOLD_MS`) | 19 ケース |
-| [js/sf-rest-helpers.js](js/sf-rest-helpers.js) | REST/SOAP 補助 (`parseRestHeaders`, `wrapSoapEnvelope`) | 15 ケース |
-| [js/sf-format-helpers.js](js/sf-format-helpers.js) | 表示・整形・XSS 防御 (`tsForFilename`, `formatError`, `escHtml`) | 23 ケース |
-| [js/sf-api.js](js/sf-api.js) | ホスト判定・ID 変換 (`isSalesforceHost`, `toApiHost`, `parseOrgIdFromSid`, `to18CharId`, `lookupPrefix`, `SF_DOMAINS`, `KEY_PREFIX_MAP`) + CSV 変換 (`recordsToCsv`) | 50 ケース |
-| [js/design-docs.js](js/design-docs.js) | 設計書整形 + Markdown 描画 (`fmtNum`, `fmtBytes`, `fmtTrunc`, `fmtPercent`, `fieldTypeJa`, `FIELD_TYPE_JA`, `xmlText`, `xmlAttr`, `md`, `esc`, `splitMd`, `inline`, `markdownToHtml`) | 54 ケース |
+| [js/sf-rest-helpers.js](js/sf-rest-helpers.js) | REST/SOAP 補助 (`parseRestHeaders`, `wrapSoapEnvelope`) | 23 ケース |
+| [js/sf-format-helpers.js](js/sf-format-helpers.js) | 表示・整形・XSS 防御・SOQL/SOSL/XML/Markdown エスケープ・現在ユーザー chip・ポップオーバー配置・一括インポート支援 (`tsForFilename`, `tsForFilenameCompact`, `formatError`, `escHtml`, `userInitials`, `relativeTimeJa`, `formatCurrentUser`, `escapeSoqlLiteral`, `userChipStateClasses`, `popoverPosition`, `formatSfDateTime`, `formatSfDateTimeLoose`, `escXml`, `escSoslKeyword`, `escMdTableCell`, `parseClipboardRecords`, `validateBulkOpRequiredColumns`, `summarizeBulkResults`, `bulkOpEmoji`, `bulkOpLabel`, `filterByNameLabel`) | 178 ケース |
+| [js/sf-api.js](js/sf-api.js) + [js/sf-api recordsToCsv 専用](tests/records-to-csv.test.mjs) | ホスト判定・ID 変換 (`isSalesforceHost`, `toApiHost`, `parseOrgIdFromSid`, `to18CharId`, `lookupPrefix`, `SF_DOMAINS`, `KEY_PREFIX_MAP`) + CSV 変換 (`recordsToCsv` with `opts.excelBom`) | 55 ケース |
+| [js/design-docs.js](js/design-docs.js) | 設計書整形 + Markdown 描画 + 出力 dispatch (`fmtNum`, `fmtBytes`, `fmtTrunc`, `fmtPercent`, `fieldTypeJa`, `FIELD_TYPE_JA`, `xmlText`, `xmlAttr`, `md`, `esc`, `splitMd`, `inline`, `markdownToHtml`, `formatOutput`) | 60 ケース |
+
+**主な集約・改善履歴 (Phase 552-599)**:
+- escHtml / escapeSoqlLiteral / escXml / escSoslKeyword / escMdTableCell の 5 種エスケープを各ファイルから集約 (Phase 552-571)
+- ISO datetime 整形を formatSfDateTime / formatSfDateTimeLoose に集約 (Phase 565-566、12+ callers)
+- ダウンロード処理 triggerDownload / リンクコピー copyLinkWithToast を panel.js 局所ヘルパー化 (Phase 573, 575)
+- 一括インポート機能 (parser / UI / execute / 検証 / 集計 / 表示パターン) を helper 化＋テスト化 (Phase 579-599)
+- 現在ログイン中ユーザー chip (リアルタイム表示 / 詳細ポップオーバー / 状態 CSS) (Phase 553-561)
+- REST API 401 診断ガイド強化、Composite API エラー形式対応 (Phase 578, 597)
 
 ### 5. 実画面 UX 検証 (Chrome DevTools MCP、Phase 545-546 で実証)
 
