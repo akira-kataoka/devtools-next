@@ -6303,6 +6303,83 @@ function displayApiError(elem, status, data, ctx = "") {
 }
 
 // ====== Apex 実行 (Tooling executeAnonymous) ======
+// v3.519.0 Phase 609: TraceFlag 自動作成。Debug ログ取得 ON のとき、現在ユーザーに
+// 有効な TraceFlag が無ければ DebugLevel (SFDC_DevConsole 優先・無ければ専用作成) を
+// 用意して 30 分間有効な USER_DEBUG TraceFlag を作る。これで executeAnonymous の
+// System.debug() 出力が ApexLog に残り、本文を表示できる。
+// 戻り値: { ok, reason } — reason: exists / extended / created / no-user / no-permission / failed
+async function ensureApexTraceFlag() {
+  if (!state.userId) return { ok: false, reason: "no-user" };
+  const host = state.host, sid = state.sid, v = state.apiVersion;
+  const now = new Date();
+  const nowIso = now.toISOString();
+  // 1. 既存の有効な TraceFlag (LogType 問わず) があれば再利用 — 重複作成エラーを回避
+  const existing = await runSoql({
+    host, sid, apiVersion: v, tooling: true,
+    soql: `SELECT Id, LogType, ExpirationDate FROM TraceFlag WHERE TracedEntityId = '${state.userId}' ORDER BY ExpirationDate DESC LIMIT 5`,
+  });
+  if (existing.status === 401 || isSessionExpiredError(existing.data)) return { ok: false, reason: "session" };
+  if (!existing.ok) return { ok: false, reason: "no-permission", detail: existing.data };
+  const recs = (existing.data && existing.data.records) || [];
+  const active = recs.find((t) => t.ExpirationDate && t.ExpirationDate > nowIso);
+  if (active) return { ok: true, reason: "exists" };
+  // 期限切れの既存 TraceFlag があれば ExpirationDate を延長 (新規作成より衝突しにくい)
+  const expIso = new Date(now.getTime() + 30 * 60 * 1000).toISOString();
+  if (recs[0] && recs[0].Id) {
+    const patch = await sfFetch({
+      host, sid,
+      path: `/services/data/v${v}/tooling/sobjects/TraceFlag/${recs[0].Id}`,
+      method: "PATCH",
+      body: { StartDate: nowIso, ExpirationDate: expIso },
+    });
+    if (patch.ok || patch.status === 204) return { ok: true, reason: "extended" };
+    // 延長失敗時は新規作成にフォールスルー
+  }
+  // 2. DebugLevel を確保 (標準の SFDC_DevConsole を優先、無ければ専用を作成)
+  let debugLevelId = null;
+  const dl = await runSoql({
+    host, sid, apiVersion: v, tooling: true,
+    soql: `SELECT Id FROM DebugLevel WHERE DeveloperName = 'SFDC_DevConsole' LIMIT 1`,
+  });
+  if (dl.ok && dl.data && dl.data.records && dl.data.records[0]) {
+    debugLevelId = dl.data.records[0].Id;
+  } else {
+    const createDl = await sfFetch({
+      host, sid,
+      path: `/services/data/v${v}/tooling/sobjects/DebugLevel`,
+      method: "POST",
+      body: {
+        DeveloperName: "DevToolsNext_Debug",
+        MasterLabel: "DevToolsNext Debug",
+        ApexCode: "DEBUG", ApexProfiling: "INFO", Callout: "INFO",
+        Database: "INFO", System: "DEBUG", Validation: "INFO",
+        Visualforce: "INFO", Workflow: "INFO", Nba: "ERROR", Wave: "ERROR",
+      },
+    });
+    if (createDl.ok && createDl.data && createDl.data.id) debugLevelId = createDl.data.id;
+    else return { ok: false, reason: "no-permission", detail: createDl.data };
+  }
+  // 3. TraceFlag を作成 (USER_DEBUG・30 分有効・時計ずれ対策で 1 分前から)
+  const startIso = new Date(now.getTime() - 60 * 1000).toISOString();
+  const createTf = await sfFetch({
+    host, sid,
+    path: `/services/data/v${v}/tooling/sobjects/TraceFlag`,
+    method: "POST",
+    body: {
+      TracedEntityId: state.userId,
+      LogType: "USER_DEBUG",
+      DebugLevelId: debugLevelId,
+      StartDate: startIso,
+      ExpirationDate: expIso,
+    },
+  });
+  if (createTf.ok && createTf.data && createTf.data.id) return { ok: true, reason: "created" };
+  // 既に別 TraceFlag がある等の競合は「実質有効」とみなす
+  const msg = JSON.stringify(createTf.data || "");
+  if (/already.*active|TRACEFLAG|duplicate/i.test(msg)) return { ok: true, reason: "exists" };
+  return { ok: false, reason: "no-permission", detail: createTf.data };
+}
+
 let apexRunId = 0;
 async function doRunApex() {
   if (!state.sid) return;
@@ -6339,6 +6416,22 @@ async function doRunApex() {
   out.textContent = "";
   // 実行中はボタンを無効化 (二重クリック防止)
   if (runBtn) { runBtn.disabled = true; runBtn.style.opacity = "0.6"; }
+
+  // v3.519.0 Phase 609: Debug ログ取得 ON のときは実行前に TraceFlag を自動作成し、
+  // System.debug() の出力が確実にログに残るようにする (ユーザー報告: TraceFlag 未設定で
+  // 毎回「成功しました」だけ表示され debug 出力が見えない問題)。失敗してもツール本体は続行。
+  let traceFlagNote = "";
+  if (fetchLog) {
+    try {
+      const tf = await ensureApexTraceFlag();
+      if (tf && !tf.ok && tf.reason === "no-permission") {
+        traceFlagNote = "⚠ TraceFlag を自動作成できませんでした (権限不足)。手動設定が必要な場合があります。\n\n";
+      }
+    } catch (e) {
+      console.warn("[DevToolsNext] ensureApexTraceFlag failed", e);
+    }
+    if (myId !== apexRunId) { if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; } return; }
+  }
 
   const t0 = performance.now();
   // Tooling: GET /tooling/executeAnonymous/?anonymousBody=...
@@ -6397,11 +6490,12 @@ async function doRunApex() {
     // 「(コンパイル・実行に成功しました)」だけ出て System.debug が見えない問題 (ユーザー報告)。
     // ApexLog が 0 件のときは沈黙せず、原因と対処を明示する。
     if (logRow.ok && (!logRow.data || !logRow.data.records || !logRow.data.records[0])) {
-      logBody =
-        `ℹ Debug ログが見つかりませんでした (TraceFlag 未設定の可能性)。\n` +
-        `System.debug() の出力を表示するには、対象ユーザーに有効な Trace Flag が必要です。\n` +
-        `  Setup → Debug Logs → New → 自分のユーザーを追加 (Debug Level: SFDC_DevConsole 等) で 30〜60 分間有効化してください。\n` +
-        `(Apex の実行自体は上記の通り成功しています。Trace Flag 設定後に再実行すると本文が表示されます)`;
+      logBody = traceFlagNote +
+        `ℹ Debug ログがまだ見つかりませんでした。\n` +
+        `本ツールは Debug ログ取得 ON 時に TraceFlag を自動作成しますが、初回は反映に数秒かかることがあります。\n` +
+        `もう一度 [▶ 実行] を押すと System.debug() の出力が表示されます。\n` +
+        `(それでも出ない場合は、権限不足の可能性があります。Setup → Debug Logs から手動で自分のユーザーを追加してください)\n` +
+        `(Apex の実行自体は上記の通り成功しています)`;
     } else if (logRow.ok && logRow.data && logRow.data.records && logRow.data.records[0]) {
       const logId = logRow.data.records[0].Id;
       const logFetch = await sfFetch({
