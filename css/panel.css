@@ -1419,7 +1419,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .limits-grid {
   flex: 1; overflow: auto; min-height: 200px;
   background: #0a1224; border: 1px solid var(--line); border-radius: var(--r-md);
-  padding: var(--sp-1) 0;
+  /* v3.518.0 Phase 608: padding-top を 0 に。従来 padding-top:4px があると
+     sticky ヘッダ (top:0) がパディング下端に張り付き、スクロール時に先頭の
+     データ行がヘッダ上の 4px 隙間から覗いて「重なって」見えた (ユーザー報告)。
+     上パディングを除去してヘッダを容器上端へ密着させ、隙間を解消する。 */
+  padding: 0 0 var(--sp-1);
 }
 .limit-row {
   display: grid;

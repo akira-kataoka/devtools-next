@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords, validateBulkOpRequiredColumns, summarizeBulkResults, bulkOpEmoji, bulkOpLabel, filterByNameLabel, csvEscapeCell, formatJpDateTime, formatJpNumber } from "./sf-format-helpers.js";
+import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords, validateBulkOpRequiredColumns, summarizeBulkResults, bulkOpEmoji, bulkOpLabel, filterByNameLabel, csvEscapeCell, formatJpDateTime, formatJpNumber, dedupeActiveSessionsByUser, isSessionExpiredError } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -3572,28 +3572,10 @@ function renderLimitsList() {
       <div class="limit-pct ${cls}">${r.pct}%</div>
     </div>`);
   }
-  // v3.127.0 Phase 217: API で取得できない固定上限を同じ一覧に統合表示 (ユーザー要望「分けないでください」)
-  // Phase 202 で details で分離していたが、ユーザー要望により API 上限と同じテーブルに混在
-  const filterText = (document.getElementById("limitsFilter")?.value || "").toLowerCase();
-  for (const g of HARDCODED_LIMITS_GROUPS) {
-    for (const it of g.items) {
-      // 検索フィルタ対応
-      if (filterText) {
-        const hay = (it.ja + " " + g.title + " " + it.value + " " + it.desc).toLowerCase();
-        if (!hay.includes(filterText)) continue;
-      }
-      const tooltipName = `${escape(it.ja)} (${escape(g.title)})\\n${escape(it.desc)}`;
-      html.push(`<div class="limit-row hardcoded-row" style="background:rgba(243,156,18,0.05);border-left:3px solid var(--warn);padding-left:7px;">
-        <div class="lim-col-pin" title="API で取得できない固定上限 (Phase 202 起源・Phase 217 で統合)">📌</div>
-        <div class="limit-name lim-col-name" title="${tooltipName}">${escape(it.ja)}<span class="lim-en" style="color:var(--warn);opacity:0.8;">${escape(g.title)}</span></div>
-        <div style="color:var(--fg-dim);" title="API では取得不可">—</div>
-        <div style="color:var(--fg-dim);" title="API では取得不可">—</div>
-        <div style="font-size:10px;color:var(--ok);font-weight:600;">${escape(it.value)}</div>
-        <div class="limit-bar-wrap" style="background:transparent;"><div style="font-size:9px;color:var(--fg-dim);padding:1px 6px;line-height:1.3;">${escape(it.desc.substring(0, 60))}${it.desc.length > 60 ? "…" : ""}</div></div>
-        <div style="color:var(--fg-dim);font-size:10px;" title="固定上限のため使用率算出不可">N/A</div>
-      </div>`);
-    }
-  }
+  // v3.518.0 Phase 608: 使用量が API で取得できない固定上限 (—/—/N/A 行) は
+  // 「使用状況」画面では使用率が判定できずノイズになるため非表示化 (ユーザー要望
+  // 「値が取得できないものは不要」2026-05-31)。固定上限の解説は HARDCODED_LIMITS_GROUPS
+  // 定数に保持し、CSV/エビデンス等のリファレンス用途では引き続き参照可能。
   root.innerHTML = html.join("");
   // 列ソートクリックハンドラ
   root.querySelectorAll(".lim-sortable").forEach((el) => {
@@ -6370,6 +6352,18 @@ async function doRunApex() {
   if (myId !== apexRunId) { console.log(`[DevToolsNext] discard stale Apex result #${myId}`); return; }
 
   if (!r.ok) {
+    // v3.518.0 Phase 608: セッション失効 (INVALID_SESSION_ID) を最優先で検知し再接続を促す
+    // (ユーザー報告「Apex実行ができない」の主因。HTTP 401 だけでなく 403/200+errorCode 経路もカバー)
+    if (isSessionExpiredError(r.data) || r.status === 401) {
+      meta.innerHTML =
+        `<span class="pill err">🔑 セッション失効 (INVALID_SESSION_ID)</span> ` +
+        `<span class="meta">Salesforce のセッションが切れているため Apex を実行できません。</span>` +
+        `<br/><span class="meta" style="color:var(--accent)">💡 右上の <strong>⟳ 再接続</strong> を押すか、my.salesforce.com タブを開き直してから再実行してください。</span>`;
+      out.textContent = "セッション失効のため未実行です。再接続後にもう一度 [▶ 実行] を押してください。";
+      if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; }
+      panelToast("🔑 セッションが失効しています。再接続してください", { kind: "warn" });
+      return;
+    }
     displayApiError(meta, r.status, r.data, "Apex 実行");
     out.textContent = JSON.stringify(r.data, null, 2);
     if (runBtn) { runBtn.disabled = false; runBtn.style.opacity = ""; }
@@ -6399,7 +6393,16 @@ async function doRunApex() {
       host: state.host, sid: state.sid, apiVersion: state.apiVersion, tooling: true,
       soql: `SELECT Id FROM ApexLog ORDER BY StartTime DESC LIMIT 1`,
     });
-    if (logRow.ok && logRow.data && logRow.data.records && logRow.data.records[0]) {
+    // v3.518.0 Phase 608: TraceFlag 未設定だと ApexLog が 1 件も生成されず logBody が空のまま
+    // 「(コンパイル・実行に成功しました)」だけ出て System.debug が見えない問題 (ユーザー報告)。
+    // ApexLog が 0 件のときは沈黙せず、原因と対処を明示する。
+    if (logRow.ok && (!logRow.data || !logRow.data.records || !logRow.data.records[0])) {
+      logBody =
+        `ℹ Debug ログが見つかりませんでした (TraceFlag 未設定の可能性)。\n` +
+        `System.debug() の出力を表示するには、対象ユーザーに有効な Trace Flag が必要です。\n` +
+        `  Setup → Debug Logs → New → 自分のユーザーを追加 (Debug Level: SFDC_DevConsole 等) で 30〜60 分間有効化してください。\n` +
+        `(Apex の実行自体は上記の通り成功しています。Trace Flag 設定後に再実行すると本文が表示されます)`;
+    } else if (logRow.ok && logRow.data && logRow.data.records && logRow.data.records[0]) {
       const logId = logRow.data.records[0].Id;
       const logFetch = await sfFetch({
         host: state.host, sid: state.sid,
@@ -8205,40 +8208,35 @@ async function doAdminListActiveSessions() {
     return;
   }
   const recs = (r.data || {}).records || [];
-  // ユーザー別にセッション数集計 (同じ人が複数セッション持つ場合あり)
-  const byUser = new Map();
-  for (const s of recs) {
-    const uid = s.UsersId || "(unknown)";
-    byUser.set(uid, (byUser.get(uid) || 0) + 1);
-  }
-  const uniqueUsers = byUser.size;
-  const rows = recs.map((s) => {
-    const u = s.Users || {};
-    const profile = u.Profile ? u.Profile.Name : "(未設定)";
-    const created = formatSfDateTimeLoose(s.CreatedDate);
-    const validHr = s.NumSecondsValid ? Math.floor(s.NumSecondsValid / 3600) : 0;
-    const validMin = s.NumSecondsValid ? Math.floor((s.NumSecondsValid % 3600) / 60) : 0;
+  // v3.518.0 Phase 608: ユーザー単位に集約 (同じ人が UI/API/Aura 等 複数セッション保持で
+  // 同じ氏名が何度も並び「重複」して見える問題を解消、ユーザー報告 2026-05-31)。
+  const grouped = dedupeActiveSessionsByUser(recs);
+  const uniqueUsers = grouped.length;
+  const rows = grouped.map((g) => {
+    const validHr = g.maxSecondsValid ? Math.floor(g.maxSecondsValid / 3600) : 0;
+    const validMin = g.maxSecondsValid ? Math.floor((g.maxSecondsValid % 3600) / 60) : 0;
     const validLabel = validHr > 0 ? `${validHr}h${validMin}m` : `${validMin}m`;
-    const multiSession = byUser.get(s.UsersId) > 1 ? ` <span class="pill warn" style="font-size:9px">×${byUser.get(s.UsersId)}</span>` : "";
+    const multiSession = g.sessionCount > 1 ? ` <span class="pill warn" style="font-size:9px" title="${g.sessionCount} 個の並行セッション">×${g.sessionCount}</span>` : "";
     return {
-      "氏名": { __html: escape(u.Name || "(不明)") + multiSession },
-      "ユーザ名": u.Username || "",
-      "プロファイル": profile,
-      "種別": u.UserType || "",
-      "Session種別": s.SessionType || "",
-      "Login種別": s.LoginType || "",
-      "SourceIP": s.SourceIp || "",
-      "開始時刻": created,
+      "氏名": { __html: escape(g.name) + multiSession },
+      "ユーザ名": g.username,
+      "プロファイル": g.profile,
+      "種別": g.userType,
+      "セッション数": g.sessionCount,
+      "Session種別": g.sessionTypes.join(" / "),
+      "Login種別": g.loginTypes.join(" / "),
+      "SourceIP": g.sourceIps.join(" / "),
+      "開始時刻": formatSfDateTimeLoose(g.earliestCreated),
       "残り有効": validLabel,
     };
   });
-  const headers = ["氏名", "ユーザ名", "プロファイル", "種別", "Session種別", "Login種別", "SourceIP", "開始時刻", "残り有効"];
+  const headers = ["氏名", "ユーザ名", "プロファイル", "種別", "セッション数", "Session種別", "Login種別", "SourceIP", "開始時刻", "残り有効"];
   const summary =
     `<div class="admin-card-summary">🟢 アクティブセッション <strong>${recs.length}</strong> 件 ` +
-    `(<strong>${uniqueUsers}</strong> 名、最大 200 件表示)</div>`;
+    `(<strong>${uniqueUsers}</strong> 名、ユーザー単位に集約、最大 200 件取得)</div>`;
   const note = `<div class="meta" style="padding:6px 8px;font-size:11px;color:var(--fg-dim);line-height:1.6">
-    ※ <strong>×N バッジ</strong>はそのユーザーが N 個の並行セッションを保持していることを示します (UI + API 等)。<br>
-    ※ <strong>Session種別</strong>: UI/SubstituteUser/OauthApprovedAccessToken/RefreshToken など。<strong>Login種別</strong>: Application/RemoteAccess2/SAML 等。<br>
+    ※ <strong>1 行 = 1 ユーザー</strong>に集約しています。<strong>セッション数</strong> 列と <strong>×N バッジ</strong>はそのユーザーが保持する並行セッション数 (UI + API 等)。<br>
+    ※ <strong>Session種別 / Login種別 / SourceIP</strong>: そのユーザーの全セッションの種類を重複なく「 / 」区切りで列挙。<strong>開始時刻</strong>は最古セッション、<strong>残り有効</strong>は最長セッションの残存時間です。<br>
     ※ AuthSession は <strong>NumSecondsValid &gt; 0</strong> でフィルタしており、まだ有効期限内のセッションのみを表示します (LoginHistory との違い)。
   </div>`;
   adminUpdateModalBody(summary + note + adminTableHtml(headers, rows, { compact: true }));

@@ -24,6 +24,8 @@ import {
   csvEscapeCell,
   formatJpDateTime,
   formatJpNumber,
+  dedupeActiveSessionsByUser,
+  isSessionExpiredError,
 } from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
@@ -1394,4 +1396,110 @@ test("formatJpNumber: panel.js limitFmt 互換 — Number(n || 0) 経由で null
   assert.equal(limitFmt(""), "0");
   assert.equal(limitFmt(0), "0");
   assert.equal(limitFmt(1234), "1,234");
+});
+
+// --- dedupeActiveSessionsByUser (v3.518.0 Phase 608) -------------------------
+
+const _mkSess = (o = {}) => ({
+  UsersId: o.uid || "005A",
+  Users: { Name: o.name || "片岡 祥", Username: o.username || "a@b.com", Profile: { Name: o.profile || "システム管理者" }, UserType: o.userType || "Standard" },
+  SessionType: o.sessionType || "UI",
+  LoginType: o.loginType || "Application",
+  SourceIp: o.ip || "153.217.250.67",
+  CreatedDate: o.created || "2026-05-30T14:01:00.000+0000",
+  NumSecondsValid: o.secs != null ? o.secs : 7200,
+});
+
+test("dedupeActiveSessionsByUser: 同一ユーザーの 11 セッションは 1 行に集約される", () => {
+  const recs = Array.from({ length: 11 }, () => _mkSess());
+  const out = dedupeActiveSessionsByUser(recs);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].sessionCount, 11);
+  assert.equal(out[0].name, "片岡 祥");
+});
+
+test("dedupeActiveSessionsByUser: Session/Login/SourceIP は重複なくソート済で列挙", () => {
+  const recs = [
+    _mkSess({ sessionType: "UI", loginType: "Application", ip: "10.0.0.2" }),
+    _mkSess({ sessionType: "Aura", loginType: "Application", ip: "10.0.0.1" }),
+    _mkSess({ sessionType: "UI", loginType: "RemoteAccess2", ip: "10.0.0.1" }),
+  ];
+  const out = dedupeActiveSessionsByUser(recs);
+  assert.equal(out.length, 1);
+  assert.deepEqual(out[0].sessionTypes, ["Aura", "UI"]);
+  assert.deepEqual(out[0].loginTypes, ["Application", "RemoteAccess2"]);
+  assert.deepEqual(out[0].sourceIps, ["10.0.0.1", "10.0.0.2"]);
+});
+
+test("dedupeActiveSessionsByUser: 開始時刻は最古・残存秒は最大を採用", () => {
+  const recs = [
+    _mkSess({ created: "2026-05-30T13:00:00.000+0000", secs: 3600 }),
+    _mkSess({ created: "2026-05-30T04:15:00.000+0000", secs: 7200 }),
+    _mkSess({ created: "2026-05-30T14:01:00.000+0000", secs: 60 }),
+  ];
+  const out = dedupeActiveSessionsByUser(recs);
+  assert.equal(out[0].earliestCreated, "2026-05-30T04:15:00.000+0000");
+  assert.equal(out[0].latestCreated, "2026-05-30T14:01:00.000+0000");
+  assert.equal(out[0].maxSecondsValid, 7200);
+});
+
+test("dedupeActiveSessionsByUser: 複数ユーザーはセッション数降順で並ぶ", () => {
+  const recs = [
+    _mkSess({ uid: "005B", name: "佐藤" }),
+    _mkSess({ uid: "005A", name: "片岡" }),
+    _mkSess({ uid: "005A", name: "片岡" }),
+    _mkSess({ uid: "005A", name: "片岡" }),
+  ];
+  const out = dedupeActiveSessionsByUser(recs);
+  assert.equal(out.length, 2);
+  assert.equal(out[0].userId, "005A");
+  assert.equal(out[0].sessionCount, 3);
+  assert.equal(out[1].userId, "005B");
+  assert.equal(out[1].sessionCount, 1);
+});
+
+test("dedupeActiveSessionsByUser: Users 欠落・UsersId 欠落でも落ちず既定値で集約", () => {
+  const out = dedupeActiveSessionsByUser([{ SessionType: "API" }]);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].userId, "(unknown)");
+  assert.equal(out[0].name, "(不明)");
+  assert.equal(out[0].profile, "(未設定)");
+  assert.deepEqual(out[0].sessionTypes, ["API"]);
+});
+
+test("dedupeActiveSessionsByUser: 空配列 / 引数なしは空配列", () => {
+  assert.deepEqual(dedupeActiveSessionsByUser([]), []);
+  assert.deepEqual(dedupeActiveSessionsByUser(), []);
+});
+
+// --- isSessionExpiredError (v3.518.0 Phase 608) ------------------------------
+
+test("isSessionExpiredError: 配列形 [{errorCode:'INVALID_SESSION_ID'}] を検知", () => {
+  assert.equal(isSessionExpiredError([{ errorCode: "INVALID_SESSION_ID", message: "Session expired or invalid" }]), true);
+});
+
+test("isSessionExpiredError: オブジェクト形 {errorCode} を検知", () => {
+  assert.equal(isSessionExpiredError({ errorCode: "INVALID_SESSION_ID" }), true);
+});
+
+test("isSessionExpiredError: message 文言 'Session expired or invalid' を検知", () => {
+  assert.equal(isSessionExpiredError({ message: "Session expired or invalid" }), true);
+});
+
+test("isSessionExpiredError: 文字列レスポンスも検知", () => {
+  assert.equal(isSessionExpiredError("INVALID_SESSION_ID: Session expired or invalid"), true);
+});
+
+test("isSessionExpiredError: ネストした error プロパティも検知", () => {
+  assert.equal(isSessionExpiredError({ error: { errorCode: "INVALID_SESSION_ID" } }), true);
+});
+
+test("isSessionExpiredError: 別エラー (MALFORMED_QUERY) は false", () => {
+  assert.equal(isSessionExpiredError([{ errorCode: "MALFORMED_QUERY", message: "unexpected token" }]), false);
+});
+
+test("isSessionExpiredError: null / undefined / 空オブジェクトは false", () => {
+  assert.equal(isSessionExpiredError(null), false);
+  assert.equal(isSessionExpiredError(undefined), false);
+  assert.equal(isSessionExpiredError({}), false);
 });

@@ -663,3 +663,98 @@ export function userChipStateClasses({ user, lastFetchAt, pollMs, now = Date.now
   if (inactive) classes.push("inactive");
   return { offline: false, stale, inactive, classes };
 }
+
+/**
+ * v3.518.0 Phase 608: AuthSession レコードをユーザー単位に集約する。
+ *
+ * 「現在アクティブセッション」一覧は 1 人が UI/API/Aura など複数セッションを
+ * 同時保持するため、生の AuthSession をそのまま行にすると同じ氏名が何度も並び
+ * 「ユーザーが重複している」ように見える (ユーザー報告 2026-05-31)。
+ * 本関数はユーザー (UsersId) ごとに 1 件へ集約し、セッション数・Session 種別・
+ * Login 種別・SourceIP・開始時刻範囲・最大残存秒数をまとめて返す。
+ *
+ * - 日付 (CreatedDate) は Salesforce ISO8601 文字列前提で辞書順比較 (= 時系列順)。
+ * - 並びは セッション数 降順 → 氏名 昇順 (多重ログインのユーザーを上位に)。
+ *
+ * @param {Array<object>} [records=[]] - AuthSession SOQL レコード配列
+ * @returns {Array<{userId,name,username,profile,userType,sessionCount,sessionTypes:string[],loginTypes:string[],sourceIps:string[],earliestCreated:?string,latestCreated:?string,maxSecondsValid:number}>}
+ */
+export function dedupeActiveSessionsByUser(records = []) {
+  const byUser = new Map();
+  for (const s of records || []) {
+    const uid = s.UsersId || "(unknown)";
+    let g = byUser.get(uid);
+    if (!g) {
+      const u = s.Users || {};
+      g = {
+        userId: uid,
+        name: u.Name || "(不明)",
+        username: u.Username || "",
+        profile: (u.Profile && u.Profile.Name) ? u.Profile.Name : "(未設定)",
+        userType: u.UserType || "",
+        sessionCount: 0,
+        sessionTypes: new Set(),
+        loginTypes: new Set(),
+        sourceIps: new Set(),
+        earliestCreated: null,
+        latestCreated: null,
+        maxSecondsValid: 0,
+      };
+      byUser.set(uid, g);
+    }
+    g.sessionCount += 1;
+    if (s.SessionType) g.sessionTypes.add(s.SessionType);
+    if (s.LoginType) g.loginTypes.add(s.LoginType);
+    if (s.SourceIp) g.sourceIps.add(s.SourceIp);
+    if (s.CreatedDate) {
+      if (!g.earliestCreated || s.CreatedDate < g.earliestCreated) g.earliestCreated = s.CreatedDate;
+      if (!g.latestCreated || s.CreatedDate > g.latestCreated) g.latestCreated = s.CreatedDate;
+    }
+    const secs = Number(s.NumSecondsValid) || 0;
+    if (secs > g.maxSecondsValid) g.maxSecondsValid = secs;
+  }
+  const result = [...byUser.values()].map((g) => ({
+    userId: g.userId,
+    name: g.name,
+    username: g.username,
+    profile: g.profile,
+    userType: g.userType,
+    sessionCount: g.sessionCount,
+    sessionTypes: [...g.sessionTypes].sort(),
+    loginTypes: [...g.loginTypes].sort(),
+    sourceIps: [...g.sourceIps].sort(),
+    earliestCreated: g.earliestCreated,
+    latestCreated: g.latestCreated,
+    maxSecondsValid: g.maxSecondsValid,
+  }));
+  result.sort((a, b) => (b.sessionCount - a.sessionCount) || a.name.localeCompare(b.name));
+  return result;
+}
+
+/**
+ * v3.518.0 Phase 608: Salesforce REST/Tooling のエラーレスポンスが
+ * 「セッション失効 (INVALID_SESSION_ID)」を示すかを判定する。
+ *
+ * レスポンス形は経路により object / 配列 / 文字列と揺れるため再帰的に
+ * errorCode + message を収集して判定する。Apex 実行・REST API 等で
+ * 「再接続を促す」UI を出すために使用 (ユーザー報告「Apex実行ができない」の主因)。
+ *
+ * @param {object|Array|string} data - sfFetch の r.data
+ * @returns {boolean}
+ */
+export function isSessionExpiredError(data) {
+  if (data == null) return false;
+  const parts = [];
+  const collect = (v) => {
+    if (v == null) return;
+    if (typeof v === "string") { parts.push(v); return; }
+    if (Array.isArray(v)) { v.forEach(collect); return; }
+    if (typeof v === "object") {
+      if (v.errorCode != null) parts.push(String(v.errorCode));
+      if (v.message != null) parts.push(String(v.message));
+      if (v.error != null) collect(v.error);
+    }
+  };
+  collect(data);
+  return /INVALID_SESSION_ID|Session expired or invalid|sessionInvalid/i.test(parts.join(" "));
+}
