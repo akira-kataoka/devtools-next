@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>Phase 557 preview — user-chip inactive state</title>
+<link rel="stylesheet" href="../css/panel.css" />
+<style>
+  body { margin: 0; }
+  .preview-wrap { padding: 24px; background: linear-gradient(180deg, #112042 0%, #0b1220 100%); }
+  .preview-row { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 14px; flex-wrap: wrap; }
+  .preview-label { color: #ffffffaa; font: 11px ui-monospace, Consolas, monospace; padding: 4px 0; min-width: 280px; }
+</style>
+</head>
+<body>
+<div class="preview-wrap">
+  <h2 style="color:#fff;font:600 13px system-ui;margin:0 0 16px">Phase 557 — user-chip visual states</h2>
+
+  <div class="preview-row">
+    <span class="preview-label">[1] ACTIVE (通常)</span>
+    <button class="user-chip" type="button" title="active">
+      <span class="user-chip-avatar">山太</span>
+      <span class="user-chip-meta">
+        <span class="user-chip-name">山田 太郎</span>
+        <span class="user-chip-sub">taro@example.com</span>
+      </span>
+      <span class="user-chip-live"></span>
+    </button>
+  </div>
+
+  <div class="preview-row">
+    <span class="preview-label">[2] STALE (Phase 553 既存・取得から60s超)</span>
+    <button class="user-chip stale" type="button" title="stale">
+      <span class="user-chip-avatar">山太</span>
+      <span class="user-chip-meta">
+        <span class="user-chip-name">山田 太郎</span>
+        <span class="user-chip-sub">taro@example.com</span>
+      </span>
+      <span class="user-chip-live"></span>
+    </button>
+  </div>
+
+  <div class="preview-row">
+    <span class="preview-label">[3] OFFLINE (Phase 553 既存・未接続)</span>
+    <button class="user-chip offline" type="button" title="offline">
+      <span class="user-chip-avatar">?</span>
+      <span class="user-chip-meta">
+        <span class="user-chip-name">(未接続)</span>
+        <span class="user-chip-sub"></span>
+      </span>
+      <span class="user-chip-live"></span>
+    </button>
+  </div>
+
+  <div class="preview-row">
+    <span class="preview-label">[4] INACTIVE 🆕 (Phase 557 追加)</span>
+    <button class="user-chip inactive" type="button" title="inactive">
+      <span class="user-chip-avatar">山太</span>
+      <span class="user-chip-meta">
+        <span class="user-chip-name">山田 太郎</span>
+        <span class="user-chip-sub">taro@example.com <span class="user-chip-inactive-badge" title="IsActive=false">⚠無効</span></span>
+      </span>
+      <span class="user-chip-live"></span>
+    </button>
+  </div>
+
+  <p style="color:#ffffff88;font:11px system-ui;margin-top:24px;max-width:640px;line-height:1.55">
+    Phase 557 で追加: <code style="color:#1b96ff">.user-chip.inactive</code> — IsActive=false のユーザーで操作すると権限エラーになりやすいので、chip 全体を赤枠＋赤グラデアバター、live ドット赤・アニメ停止、サブテキスト横に <code style="color:#ff6b6b">⚠無効</code> 赤バッジ。<code>stale</code> (黄) / <code>offline</code> (灰) と直交して共存可能。
+  </p>
+</div>
+</body>
+</html>
