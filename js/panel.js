@@ -1853,8 +1853,9 @@ function bindEvents() {
   // v3.486.0 Phase 576: アクティブセッション一覧 (AuthSession ベース)
   $on("btnAdminActiveSessions", "click", doAdminListActiveSessions);
 
-  // v3.490.0 Phase 580: 一括インポートビュー (B 段階構築 2/3) — UI ハンドラ
+  // v3.490.0 Phase 580 / v3.491.0 Phase 581: 一括インポートビュー (B 段階構築 2-3/3)
   $on("btnBulkParse", "click", doBulkParse);
+  $on("btnBulkExecute", "click", doBulkExecute);
   $on("bulkOp", "change", () => {
     const op = (document.getElementById("bulkOp") || {}).value;
     const extId = document.getElementById("bulkExtId");
@@ -7892,7 +7893,10 @@ async function doAdminShowLicenseUsers(apiName) {
   adminUpdateModalBody(summary + adminTableHtml(headers, rows, { compact: true }));
 }
 
-// v3.490.0 Phase 580: 一括インポート Parse プレビュー (B 段階構築 2/3、execute は Phase 581 で追加)
+// v3.490.0 Phase 580 / v3.491.0 Phase 581: 一括インポート (B 段階構築 2-3/3)
+// Phase 580: parse → preview UI / Phase 581: execute via Composite API
+const _bulkState = { obj: "", op: "insert", extId: "", records: [], headers: [], warnings: [] };
+
 function doBulkParse() {
   const obj = (document.getElementById("bulkObject") || {}).value || "";
   const op = (document.getElementById("bulkOp") || {}).value || "insert";
@@ -7956,11 +7960,116 @@ function doBulkParse() {
     `<div style="overflow:auto;max-height:300px;border:1px solid var(--line);border-radius:4px"><table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr>${headerHtml}</tr></thead><tbody>${rowsHtml}</tbody></table></div>` +
     restHtml;
   if (meta) meta.innerHTML = `<span class="pill ok">✓ ${r.records.length} 件 parse 済</span>`;
-  // execute ボタンは Phase 581 で有効化予定。今は警告ありかどうかで disable 維持。
+  // v3.491.0 Phase 581: parse 結果を _bulkState に保持、警告なしなら execute 有効化
+  _bulkState.obj = obj.trim();
+  _bulkState.op = op;
+  _bulkState.extId = extId.trim();
+  _bulkState.records = r.records;
+  _bulkState.headers = r.headers;
+  _bulkState.warnings = warnings;
   if (exec) {
-    exec.disabled = true;
-    exec.title = warnings.length ? `❌ 警告あり: ${warnings.join(" / ")}` : `⚡ 実行は Phase 581 で実装予定。現在は parse プレビューのみ可能`;
+    const canExec = warnings.length === 0 && r.records.length > 0;
+    exec.disabled = !canExec;
+    exec.title = warnings.length
+      ? `❌ 警告あり: ${warnings.join(" / ")}`
+      : (canExec ? `⚡ ${r.records.length} 件を ${op} で実行 (Composite API、200件ずつバッチ送信)` : `⚠ レコードがありません`);
   }
+}
+
+// v3.491.0 Phase 581: Composite API で一括実行 (B 段階構築 3/3)
+// 仕様:
+//   - insert/update: POST/PATCH /services/data/vXX/composite/sobjects (Collections API、200 件/バッチ)
+//   - upsert: PATCH /services/data/vXX/composite/sobjects/<sobject>/<externalIdField> (External ID Collections)
+//   - delete: DELETE /services/data/vXX/composite/sobjects?ids=X,Y,Z&allOrNone=false
+//   - allOrNone=false で部分成功許容、エラーは行単位で集約表示
+//   - PROD 組織では destructive op (update/upsert/delete + insert も実データに影響) に confirm
+const BULK_CHUNK_SIZE = 200; // Composite API の上限
+async function doBulkExecute() {
+  if (!state.sid) { panelToast("⚠ 先に Salesforce に接続してください", { kind: "warn" }); return; }
+  const { obj, op, extId, records } = _bulkState;
+  if (!obj || !records.length) { panelToast("⚠ 先に Parse プレビューを実行してください", { kind: "warn" }); return; }
+  const meta = document.getElementById("bulkMeta");
+  const resultEl = document.getElementById("bulkResult");
+  const exec = document.getElementById("btnBulkExecute");
+  // PROD ゲート
+  if (state.isProd) {
+    const opLabel = { insert: "📝 Insert", update: "🔄 Update", upsert: "↕️ Upsert", delete: "🗑️ Delete" }[op] || op;
+    const ok = window.confirm(
+      `🚨🚨 本番組織 (PROD) で一括 ${opLabel} 🚨🚨\n` +
+      `対象組織: ${state.host || "?"}\nObject: ${obj}\nOp: ${op}${extId ? ` (key=${extId})` : ""}\n件数: ${records.length}\n\n` +
+      `実データが ${op === "delete" ? "削除" : "変更"} されます。\n本当に実行してよろしいですか？\n\n(Sandbox での事前テストを強く推奨)`
+    );
+    if (!ok) { if (meta) meta.innerHTML = `<span class="pill warn">⚠ PROD 実行をキャンセル</span>`; return; }
+  }
+  if (exec) { exec.disabled = true; exec.textContent = "⏳ 実行中…"; }
+  if (resultEl) resultEl.innerHTML = `<span class="pill loading">⏳ ${records.length} 件を ${Math.ceil(records.length / BULK_CHUNK_SIZE)} バッチに分けて送信中…</span>`;
+  const apiV = state.apiVersion || "62.0";
+  const allResults = []; // [{ index, success, id?, errors? }, ...]
+  let batchIdx = 0;
+  try {
+    for (let i = 0; i < records.length; i += BULK_CHUNK_SIZE) {
+      batchIdx++;
+      const chunk = records.slice(i, i + BULK_CHUNK_SIZE);
+      let r;
+      if (op === "delete") {
+        // DELETE: ids クエリパラメータ
+        const ids = chunk.map((rec) => rec.Id).filter(Boolean).join(",");
+        if (!ids) { for (let j = 0; j < chunk.length; j++) allResults.push({ index: i + j, success: false, errors: [{ message: "Id 欠落" }] }); continue; }
+        r = await sfFetch({ host: state.host, sid: state.sid, path: `/services/data/v${apiV}/composite/sobjects?ids=${ids}&allOrNone=false`, method: "DELETE" });
+      } else if (op === "upsert") {
+        // PATCH /sobjects/<obj>/<extId>
+        const body = { allOrNone: false, records: chunk.map((rec) => ({ attributes: { type: obj }, ...rec })) };
+        r = await sfFetch({ host: state.host, sid: state.sid, path: `/services/data/v${apiV}/composite/sobjects/${encodeURIComponent(obj)}/${encodeURIComponent(extId)}`, method: "PATCH", body });
+      } else {
+        // insert or update
+        const method = op === "insert" ? "POST" : "PATCH";
+        const body = { allOrNone: false, records: chunk.map((rec) => ({ attributes: { type: obj }, ...rec })) };
+        r = await sfFetch({ host: state.host, sid: state.sid, path: `/services/data/v${apiV}/composite/sobjects`, method, body });
+      }
+      if (!r.ok) {
+        // 全体エラー (200 以外): バッチ全件 fail として記録
+        for (let j = 0; j < chunk.length; j++) {
+          allResults.push({ index: i + j, success: false, errors: [{ message: `HTTP ${r.status}: ${formatError(r.data)}` }] });
+        }
+      } else {
+        // 部分成功許容: data は per-record 結果配列
+        const data = Array.isArray(r.data) ? r.data : [];
+        for (let j = 0; j < chunk.length; j++) {
+          const d = data[j] || { success: false, errors: [{ message: "結果なし" }] };
+          allResults.push({ index: i + j, success: !!d.success, id: d.id, created: d.created, errors: d.errors || [] });
+        }
+      }
+    }
+  } catch (e) {
+    if (resultEl) resultEl.innerHTML = `<span class="pill err">❌ 実行中エラー: ${escape(String(e.message || e))}</span>`;
+    if (exec) { exec.disabled = false; exec.textContent = "⚡ 実行"; }
+    return;
+  }
+  // 結果集計表示
+  const ok = allResults.filter((x) => x.success);
+  const fail = allResults.filter((x) => !x.success);
+  const summary = `<div style="padding:8px;background:var(--bg2,#0f1830);border:1px solid var(--line);border-radius:4px;margin-bottom:8px">` +
+    `<strong>${op === "delete" ? "🗑️" : op === "upsert" ? "↕️" : op === "update" ? "🔄" : "📝"} ${op}</strong> ${obj}: ` +
+    `<span class="pill ok">✓ 成功 ${ok.length}</span> ` +
+    (fail.length ? `<span class="pill err">✗ 失敗 ${fail.length}</span> ` : "") +
+    `<span class="meta">(${records.length} 件、${batchIdx} バッチ)</span></div>`;
+  const failTable = fail.length ? (
+    `<div style="overflow:auto;max-height:300px;border:1px solid var(--err);border-radius:4px">` +
+    `<table style="width:100%;border-collapse:collapse;font-size:11px">` +
+    `<thead><tr><th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--err);background:rgba(255,107,107,0.1)">行</th><th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--err);background:rgba(255,107,107,0.1)">エラー</th></tr></thead><tbody>` +
+    fail.slice(0, 50).map((x) => {
+      const errText = (x.errors || []).map((e) => `${e.statusCode || ""} ${e.message || ""}`.trim()).join(" / ") || "(詳細なし)";
+      return `<tr><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">${x.index + 2}</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a;color:#ff9090">${escape(errText)}</td></tr>`;
+    }).join("") +
+    `</tbody></table></div>` +
+    (fail.length > 50 ? `<div class="meta" style="padding:4px 8px">…他 ${fail.length - 50} 件 (合計 ${fail.length} エラー)</div>` : "")
+  ) : "";
+  if (resultEl) resultEl.innerHTML = summary + failTable;
+  if (meta) meta.innerHTML = fail.length
+    ? `<span class="pill err">⚠ ${fail.length} 件失敗</span>`
+    : `<span class="pill ok">✓ ${ok.length} 件成功</span>`;
+  if (exec) { exec.disabled = false; exec.textContent = "⚡ 実行"; }
+  panelToast(fail.length ? `⚠ ${ok.length} 成功 / ${fail.length} 失敗` : `✓ ${ok.length} 件 ${op} 完了`, { kind: fail.length ? "warn" : "ok" });
 }
 
 // v3.486.0 Phase 576: アクティブセッション一覧 (AuthSession ベース、ユーザー要望対応)

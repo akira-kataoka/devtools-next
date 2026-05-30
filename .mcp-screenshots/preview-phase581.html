@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>Phase 581 preview — Bulk execute</title>
+<link rel="stylesheet" href="../css/panel.css" />
+<style>
+  body { margin: 0; background: #0b1220; color: #fff; }
+  .preview-wrap { padding: 24px; max-width: 900px; }
+  .toolbar { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; padding: 8px; background: #0f1830; border-bottom: 1px solid var(--line); }
+  .toolbar input, .toolbar select, .toolbar button { padding: 4px 8px; font-size: 12px; background: var(--bg3); color: var(--fg); border: 1px solid var(--line); border-radius: 4px; }
+  .toolbar button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .meta { color: var(--fg-dim); font-size: 11px; }
+  .pill { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+  .pill.ok { background: rgba(46,204,113,0.2); color: var(--ok); border: 1px solid var(--ok); }
+  .pill.err { background: rgba(255,107,107,0.2); color: var(--err); border: 1px solid var(--err); }
+  .pill.warn { background: rgba(243,156,18,0.2); color: var(--warn); border: 1px solid var(--warn); }
+  .demo-block { background: #0a0f1f; border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 24px; }
+  .demo-block h3 { margin: 0 0 12px; font-size: 12px; color: #ffffffbb; }
+</style>
+</head>
+<body>
+<div class="preview-wrap">
+  <h2 style="font:600 13px system-ui;margin:0 0 16px">Phase 581 — 一括インポート execute 実装 🆕 (B 段階構築 3/3 完成)</h2>
+
+  <div class="demo-block">
+    <h3>[A] 全件成功</h3>
+    <div class="toolbar">
+      <input value="Account" style="flex:0 0 200px" />
+      <select><option selected>📝 Insert (新規作成)</option></select>
+      <button>🔍 Parse プレビュー</button>
+      <button class="primary">⚡ 実行</button>
+      <span style="flex:1"></span>
+      <span class="meta"><span class="pill ok">✓ 3 件成功</span></span>
+    </div>
+    <div style="margin-top:8px">
+      <div style="padding:8px;background:#0f1830;border:1px solid var(--line);border-radius:4px;margin-bottom:8px">
+        <strong>📝 insert</strong> Account: <span class="pill ok">✓ 成功 3</span> <span class="meta">(3 件、1 バッチ)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="demo-block">
+    <h3>[B] 部分失敗 (5件中3成功・2失敗)</h3>
+    <div class="toolbar">
+      <input value="Contact" style="flex:0 0 200px" />
+      <select><option selected>🔄 Update (Id 必須)</option></select>
+      <button>🔍 Parse プレビュー</button>
+      <button class="primary">⚡ 実行</button>
+      <span style="flex:1"></span>
+      <span class="meta"><span class="pill err">⚠ 2 件失敗</span></span>
+    </div>
+    <div style="margin-top:8px">
+      <div style="padding:8px;background:#0f1830;border:1px solid var(--line);border-radius:4px;margin-bottom:8px">
+        <strong>🔄 update</strong> Contact: <span class="pill ok">✓ 成功 3</span> <span class="pill err">✗ 失敗 2</span> <span class="meta">(5 件、1 バッチ)</span>
+      </div>
+      <div style="overflow:auto;max-height:300px;border:1px solid var(--err);border-radius:4px">
+        <table style="width:100%;border-collapse:collapse;font-size:11px">
+          <thead><tr>
+            <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--err);background:rgba(255,107,107,0.1)">行</th>
+            <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--err);background:rgba(255,107,107,0.1)">エラー</th>
+          </tr></thead>
+          <tbody>
+            <tr><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">3</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a;color:#ff9090">INVALID_FIELD No such column 'BadField' on entity 'Contact'</td></tr>
+            <tr><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">7</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a;color:#ff9090">REQUIRED_FIELD_MISSING Required fields are missing: [LastName]</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p class="meta" style="margin:8px 0 0">→ 行番号 (Excel/CSV の何行目か) + Salesforce のエラーコード+メッセージで「どこを直すか」が一目で分かる</p>
+  </div>
+
+  <div class="demo-block">
+    <h3>[C] PROD 確認ダイアログ</h3>
+    <div style="padding:14px;background:#3a1010;border:2px solid var(--err);border-radius:8px;font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#ffdddd;white-space:pre-line">🚨🚨 本番組織 (PROD) で一括 🗑️ Delete 🚨🚨
+対象組織: acme-prod.my.salesforce.com
+Object: Account
+Op: delete
+件数: 150
+
+実データが 削除 されます。
+本当に実行してよろしいですか？
+
+(Sandbox での事前テストを強く推奨)</div>
+    <div style="margin-top:8px;text-align:right">
+      <button>キャンセル</button>
+      <button class="primary">OK</button>
+    </div>
+    <p class="meta" style="margin:8px 0 0">→ insert / update / upsert / delete 全 op で PROD 時の confirm。Sandbox では出ない (state.isProd=false)</p>
+  </div>
+
+  <p style="color:#ffffff88;font:11px system-ui;line-height:1.55">
+    Phase 581 で追加: <code style="color:#1b96ff">doBulkExecute()</code> 実装。
+    Salesforce <strong>Collections API</strong> (<code>/composite/sobjects</code>) を 200 件/バッチで呼出。
+    op=insert/update は POST/PATCH、op=upsert は <code>/composite/sobjects/&lt;obj&gt;/&lt;extId&gt;</code> PATCH、op=delete は <code>?ids=X,Y,Z</code> DELETE。
+    <code>allOrNone=false</code> で部分成功許容、エラーは行単位で集約表示。
+    PROD 組織では事前 confirm。<strong>B 案 (Excel/CSV paste → 一括 insert/upsert/delete) 完成</strong>。
+  </p>
+</div>
+</body>
+</html>
