@@ -1865,29 +1865,24 @@ function bindEvents() {
     // v3.492.0 Phase 582: row wrap に変更 (label と input をまとめて toggle)
     const extIdRow = document.getElementById("bulkExtIdRow");
     if (extIdRow) extIdRow.style.display = op === "upsert" ? "" : "none";
+    // v3.501.0 Phase 591: op 変更時も既存 parse は stale (検証ルールが変わるため)
+    invalidateBulkParseState("操作種別が変わりました。再度 Parse してください");
   });
   // v3.499.0 Phase 589: bulk input draft 自動保存 (Apex/SOQL/REST と統一、誤閉じ救済)
   // v3.500.0 Phase 590: 編集時に古い _bulkState を invalidate して execute 誤発火を防ぐ
+  // v3.501.0 Phase 591: 同じ stale state 問題を bulkObject / bulkExtId にも横展開 (invalidateBulkParseState helper 共通化)
   const bulkInputEl = document.getElementById("bulkInput");
   if (bulkInputEl) bulkInputEl.addEventListener("input", () => {
     scheduleSaveBulkInputDraft(bulkInputEl.value);
-    // 編集された瞬間に既存 parse 結果は stale → execute をブロック
-    if (_bulkState.records.length > 0) {
-      _bulkState.records = [];
-      _bulkState.headers = [];
-      _bulkState.warnings = [];
-      const exec = document.getElementById("btnBulkExecute");
-      if (exec) { exec.disabled = true; exec.title = "テキストが編集されました。再度「🔍 Parse してプレビュー」を実行してください"; }
-      const reasonEl = document.getElementById("bulkExecReason");
-      if (reasonEl) {
-        reasonEl.textContent = "✏️ テキストが編集されました。再度 Parse を実行してください";
-        reasonEl.style.color = "var(--warn)";
-        reasonEl.style.fontStyle = "italic";
-      }
-      const meta = document.getElementById("bulkMeta");
-      if (meta) meta.textContent = "";
-    }
+    invalidateBulkParseState("✏️ テキストが編集されました。再度 Parse を実行してください");
   });
+  // sObject / extId 入力も同じく stale 化トリガー
+  const bulkObjectEl = document.getElementById("bulkObject");
+  if (bulkObjectEl) bulkObjectEl.addEventListener("input", () =>
+    invalidateBulkParseState("対象オブジェクトが変わりました。再度 Parse してください"));
+  const bulkExtIdEl = document.getElementById("bulkExtId");
+  if (bulkExtIdEl) bulkExtIdEl.addEventListener("input", () =>
+    invalidateBulkParseState("External ID Field が変わりました。再度 Parse してください"));
   // v3.495.0 Phase 585: Ctrl+Enter で Parse 発火 (Apex/SOQL ビューと UX 統一)
   // v3.496.0 Phase 586: Tab で \t (タブ文字) 挿入 — TAB 区切りデータの手動編集をスムーズに
   //   (フォーカス移動は Shift+Tab で温存 → a11y キーボードナビ維持)
@@ -7967,6 +7962,25 @@ async function doAdminShowLicenseUsers(apiName) {
 // v3.490.0 Phase 580 / v3.491.0 Phase 581: 一括インポート (B 段階構築 2-3/3)
 // Phase 580: parse → preview UI / Phase 581: execute via Composite API
 const _bulkState = { obj: "", op: "insert", extId: "", records: [], headers: [], warnings: [] };
+
+// v3.501.0 Phase 591: input 変更時に古い parse 結果を invalidate (Phase 590 の bulkInput 個別対応を
+//   bulkObject / bulkOp / bulkExtId にも横展開して helper 化)。execute 誤発火を全方位防止。
+function invalidateBulkParseState(reasonText) {
+  if (_bulkState.records.length === 0) return; // 既に空なら何もしない
+  _bulkState.records = [];
+  _bulkState.headers = [];
+  _bulkState.warnings = [];
+  const exec = document.getElementById("btnBulkExecute");
+  if (exec) { exec.disabled = true; exec.title = reasonText; }
+  const reasonEl = document.getElementById("bulkExecReason");
+  if (reasonEl) {
+    reasonEl.textContent = reasonText;
+    reasonEl.style.color = "var(--warn)";
+    reasonEl.style.fontStyle = "italic";
+  }
+  const meta = document.getElementById("bulkMeta");
+  if (meta) meta.textContent = "";
+}
 
 function doBulkParse() {
   const obj = (document.getElementById("bulkObject") || {}).value || "";
