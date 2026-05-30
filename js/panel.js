@@ -4067,6 +4067,8 @@ async function reconnect() {
     inspectHistory.length = 0;
     updateInspectBackButton();
     console.log("[DevToolsNext] Inspector history cleared (Org change)");
+    // v3.505.0 Phase 595: bulk parse 結果も別組織のスキーマで execute する事故防止のため invalidate
+    invalidateBulkParseState("⚠ 接続先組織が変わりました。再度 Parse してください (別組織のスキーマで実行を防止)");
   }
   // sandbox / developer / production の判定 + 色付きバッジ
   // v3.325.0 Phase 415: state.isProd / state.envLabel の初期定義は Phase 405 で state object に追加済 (line 9-17)。
