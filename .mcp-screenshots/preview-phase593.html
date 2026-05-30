@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>Phase 593 preview — TopErrors display</title>
+<link rel="stylesheet" href="../css/panel.css" />
+<style>
+  body { margin: 0; background: #0b1220; color: #fff; font-family: system-ui, -apple-system, sans-serif; }
+  .preview-wrap { padding: 20px; max-width: 900px; }
+  .pill { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+  .pill.ok { background: rgba(46,204,113,0.2); color: var(--ok); border: 1px solid var(--ok); }
+  .pill.err { background: rgba(255,107,107,0.2); color: var(--err); border: 1px solid var(--err); }
+  .meta { color: var(--fg-dim); font-size: 11px; }
+  .case-label { font: 11px ui-monospace, Consolas, monospace; color: #ffffffaa; margin: 16px 0 6px; }
+</style>
+</head>
+<body>
+<div class="preview-wrap">
+  <h2 style="font:600 13px system-ui;margin:0 0 16px">Phase 593 — bulk execute 結果に「最頻エラー TOP3」を表示 🆕</h2>
+
+  <div class="case-label">[A] BEFORE — summary + 全失敗行テーブル (どのエラーが多いか把握まで遠い)</div>
+  <div style="padding:8px;background:var(--bg2,#0f1830);border:1px solid var(--line);border-radius:4px;margin-bottom:8px">
+    <strong>🔄 update</strong> Contact: <span class="pill ok">✓ 成功 50</span> <span class="pill err">✗ 失敗 150</span> <span class="meta">(200 件、1 バッチ)</span>
+  </div>
+  <div style="overflow:auto;max-height:120px;border:1px solid var(--err);border-radius:4px;font-size:11px">
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr><th style="text-align:left;padding:4px 6px;background:rgba(255,107,107,0.1)">行</th><th style="text-align:left;padding:4px 6px;background:rgba(255,107,107,0.1)">エラー</th></tr></thead>
+      <tbody>
+        <tr><td style="padding:3px 6px;color:#888">3</td><td style="padding:3px 6px;color:#ff9090">INVALID_FIELD No such column 'BadField' on entity 'Contact'</td></tr>
+        <tr><td style="padding:3px 6px;color:#888">5</td><td style="padding:3px 6px;color:#ff9090">INVALID_FIELD No such column 'BadField' on entity 'Contact'</td></tr>
+        <tr><td style="padding:3px 6px;color:#888">7</td><td style="padding:3px 6px;color:#ff9090">REQUIRED_FIELD_MISSING Required fields: [LastName]</td></tr>
+        <tr><td style="padding:3px 6px;color:#888">...</td><td style="padding:3px 6px;color:#888">…147 件続く (どれが多いか目視で数えるしかない)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="case-label">[B] AFTER 🆕 — summary 直下に最頻エラー TOP3 を pill 表示</div>
+  <div style="padding:8px;background:var(--bg2,#0f1830);border:1px solid var(--line);border-radius:4px;margin-bottom:8px">
+    <strong>🔄 update</strong> Contact: <span class="pill ok">✓ 成功 50</span> <span class="pill err">✗ 失敗 150</span> <span class="meta">(200 件、1 バッチ)</span>
+  </div>
+  <div style="padding:6px 8px;background:rgba(255,107,107,0.06);border:1px solid rgba(255,107,107,0.3);border-radius:4px;margin-bottom:8px;font-size:11px">
+    <strong style="color:var(--err)">📊 最頻エラー TOP3:</strong>
+    <span class="pill err" style="margin-right:6px" title="No such column 'BadField' on entity 'Contact'">INVALID_FIELD <strong>×120</strong></span>
+    <span class="pill err" style="margin-right:6px" title="Required fields are missing: [LastName]">REQUIRED_FIELD_MISSING <strong>×25</strong></span>
+    <span class="pill err" style="margin-right:6px" title="duplicate value found: External_Id__c=EXT-001">DUPLICATE_VALUE <strong>×5</strong></span>
+    <div class="meta" style="color:var(--fg-dim);margin-top:4px;font-size:10px">※ pill ホバーで初回エラーメッセージ表示</div>
+  </div>
+  <div style="overflow:auto;max-height:120px;border:1px solid var(--err);border-radius:4px;font-size:11px">
+    <table style="width:100%;border-collapse:collapse">
+      <thead><tr><th style="text-align:left;padding:4px 6px;background:rgba(255,107,107,0.1)">行</th><th style="text-align:left;padding:4px 6px;background:rgba(255,107,107,0.1)">エラー</th></tr></thead>
+      <tbody>
+        <tr><td style="padding:3px 6px;color:#888">3</td><td style="padding:3px 6px;color:#ff9090">INVALID_FIELD No such column 'BadField' on entity 'Contact'</td></tr>
+        <tr><td style="padding:3px 6px;color:#888">5</td><td style="padding:3px 6px;color:#ff9090">INVALID_FIELD No such column 'BadField' on entity 'Contact'</td></tr>
+        <tr><td style="padding:3px 6px;color:#888">7</td><td style="padding:3px 6px;color:#ff9090">REQUIRED_FIELD_MISSING Required fields: [LastName]</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="color:#ffffff88;font:11px system-ui;margin-top:24px;line-height:1.6;max-width:760px">
+    Phase 593 で追加: bulk execute 結果に Phase 592 で集計した <code style="color:#1b96ff">topErrors</code> を表示。
+    <strong>失敗時に何のエラーが何件起きたかが一目で分かる</strong>ので、「列名のタイポ修正で 120件解決」のような即時判断が可能に。
+    150件の失敗テーブルを目で集計する必要がなくなる。pill ホバー (PC) / タップ (モバイル) で初回エラーの message を確認できる。
+  </p>
+</div>
+</body>
+</html>

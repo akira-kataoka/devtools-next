@@ -8143,14 +8143,23 @@ async function doBulkExecute() {
     if (exec) { exec.disabled = false; exec.textContent = "⚡ 実行"; }
     return;
   }
-  // v3.502.0 Phase 592: 結果集計を summarizeBulkResults (pure) に集約。topErrors は将来 UI に活用予定
+  // v3.502.0 Phase 592 → v3.503.0 Phase 593: summarizeBulkResults を使い topErrors も表示
   const stats = summarizeBulkResults(allResults);
   const fail = allResults.filter((x) => !x.success); // 失敗詳細テーブル用に列挙 (helper は集計のみ)
+  // Phase 593: 失敗時は最頻エラーコード TOP3 を summary 直下に表示 (原因特定を高速化)
+  const topErrHtml = stats.topErrors.length ? (
+    `<div style="padding:6px 8px;background:rgba(255,107,107,0.06);border:1px solid rgba(255,107,107,0.3);border-radius:4px;margin-bottom:8px;font-size:11px">` +
+    `<strong style="color:var(--err)">📊 最頻エラー TOP${stats.topErrors.length}:</strong> ` +
+    stats.topErrors.map((e) => `<span class="pill err" style="margin-right:6px" title="${escape(e.sample || "(詳細なし)")}">${escape(e.statusCode)} <strong>×${e.count}</strong></span>`).join("") +
+    `<div class="meta" style="color:var(--fg-dim);margin-top:4px;font-size:10px">※ pill ホバーで初回エラーメッセージ表示</div>` +
+    `</div>`
+  ) : "";
   const summary = `<div style="padding:8px;background:var(--bg2,#0f1830);border:1px solid var(--line);border-radius:4px;margin-bottom:8px">` +
     `<strong>${op === "delete" ? "🗑️" : op === "upsert" ? "↕️" : op === "update" ? "🔄" : "📝"} ${op}</strong> ${obj}: ` +
     `<span class="pill ok">✓ 成功 ${stats.ok}</span> ` +
     (stats.fail ? `<span class="pill err">✗ 失敗 ${stats.fail}</span> ` : "") +
-    `<span class="meta">(${stats.total} 件、${batchIdx} バッチ)</span></div>`;
+    `<span class="meta">(${stats.total} 件、${batchIdx} バッチ)</span></div>` +
+    topErrHtml;
   const failTable = stats.fail ? (
     `<div style="overflow:auto;max-height:300px;border:1px solid var(--err);border-radius:4px">` +
     `<table style="width:100%;border-collapse:collapse;font-size:11px">` +
