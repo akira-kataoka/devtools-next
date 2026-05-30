@@ -7993,6 +7993,11 @@ function doBulkParse() {
   const preview = document.getElementById("bulkPreview");
   const exec = document.getElementById("btnBulkExecute");
   if (!preview) return;
+  // v3.506.0 Phase 596: 再 Parse 時に古い execute 結果を clear して紛らわしさ排除
+  const resultEl = document.getElementById("bulkResult");
+  if (resultEl) {
+    resultEl.innerHTML = `<div class="empty-state" style="padding:16px;text-align:center;color:var(--fg-dim);font-size:11px">実行結果（成功/失敗カウント・失敗行の詳細）がここに表示されます</div>`;
+  }
   if (!obj.trim()) {
     preview.innerHTML = `<span class="pill warn">⚠ sObject API 名を入力してください (例: Account)</span>`;
     if (meta) meta.textContent = "";
