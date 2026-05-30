@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>Phase 558 preview — popover up-avatar inactive</title>
+<link rel="stylesheet" href="../css/panel.css" />
+<style>
+  body { margin: 0; background: #0b1220; }
+  .preview-wrap { padding: 24px; }
+  .preview-grid { display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+  .preview-col { display: flex; flex-direction: column; gap: 8px; }
+  .preview-label { color: #ffffffaa; font: 11px ui-monospace, Consolas, monospace; }
+  .user-popover { position: static; }
+</style>
+</head>
+<body>
+<div class="preview-wrap">
+  <h2 style="color:#fff;font:600 13px system-ui;margin:0 0 16px">Phase 558 — popover up-avatar の inactive 一貫性</h2>
+
+  <div class="preview-grid">
+    <div class="preview-col">
+      <span class="preview-label">[A] BEFORE / ACTIVE 通常</span>
+      <div class="user-popover" role="dialog">
+        <h4><span class="up-avatar">山太</span> 山田 太郎 <span class="up-badge active">有効</span></h4>
+        <dl>
+          <dt>ユーザー名</dt><dd>taro@example.com</dd>
+          <dt>プロファイル</dt><dd>システム管理者</dd>
+          <dt>ロール</dt><dd>営業部長</dd>
+          <dt>最終ログイン</dt><dd>5分前</dd>
+        </dl>
+        <div class="up-footer">
+          <label><input type="checkbox" checked> 自動更新</label>
+          <span>最終更新 14:30:00</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-col">
+      <span class="preview-label">[B] BEFORE / INACTIVE 旧 (アバター青のまま)</span>
+      <div class="user-popover" role="dialog">
+        <h4><span class="up-avatar">山太</span> 山田 太郎 <span class="up-badge inactive">無効</span></h4>
+        <dl>
+          <dt>ユーザー名</dt><dd>taro@example.com</dd>
+          <dt>プロファイル</dt><dd>システム管理者</dd>
+          <dt>ロール</dt><dd>営業部長</dd>
+          <dt>最終ログイン</dt><dd>5分前</dd>
+        </dl>
+        <div class="up-footer">
+          <label><input type="checkbox" checked> 自動更新</label>
+          <span>最終更新 14:30:00</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-col">
+      <span class="preview-label">[C] AFTER 🆕 / INACTIVE 新 (アバター赤化)</span>
+      <div class="user-popover" role="dialog">
+        <h4><span class="up-avatar inactive">山太</span> 山田 太郎 <span class="up-badge inactive">無効</span></h4>
+        <dl>
+          <dt>ユーザー名</dt><dd>taro@example.com</dd>
+          <dt>プロファイル</dt><dd>システム管理者</dd>
+          <dt>ロール</dt><dd>営業部長</dd>
+          <dt>最終ログイン</dt><dd>5分前</dd>
+        </dl>
+        <div class="up-footer">
+          <label><input type="checkbox" checked> 自動更新</label>
+          <span>最終更新 14:30:00</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <p style="color:#ffffff88;font:11px system-ui;margin-top:24px;max-width:760px;line-height:1.55">
+    Phase 557 で chip 側 (<code style="color:#1b96ff">.user-chip.inactive .user-chip-avatar</code>) は赤グラデになったが、詳細ポップオーバーのヘッダーアバター (<code style="color:#1b96ff">.up-avatar</code>) は青のままで視覚一貫性が崩れていた。Phase 558 で <code style="color:#1b96ff">.user-popover .up-avatar.inactive</code> を追加して揃えた。
+  </p>
+</div>
+</body>
+</html>

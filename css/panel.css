@@ -160,6 +160,8 @@ html, body {
   display: inline-flex; align-items: center; justify-content: center;
   background: linear-gradient(135deg, var(--accent) 0%, #0a66c2 100%); color: #fff; font-weight: 700; font-size: 13px;
 }
+/* v3.468.0 Phase 558: chip 側 (.user-chip.inactive .user-chip-avatar) と視覚一貫性を持たせる */
+.user-popover .up-avatar.inactive { background: linear-gradient(135deg, var(--err) 0%, #7a2020 100%); }
 .user-popover dl { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin: 8px 0 0; }
 .user-popover dt { color: var(--fg-dim); font-size: 11px; white-space: nowrap; }
 .user-popover dd { margin: 0; font-size: 11px; word-break: break-all; }

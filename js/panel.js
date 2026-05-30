@@ -4111,16 +4111,19 @@ function renderCurrentUserPopover(cu) {
     const copyBtn = copyable ? ` <span class="up-copy" data-copy="${safe}" title="コピー">⧉</span>` : "";
     return `<dt>${escape(label)}</dt><dd>${safe}${copyBtn}</dd>`;
   };
+  // v3.468.0 Phase 558: ポップオーバーヘッダーのアバターも inactive 時は赤化 (Phase 557 で chip 側だけ赤化 → 視覚一貫性のため popover も揃える)
+  const inactive = cu.isActive === false;
   const activeBadge = cu.isActive === null ? "" :
     cu.isActive
       ? `<span class="up-badge active">有効</span>`
       : `<span class="up-badge inactive">無効</span>`;
+  const avatarClass = `up-avatar${inactive ? " inactive" : ""}`;
   const lastLogin = cu.lastLogin
     ? `${escape(relativeTimeJa(cu.lastLogin))} <span style="opacity:.6">(${escape(String(cu.lastLogin).replace("T", " ").substring(0, 16))})</span>`
     : "";
   const updated = state.lastUserFetch ? new Date(state.lastUserFetch).toLocaleTimeString("ja-JP") : "-";
   pop.innerHTML =
-    `<h4><span class="up-avatar">${escape(cu.initials || "?")}</span> ${escape(cu.name || "(不明)")} ${activeBadge}</h4>` +
+    `<h4><span class="${avatarClass}">${escape(cu.initials || "?")}</span> ${escape(cu.name || "(不明)")} ${activeBadge}</h4>` +
     `<dl>` +
     row("ユーザー名", cu.username, true) +
     row("メール", cu.email, true) +
