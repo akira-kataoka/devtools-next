@@ -18,6 +18,9 @@
 //   connSoql: 保存済み接続を使って SOQL 実行
 //   connSoapCall: 保存済み接続を使って SOAP call (sessionId Header 自動付与)
 
+// v3.477.0 Phase 567: SOAP envelope の XML エスケープを sf-format-helpers に集約
+import { escXml } from "./sf-format-helpers.js";
+
 export const STORAGE_KEY = "sfdtConnections";
 export const DEFAULT_API_VERSION = "62.0";
 
@@ -120,15 +123,13 @@ export async function authenticateOAuthPassword({ loginUrl, consumerKey, consume
 export async function authenticateSoapLogin({ loginUrl, username, password, securityToken, apiVersion = DEFAULT_API_VERSION }) {
   const base = (loginUrl || "https://login.salesforce.com").replace(/\/$/, "");
   const url = base + "/services/Soap/u/" + apiVersion;
-  const esc = (s) => String(s == null ? "" : s)
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+  // v3.477.0 Phase 567: inline esc を escXml (sf-format-helpers) に置換
   const envelope = `<?xml version="1.0" encoding="UTF-8"?>
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:urn="urn:partner.soap.sforce.com">
   <soapenv:Body>
     <urn:login>
-      <urn:username>${esc(username)}</urn:username>
-      <urn:password>${esc((password || "") + (securityToken || ""))}</urn:password>
+      <urn:username>${escXml(username)}</urn:username>
+      <urn:password>${escXml((password || "") + (securityToken || ""))}</urn:password>
     </urn:login>
   </soapenv:Body>
 </soapenv:Envelope>`;

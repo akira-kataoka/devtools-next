@@ -132,6 +132,27 @@ export function formatSfDateTimeLoose(s) {
   return m ? `${m[1]} ${m[2]}` : str;
 }
 
+/**
+ * v3.477.0 Phase 567: XML 特殊 5 文字 (& < > " ') を実体参照に置換する純粋関数。
+ *
+ * sf-connections.js (SOAP envelope の値埋込) と panel.js xmlText (Excel XML
+ * 出力) で同一の inline 関数を 2 箇所重複していたのを集約。
+ *
+ * 注: escHtml と違って quote は `&quot;`、apostrophe は `&apos;` (XML 標準)。
+ *     `&#39;` (escHtml の HTML 推奨形) ではない点に注意 — XML attribute では
+ *     `&apos;` が公式実体参照。HTML と XML で文字参照体系が微妙に違うため
+ *     別関数として用意 (escHtml を流用すると XML パーサで `&#39;` を未定義実体と
+ *     見なす実装に当たる可能性)。
+ *
+ * @param {*} s
+ * @returns {string}
+ */
+export function escXml(s) {
+  return String(s == null ? "" : s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&apos;");
+}
+
 // =====================================================================
 // v3.463.0 Phase 553: 現在ログイン中ユーザーのリアルタイム表示 (ユーザー要望 2026-05-27)
 //   ヘッダーに「今ログインしているのは誰か」を常時表示するため、表示用の

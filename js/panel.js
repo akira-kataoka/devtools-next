@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose } from "./sf-format-helpers.js";
+import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -2450,10 +2450,9 @@ function exToCsv(fields, records) {
 }
 
 function exToExcelXml(objName, fields, records) {
-  const xmlText = (s) => String(s == null ? "" : s)
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;").replace(/'/g, "&apos;")
-    .replace(/\r?\n/g, "&#10;").replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
+  // v3.477.0 Phase 567: XML 5 文字エスケープを escXml (sf-format-helpers) に集約、
+  //   その後 Excel XML 用に改行→&#10; / 制御文字を strip
+  const xmlText = (s) => escXml(s).replace(/\r?\n/g, "&#10;").replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
 
   const parts = [`<?xml version="1.0" encoding="UTF-8"?>
 <?mso-application progid="Excel.Sheet"?>
