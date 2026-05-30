@@ -846,11 +846,7 @@ async function renderLinks() {
 // 接続マネージャ (panel/tool.html?view=connections) と chrome.storage.local 'sfdtConnections' を共有
 // ======================================================================
 
-function escapePopupHtml(s) {
-  return String(s == null ? "" : s)
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-}
+// v3.478.0 Phase 568: escapePopupHtml は escHtml (alias=escape) と完全重複していたため削除、6 callers を escape に統一 (Phase 552 escHtml 集約 + Phase 567 escXml 集約と同じ DRY 方針)
 
 // v3.449.0 Phase 539 → v3.450.0 Phase 540: formatAuthAge / isAuthStale は sf-connections.js に集約 (panel.js と共通化)
 
@@ -878,18 +874,18 @@ async function renderPopupConnections() {
       const rowBorder = stale ? "border:1px solid #6b5318" : "border:1px solid var(--line,#333)"; // 古い接続は黄色枠
       return `<div class="popup-conn-row" style="${rowBorder};border-radius:4px;padding:5px 7px;background:var(--bg-2,#1a1a1a)">
         <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600">
-          <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escapePopupHtml(c.name || "(無名)")}">${escapePopupHtml(c.name || "(無名)")}</span>
+          <span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${escape(c.name || "(無名)")}">${escape(c.name || "(無名)")}</span>
           ${badge}
         </div>
         <div style="display:flex;align-items:center;gap:4px;font-size:10px;color:var(--fg-dim,#888);margin-top:2px">
           <span>${authType}</span>
-          ${ageLabel ? `<span title="認証日時: ${escapePopupHtml(ageTitle)}" style="color:${stale ? "#f5c269" : "var(--fg-dim,#888)"}">⏱ ${escapePopupHtml(ageLabel)}</span>` : ""}
-          ${inst ? `<span title="${escapePopupHtml(inst)}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${escapePopupHtml(inst)}</span>` : ""}
+          ${ageLabel ? `<span title="認証日時: ${escape(ageTitle)}" style="color:${stale ? "#f5c269" : "var(--fg-dim,#888)"}">⏱ ${escape(ageLabel)}</span>` : ""}
+          ${inst ? `<span title="${escape(inst)}" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1">${escape(inst)}</span>` : ""}
         </div>
         <div style="display:flex;gap:3px;margin-top:4px;flex-wrap:wrap">
-          ${authed ? `<button class="mini btn-popup-conn-rest" data-id="${escapePopupHtml(c.id)}" title="この接続を選んだ状態で REST API ビューを全画面表示">🌐 REST</button>` : ""}
-          ${authed ? `<button class="mini btn-popup-conn-copytoken" data-id="${escapePopupHtml(c.id)}" title="access_token をクリップボードへコピー">📋 token</button>` : ""}
-          ${stale ? `<button class="mini btn-popup-conn-reauth" data-id="${escapePopupHtml(c.id)}" title="接続マネージャを開いて自動で 🔓 再認証を発火 (Phase 546: ボタン名通りの動作)" style="border-color:#6b5318;color:#f5c269">🔓 再認証</button>` : `<button class="mini btn-popup-conn-edit" data-id="${escapePopupHtml(c.id)}" title="接続マネージャで編集">✏️ 編集</button>`}
+          ${authed ? `<button class="mini btn-popup-conn-rest" data-id="${escape(c.id)}" title="この接続を選んだ状態で REST API ビューを全画面表示">🌐 REST</button>` : ""}
+          ${authed ? `<button class="mini btn-popup-conn-copytoken" data-id="${escape(c.id)}" title="access_token をクリップボードへコピー">📋 token</button>` : ""}
+          ${stale ? `<button class="mini btn-popup-conn-reauth" data-id="${escape(c.id)}" title="接続マネージャを開いて自動で 🔓 再認証を発火 (Phase 546: ボタン名通りの動作)" style="border-color:#6b5318;color:#f5c269">🔓 再認証</button>` : `<button class="mini btn-popup-conn-edit" data-id="${escape(c.id)}" title="接続マネージャで編集">✏️ 編集</button>`}
         </div>
       </div>`;
     }).join("");
