@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses } from "./sf-format-helpers.js";
+import { tsForFilename, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -4170,10 +4170,11 @@ function toggleCurrentUserPopover() {
     pop.hidden = false;
     chip.setAttribute("aria-expanded", "true");
     // chip の真下・右寄せで配置
+    // v3.470.0 Phase 560: 配置計算を popoverPosition (pure) に集約
     const r = chip.getBoundingClientRect();
-    pop.style.top = `${Math.round(r.bottom + 6)}px`;
-    const left = Math.min(r.left, window.innerWidth - pop.offsetWidth - 12);
-    pop.style.left = `${Math.round(Math.max(8, left))}px`;
+    const { top, left } = popoverPosition({ chipRect: r, viewportWidth: window.innerWidth, popoverWidth: pop.offsetWidth });
+    pop.style.top = `${top}px`;
+    pop.style.left = `${left}px`;
     // 開いた直後は最新化のため軽く再取得
     refreshCurrentUserId();
   } else {

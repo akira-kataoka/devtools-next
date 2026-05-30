@@ -9,6 +9,7 @@ import {
   userInitials, relativeTimeJa, formatCurrentUser,
   escapeSoqlLiteral,
   userChipStateClasses,
+  popoverPosition,
 } from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
@@ -405,4 +406,83 @@ test("userChipStateClasses: stale + inactive 同時 → 両方 true, classes = [
 test("userChipStateClasses: 未来時刻の lastFetchAt (時計ずれ) は stale 扱いしない", () => {
   const r = userChipStateClasses({ user: userActive, lastFetchAt: NOW_C + 5000, pollMs: POLL, now: NOW_C });
   assert.equal(r.stale, false); // 差が負なので pollMs*2.2 超にならない
+});
+
+// --- popoverPosition (Phase 560) ----------------------------------------------
+
+test("popoverPosition: 通常配置 — chip 直下に gap=6 px、left は chip.left に揃う", () => {
+  const r = popoverPosition({
+    chipRect: { left: 100, bottom: 40 },
+    viewportWidth: 1200,
+    popoverWidth: 300,
+  });
+  assert.deepEqual(r, { top: 46, left: 100 });
+});
+
+test("popoverPosition: 右端近接 — viewportWidth - popoverWidth - edgePadding にクリップ", () => {
+  // chip.left=900, viewport=1000, popover=300 → 900 + 300 = 1200 が右端超
+  // クリップ: 1000 - 300 - 12 = 688
+  const r = popoverPosition({
+    chipRect: { left: 900, bottom: 40 },
+    viewportWidth: 1000,
+    popoverWidth: 300,
+  });
+  assert.equal(r.left, 688);
+});
+
+test("popoverPosition: 左端近接 — chip.left が minLeft(8) 未満なら 8 にクランプ", () => {
+  const r = popoverPosition({
+    chipRect: { left: 2, bottom: 40 },
+    viewportWidth: 1200,
+    popoverWidth: 300,
+  });
+  assert.equal(r.left, 8);
+});
+
+test("popoverPosition: chip.left が負 (画面外) でも minLeft にクランプ", () => {
+  const r = popoverPosition({
+    chipRect: { left: -50, bottom: 40 },
+    viewportWidth: 1200,
+    popoverWidth: 300,
+  });
+  assert.equal(r.left, 8);
+});
+
+test("popoverPosition: 非整数の chipRect を Math.round で整数化", () => {
+  const r = popoverPosition({
+    chipRect: { left: 100.7, bottom: 39.3 },
+    viewportWidth: 1200,
+    popoverWidth: 300,
+  });
+  assert.equal(r.top, 45);  // 39.3 + 6 = 45.3 → 45
+  assert.equal(r.left, 101); // 100.7 → 101
+});
+
+test("popoverPosition: gap/edgePadding/minLeft をカスタマイズ可能", () => {
+  const r = popoverPosition({
+    chipRect: { left: 100, bottom: 40 },
+    viewportWidth: 1200,
+    popoverWidth: 300,
+    gap: 10,
+    edgePadding: 20,
+    minLeft: 0,
+  });
+  assert.equal(r.top, 50); // 40 + 10
+  assert.equal(r.left, 100); // 通常配置 (edgePadding/minLeft 影響なし)
+});
+
+test("popoverPosition: viewport より popover が大きい (狭画面) — minLeft が勝つ", () => {
+  // viewport=300, popover=400 → 300 - 400 - 12 = -112 → max(8, -112) = 8
+  const r = popoverPosition({
+    chipRect: { left: 50, bottom: 40 },
+    viewportWidth: 300,
+    popoverWidth: 400,
+  });
+  assert.equal(r.left, 8);
+});
+
+test("popoverPosition: chipRect 必須 — 渡し忘れたら throw する (内部関数の契約として明示)", () => {
+  // 実運用では panel.js が常に DOM 経由で chipRect を渡す。
+  // 渡し忘れは呼び出し側のバグなので即時 throw で気づかせる方針 (silent NaN は避ける)。
+  assert.throws(() => popoverPosition({ viewportWidth: 1200, popoverWidth: 300 }), TypeError);
 });

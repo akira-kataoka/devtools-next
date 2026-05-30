@@ -177,6 +177,32 @@ export function formatCurrentUser({ userInfo = null, userRecord = null } = {}) {
  * @param {number} [args.now=Date.now()] - 基準時刻 (テスト注入用)
  * @returns {{ offline: boolean, stale: boolean, inactive: boolean, classes: string[] }}
  */
+/**
+ * v3.470.0 Phase 560: chip 直下に開くポップオーバーの配置座標を計算する純粋関数。
+ *
+ * panel.js toggleCurrentUserPopover の DOM 配置計算ロジックを抽出してテスト可能化。
+ *
+ * 配置ルール:
+ *   - 縦: chip の bottom + gap (デフォルト 6px)
+ *   - 横: chip の left に揃えるが、右端から (popoverWidth + edgePadding) を超えないようクリップ。
+ *         さらに minLeft (デフォルト 8px) より小さくならないようクランプ。
+ *
+ * @param {object} args
+ * @param {{left: number, bottom: number}} args.chipRect - chip.getBoundingClientRect()
+ * @param {number} args.viewportWidth - window.innerWidth
+ * @param {number} args.popoverWidth - 計測済の popover 幅 (offsetWidth)
+ * @param {number} [args.gap=6] - chip と popover の縦間隔
+ * @param {number} [args.edgePadding=12] - 右端の余白
+ * @param {number} [args.minLeft=8] - 左端の最小オフセット
+ * @returns {{ top: number, left: number }} 共に Math.round 済の整数 px
+ */
+export function popoverPosition({ chipRect, viewportWidth, popoverWidth, gap = 6, edgePadding = 12, minLeft = 8 } = {}) {
+  const top = Math.round(chipRect.bottom + gap);
+  const rawLeft = Math.min(chipRect.left, viewportWidth - popoverWidth - edgePadding);
+  const left = Math.round(Math.max(minLeft, rawLeft));
+  return { top, left };
+}
+
 export function userChipStateClasses({ user, lastFetchAt, pollMs, now = Date.now() } = {}) {
   // user null は未接続 = offline。それ以外の状態判定は user が必要
   if (!user) {
