@@ -70,6 +70,12 @@ export function formatError(d) {
     return `[${d.length}件のエラー] ${head}${tail}`;
   }
   if (d && d.error) return d.error_description || d.error;
+  // v3.497.0 Phase 587: Salesforce 単一オブジェクトエラー形式 ({errorCode, message, fields?}) も
+  //   「errorCode message」形式に整形 (旧実装は JSON.stringify に流れて読みづらかった)。
+  //   Tooling API / 一部 REST エラーで配列ではなく単一オブジェクトが返るケースを救済。
+  if (d && typeof d === "object" && (d.errorCode || d.message)) {
+    return `${d.errorCode || ""} ${d.message || ""}`.trim();
+  }
   // v3.482.0 Phase 572: JSON.stringify は循環参照で TypeError を投げるため try/catch で防御。
   //   formatError 自体がエラー表示中に再エラーを起こすと panel.js displayApiError 経路全体が破綻するため、
   //   最終フォールバックとして String(d) を返す (循環でも安全)。

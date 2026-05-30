@@ -159,6 +159,40 @@ test("formatError: 深いネスト循環参照も安全", () => {
   assert.doesNotThrow(() => formatError(a));
 });
 
+// --- formatError 単一オブジェクトエラー形式 (Phase 587) -----------------------
+
+test("formatError: SF 単一オブジェクト {errorCode, message} → 'errorCode message'", () => {
+  assert.equal(
+    formatError({ errorCode: "INVALID_FIELD", message: "No such column 'Foo'" }),
+    "INVALID_FIELD No such column 'Foo'",
+  );
+});
+
+test("formatError: 単一オブジェクト errorCode のみ → trim でスペースなし", () => {
+  assert.equal(formatError({ errorCode: "TIMEOUT" }), "TIMEOUT");
+});
+
+test("formatError: 単一オブジェクト message のみ → 先頭スペースなし", () => {
+  assert.equal(formatError({ message: "Network error" }), "Network error");
+});
+
+test("formatError: 単一オブジェクト {error: ...} は OAuth として優先処理 (新分岐より先)", () => {
+  // 旧 OAuth ハンドリングが先に勝つことを verify (新分岐の前に評価される)
+  assert.equal(
+    formatError({ error: "invalid_grant", error_description: "auth failure", message: "ignored" }),
+    "auth failure",
+  );
+});
+
+test("formatError: errorCode も message もない object → 既存通り JSON.stringify", () => {
+  assert.equal(formatError({ foo: 1 }), '{"foo":1}');
+});
+
+test("formatError: 配列形式は新分岐に先取られず既存通り処理 (Phase 563 互換性)", () => {
+  const d = [{ errorCode: "E1", message: "m1" }];
+  assert.equal(formatError(d), "E1 m1");
+});
+
 // --- formatError multi-error (Phase 563) --------------------------------------
 
 test("formatError: 配列 2 件 → '[2件のエラー] code1 msg1 / code2 msg2'", () => {
