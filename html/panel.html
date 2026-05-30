@@ -425,32 +425,93 @@ System.debug('Now: ' + System.now());</textarea>
         <pre id="apexResult" class="code"><div class="empty-state">👆 上のエディタに匿名 Apex を入力して「▶ 実行 (Ctrl+Enter)」を押してください。実行結果と Debug ログがここに表示されます。<br/><br/><strong>💡 ヒント</strong>: DebugLevel/TraceFlag は自動有効化されるため、<code>System.debug()</code> の出力もそのまま確認できます。本番組織での <code>UPDATE</code>/<code>DELETE</code> は実データに影響するため十分注意してください。📸 エビデンスボタンで Apex コード + 結果 + ログを Markdown 保存できます。</div></pre>
       </div>
 
-      <!-- v3.490.0 Phase 580: 📤 一括インポート ビュー (Excel/CSV paste → insert/update/upsert/delete) — ユーザー要望 B 段階構築 2/3 (UI のみ、execute は Phase 581) -->
+      <!-- v3.490.0 Phase 580 + Phase 582 (レイアウト改善): 📤 一括インポート ビュー -->
+      <!-- Step 1-4 のカード構造で何をすればいいか視覚的に伝える -->
       <div class="view hidden" data-view="bulk">
-        <div class="toolbar" style="flex-wrap:wrap;gap:6px">
-          <input id="bulkObject" placeholder="sObject API 名 (例: Account)" list="dl-sobjects" autocomplete="off" style="flex:0 0 200px" />
-          <select id="bulkOp" title="操作種別を選択 — insert: 新規作成 / update: Id 必須 / upsert: 外部 ID キー / delete: Id 必須">
-            <option value="insert">📝 Insert (新規作成)</option>
-            <option value="update">🔄 Update (Id 必須)</option>
-            <option value="upsert">↕️ Upsert (External ID Field キー)</option>
-            <option value="delete">🗑️ Delete (Id 必須)</option>
-          </select>
-          <input id="bulkExtId" placeholder="External ID Field 名 (upsert 時)" style="flex:0 0 220px;display:none" />
-          <button id="btnBulkParse" title="貼り付けたデータをパースしてプレビュー表示 (実行はしません)">🔍 Parse プレビュー</button>
-          <button id="btnBulkExecute" class="primary" disabled title="先に「🔍 Parse プレビュー」を実行してください。警告なし・1 件以上の場合のみ有効化されます">⚡ 実行</button>
-          <span class="grow"></span>
-          <span class="meta" id="bulkMeta" role="status" aria-live="polite"></span>
+        <div class="bulk-wrap">
+
+          <!-- Step 1: 対象 & 操作の設定 -->
+          <section class="bulk-step">
+            <header class="bulk-step-hdr">
+              <span class="bulk-step-no">1</span>
+              <h3 class="bulk-step-title">対象オブジェクト & 操作種別</h3>
+            </header>
+            <div class="bulk-step-body">
+              <div class="bulk-field-row">
+                <label class="bulk-label">sObject API 名 <span class="bulk-req">必須</span></label>
+                <input id="bulkObject" placeholder="例: Account / Contact / Custom_Obj__c" list="dl-sobjects" autocomplete="off" class="bulk-input" />
+              </div>
+              <div class="bulk-field-row">
+                <label class="bulk-label">操作種別 <span class="bulk-req">必須</span></label>
+                <select id="bulkOp" class="bulk-input" title="操作種別を選択 — insert: 新規作成 / update: Id 必須 / upsert: 外部 ID キー / delete: Id 必須">
+                  <option value="insert">📝 Insert — 新規作成 (Id 不要)</option>
+                  <option value="update">🔄 Update — 既存更新 (Id 列必須)</option>
+                  <option value="upsert">↕️ Upsert — 外部 ID で照合・無ければ作成</option>
+                  <option value="delete">🗑️ Delete — レコード削除 (Id 列必須)</option>
+                </select>
+              </div>
+              <div class="bulk-field-row" id="bulkExtIdRow" style="display:none">
+                <label class="bulk-label">External ID Field <span class="bulk-req">upsert時必須</span></label>
+                <input id="bulkExtId" placeholder="例: External_Id__c / Email" class="bulk-input" />
+              </div>
+            </div>
+          </section>
+
+          <!-- Step 2: データ貼り付け -->
+          <section class="bulk-step">
+            <header class="bulk-step-hdr">
+              <span class="bulk-step-no">2</span>
+              <h3 class="bulk-step-title">Excel / CSV データを貼り付け</h3>
+            </header>
+            <div class="bulk-step-body">
+              <div class="bulk-hint">
+                💡 <strong>1 行目は API field 名のヘッダー</strong>、2 行目以降がデータ。Excel 直接コピー (TAB) も CSV (comma) も自動判定。値内のカンマ・改行は <code>"..."</code> で囲む (RFC4180 風)。
+                <details style="margin-top:4px">
+                  <summary style="cursor:pointer">📋 サンプルを見る (クリックで展開)</summary>
+                  <pre class="bulk-sample" style="user-select:all">Name,Industry,Phone
+Acme Corp,Technology,03-1234-5678
+Globex Inc,Manufacturing,06-9876-5432
+Initech LLC,Finance,03-5555-0001</pre>
+                </details>
+              </div>
+              <textarea id="bulkInput" rows="10" placeholder="ExcelやCSVから貼り付け (1 行目はヘッダー、2 行目以降がデータ)" class="bulk-textarea"></textarea>
+              <button id="btnBulkParse" class="bulk-parse-btn">🔍 Parse してプレビュー</button>
+            </div>
+          </section>
+
+          <!-- Step 3: プレビュー確認 -->
+          <section class="bulk-step">
+            <header class="bulk-step-hdr">
+              <span class="bulk-step-no">3</span>
+              <h3 class="bulk-step-title">プレビュー確認</h3>
+              <span class="meta" id="bulkMeta" role="status" aria-live="polite" style="margin-left:auto"></span>
+            </header>
+            <div class="bulk-step-body">
+              <div id="bulkPreview" class="bulk-preview-area">
+                <div class="empty-state" style="padding:24px 12px;text-align:center;color:var(--fg-dim)">
+                  👆 Step 2 で「🔍 Parse してプレビュー」を押すと、ここに検出結果とサンプル 10 行が表示されます
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Step 4: 実行 & 結果 -->
+          <section class="bulk-step bulk-step-exec">
+            <header class="bulk-step-hdr">
+              <span class="bulk-step-no">4</span>
+              <h3 class="bulk-step-title">実行 & 結果</h3>
+            </header>
+            <div class="bulk-step-body">
+              <button id="btnBulkExecute" class="primary bulk-exec-btn" disabled title="先に Step 3 のプレビューで警告なし・1 件以上を確認してから有効化されます">⚡ 実行 (Composite API)</button>
+              <div id="bulkResult" class="bulk-result-area">
+                <div class="empty-state" style="padding:16px;text-align:center;color:var(--fg-dim);font-size:11px">
+                  実行結果（成功/失敗カウント・失敗行の詳細）がここに表示されます
+                </div>
+              </div>
+            </div>
+          </section>
+
         </div>
-        <div class="meta" style="padding:6px 8px;font-size:11px;color:var(--fg-dim);line-height:1.55">
-          1 行目に <strong>API field 名</strong> をヘッダーとして入れた Excel / CSV データを下にペーストしてください。
-          Excel から直接コピー (TAB 区切り) でも、CSV (comma 区切り) でも自動判定します。
-          値内のカンマ・改行は <code>"..."</code> で囲んでください (RFC4180 風)。
-          <br/>例 (Account insert):
-          <code style="user-select:all">Name,Industry,Phone<br/>Acme Corp,Technology,03-1234-5678<br/>Globex Inc,Manufacturing,06-9876-5432</code>
-        </div>
-        <textarea id="bulkInput" rows="10" placeholder="ExcelやCSVから貼り付け (1 行目はヘッダー、2 行目以降がデータ)&#10;Name&#9;Industry&#9;Phone&#10;Acme Corp&#9;Technology&#9;03-1234-5678&#10;Globex Inc&#9;Manufacturing&#9;06-9876-5432" style="font-family:ui-monospace,Consolas,monospace;font-size:12px;width:100%"></textarea>
-        <div id="bulkPreview" class="meta" style="margin-top:8px"></div>
-        <div id="bulkResult" class="meta" style="margin-top:8px"></div>
       </div>
 
       <div class="view hidden" data-view="describe">

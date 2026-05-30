@@ -1858,8 +1858,9 @@ function bindEvents() {
   $on("btnBulkExecute", "click", doBulkExecute);
   $on("bulkOp", "change", () => {
     const op = (document.getElementById("bulkOp") || {}).value;
-    const extId = document.getElementById("bulkExtId");
-    if (extId) extId.style.display = op === "upsert" ? "" : "none";
+    // v3.492.0 Phase 582: row wrap に変更 (label と input をまとめて toggle)
+    const extIdRow = document.getElementById("bulkExtIdRow");
+    if (extIdRow) extIdRow.style.display = op === "upsert" ? "" : "none";
   });
   $on("btnAdminPackages", "click", doAdminPackages);
   $on("btnAdminLoadAll", "click", doAdminLoadAll);

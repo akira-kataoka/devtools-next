@@ -2270,3 +2270,101 @@ mark.search-hl {
   color: #fff;
 }
 .design-last-chip-row { flex-wrap: wrap; }
+
+/* =====================================================================
+   v3.492.0 Phase 582: 📤 一括インポート ビュー Step 1-4 カードレイアウト
+   (ユーザー要望「見た目やレイアウトも分かりやすく」)
+   ===================================================================== */
+.bulk-wrap { padding: 16px; display: flex; flex-direction: column; gap: 14px; max-width: 980px; }
+.bulk-step {
+  background: var(--bg2, #0f1830);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.bulk-step-hdr {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: linear-gradient(180deg, rgba(27,150,255,0.08), rgba(27,150,255,0.02));
+  border-bottom: 1px solid var(--line);
+}
+.bulk-step-no {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-weight: 700; font-size: 12px;
+}
+.bulk-step-title { margin: 0; font-size: 13px; font-weight: 600; color: var(--fg); }
+.bulk-step-body { padding: 14px; }
+.bulk-step-exec .bulk-step-hdr {
+  background: linear-gradient(180deg, rgba(243,156,18,0.10), rgba(243,156,18,0.03));
+}
+.bulk-step-exec .bulk-step-no {
+  background: var(--warn);
+}
+
+.bulk-field-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 10px;
+}
+.bulk-field-row:last-child { margin-bottom: 0; }
+.bulk-label {
+  flex: 0 0 180px;
+  font-size: 12px; font-weight: 500; color: var(--fg-dim);
+}
+.bulk-req {
+  display: inline-block; margin-left: 4px;
+  padding: 1px 6px; border-radius: 3px;
+  background: rgba(255,107,107,0.15); color: var(--err);
+  font-size: 9px; font-weight: 600;
+}
+.bulk-input {
+  flex: 1; max-width: 480px;
+  padding: 6px 10px; font-size: 12px;
+  background: var(--bg3); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 4px;
+}
+.bulk-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(27,150,255,0.2); }
+
+.bulk-hint {
+  padding: 8px 10px; margin-bottom: 10px;
+  background: rgba(27,150,255,0.05); border: 1px solid rgba(27,150,255,0.15); border-radius: 4px;
+  font-size: 11px; line-height: 1.6; color: var(--fg-dim);
+}
+.bulk-hint code { background: var(--bg3); padding: 1px 4px; border-radius: 3px; font-size: 10px; }
+.bulk-sample {
+  margin: 6px 0 0;
+  padding: 8px; background: var(--bg3); border-radius: 4px;
+  font: 10px ui-monospace, Consolas, monospace; color: var(--fg);
+  white-space: pre; overflow: auto;
+}
+
+.bulk-textarea {
+  width: 100%; box-sizing: border-box;
+  padding: 10px; font-family: ui-monospace, Consolas, monospace; font-size: 12px;
+  background: var(--bg3); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 4px; resize: vertical;
+}
+.bulk-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px rgba(27,150,255,0.2); }
+
+.bulk-parse-btn {
+  margin-top: 10px; padding: 8px 16px; font-size: 13px; font-weight: 600;
+  background: var(--accent); color: #fff;
+  border: 1px solid var(--accent); border-radius: 4px; cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+.bulk-parse-btn:hover { background: #0a78d8; }
+.bulk-parse-btn:active { transform: translateY(1px); }
+
+.bulk-preview-area { min-height: 60px; }
+.bulk-result-area { margin-top: 10px; min-height: 40px; }
+
+.bulk-exec-btn {
+  padding: 10px 20px; font-size: 14px; font-weight: 700;
+  background: var(--warn); color: #000;
+  border: 1px solid var(--warn); border-radius: 4px; cursor: pointer;
+  transition: background 0.15s ease, transform 0.05s ease;
+}
+.bulk-exec-btn:hover:not(:disabled) { background: #ffb340; }
+.bulk-exec-btn:active:not(:disabled) { transform: translateY(1px); }
+.bulk-exec-btn:disabled { opacity: 0.4; cursor: not-allowed; background: var(--bg3); color: var(--fg-dim); border-color: var(--line); }

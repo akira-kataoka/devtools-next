@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<title>Phase 582 preview — Bulk import layout (Step 1-4 cards)</title>
+<link rel="stylesheet" href="../css/panel.css" />
+<style>
+  body { margin: 0; background: #0b1220; color: #fff; font-family: system-ui, -apple-system, sans-serif; }
+  .preview-wrap { padding: 20px; max-width: 1080px; }
+  .h-title { font:600 13px system-ui; margin: 0 0 20px; color: #fff; }
+</style>
+</head>
+<body>
+<div class="preview-wrap">
+  <h2 class="h-title">Phase 582 — 📤 一括インポート レイアウト改善 (Step 1-4 カード化) 🆕</h2>
+
+  <div class="bulk-wrap">
+
+    <section class="bulk-step">
+      <header class="bulk-step-hdr">
+        <span class="bulk-step-no">1</span>
+        <h3 class="bulk-step-title">対象オブジェクト & 操作種別</h3>
+      </header>
+      <div class="bulk-step-body">
+        <div class="bulk-field-row">
+          <label class="bulk-label">sObject API 名 <span class="bulk-req">必須</span></label>
+          <input class="bulk-input" value="Account" />
+        </div>
+        <div class="bulk-field-row">
+          <label class="bulk-label">操作種別 <span class="bulk-req">必須</span></label>
+          <select class="bulk-input">
+            <option>📝 Insert — 新規作成 (Id 不要)</option>
+            <option>🔄 Update — 既存更新 (Id 列必須)</option>
+            <option selected>↕️ Upsert — 外部 ID で照合・無ければ作成</option>
+            <option>🗑️ Delete — レコード削除 (Id 列必須)</option>
+          </select>
+        </div>
+        <div class="bulk-field-row">
+          <label class="bulk-label">External ID Field <span class="bulk-req">upsert時必須</span></label>
+          <input class="bulk-input" value="External_Id__c" />
+        </div>
+      </div>
+    </section>
+
+    <section class="bulk-step">
+      <header class="bulk-step-hdr">
+        <span class="bulk-step-no">2</span>
+        <h3 class="bulk-step-title">Excel / CSV データを貼り付け</h3>
+      </header>
+      <div class="bulk-step-body">
+        <div class="bulk-hint">
+          💡 <strong>1 行目は API field 名のヘッダー</strong>、2 行目以降がデータ。Excel 直接コピー (TAB) も CSV (comma) も自動判定。値内のカンマ・改行は <code>"..."</code> で囲む (RFC4180 風)。
+          <details style="margin-top:4px" open>
+            <summary style="cursor:pointer">📋 サンプルを見る (クリックで展開)</summary>
+            <pre class="bulk-sample">External_Id__c,Name,Industry
+EXT-001,Acme Corp,Technology
+EXT-002,Globex Inc,Manufacturing
+EXT-003,Initech LLC,Finance</pre>
+          </details>
+        </div>
+        <textarea class="bulk-textarea" rows="6">External_Id__c,Name,Industry
+EXT-001,Acme Corp,Technology
+EXT-002,Globex Inc,Manufacturing
+EXT-003,Initech LLC,Finance</textarea>
+        <button class="bulk-parse-btn">🔍 Parse してプレビュー</button>
+      </div>
+    </section>
+
+    <section class="bulk-step">
+      <header class="bulk-step-hdr">
+        <span class="bulk-step-no">3</span>
+        <h3 class="bulk-step-title">プレビュー確認</h3>
+        <span class="meta" style="margin-left:auto;display:inline-block;padding:2px 6px;border-radius:4px;background:rgba(46,204,113,0.2);color:#46d39a;border:1px solid #46d39a;font-size:10px">✓ 3 件 parse 済</span>
+      </header>
+      <div class="bulk-step-body">
+        <div class="meta" style="padding:6px 0;font-size:11px">📊 検出: 区切り <code>comma</code> / ヘッダー 3 列 / レコード 3 件</div>
+        <div style="overflow:auto;max-height:300px;border:1px solid var(--line);border-radius:4px">
+          <table style="width:100%;border-collapse:collapse;font-size:11px">
+            <thead><tr>
+              <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)">External_Id__c <span class="pill" style="font-size:9px;background:#46d39a;color:#000;padding:1px 4px;border-radius:3px">KEY</span></th>
+              <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)">Name</th>
+              <th style="text-align:left;padding:4px 6px;border-bottom:1px solid var(--line)">Industry</th>
+            </tr></thead>
+            <tbody>
+              <tr><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">EXT-001</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">Acme Corp</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">Technology</td></tr>
+              <tr><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">EXT-002</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">Globex Inc</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">Manufacturing</td></tr>
+              <tr><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">EXT-003</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">Initech LLC</td><td style="padding:3px 6px;border-bottom:1px dashed #2a3a5a">Finance</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="bulk-step bulk-step-exec">
+      <header class="bulk-step-hdr">
+        <span class="bulk-step-no">4</span>
+        <h3 class="bulk-step-title">実行 & 結果</h3>
+      </header>
+      <div class="bulk-step-body">
+        <button class="bulk-exec-btn">⚡ 実行 (Composite API)</button>
+        <div style="margin-top:10px">
+          <div style="padding:8px;background:#0f1830;border:1px solid var(--line);border-radius:4px">
+            <strong>↕️ upsert</strong> Account: <span style="background:rgba(46,204,113,0.2);color:#46d39a;border:1px solid #46d39a;padding:2px 6px;border-radius:4px;font-size:10px">✓ 成功 3</span> <span class="meta">(3 件、1 バッチ)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <p style="color:#ffffff88;font:11px system-ui;margin-top:24px;line-height:1.6;max-width:760px">
+    Phase 582 で変更: bulk import view を <strong>Step 1-4 のカードレイアウト</strong>に再構成。
+    各 step に <strong>大きい連番バッジ</strong> + <strong>明示的タイトル</strong> + <strong>専用ヒント領域</strong>を配置。
+    Step 4 (実行) は <strong>警告色 (橙)</strong> でゲートし、destructive な操作であることを視覚的に強調。
+    label の右に <span class="bulk-req" style="padding:1px 6px;border-radius:3px;background:rgba(255,107,107,0.15);color:#ff6b6b;font-size:9px;font-weight:600">必須</span> バッジ。
+    サンプルデータは <code>&lt;details&gt;</code> で折りたためる。
+    <strong>「どこから手を付ければいいか」が一目で分かる</strong>のが旧 toolbar 1 行詰め込みとの違い。
+  </p>
+</div>
+</body>
+</html>
