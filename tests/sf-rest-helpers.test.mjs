@@ -114,3 +114,57 @@ test("wrapSoapEnvelope: 空文字でも有効な Envelope を返す", () => {
   // 構造的に妥当な XML (Envelope/Body の閉じタグ順序)
   assert.ok(result.indexOf("</soap:Body>") < result.indexOf("</soap:Envelope>"));
 });
+
+// --- wrapSoapEnvelope edge cases (Phase 569) ----------------------------------
+
+test("wrapSoapEnvelope: XML 宣言は必ず先頭", () => {
+  const result = wrapSoapEnvelope("<x/>");
+  assert.equal(result.indexOf("<?xml"), 0);
+  assert.ok(result.includes(`encoding="UTF-8"`));
+});
+
+test("wrapSoapEnvelope: soap namespace 宣言を含む", () => {
+  const result = wrapSoapEnvelope("<x/>");
+  assert.ok(result.includes(`xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"`));
+});
+
+test("wrapSoapEnvelope: 複数行 innerBody は改行を保持して挿入", () => {
+  const inner = "<urn:method1/>\n  <urn:method2/>";
+  const result = wrapSoapEnvelope(inner);
+  assert.ok(result.includes(inner));
+});
+
+test("wrapSoapEnvelope: innerBody の XML 特殊文字はエスケープしない (呼出側で escXml 済を想定)", () => {
+  // 関数仕様 = 「`innerBody` をそのまま挿入」。生の `<` `>` は escape しない。
+  // 呼出側が値を含める時は事前に escXml が必要。これは契約の確定。
+  const inner = "<urn:msg>&amp;hello</urn:msg>";
+  const result = wrapSoapEnvelope(inner);
+  assert.ok(result.includes("&amp;hello"));
+  assert.ok(!result.includes("&amp;amp;hello")); // 二重エスケープしないことを verify
+});
+
+test("wrapSoapEnvelope: null は JS template literal 仕様により 'null' 文字列化", () => {
+  // 防御コードを入れていない実装挙動を確定。呼出側の責任。
+  const result = wrapSoapEnvelope(null);
+  assert.ok(result.includes("\nnull\n"));
+});
+
+test("wrapSoapEnvelope: undefined も 'undefined' 文字列化", () => {
+  const result = wrapSoapEnvelope(undefined);
+  assert.ok(result.includes("\nundefined\n"));
+});
+
+test("wrapSoapEnvelope: 数値 innerBody は文字列化 (テンプレートリテラル仕様)", () => {
+  const result = wrapSoapEnvelope(42);
+  assert.ok(result.includes("\n42\n"));
+});
+
+test("wrapSoapEnvelope: 出力は <soap:Envelope> でラップされ </soap:Envelope> で閉じる", () => {
+  const result = wrapSoapEnvelope("X");
+  const open = result.indexOf("<soap:Envelope");
+  const close = result.indexOf("</soap:Envelope>");
+  assert.ok(open > 0);
+  assert.ok(close > open);
+  // close より後ろには改行や空白のみ
+  assert.equal(result.substring(close + "</soap:Envelope>".length).trim(), "");
+});
