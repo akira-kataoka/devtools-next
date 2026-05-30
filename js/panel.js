@@ -202,6 +202,8 @@ async function init() {
     loadSoqlDraft();
     loadApexDraft();
     loadRestBodyDraft();
+    // v3.499.0 Phase 589: bulk input draft 復元 (誤閉じからのリカバリ)
+    loadBulkInputDraft();
     // v3.134.0 Phase 223 (Team H): 最近使ったオブジェクト / レコード ID をロード
     await loadRecentObjects();
     refreshRecordIdDatalist();
@@ -1864,6 +1866,9 @@ function bindEvents() {
     const extIdRow = document.getElementById("bulkExtIdRow");
     if (extIdRow) extIdRow.style.display = op === "upsert" ? "" : "none";
   });
+  // v3.499.0 Phase 589: bulk input draft 自動保存 (Apex/SOQL/REST と統一、誤閉じ救済)
+  const bulkInputEl = document.getElementById("bulkInput");
+  if (bulkInputEl) bulkInputEl.addEventListener("input", () => scheduleSaveBulkInputDraft(bulkInputEl.value));
   // v3.495.0 Phase 585: Ctrl+Enter で Parse 発火 (Apex/SOQL ビューと UX 統一)
   // v3.496.0 Phase 586: Tab で \t (タブ文字) 挿入 — TAB 区切りデータの手動編集をスムーズに
   //   (フォーカス移動は Shift+Tab で温存 → a11y キーボードナビ維持)
@@ -5265,6 +5270,32 @@ function scheduleSaveRestBodyDraft(text) {
     try {
       if (!text || !text.trim()) await chrome.storage.local.remove(REST_BODY_DRAFT_KEY);
       else await chrome.storage.local.set({ [REST_BODY_DRAFT_KEY]: text });
+    } catch {}
+  }, 300);
+}
+
+// v3.499.0 Phase 589: 一括インポート textarea の draft 自動保存 (Apex/SOQL/REST と同パターン)
+// 業務シナリオ: 数百行の Excel paste を組み立て中にタブが落ちる → 復元したい
+const BULK_INPUT_DRAFT_KEY = "sfdtBulkInputDraft";
+let _bulkInputDraftTimer = null;
+async function loadBulkInputDraft() {
+  try {
+    const data = await chrome.storage.local.get(BULK_INPUT_DRAFT_KEY);
+    const saved = data[BULK_INPUT_DRAFT_KEY];
+    if (typeof saved !== "string" || !saved.trim()) return;
+    const ta = document.getElementById("bulkInput");
+    if (!ta) return;
+    if (ta.value === saved) return;
+    ta.value = saved;
+    panelToast("📝 編集中だった一括インポートデータを復元しました", { kind: "ok" });
+  } catch {}
+}
+function scheduleSaveBulkInputDraft(text) {
+  if (_bulkInputDraftTimer) clearTimeout(_bulkInputDraftTimer);
+  _bulkInputDraftTimer = setTimeout(async () => {
+    try {
+      if (!text || !text.trim()) await chrome.storage.local.remove(BULK_INPUT_DRAFT_KEY);
+      else await chrome.storage.local.set({ [BULK_INPUT_DRAFT_KEY]: text });
     } catch {}
   }, 300);
 }
