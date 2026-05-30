@@ -4074,10 +4074,20 @@ function renderCurrentUserChip(cu) {
   // 鮮度: 最終取得から 2 倍超を「古い」とみなし live ドットを警告色に
   const stale = state.lastUserFetch && (Date.now() - state.lastUserFetch > CURRENT_USER_POLL_MS * 2.2);
   chip.classList.toggle("stale", !!stale);
+  // v3.467.0 Phase 557: 無効ユーザー (IsActive=false) は権限エラーになりやすいので chip 全体を赤枠＋⚠ で常時警告
+  const inactive = cu.isActive === false;
+  chip.classList.toggle("inactive", inactive);
   if (avatar) avatar.textContent = cu.initials || "?";
   if (nameEl) nameEl.textContent = cu.name || "(不明)";
-  if (subEl) subEl.textContent = cu.username || cu.profile || "";
-  const activeTxt = cu.isActive === false ? " / ⚠ 無効ユーザー" : "";
+  if (subEl) {
+    const subText = cu.username || cu.profile || "";
+    if (inactive) {
+      subEl.innerHTML = escHtml(subText) + ` <span class="user-chip-inactive-badge" title="このユーザーは IsActive=false です。多くの API 操作が権限エラーになります">⚠無効</span>`;
+    } else {
+      subEl.textContent = subText;
+    }
+  }
+  const activeTxt = inactive ? " / ⚠ 無効ユーザー" : "";
   chip.title =
     `現在ログイン中: ${cu.name}\n` +
     (cu.username ? `ユーザー名: ${cu.username}\n` : "") +

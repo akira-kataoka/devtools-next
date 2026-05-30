@@ -135,6 +135,11 @@ html, body {
 .user-chip.stale .user-chip-live { background: var(--warn); animation: none; }
 .user-chip.offline .user-chip-avatar { background: var(--bg2, #1a2233); color: var(--fg-dim); }
 .user-chip.offline .user-chip-live { background: var(--err); animation: none; }
+/* v3.467.0 Phase 557: 無効ユーザー (IsActive=false) で操作中は権限エラーになりやすいので chip 自体を赤枠＋⚠ で常時警告。Phase 553 では title 属性のみで気付きにくかった */
+.user-chip.inactive { border-color: var(--err); box-shadow: 0 0 0 1px rgba(255,107,107,0.25) inset; }
+.user-chip.inactive .user-chip-avatar { background: linear-gradient(135deg, var(--err) 0%, #7a2020 100%); }
+.user-chip.inactive .user-chip-live { background: var(--err); animation: none; }
+.user-chip-inactive-badge { color: var(--err); font-weight: 700; margin-left: 4px; }
 @keyframes userLivePulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(46,204,113,0.0); }
   50%      { box-shadow: 0 0 0 4px rgba(46,204,113,0.18); }
