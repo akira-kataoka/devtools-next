@@ -1820,6 +1820,8 @@ function bindEvents() {
   // v3.83.0: REST API body textarea の入力中 draft 自動保存 (3 連 textarea 完全救済)
   const restBodyEl = document.getElementById("restBody");
   if (restBodyEl) restBodyEl.addEventListener("input", () => scheduleSaveRestBodyDraft(restBodyEl.value));
+  // v3.498.0 Phase 588: REST body も Tab → 2 space に (Apex/SOQL と UX 統一、JSON 整形時のフォーカス抜け解消)
+  if (restBodyEl) enableTabToSpaces(restBodyEl);
   $on("apexCode", "keydown", (e) => {
     if (e.isComposing || e.keyCode === 229) return;
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") doRunApex();
