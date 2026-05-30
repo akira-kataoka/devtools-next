@@ -952,6 +952,15 @@ test("parseClipboardRecords: 1 行 (ヘッダーのみ) → records 空", () => 
   assert.equal(r.records.length, 0);
 });
 
+test("parseClipboardRecords: Phase 601 — 先頭 BOM (U+FEFF) を strip して headers が正しく取れる", () => {
+  // Excel paste / 一部 export ツールは先頭に BOM を付けることがある
+  const text = "﻿Id,Name\n001A,Alice";
+  const r = parseClipboardRecords(text);
+  assert.deepEqual(r.headers, ["Id", "Name"]);
+  assert.equal(r.records.length, 1);
+  assert.equal(r.records[0].Id, "001A");
+});
+
 test("parseClipboardRecords: 自動判定は TAB と comma の出現数比較 (TAB >= comma → TAB)", () => {
   // tab 2 個 vs comma 1 個 → TAB
   const r1 = parseClipboardRecords("a\tb\tc,d\n1\t2\t3");

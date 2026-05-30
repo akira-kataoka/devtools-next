@@ -366,7 +366,10 @@ export function validateBulkOpRequiredColumns({ op, extId, headers } = {}) {
 }
 
 export function parseClipboardRecords(text, opts = {}) {
-  const src = String(text == null ? "" : text);
+  // v3.511.0 Phase 601: Excel paste の BOM (U+FEFF) が headers の先頭に混入する
+  //   潜在バグを修正。BOM 付き「﻿Id,Name」を parse すると headers[0]="﻿Id"
+  //   になり SOQL field 名と一致しなくなる。冒頭で strip。
+  const src = String(text == null ? "" : text).replace(/^﻿/, "");
   if (!src.trim()) return { delimiter: "\t", headers: [], records: [], skipped: 0 };
   // 区切り文字判定: 1 行目だけで判定 (内容にクォート内含む場合の誤判定は許容)
   let delim = opts.delimiter;
