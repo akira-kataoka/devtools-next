@@ -71,7 +71,7 @@ import {
 // v3.453.0 Phase 543: REST/SOAP 補助の純粋関数を別ファイルに抽出 (テスト可能化)
 import { parseRestHeaders, wrapSoapEnvelope } from "./sf-rest-helpers.js";
 // v3.454.0 Phase 544: 表示・整形系の純粋関数を別ファイルに抽出 (テスト可能化)
-import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords, validateBulkOpRequiredColumns, summarizeBulkResults, bulkOpEmoji, bulkOpLabel, filterByNameLabel, csvEscapeCell } from "./sf-format-helpers.js";
+import { tsForFilename, tsForFilenameCompact, formatError, escHtml, formatCurrentUser, relativeTimeJa, escapeSoqlLiteral, userChipStateClasses, popoverPosition, formatSfDateTime, formatSfDateTimeLoose, escXml, escSoslKeyword, escMdTableCell, parseClipboardRecords, validateBulkOpRequiredColumns, summarizeBulkResults, bulkOpEmoji, bulkOpLabel, filterByNameLabel, csvEscapeCell, formatJpDateTime } from "./sf-format-helpers.js";
 
 const state = {
   host: null,
@@ -2016,7 +2016,7 @@ function bindEvents() {
     lines.push("");
     lines.push(`[Salesforce で開く](${url}) | Id: \`${escape(id)}\``);
     lines.push("");
-    lines.push(`_取得日時: ${new Date().toLocaleString("ja-JP")}_`);
+    lines.push(`_取得日時: ${formatJpDateTime()}_`);
     lines.push("");
     lines.push("| 項目 | 表示名 | 値 |");
     lines.push("|---|---|---|");
@@ -2638,7 +2638,7 @@ async function apiRunRequest() {
   });
   const copyMdBtn = document.getElementById("btnApiRunCopyMd");
   if (copyMdBtn) copyMdBtn.addEventListener("click", async () => {
-    const md = `## API URL ビルダー実行結果\n\n_実行日時: ${new Date().toLocaleString("ja-JP")} / ${method} ${path} / HTTP ${r.status} / ${dt}ms / ${sizeLabel}_\n\n\`\`\`json\n${formatted}\n\`\`\`\n`;
+    const md = `## API URL ビルダー実行結果\n\n_実行日時: ${formatJpDateTime()} / ${method} ${path} / HTTP ${r.status} / ${dt}ms / ${sizeLabel}_\n\n\`\`\`json\n${formatted}\n\`\`\`\n`;
     try { await navigator.clipboard.writeText(md); panelToast("📝 実行結果を Markdown でコピーしました", { kind: "ok" }); }
     catch (e) { panelToast("❌ コピー失敗: " + (e.message || e), { kind: "err" }); }
   });
@@ -3741,7 +3741,7 @@ async function copyLimitsMd() {
   const lines = [
     "## 組織 Limits 使用状況",
     "",
-    `_取得日時: ${new Date().toLocaleString("ja-JP")}_`,
+    `_取得日時: ${formatJpDateTime()}_`,
     "",
     "| 項目 | 使用 | 残量 | 上限 | 使用率 |",
     "|---|---:|---:|---:|---:|",
@@ -6695,7 +6695,7 @@ async function copyResultTableAsMd(resultId, title) {
   const lines = [];
   lines.push(`## ${title}`);
   lines.push("");
-  lines.push(`_取得日時: ${new Date().toLocaleString("ja-JP")} / 件数: ${trs.length}_`);
+  lines.push(`_取得日時: ${formatJpDateTime()} / 件数: ${trs.length}_`);
   lines.push("");
   lines.push("| " + headers.map((h) => h.replace(/\|/g, "\\|")).join(" | ") + " |");
   lines.push("|" + headers.map(() => "---").join("|") + "|");
@@ -6735,7 +6735,7 @@ async function copyDescribeAsMd() {
   const lines = [
     `# 📋 ${d.label || obj} (${d.name || obj}) — オブジェクト定義書`,
     "",
-    `_取得日時: ${new Date().toLocaleString("ja-JP")} / 対象組織: ${state.host || ""}_`,
+    `_取得日時: ${formatJpDateTime()} / 対象組織: ${state.host || ""}_`,
     "",
     `## 統計サマリ`,
     "",
@@ -6792,7 +6792,7 @@ async function copyAdminModalAsMd(overlay, title) {
   const lines = [
     `## ${title}`,
     "",
-    `_取得日時: ${new Date().toLocaleString("ja-JP")} / 件数: ${trs.length}_`,
+    `_取得日時: ${formatJpDateTime()} / 件数: ${trs.length}_`,
     "",
     "| " + headers.map((h) => h.replace(/\|/g, "\\|")).join(" | ") + " |",
     "|" + headers.map(() => "---").join("|") + "|",
@@ -6826,7 +6826,7 @@ async function copyLoginHistoryMd() {
   const lines = [
     "## Salesforce ログイン履歴",
     "",
-    `_取得日時: ${new Date().toLocaleString("ja-JP")} / 件数: ${recs.length}_`,
+    `_取得日時: ${formatJpDateTime()} / 件数: ${recs.length}_`,
     "",
     "| " + headerLabels.join(" | ") + " |",
     "|" + headers.map(() => "---").join("|") + "|",
@@ -7212,7 +7212,7 @@ async function exportSearchMd(groups, keyword) {
   const lines = [
     `# 🔎 グローバル検索結果: ${keyword || ""}`,
     "",
-    `_取得日時: ${new Date().toLocaleString("ja-JP")} / 合計: ${totalCount} 件 / オブジェクト数: ${groups.size}_`,
+    `_取得日時: ${formatJpDateTime()} / 合計: ${totalCount} 件 / オブジェクト数: ${groups.size}_`,
     "",
   ];
   const SObject_ICONS = {
@@ -8484,7 +8484,7 @@ async function doAdminLoadAll() {
   const dt = Math.round(performance.now() - t0);
   // v3.139.0 Phase 229: 最終取得時刻を保存・表示
   adminState.lastLoadedAt = new Date();
-  const timeStr = adminState.lastLoadedAt.toLocaleString("ja-JP");
+  const timeStr = formatJpDateTime(adminState.lastLoadedAt);
   if (meta) meta.innerHTML = `<span class="pill ok">✓ すべて取得完了</span> <span class="meta">${dt} ms / 取得時刻: ${escape(timeStr)}</span> <button class="admin-row-action" id="btnAdminReload" title="6 カードを再取得します" style="margin-left:6px">🔄 再取得</button>`;
   // 再取得ボタンに動的にイベント
   const reload = document.getElementById("btnAdminReload");
@@ -8560,7 +8560,7 @@ function adminExportCsv() {
   };
   const lines = [];
   lines.push(`# DevToolsNext ユーザー・ライセンス管理 サマリ`);
-  lines.push(`# 生成日時: ${new Date().toLocaleString("ja-JP")}`);
+  lines.push(`# 生成日時: ${formatJpDateTime()}`);
   lines.push(`# 組織: ${state.host || ""}`);
   for (const s of sections) {
     lines.push("");
@@ -8614,7 +8614,7 @@ function connRenderList() {
         : `<span class="pill ok">🔓 認証済み</span> <span class="meta" style="font-size:11px">${c.instanceUrl ? escape(c.instanceUrl.replace(/^https?:\/\//, "")) : ""}</span>`)
       : `<span class="pill warn">🔒 未認証</span>`;
     const authLabel = c.authType === "oauth_password" ? "🔑 OAuth UP" : "🔐 SOAP login";
-    const issued = c.tokenIssuedAt ? new Date(c.tokenIssuedAt).toLocaleString("ja-JP") : "";
+    const issued = c.tokenIssuedAt ? formatJpDateTime(c.tokenIssuedAt) : "";
     const rowStyle = stale
       ? "border:1px solid #6b5318;border-radius:6px;margin-bottom:6px;background:var(--bg-2)"
       : "border:1px solid var(--border);border-radius:6px;margin-bottom:6px;background:var(--bg-2)";

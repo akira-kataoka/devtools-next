@@ -22,6 +22,7 @@ import {
   filterByNameLabel,
   safeJsonParse,
   csvEscapeCell,
+  formatJpDateTime,
 } from "../js/sf-format-helpers.js";
 
 // --- tsForFilename ------------------------------------------------------------
@@ -1310,4 +1311,35 @@ test("csvEscapeCell: opts 未指定は alwaysQuote=false 扱い", () => {
 test("csvEscapeCell: 空文字 → 空文字 (alwaysQuote なし)", () => {
   assert.equal(csvEscapeCell(""), "");
   assert.equal(csvEscapeCell("", { alwaysQuote: true }), `""`);
+});
+
+// --- formatJpDateTime (Phase 605) ---------------------------------------------
+
+test("formatJpDateTime: 引数なしは現在時刻のロケール表示 (文字列、空でない)", () => {
+  const out = formatJpDateTime();
+  assert.ok(typeof out === "string");
+  assert.ok(out.length > 0);
+});
+
+test("formatJpDateTime: 固定 Date は ja-JP toLocaleString と一致", () => {
+  const d = new Date(2026, 4, 31, 0, 30, 45);
+  assert.equal(formatJpDateTime(d), d.toLocaleString("ja-JP"));
+});
+
+test("formatJpDateTime: 数値 (ms epoch) 受け入れ", () => {
+  const epoch = new Date(2026, 4, 31, 9, 5).getTime();
+  const out = formatJpDateTime(epoch);
+  assert.equal(out, new Date(epoch).toLocaleString("ja-JP"));
+});
+
+test("formatJpDateTime: ISO 文字列 受け入れ", () => {
+  const iso = "2026-05-31T00:30:00";
+  const out = formatJpDateTime(iso);
+  assert.equal(out, new Date(iso).toLocaleString("ja-JP"));
+});
+
+test("formatJpDateTime: 各種日時で結果が異なる (smoke)", () => {
+  const a = formatJpDateTime(new Date(2026, 0, 1, 0, 0));
+  const b = formatJpDateTime(new Date(2026, 11, 31, 23, 59));
+  assert.notEqual(a, b);
 });

@@ -24,7 +24,7 @@ import { sfFetch, runSoql } from "./sf-api.js";
 // v3.462.0 Phase 552: HTML escape は sf-format-helpers.escHtml に集約 (esc は薄い wrapper として export を維持)
 // v3.465.0 Phase 555: SOQL リテラルエスケープも escapeSoqlLiteral に集約 (旧 `.replace(/'/g,"\\'")` は `\` 未対応だった)
 // v3.475.0 Phase 565: ISO datetime 整形も formatSfDateTime に集約 (2 箇所重複)
-import { escHtml, escapeSoqlLiteral, formatSfDateTime, csvEscapeCell } from "./sf-format-helpers.js";
+import { escHtml, escapeSoqlLiteral, formatSfDateTime, csvEscapeCell, formatJpDateTime } from "./sf-format-helpers.js";
 
 /**
  * 各設計書タイプの定義。
@@ -1324,7 +1324,7 @@ async function buildProfileDetail({ host, sid, apiVersion, obj, progress = () =>
     ["UserType", (!isPermSet && ps.Profile && ps.Profile.UserType) || ""],
     ["説明", isPermSet ? (ps.Description || "") : (ps.Profile && ps.Profile.Description || "")],
     ["PermissionSet Id", psId],
-    ["生成日時", new Date().toLocaleString("ja-JP")],
+    ["生成日時", formatJpDateTime()],
     ["集計件数 Object 権限", fmtNum(objRows.length) + " 件"],
     ["集計件数 Field 権限 (FLS)", fmtNum(fldRows.length) + " 件"],
     ["集計件数 System 権限 ON", fmtNum(systemPerms.length) + " 件"],
@@ -2738,7 +2738,7 @@ function toExcelXml(result) {
   const summary = [];
   summary.push(['title', result.title]);
   if (result.note) summary.push(['note', result.note]);
-  summary.push(['note', `生成日時: ${new Date().toLocaleString("ja-JP")}`]);
+  summary.push(['note', `生成日時: ${formatJpDateTime()}`]);
   sheets.push({
     name: "概要",
     type: "summary",

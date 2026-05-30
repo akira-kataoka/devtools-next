@@ -33,7 +33,7 @@ import {
 // v3.447.0 Phase 537: 保存済み接続を popup から閲覧・操作 (接続マネージャと連動)
 import { loadConnections as connLoadAll, maskSecret, formatAuthAge, isAuthStale } from "./sf-connections.js";
 // v3.462.0 Phase 552: HTML escape / formatError は sf-format-helpers に集約 (旧 ローカル定義は削除)
-import { escHtml as escape, formatError, escapeSoqlLiteral } from "./sf-format-helpers.js";
+import { escHtml as escape, formatError, escapeSoqlLiteral, formatJpDateTime } from "./sf-format-helpers.js";
 
 const state = {
   tab: null,
@@ -870,7 +870,7 @@ async function renderPopupConnections() {
       const authType = c.authType === "oauth_password" ? "🔑 OAuth" : "🔐 SOAP";
       const inst = c.instanceUrl ? c.instanceUrl.replace(/^https?:\/\//, "") : "";
       const ageLabel = authed ? formatAuthAge(c.tokenIssuedAt) : ""; // v3.449.0 Phase 539
-      const ageTitle = c.tokenIssuedAt ? new Date(c.tokenIssuedAt).toLocaleString("ja-JP") : "(発行時刻不明)";
+      const ageTitle = c.tokenIssuedAt ? formatJpDateTime(c.tokenIssuedAt) : "(発行時刻不明)";
       const rowBorder = stale ? "border:1px solid #6b5318" : "border:1px solid var(--line,#333)"; // 古い接続は黄色枠
       return `<div class="popup-conn-row" style="${rowBorder};border-radius:4px;padding:5px 7px;background:var(--bg-2,#1a1a1a)">
         <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600">

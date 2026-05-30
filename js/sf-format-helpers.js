@@ -329,6 +329,25 @@ export function csvEscapeCell(value, opts = {}) {
   return s;
 }
 
+/**
+ * v3.515.0 Phase 605: 日本ロケール (ja-JP) のフル日時表示を返す。
+ *
+ * panel.js / design-docs.js / popup.js で 14+ 箇所重複していた
+ * `new Date().toLocaleString("ja-JP")` パターンを集約。レポートヘッダの
+ * 「取得日時 / 生成日時 / 実行日時」表示用。
+ *
+ * date 省略時は現在時刻、文字列/数値も new Date() に渡して整形可能。
+ *
+ * 例: 2026-05-31 00:30:00 → "2026/5/31 0:30:00"
+ *
+ * @param {Date|string|number} [date=new Date()] - 起点 (省略時は現在)
+ * @returns {string}
+ */
+export function formatJpDateTime(date = new Date()) {
+  const d = date instanceof Date ? date : new Date(date);
+  return d.toLocaleString("ja-JP");
+}
+
 export function filterByNameLabel(items, query) {
   const arr = Array.isArray(items) ? items : [];
   const q = String(query == null ? "" : query).toLowerCase().trim();
